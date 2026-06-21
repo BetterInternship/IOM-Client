@@ -1,16 +1,16 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
+import { SideTabs, type SideTab } from "@/components/side-tabs";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormError } from "@/components/auth-shell";
 import {
@@ -22,7 +22,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Plus } from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
+import { Loader2, Plus, ScrollText, Users2 } from "lucide-react";
 
 interface StaffAccount {
   id: string;
@@ -33,6 +34,17 @@ interface StaffAccount {
   created_at: string;
 }
 
+interface AuditEvent {
+  id: string;
+  event_type: string;
+  actor_email: string | null;
+  detail: string | null;
+  created_at: string;
+  company?: { display_name: string } | null;
+  moa?: { id: string } | null;
+}
+
+// ── Managed accounts (superadmin) ────────────────────────────────────────────
 function InviteStaffDialog() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -128,22 +140,17 @@ function InviteStaffDialog() {
   );
 }
 
-export default function AccountsPage() {
-  const { account, isLoading, isSuperadmin } = useUniversityProfile();
-  const router = useRouter();
+function ManagedAccountsPanel() {
+  const { account } = useUniversityProfile();
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!isLoading && !isSuperadmin) router.replace("/university/dashboard");
-  }, [isLoading, isSuperadmin, router]);
-
-  const { data, isLoading: aLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["university-accounts"],
     queryFn: () =>
       preconfiguredAxios
         .get("/api/university/accounts")
         .then((r) => r.data as { accounts: StaffAccount[] }),
-    enabled: !!account && isSuperadmin,
+    enabled: !!account,
   });
 
   const invalidate = () =>
@@ -168,20 +175,14 @@ export default function AccountsPage() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  if (isLoading || !account || !isSuperadmin) return null;
-
   const staff = (data?.accounts ?? []).filter((a) => a.role === "staff");
 
   return (
-    <PageContainer className="space-y-6">
-      <PageHeader
-        title="Staff accounts"
-        description="Invite and manage staff who can review MOAs for your institution."
-      >
+    <div className="space-y-4">
+      <div className="flex justify-end">
         <InviteStaffDialog />
-      </PageHeader>
-
-      {aLoading ? (
+      </div>
+      {isLoading ? (
         <div className="space-y-2.5">
           <Skeleton className="h-20 w-full" />
           <Skeleton className="h-20 w-full" />
@@ -248,6 +249,106 @@ export default function AccountsPage() {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Activity log (formerly Audit) ────────────────────────────────────────────
+const EVENT_LABELS: Record<string, string> = {
+  request_received: "MOA request received",
+  moa_confirmed: "MOA confirmed",
+  moa_rejected: "MOA rejected",
+  partner_details_changed: "Partner details changed",
+  moa_revoked: "MOA revoked",
+  company_blacklisted: "Company blacklisted",
+  company_unblacklisted: "Company removed from blacklist",
+};
+
+const EVENT_TYPES: Record<string, BadgeProps["type"]> = {
+  request_received: "primary",
+  moa_confirmed: "supportive",
+  moa_rejected: "destructive",
+  partner_details_changed: "warning",
+  moa_revoked: "destructive",
+  company_blacklisted: "destructive",
+  company_unblacklisted: "default",
+};
+
+function ActivityLogPanel() {
+  const { account } = useUniversityProfile();
+  const { data, isLoading } = useQuery({
+    queryKey: ["university-audit"],
+    queryFn: () =>
+      preconfiguredAxios
+        .get("/api/university/audit?limit=100")
+        .then((r) => r.data as { logs: AuditEvent[] }),
+    enabled: !!account,
+  });
+
+  const events = data?.logs ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2.5">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-16 w-full" />
+      </div>
+    );
+  }
+  if (events.length === 0) {
+    return <EmptyState title="No activity yet" />;
+  }
+  return (
+    <div className="space-y-2.5">
+      {events.map((ev) => (
+        <Card key={ev.id} className="gap-1.5 px-5 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <Badge type={EVENT_TYPES[ev.event_type] ?? "default"}>
+              {EVENT_LABELS[ev.event_type] ?? ev.event_type}
+            </Badge>
+            <span className="text-muted-foreground text-xs">
+              {formatDateTime(ev.created_at)}
+            </span>
+          </div>
+          {ev.company && (
+            <p className="text-sm text-gray-800">{ev.company.display_name}</p>
+          )}
+          {ev.detail && (
+            <p className="text-muted-foreground text-xs">{ev.detail}</p>
+          )}
+          {ev.actor_email && (
+            <p className="text-muted-foreground text-xs">By {ev.actor_email}</p>
+          )}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export default function AccountsPage() {
+  const { account, isLoading, isSuperadmin } = useUniversityProfile();
+  const [tab, setTab] = useState("managed");
+
+  if (isLoading || !account) return null;
+
+  const tabs: SideTab[] = [
+    ...(isSuperadmin
+      ? [{ key: "managed", label: "Managed Accounts", icon: Users2 }]
+      : []),
+    { key: "activity", label: "Activity Log", icon: ScrollText },
+  ];
+  const active = tabs.some((t) => t.key === tab) ? tab : tabs[0].key;
+
+  return (
+    <PageContainer className="space-y-6">
+      <PageHeader
+        title="Accounts"
+        description="Manage staff accounts and review your institution's activity."
+      />
+      <SideTabs tabs={tabs} active={active} onChange={setTab}>
+        {active === "managed" && <ManagedAccountsPanel />}
+        {active === "activity" && <ActivityLogPanel />}
+      </SideTabs>
     </PageContainer>
   );
 }

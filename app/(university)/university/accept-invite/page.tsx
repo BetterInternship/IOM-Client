@@ -23,7 +23,7 @@ function AcceptInviteForm() {
         token,
         password,
       }),
-    onSuccess: () => router.replace("/university/dashboard"),
+    onSuccess: () => router.replace("/university/partners"),
     onError: (e: any) => setError(e.message),
   });
 

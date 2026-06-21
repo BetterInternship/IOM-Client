@@ -13,7 +13,7 @@ const connectOrigins = (() => {
 const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline' https://challenges.cloudflare.com;
-  frame-src 'self' https://challenges.cloudflare.com;
+  frame-src 'self' https://challenges.cloudflare.com https://storage.googleapis.com;
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   img-src 'self' blob: data: http://localhost:* ${connectOrigins} https://storage.googleapis.com;
   font-src 'self' https://fonts.gstatic.com;

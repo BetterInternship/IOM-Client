@@ -32,7 +32,6 @@ import {
 import {
   Building2,
   CheckCircle2,
-  ExternalLink,
   Eye,
   FileText,
   Info,
@@ -273,10 +272,10 @@ export default function CompanyProfilePage() {
           setOpenSection(v);
           cancelEdit();
         }}
-        className="divide-y divide-gray-200 overflow-hidden rounded-[0.33em] border border-gray-300 bg-white"
+        className="space-y-3"
       >
         {/* 1 — Company Profile (formerly Material Fields) */}
-        <AccordionItem value="company" className="border-b-0">
+        <AccordionItem value="company" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
           {sectionTrigger(Building2, "Company Profile")}
           <AccordionContent className="space-y-4 px-5 pb-5">
             {materialNote}
@@ -317,7 +316,7 @@ export default function CompanyProfilePage() {
         </AccordionItem>
 
         {/* 2 — Representative Details */}
-        <AccordionItem value="representative" className="border-b-0">
+        <AccordionItem value="representative" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
           {sectionTrigger(UserRound, "Representative Details")}
           <AccordionContent className="space-y-4 px-5 pb-5">
             {materialNote}
@@ -373,7 +372,7 @@ export default function CompanyProfilePage() {
         </AccordionItem>
 
         {/* 3 — Required Documents */}
-        <AccordionItem value="documents" className="border-b-0">
+        <AccordionItem value="documents" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
           {sectionTrigger(
             FileText,
             "Required Documents",
@@ -449,7 +448,7 @@ export default function CompanyProfilePage() {
         </AccordionItem>
 
         {/* 4 — Other Info */}
-        <AccordionItem value="other" className="border-b-0">
+        <AccordionItem value="other" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
           {sectionTrigger(Info, "Other Info")}
           <AccordionContent className="space-y-4 px-5 pb-5">
             {editControls("other", [
@@ -477,20 +476,11 @@ export default function CompanyProfilePage() {
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
             </div>
           ) : previewUrl ? (
-            <div className="space-y-2">
-              <iframe
-                src={previewUrl}
-                className="h-[70vh] w-full rounded-[0.33em] border border-gray-200"
-                title={previewName}
-              />
-              <div className="flex justify-end">
-                <Button asChild variant="ghost" size="sm">
-                  <a href={previewUrl} target="_blank" rel="noreferrer">
-                    Open in new tab <ExternalLink />
-                  </a>
-                </Button>
-              </div>
-            </div>
+            <iframe
+              src={previewUrl}
+              className="h-[70vh] w-full rounded-[0.33em] border border-gray-200"
+              title={previewName}
+            />
           ) : (
             <div className="text-muted-foreground flex h-[40vh] items-center justify-center text-sm">
               Couldn&apos;t load that document.

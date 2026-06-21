@@ -18,24 +18,18 @@ export function UniversityHeader() {
   if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
 
   const nav: NavItem[] = [
-    { href: "/university/dashboard", label: "Dashboard" },
-    { href: "/university/review-queue", label: "Review Queue" },
     { href: "/university/partners", label: "Partners" },
-    { href: "/university/blacklist", label: "Blacklist" },
-    { href: "/university/audit", label: "Audit" },
+    { href: "/university/accounts", label: "Accounts" },
     ...(isSuperadmin
-      ? [
-          { href: "/university/accounts", label: "Accounts" },
-          { href: "/university/templates", label: "Templates" },
-          { href: "/university/profile", label: "Profile" },
-        ]
+      ? [{ href: "/university/templates", label: "MOA Templates" }]
       : []),
+    { href: "/university/profile", label: "Profile" },
   ];
 
   return (
     <AppHeader
       portal="University"
-      homeHref="/university/dashboard"
+      homeHref="/university/partners"
       nav={nav}
       userPrimary={account?.display_name ?? account?.university.registered_name}
       userSecondary={account?.email}
