@@ -124,8 +124,8 @@ export default function CompanyDashboardPage() {
   return (
     <PageContainer className="space-y-8">
       <PageHeader
-        title={company.display_name}
-        description="Your memoranda of agreement with partner universities."
+        title="Active MOAs"
+        description="This is a list of your outstanding MOAs."
       >
         {canRequest && (
           <Button asChild>

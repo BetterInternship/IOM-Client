@@ -205,8 +205,8 @@ export default function UniversityDirectoryPage() {
   return (
     <PageContainer className="space-y-6">
       <PageHeader
-        title="Universities"
-        description="Partner institutions you can request a memorandum of agreement with."
+        title="Request MOA"
+        description="This is a list of universities you can request a MOA with."
       />
 
       {!profileComplete && (

@@ -42,7 +42,6 @@ interface AppHeaderProps {
  */
 export function AppHeader({
   portal,
-  homeHref,
   nav,
   userPrimary,
   userSecondary,
@@ -70,16 +69,7 @@ export function AppHeader({
   return (
     <header className="bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4 sm:px-6">
-        <Link
-          href={homeHref}
-          className="text-foreground flex flex-shrink-0 items-center gap-2"
-        >
-          <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            {portal}
-          </span>
-        </Link>
-
-        <nav className="ml-2 hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto md:flex [&::-webkit-scrollbar]:hidden">
+        <nav className="hidden min-w-0 flex-1 items-center gap-1 overflow-x-auto md:flex [&::-webkit-scrollbar]:hidden">
           {nav.map((item) => (
             <Link
               key={item.href}
@@ -97,7 +87,7 @@ export function AppHeader({
           ))}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex items-center gap-2">
           {nav.length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild className="md:hidden">
@@ -113,6 +103,15 @@ export function AppHeader({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+
+          {userPrimary && (
+            <>
+              <span className="text-muted-foreground hidden max-w-[180px] truncate text-sm sm:block">
+                {userPrimary}
+              </span>
+              <div className="bg-border hidden h-4 w-px flex-shrink-0 sm:block" />
+            </>
           )}
 
           {profileHref ? (

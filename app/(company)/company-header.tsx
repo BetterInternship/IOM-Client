@@ -23,8 +23,8 @@ export function CompanyHeader() {
       portal="Company"
       homeHref="/company/dashboard"
       nav={[
-        { href: "/company/dashboard", label: "Dashboard" },
-        { href: "/company/universities", label: "Universities" },
+        { href: "/company/dashboard", label: "Active MOAs" },
+        { href: "/company/universities", label: "Request MOA" },
         { href: "/company/profile", label: "Profile" },
       ]}
       userPrimary={company?.display_name ?? undefined}
