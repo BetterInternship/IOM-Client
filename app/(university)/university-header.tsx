@@ -19,7 +19,7 @@ export function UniversityHeader() {
 
   const nav: NavItem[] = [
     { href: "/partners", label: "Partners" },
-    { href: "/accounts", label: "Accounts" },
+    { href: "/accounts", label: isSuperadmin ? "Accounts" : "Activity Log" },
     ...(isSuperadmin
       ? [{ href: "/templates", label: "MOA Templates" }]
       : []),

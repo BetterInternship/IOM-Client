@@ -351,10 +351,20 @@ export default function AccountsPage() {
 
   if (isLoading || !account) return null;
 
+  if (!isSuperadmin) {
+    return (
+      <PageContainer className="space-y-6">
+        <PageHeader
+          title="Activity Log"
+          description="Review your institution's activity."
+        />
+        <ActivityLogPanel />
+      </PageContainer>
+    );
+  }
+
   const tabs: SideTab[] = [
-    ...(isSuperadmin
-      ? [{ key: "managed", label: "Managed Accounts", icon: Users2 }]
-      : []),
+    { key: "managed", label: "Managed Accounts", icon: Users2 },
     { key: "activity", label: "Activity Log", icon: ScrollText },
   ];
   const active = tabs.some((t) => t.key === tab) ? tab : tabs[0].key;
