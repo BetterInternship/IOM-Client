@@ -2,7 +2,12 @@
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/preconfig.axios";
+import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { AuthShell, FormError } from "@/components/auth-shell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 function AcceptInviteForm() {
   const router = useRouter();
@@ -13,35 +18,98 @@ function AcceptInviteForm() {
   const [error, setError] = useState("");
 
   const accept = useMutation({
-    mutationFn: () => preconfiguredAxios.post("/api/auth/university/accept-invite", { token, password }),
+    mutationFn: () =>
+      preconfiguredAxios.post("/api/auth/university/accept-invite", {
+        token,
+        password,
+      }),
     onSuccess: () => router.replace("/university/dashboard"),
     onError: (e: any) => setError(e.message),
   });
 
-  const submit = () => {
-    if (password !== confirm) { setError("Passwords do not match"); return; }
-    if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
+  if (!token) {
+    return (
+      <AuthShell portal="University" title="Invalid invitation">
+        <FormError>
+          This invitation link is invalid or has expired. Please ask your
+          administrator to resend it.
+        </FormError>
+      </AuthShell>
+    );
+  }
+
+  const mismatch = !!confirm && password !== confirm;
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+    if (mismatch) {
+      setError("Passwords do not match");
+      return;
+    }
+    setError("");
     accept.mutate();
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-lg shadow p-8 space-y-6">
-        <h1 className="text-2xl font-semibold">Set your password</h1>
-        <p className="text-sm text-gray-500">Choose a password to activate your university account.</p>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="space-y-4">
-          <input type="password" className="w-full border rounded px-3 py-2 text-sm" placeholder="New password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <input type="password" className="w-full border rounded px-3 py-2 text-sm" placeholder="Confirm password" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-          <button className="w-full bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50" onClick={submit} disabled={accept.isPending}>
-            {accept.isPending ? "Activating…" : "Activate account"}
-          </button>
+    <AuthShell
+      portal="University"
+      title="Activate your account"
+      description="Choose a password to finish setting up your university account."
+    >
+      <form onSubmit={submit} className="space-y-4">
+        <FormError>{error}</FormError>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="At least 8 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
         </div>
-      </div>
-    </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="confirm">Confirm password</Label>
+          <Input
+            id="confirm"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Re-enter your password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            required
+          />
+          {mismatch && (
+            <p className="text-destructive text-xs">Passwords do not match.</p>
+          )}
+        </div>
+
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full"
+          disabled={password.length < 8 || mismatch || accept.isPending}
+        >
+          {accept.isPending && <Loader2 className="animate-spin" />}
+          {accept.isPending ? "Activating…" : "Activate account"}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }
 
 export default function AcceptInvitePage() {
-  return <Suspense><AcceptInviteForm /></Suspense>;
+  return (
+    <Suspense>
+      <AcceptInviteForm />
+    </Suspense>
+  );
 }

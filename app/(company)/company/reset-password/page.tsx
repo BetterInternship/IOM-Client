@@ -1,8 +1,13 @@
 "use client";
 import { useState, Suspense } from "react";
-import { useMutation } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { AuthShell, FormError } from "@/components/auth-shell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 function CompanyResetPasswordForm() {
   const params = useSearchParams();
@@ -14,66 +19,110 @@ function CompanyResetPasswordForm() {
   const [error, setError] = useState("");
 
   const reset = useMutation({
-    mutationFn: () => preconfiguredAxios.post("/api/auth/company/reset", { token, password }),
-    onSuccess: () => { setDone(true); setError(""); },
+    mutationFn: () =>
+      preconfiguredAxios.post("/api/auth/company/reset", { token, password }),
+    onSuccess: () => {
+      setDone(true);
+      setError("");
+    },
     onError: (e: any) => setError(e.message),
   });
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-lg shadow p-8 text-sm text-red-600">Invalid reset link.</div>
-      </div>
+      <AuthShell portal="Company" title="Invalid reset link">
+        <FormError>
+          This password reset link is invalid or has expired. Please request a new
+          one.
+        </FormError>
+        <Button
+          className="mt-4 w-full"
+          size="lg"
+          variant="outline"
+          scheme="primary"
+          onClick={() => router.push("/company/forgot-password")}
+        >
+          Request a new link
+        </Button>
+      </AuthShell>
     );
   }
 
+  const mismatch = !!confirm && password !== confirm;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-lg shadow p-8 space-y-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Set new password</h1>
-        {done ? (
-          <>
-            <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded p-3">
-              Password reset successfully.
-            </p>
-            <button
-              className="w-full bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-blue-700"
-              onClick={() => router.push("/company/login")}
-            >
-              Go to login
-            </button>
-          </>
-        ) : (
-          <>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <input
+    <AuthShell
+      portal="Company"
+      title={done ? "Password updated" : "Set a new password"}
+      description={
+        done ? undefined : "Choose a strong password with at least 8 characters."
+      }
+    >
+      {done ? (
+        <div className="space-y-4">
+          <p className="text-muted-foreground text-sm">
+            Your password has been reset successfully.
+          </p>
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={() => router.push("/company/login")}
+          >
+            Go to sign in
+          </Button>
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError("");
+            reset.mutate();
+          }}
+          className="space-y-4"
+        >
+          <FormError>{error}</FormError>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="password">New password</Label>
+            <Input
+              id="password"
               type="password"
-              className="w-full border rounded px-3 py-2 text-sm"
-              placeholder="New password (min 8 characters)"
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
             />
-            <input
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="confirm">Confirm new password</Label>
+            <Input
+              id="confirm"
               type="password"
-              className="w-full border rounded px-3 py-2 text-sm"
-              placeholder="Confirm new password"
+              autoComplete="new-password"
+              placeholder="Re-enter your password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
+              required
             />
-            {confirm && password !== confirm && (
-              <p className="text-xs text-red-500">Passwords do not match.</p>
+            {mismatch && (
+              <p className="text-destructive text-xs">Passwords do not match.</p>
             )}
-            <button
-              className="w-full bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              onClick={() => reset.mutate()}
-              disabled={password.length < 8 || password !== confirm || reset.isPending}
-            >
-              {reset.isPending ? "Resetting…" : "Reset password"}
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+          </div>
+
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={password.length < 8 || mismatch || reset.isPending}
+          >
+            {reset.isPending && <Loader2 className="animate-spin" />}
+            {reset.isPending ? "Resetting…" : "Reset password"}
+          </Button>
+        </form>
+      )}
+    </AuthShell>
   );
 }
 

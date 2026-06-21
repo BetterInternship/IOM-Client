@@ -2,7 +2,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/preconfig.axios";
+import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { AuthShell, FormError } from "@/components/auth-shell";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -11,24 +16,64 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
 
   const login = useMutation({
-    mutationFn: () => preconfiguredAxios.post("/api/auth/admin/login", { email, password }),
+    mutationFn: () =>
+      preconfiguredAxios.post("/api/auth/admin/login", { email, password }),
     onSuccess: () => router.replace("/admin/universities"),
     onError: (e: any) => setError(e.message),
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded-lg shadow p-8 space-y-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Platform Admin</h1>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="space-y-4">
-          <input type="email" className="w-full border rounded px-3 py-2 text-sm" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input type="password" className="w-full border rounded px-3 py-2 text-sm" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <button className="w-full bg-blue-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50" onClick={() => login.mutate()} disabled={login.isPending}>
-            {login.isPending ? "Signing in…" : "Sign in"}
-          </button>
+    <AuthShell
+      portal="Platform Admin"
+      title="Admin sign in"
+      description="Restricted access for platform administrators."
+    >
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          setError("");
+          login.mutate();
+        }}
+        className="space-y-4"
+      >
+        <FormError>{error}</FormError>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="username"
+            placeholder="admin@betterinternship.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
-      </div>
-    </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full"
+          disabled={login.isPending || !email || !password}
+        >
+          {login.isPending && <Loader2 className="animate-spin" />}
+          {login.isPending ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
+    </AuthShell>
   );
 }
