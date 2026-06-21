@@ -74,7 +74,7 @@ export default function CompanyProfilePage() {
   const queryClient = useQueryClient();
   const sigRef = useRef<HTMLInputElement>(null);
 
-  const [openSection, setOpenSection] = useState<string>("company");
+  const [openSections, setOpenSections] = useState<string[]>(["company"]);
   const [editing, setEditing] = useState<SectionKey | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
 
@@ -265,17 +265,16 @@ export default function CompanyProfilePage() {
       />
 
       <Accordion
-        type="single"
-        collapsible
-        value={openSection}
+        type="multiple"
+        value={openSections}
         onValueChange={(v) => {
-          setOpenSection(v);
+          setOpenSections(v);
           cancelEdit();
         }}
-        className="space-y-3"
+        className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white"
       >
         {/* 1 — Company Profile (formerly Material Fields) */}
-        <AccordionItem value="company" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
+        <AccordionItem value="company" className="">
           {sectionTrigger(Building2, "Company Profile")}
           <AccordionContent className="space-y-4 px-5 pb-5">
             {materialNote}
@@ -316,7 +315,7 @@ export default function CompanyProfilePage() {
         </AccordionItem>
 
         {/* 2 — Representative Details */}
-        <AccordionItem value="representative" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
+        <AccordionItem value="representative" className="">
           {sectionTrigger(UserRound, "Representative Details")}
           <AccordionContent className="space-y-4 px-5 pb-5">
             {materialNote}
@@ -375,7 +374,7 @@ export default function CompanyProfilePage() {
         </AccordionItem>
 
         {/* 3 — Required Documents */}
-        <AccordionItem value="documents" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
+        <AccordionItem value="documents" className="">
           {sectionTrigger(
             FileText,
             "Required Documents",
@@ -451,7 +450,7 @@ export default function CompanyProfilePage() {
         </AccordionItem>
 
         {/* 4 — Other Info */}
-        <AccordionItem value="other" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
+        <AccordionItem value="other" className="">
           {sectionTrigger(Info, "Other Info")}
           <AccordionContent className="space-y-4 px-5 pb-5">
             {editControls("other", [

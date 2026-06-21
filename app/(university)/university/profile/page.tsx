@@ -43,7 +43,7 @@ export default function UniversityProfilePage() {
   const sigRef = useRef<HTMLInputElement>(null);
   const logoRef = useRef<HTMLInputElement>(null);
 
-  const [openSection, setOpenSection] = useState<string>("university");
+  const [openSections, setOpenSections] = useState<string[]>(["university"]);
   const [editing, setEditing] = useState<SectionKey | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
 
@@ -200,17 +200,16 @@ export default function UniversityProfilePage() {
       )}
 
       <Accordion
-        type="single"
-        collapsible
-        value={openSection}
+        type="multiple"
+        value={openSections}
         onValueChange={(v) => {
-          setOpenSection(v);
+          setOpenSections(v);
           cancelEdit();
         }}
-        className="space-y-3"
+        className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white"
       >
         {/* 1 — University Details */}
-        <AccordionItem value="university" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
+        <AccordionItem value="university" className="">
           {sectionTrigger(Building2, "University Details")}
           <AccordionContent className="space-y-4 px-5 pb-5">
             {editControls("university", ["registered_name", "address"])}
@@ -224,7 +223,7 @@ export default function UniversityProfilePage() {
         </AccordionItem>
 
         {/* 2 — Representative Details */}
-        <AccordionItem value="representative" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
+        <AccordionItem value="representative" className="">
           {sectionTrigger(UserRound, "Representative Details")}
           <AccordionContent className="space-y-4 px-5 pb-5">
             <p className="text-muted-foreground text-xs">
@@ -280,7 +279,7 @@ export default function UniversityProfilePage() {
         </AccordionItem>
 
         {/* 3 — Other Info (logo) */}
-        <AccordionItem value="other" className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white">
+        <AccordionItem value="other" className="">
           {sectionTrigger(ImageIcon, "Other Info")}
           <AccordionContent className="space-y-3 px-5 pb-5">
             <Label>Logo</Label>
