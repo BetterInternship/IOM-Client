@@ -124,21 +124,25 @@ export default function UniversityProfilePage() {
   const textField = (sectionKey: SectionKey, field: string, label: string) => {
     const isEditing = editing === sectionKey;
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={field}>{label}</Label>
-        {isEditing ? (
-          <Input
-            id={field}
-            value={draftVal(field)}
-            onChange={(e) => setField(field, e.target.value)}
-          />
-        ) : (
-          <p className="text-sm text-gray-800">
-            {persisted(field) || (
-              <span className="text-muted-foreground">Not set</span>
-            )}
-          </p>
-        )}
+      <div className="flex items-center gap-4">
+        <Label htmlFor={field} className="w-44 flex-shrink-0 truncate text-gray-400">
+          {label}
+        </Label>
+        <div className="min-w-0 flex-1">
+          {isEditing ? (
+            <Input
+              id={field}
+              value={draftVal(field)}
+              onChange={(e) => setField(field, e.target.value)}
+            />
+          ) : (
+            <p className="truncate text-sm font-medium text-gray-900">
+              {persisted(field) || (
+                <span className="text-muted-foreground font-normal">Not set</span>
+              )}
+            </p>
+          )}
+        </div>
       </div>
     );
   };
@@ -173,11 +177,16 @@ export default function UniversityProfilePage() {
     );
   };
 
-  const sectionTrigger = (Icon: typeof Building2, title: string) => (
-    <AccordionTrigger className="px-5 py-4 hover:no-underline">
+  const sectionTrigger = (
+    Icon: typeof Building2,
+    title: string,
+    badge?: React.ReactNode
+  ) => (
+    <AccordionTrigger className="cursor-pointer px-5 py-4 hover:no-underline">
       <span className="flex items-center gap-3 text-sm font-semibold text-gray-900">
         <Icon className="text-primary h-4 w-4" />
         {title}
+        {badge}
       </span>
     </AccordionTrigger>
   );
@@ -212,13 +221,13 @@ export default function UniversityProfilePage() {
         <AccordionItem value="university" className="">
           {sectionTrigger(Building2, "University Details")}
           <AccordionContent className="space-y-4 px-5 pb-5">
-            {editControls("university", ["registered_name", "address"])}
             {textField("university", "registered_name", "Registered name")}
             {textField(
               "university",
               "address",
               "Address (used as execution place in MOAs)"
             )}
+            {editControls("university", ["registered_name", "address"])}
           </AccordionContent>
         </AccordionItem>
 
@@ -227,26 +236,31 @@ export default function UniversityProfilePage() {
           {sectionTrigger(UserRound, "Representative Details")}
           <AccordionContent className="space-y-4 px-5 pb-5">
             <p className="text-muted-foreground text-xs">
-              The institution signatory that signs all offered MOA templates.
+              The representative&apos;s details will be used on all approved
+              MOAs.
             </p>
-            {editControls("representative", ["rep_name", "rep_title"])}
             {textField("representative", "rep_name", "Signatory name")}
             {textField("representative", "rep_title", "Signatory title")}
 
+            {editControls("representative", ["rep_name", "rep_title"])}
             <div className="space-y-2 border-t border-gray-100 pt-4">
-              <Label>Signature image</Label>
+              <Label className="text-gray-500">Signature image</Label>
               <p className="text-muted-foreground text-xs">
                 PNG only. A transparent background works best on the MOA.
               </p>
-              {uni?.rep_signature_url ? (
-                <p className="text-supportive flex items-center gap-1.5 text-xs">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Signature uploaded
-                </p>
-              ) : (
-                <p className="text-muted-foreground text-xs">
-                  No signature uploaded yet.
-                </p>
-              )}
+              <div className="flex items-center justify-center rounded-[0.33em] bg-gray-100 p-4">
+                {uni?.rep_signature_url ? (
+                  <img
+                    src={uni.rep_signature_url}
+                    alt="Signature"
+                    className="h-16 max-w-xs object-contain"
+                  />
+                ) : (
+                  <p className="text-muted-foreground text-xs">
+                    No signature uploaded
+                  </p>
+                )}
+              </div>
               <input
                 ref={sigRef}
                 type="file"
@@ -258,21 +272,23 @@ export default function UniversityProfilePage() {
                 }}
               />
               {isSuperadmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => sigRef.current?.click()}
-                  disabled={uploadSig.isPending}
-                >
-                  {uploadSig.isPending ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <Upload />
-                  )}
-                  {uni?.rep_signature_url
-                    ? "Replace signature"
-                    : "Upload signature"}
-                </Button>
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => sigRef.current?.click()}
+                    disabled={uploadSig.isPending}
+                  >
+                    {uploadSig.isPending ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Upload />
+                    )}
+                    {uni?.rep_signature_url
+                      ? "Replace signature"
+                      : "Upload signature"}
+                  </Button>
+                </div>
               )}
             </div>
           </AccordionContent>
@@ -280,7 +296,13 @@ export default function UniversityProfilePage() {
 
         {/* 3 — Other Info (logo) */}
         <AccordionItem value="other" className="">
-          {sectionTrigger(ImageIcon, "Other Info")}
+          {sectionTrigger(
+            ImageIcon,
+            "Other Info",
+            <span className="text-muted-foreground text-sm font-normal">
+              (Optional)
+            </span>
+          )}
           <AccordionContent className="space-y-3 px-5 pb-5">
             <Label>Logo</Label>
             {uni?.logo_url ? (
@@ -303,19 +325,21 @@ export default function UniversityProfilePage() {
               }}
             />
             {isSuperadmin && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => logoRef.current?.click()}
-                disabled={uploadLogo.isPending}
-              >
-                {uploadLogo.isPending ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Upload />
-                )}
-                {uni?.logo_url ? "Replace logo" : "Upload logo"}
-              </Button>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => logoRef.current?.click()}
+                  disabled={uploadLogo.isPending}
+                >
+                  {uploadLogo.isPending ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Upload />
+                  )}
+                  {uni?.logo_url ? "Replace logo" : "Upload logo"}
+                </Button>
+              </div>
             )}
           </AccordionContent>
         </AccordionItem>

@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/dialog";
 import {
   Building2,
-  CheckCircle2,
   Eye,
   FileText,
   Info,
@@ -188,22 +187,26 @@ export default function CompanyProfilePage() {
   ) => {
     const isEditing = editing === sectionKey;
     return (
-      <div className="space-y-1.5">
-        <Label htmlFor={field}>{label}</Label>
-        {isEditing ? (
-          <Input
-            id={field}
-            value={draftVal(field)}
-            onChange={(e) => setField(field, e.target.value)}
-          />
-        ) : (
-          <p className="text-sm text-gray-800">
-            {persisted(field) || (
-              <span className="text-muted-foreground">Not set</span>
-            )}
-          </p>
-        )}
-        {help && <p className="text-muted-foreground text-xs">{help}</p>}
+      <div className="flex items-center gap-4">
+        <Label htmlFor={field} className="w-44 flex-shrink-0 truncate text-gray-400">
+          {label}
+        </Label>
+        <div className="min-w-0 flex-1 space-y-1">
+          {isEditing ? (
+            <Input
+              id={field}
+              value={draftVal(field)}
+              onChange={(e) => setField(field, e.target.value)}
+            />
+          ) : (
+            <p className="truncate text-sm font-medium text-gray-900">
+              {persisted(field) || (
+                <span className="text-muted-foreground font-normal">Not set</span>
+              )}
+            </p>
+          )}
+          {help && <p className="text-muted-foreground text-xs">{help}</p>}
+        </div>
       </div>
     );
   };
@@ -241,7 +244,7 @@ export default function CompanyProfilePage() {
     title: string,
     badge?: React.ReactNode
   ) => (
-    <AccordionTrigger className="px-5 py-4 hover:no-underline">
+    <AccordionTrigger className="cursor-pointer px-5 py-4 hover:no-underline">
       <span className="flex items-center gap-3 text-sm font-semibold text-gray-900">
         <Icon className="text-primary h-4 w-4" />
         {title}
@@ -270,39 +273,41 @@ export default function CompanyProfilePage() {
         <AccordionItem value="company" className="">
           {sectionTrigger(Building2, "Company Profile")}
           <AccordionContent className="space-y-4 px-5 pb-5">
+            {textField("company", "registered_name", "Legal / registered name")}
+            {textField("company", "registered_address", "Registered address")}
+            <div className="flex items-center gap-4">
+              <Label className="w-44 flex-shrink-0 truncate text-gray-400">Company type</Label>
+              <div className="min-w-0 flex-1">
+                {editing === "company" ? (
+                  <Select
+                    value={draftVal("company_type") || undefined}
+                    onValueChange={(v) => setField("company_type", v)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMPANY_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="truncate text-sm font-medium text-gray-900">
+                    {COMPANY_TYPE_LABELS[persisted("company_type")] || (
+                      <span className="text-muted-foreground font-normal">Not set</span>
+                    )}
+                  </p>
+                )}
+              </div>
+            </div>
             {editControls("company", [
               "registered_name",
               "registered_address",
               "company_type",
             ])}
-            {textField("company", "registered_name", "Legal / registered name")}
-            {textField("company", "registered_address", "Registered address")}
-            <div className="space-y-1.5">
-              <Label>Company type</Label>
-              {editing === "company" ? (
-                <Select
-                  value={draftVal("company_type") || undefined}
-                  onValueChange={(v) => setField("company_type", v)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COMPANY_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <p className="text-sm text-gray-800">
-                  {COMPANY_TYPE_LABELS[persisted("company_type")] || (
-                    <span className="text-muted-foreground">Not set</span>
-                  )}
-                </p>
-              )}
-            </div>
           </AccordionContent>
         </AccordionItem>
 
@@ -310,31 +315,42 @@ export default function CompanyProfilePage() {
         <AccordionItem value="representative" className="">
           {sectionTrigger(UserRound, "Representative Details")}
           <AccordionContent className="space-y-4 px-5 pb-5">
-            {editControls("representative", ["rep_name", "rep_title"])}
-            {textField("representative", "rep_name", "Representative name")}
-            <div className="space-y-1.5">
-              <Label>Representative email</Label>
-              <p className="text-sm text-gray-800">{company.rep_email}</p>
-              <p className="text-muted-foreground text-xs">
-                Managed by the platform admin.
-              </p>
+            <p className="text-muted-foreground text-xs">
+              The representative&apos;s name and signature will be used on
+              requested MOAs.
+            </p>
+            <div className="flex items-center gap-4">
+              <Label className="w-44 flex-shrink-0 truncate text-gray-400">
+                Representative email
+              </Label>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-gray-900">
+                  {company.rep_email}
+                </p>
+              </div>
             </div>
+            {textField("representative", "rep_name", "Representative name")}
             {textField("representative", "rep_title", "Representative title")}
 
+            {editControls("representative", ["rep_name", "rep_title"])}
             <div className="space-y-2 border-t border-gray-100 pt-4">
-              <Label>Representative signature</Label>
+              <Label className="text-gray-500">Representative signature</Label>
               <p className="text-muted-foreground text-xs">
                 PNG only. A transparent background works best.
               </p>
-              {company.rep_signature_url ? (
-                <p className="text-supportive flex items-center gap-1.5 text-xs">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Signature uploaded
-                </p>
-              ) : (
-                <p className="text-muted-foreground text-xs">
-                  No signature uploaded yet.
-                </p>
-              )}
+              <div className="flex items-center justify-center rounded-[0.33em] bg-gray-100 p-4">
+                {company.rep_signature_url ? (
+                  <img
+                    src={company.rep_signature_url}
+                    alt="Signature"
+                    className="h-16 max-w-xs object-contain"
+                  />
+                ) : (
+                  <p className="text-muted-foreground text-xs">
+                    No signature uploaded
+                  </p>
+                )}
+              </div>
               <input
                 ref={sigRef}
                 type="file"
@@ -345,21 +361,23 @@ export default function CompanyProfilePage() {
                   if (f) uploadSig.mutate(f);
                 }}
               />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => sigRef.current?.click()}
-                disabled={uploadSig.isPending}
-              >
-                {uploadSig.isPending ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Upload />
-                )}
-                {company.rep_signature_url
-                  ? "Replace signature"
-                  : "Upload signature"}
-              </Button>
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => sigRef.current?.click()}
+                  disabled={uploadSig.isPending}
+                >
+                  {uploadSig.isPending ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Upload />
+                  )}
+                  {company.rep_signature_url
+                    ? "Replace signature"
+                    : "Upload signature"}
+                </Button>
+              </div>
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -442,18 +460,24 @@ export default function CompanyProfilePage() {
 
         {/* 4 — Other Info */}
         <AccordionItem value="other" className="">
-          {sectionTrigger(Info, "Other Info")}
+          {sectionTrigger(
+            Info,
+            "Other Info",
+            <span className="text-muted-foreground text-sm font-normal">
+              (Optional)
+            </span>
+          )}
           <AccordionContent className="space-y-4 px-5 pb-5">
+            {textField("other", "description", "Description")}
+            {textField("other", "website", "Website")}
+            {textField("other", "phone", "Phone")}
+            {textField("other", "industry", "Industry")}
             {editControls("other", [
               "description",
               "website",
               "phone",
               "industry",
             ])}
-            {textField("other", "description", "Description")}
-            {textField("other", "website", "Website")}
-            {textField("other", "phone", "Phone")}
-            {textField("other", "industry", "Industry")}
           </AccordionContent>
         </AccordionItem>
       </Accordion>

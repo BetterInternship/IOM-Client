@@ -9,8 +9,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
+
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -29,11 +28,6 @@ interface AppHeaderProps {
   userSecondary?: string;
   logoutPath: string;
   postLogoutPath: string;
-  /**
-   * When set, the avatar links directly to this profile page and a separate
-   * sign-out button is shown beside it (instead of the account dropdown).
-   */
-  profileHref?: string;
 }
 
 /**
@@ -41,13 +35,10 @@ interface AppHeaderProps {
  * header pattern: brand on the left, role nav, and a user menu with sign-out.
  */
 export function AppHeader({
-  portal,
   nav,
   userPrimary,
-  userSecondary,
   logoutPath,
   postLogoutPath,
-  profileHref,
 }: AppHeaderProps) {
   const pathname = usePathname() ?? "";
   const router = useRouter();
@@ -63,8 +54,6 @@ export function AppHeader({
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
-
-  const initials = (userPrimary || portal).trim().slice(0, 2).toUpperCase();
 
   return (
     <header className="bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
@@ -114,75 +103,21 @@ export function AppHeader({
             </>
           )}
 
-          {profileHref ? (
-            <>
-              <Link
-                href={profileHref}
-                title={userPrimary ?? "Profile"}
-                aria-label="Profile"
-                className="bg-primary/10 text-primary hover:bg-primary/15 flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold transition-colors focus:outline-none"
-              >
-                {initials}
-              </Link>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Sign out"
-                title="Sign out"
-                onClick={() => logout.mutate()}
-                disabled={logout.isPending}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                {logout.isPending ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <LogOut />
-                )}
-              </Button>
-            </>
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Account menu"
-                  className="bg-primary/10 text-primary hover:bg-primary/15 flex h-9 w-9 items-center justify-center rounded-full text-xs font-semibold transition-colors focus:outline-none"
-                >
-                  {initials}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-60">
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="truncate text-sm font-medium text-gray-900">
-                      {userPrimary ?? portal}
-                    </span>
-                    {userSecondary && (
-                      <span className="text-muted-foreground truncate text-xs">
-                        {userSecondary}
-                      </span>
-                    )}
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={(e) => {
-                    e.preventDefault();
-                    logout.mutate();
-                  }}
-                  disabled={logout.isPending}
-                  className="text-destructive focus:text-destructive"
-                >
-                  {logout.isPending ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <LogOut />
-                  )}
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            aria-label="Logout"
+            onClick={() => logout.mutate()}
+            disabled={logout.isPending}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            {logout.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <LogOut />
+            )}
+            Logout
+          </Button>
         </div>
       </div>
     </header>
