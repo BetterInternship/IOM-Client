@@ -236,7 +236,7 @@ export default function UniversityProfilePage() {
             <div className="space-y-2 border-t border-gray-100 pt-4">
               <Label>Signature image</Label>
               <p className="text-muted-foreground text-xs">
-                PNG only — a transparent background works best on the MOA.
+                PNG only. A transparent background works best on the MOA.
               </p>
               {uni?.rep_signature_url ? (
                 <p className="text-supportive flex items-center gap-1.5 text-xs">

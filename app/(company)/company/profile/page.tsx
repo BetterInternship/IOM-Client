@@ -250,13 +250,6 @@ export default function CompanyProfilePage() {
     </AccordionTrigger>
   );
 
-  const materialNote = (
-    <p className="text-warning flex items-center gap-1.5 text-xs">
-      <Info className="h-3.5 w-3.5" /> Editing these notifies your active MOA
-      partners.
-    </p>
-  );
-
   return (
     <PageContainer className="max-w-2xl space-y-6">
       <PageHeader
@@ -273,11 +266,10 @@ export default function CompanyProfilePage() {
         }}
         className="overflow-hidden rounded-[0.33em] border border-gray-300 bg-white"
       >
-        {/* 1 — Company Profile (formerly Material Fields) */}
+        {/* 1 — Company Profile */}
         <AccordionItem value="company" className="">
           {sectionTrigger(Building2, "Company Profile")}
           <AccordionContent className="space-y-4 px-5 pb-5">
-            {materialNote}
             {editControls("company", [
               "registered_name",
               "registered_address",
@@ -318,7 +310,6 @@ export default function CompanyProfilePage() {
         <AccordionItem value="representative" className="">
           {sectionTrigger(UserRound, "Representative Details")}
           <AccordionContent className="space-y-4 px-5 pb-5">
-            {materialNote}
             {editControls("representative", ["rep_name", "rep_title"])}
             {textField("representative", "rep_name", "Representative name")}
             <div className="space-y-1.5">
@@ -333,7 +324,7 @@ export default function CompanyProfilePage() {
             <div className="space-y-2 border-t border-gray-100 pt-4">
               <Label>Representative signature</Label>
               <p className="text-muted-foreground text-xs">
-                PNG only — a transparent background works best on the MOA.
+                PNG only. A transparent background works best.
               </p>
               {company.rep_signature_url ? (
                 <p className="text-supportive flex items-center gap-1.5 text-xs">
