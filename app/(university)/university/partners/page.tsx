@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
@@ -30,13 +30,22 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { formatDateWithoutTime } from "@/lib/utils";
-import { Ban, Building2, ChevronRight, ClipboardCheck, Loader2, Users2 } from "lucide-react";
+import { Ban, Building2, ChevronRight, ClipboardCheck, Loader2, Users2, XCircle } from "lucide-react";
 
 interface MoaSummary {
   id: string;
   created_at: string;
   effective_date: string;
   expiry_date: string;
+  company: { id: string; display_name: string; registered_name: string | null };
+  template: { name: string };
+}
+
+interface RejectedMoa {
+  id: string;
+  created_at: string;
+  reviewed_at: string | null;
+  rejection_reason: string | null;
   company: { id: string; display_name: string; registered_name: string | null };
   template: { name: string };
 }
@@ -60,6 +69,20 @@ interface BlacklistEntry {
   actor_email: string | null;
   company: { id: string; display_name: string; registered_name: string | null };
 }
+
+const HASH_TO_TAB: Record<string, string> = {
+  "#review-queue": "review",
+  "#active-partners": "active",
+  "#blacklist": "blacklist",
+  "#rejected": "rejected",
+};
+
+const TAB_TO_HASH: Record<string, string> = {
+  review: "#review-queue",
+  active: "#active-partners",
+  blacklist: "#blacklist",
+  rejected: "#rejected",
+};
 
 // ── Review queue ─────────────────────────────────────────────────────────────
 function ReviewQueuePanel() {
@@ -435,9 +458,93 @@ function BlacklistPanel() {
   );
 }
 
+// ── Rejected ─────────────────────────────────────────────────────────────────
+function RejectedPanel() {
+  const { account } = useUniversityProfile();
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["university-rejected-moas"],
+    queryFn: () =>
+      preconfiguredAxios
+        .get("/api/university/rejected-moas")
+        .then((r) => r.data as { moas: RejectedMoa[] }),
+    enabled: !!account,
+  });
+
+  const moas = data?.moas ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2.5">
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+    );
+  }
+  if (isError) {
+    return (
+      <EmptyState
+        title="Could not load rejected MOAs"
+        description="The server may need to be restarted. Check the developer console for details."
+      />
+    );
+  }
+  if (moas.length === 0) {
+    return (
+      <EmptyState
+        title="No rejected MOAs"
+        description="MOA requests rejected by your institution will appear here."
+      />
+    );
+  }
+  return (
+    <div className="space-y-2.5">
+      {moas.map((moa) => (
+        <Link key={moa.id} href={`/university/moas/${moa.id}`} className="block">
+          <Card className="flex-row items-start justify-between gap-3 px-5 py-4 transition-colors hover:bg-gray-50">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-900">
+                {moa.company.display_name}
+                {moa.company.registered_name &&
+                  moa.company.registered_name !== moa.company.display_name && (
+                    <span className="text-muted-foreground ml-1 font-normal">
+                      ({moa.company.registered_name})
+                    </span>
+                  )}
+              </p>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {moa.template.name} &middot; rejected{" "}
+                {formatDateWithoutTime(moa.reviewed_at ?? moa.created_at)}
+              </p>
+              {moa.rejection_reason && (
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Reason: {moa.rejection_reason}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-shrink-0 items-center gap-3">
+              <Badge type="destructive">Rejected</Badge>
+              <ChevronRight className="text-muted-foreground h-4 w-4" />
+            </div>
+          </Card>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 export default function PartnersPage() {
   const { account, isLoading } = useUniversityProfile();
   const [tab, setTab] = useState("review");
+
+  useEffect(() => {
+    const matched = HASH_TO_TAB[window.location.hash];
+    if (matched) setTab(matched);
+  }, []);
+
+  const handleTabChange = (newTab: string) => {
+    setTab(newTab);
+    window.history.replaceState(null, "", TAB_TO_HASH[newTab] ?? "");
+  };
 
   const { data: queueData } = useQuery({
     queryKey: ["university-review-queue"],
@@ -465,6 +572,7 @@ export default function PartnersPage() {
     },
     { key: "active", label: "Active Partners", icon: Users2 },
     { key: "blacklist", label: "Blacklist", icon: Ban },
+    { key: "rejected", label: "Rejected", icon: XCircle },
   ];
 
   return (
@@ -473,10 +581,11 @@ export default function PartnersPage() {
         title="Partners"
         description="Review requests, manage active partners, and control your blacklist."
       />
-      <SideTabs tabs={tabs} active={tab} onChange={setTab}>
+      <SideTabs tabs={tabs} active={tab} onChange={handleTabChange}>
         {tab === "review" && <ReviewQueuePanel />}
         {tab === "active" && <ActivePartnersPanel />}
         {tab === "blacklist" && <BlacklistPanel />}
+        {tab === "rejected" && <RejectedPanel />}
       </SideTabs>
     </PageContainer>
   );

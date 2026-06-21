@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
@@ -325,9 +325,29 @@ function ActivityLogPanel() {
   );
 }
 
+const HASH_TO_TAB: Record<string, string> = {
+  "#managed-accounts": "managed",
+  "#activity-log": "activity",
+};
+
+const TAB_TO_HASH: Record<string, string> = {
+  managed: "#managed-accounts",
+  activity: "#activity-log",
+};
+
 export default function AccountsPage() {
   const { account, isLoading, isSuperadmin } = useUniversityProfile();
   const [tab, setTab] = useState("managed");
+
+  useEffect(() => {
+    const matched = HASH_TO_TAB[window.location.hash];
+    if (matched) setTab(matched);
+  }, []);
+
+  const handleTabChange = (newTab: string) => {
+    setTab(newTab);
+    window.history.replaceState(null, "", TAB_TO_HASH[newTab] ?? "");
+  };
 
   if (isLoading || !account) return null;
 
@@ -345,7 +365,7 @@ export default function AccountsPage() {
         title="Accounts"
         description="Manage staff accounts and review your institution's activity."
       />
-      <SideTabs tabs={tabs} active={active} onChange={setTab}>
+      <SideTabs tabs={tabs} active={active} onChange={handleTabChange}>
         {active === "managed" && <ManagedAccountsPanel />}
         {active === "activity" && <ActivityLogPanel />}
       </SideTabs>

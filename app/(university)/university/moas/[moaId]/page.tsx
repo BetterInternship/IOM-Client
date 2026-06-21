@@ -33,8 +33,6 @@ import { formatDateWithoutTime } from "@/lib/utils";
 import {
   ArrowLeft,
   Check,
-  ExternalLink,
-  FileText,
   Loader2,
   X,
 } from "lucide-react";
@@ -155,13 +153,13 @@ export default function UniversityMoaDetailPage() {
   return (
     <PageContainer className="max-w-3xl space-y-6">
       <Link
-        href="/partners"
+        href="/partners#active-partners"
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
       >
-        <ArrowLeft className="h-4 w-4" /> Partners
+        <ArrowLeft className="h-4 w-4" /> Active Partners
       </Link>
 
-      <Card>
+      <Card className="overflow-hidden">
         <CardContent className="space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -271,29 +269,16 @@ export default function UniversityMoaDetailPage() {
             </div>
           )}
         </CardContent>
-      </Card>
-
-      {pdfUrl ? (
-        <Card className="overflow-hidden p-0">
-          <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
-            <p className="flex items-center gap-2 text-sm font-medium text-gray-700">
-              <FileText className="text-muted-foreground h-4 w-4" /> MOA document
-            </p>
-            <Button asChild variant="ghost" size="sm">
-              <a href={pdfUrl} target="_blank" rel="noreferrer">
-                Open <ExternalLink />
-              </a>
-            </Button>
+        {pdfUrl ? (
+          <div className="border-t border-gray-100">
+            <iframe src={`${pdfUrl}#navpanes=0`} className="aspect-[210/297] w-full" title="MOA PDF" />
           </div>
-          <iframe src={pdfUrl} className="h-[70vh] w-full" title="MOA PDF" />
-        </Card>
-      ) : (
-        <Card>
-          <CardContent className="text-muted-foreground py-10 text-center text-sm">
+        ) : (
+          <div className="border-t border-gray-100 px-6 py-10 text-center text-sm text-muted-foreground">
             PDF not available.
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
+      </Card>
 
       {/* Reject dialog */}
       <Dialog
