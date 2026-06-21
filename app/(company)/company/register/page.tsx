@@ -174,8 +174,12 @@ export default function CompanyRegisterPage() {
           <Input
             id="tin"
             inputMode="numeric"
-            placeholder="000-000-000-000"
-            {...field("tin")}
+            placeholder="123456789"
+            maxLength={9}
+            value={form.tin}
+            onChange={(e) =>
+              setForm({ ...form, tin: e.target.value.replace(/\D/g, "").slice(0, 9) })
+            }
             required
           />
         </div>
@@ -185,7 +189,11 @@ export default function CompanyRegisterPage() {
           <Input
             id="legalIdentifier"
             placeholder="ACME CORPORATION, INC."
-            {...field("legalIdentifier")}
+            className="uppercase"
+            value={form.legalIdentifier}
+            onChange={(e) =>
+              setForm({ ...form, legalIdentifier: e.target.value.toUpperCase() })
+            }
             required
           />
           <p className="text-muted-foreground text-xs">
@@ -197,8 +205,12 @@ export default function CompanyRegisterPage() {
           <Label htmlFor="displayName">Display name</Label>
           <Input
             id="displayName"
-            placeholder="Acme Corp"
-            {...field("displayName")}
+            placeholder="ACME CORP"
+            className="uppercase"
+            value={form.displayName}
+            onChange={(e) =>
+              setForm({ ...form, displayName: e.target.value.toUpperCase() })
+            }
           />
           <p className="text-muted-foreground text-xs">
             Shown across the platform. Defaults to your registered name.

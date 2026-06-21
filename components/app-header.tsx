@@ -69,18 +69,12 @@ export function AppHeader({
 
   return (
     <header className="bg-background/80 sticky top-0 z-40 border-b backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4 sm:px-6">
         <Link
           href={homeHref}
           className="text-foreground flex flex-shrink-0 items-center gap-2"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/betterinternship-logo.png"
-            alt="BetterInternship"
-            className="h-6 w-auto"
-          />
-          <span className="text-muted-foreground hidden text-xs font-medium tracking-wide uppercase sm:inline">
+          <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             {portal}
           </span>
         </Link>

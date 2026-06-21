@@ -52,9 +52,10 @@ export default function CompanyLoginPage() {
             id="tin"
             inputMode="numeric"
             autoComplete="username"
-            placeholder="000-000-000-000"
+            placeholder="123456789"
+            maxLength={9}
             value={tin}
-            onChange={(e) => setTin(e.target.value)}
+            onChange={(e) => setTin(e.target.value.replace(/\D/g, "").slice(0, 9))}
             required
           />
         </div>
