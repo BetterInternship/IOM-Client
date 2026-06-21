@@ -130,8 +130,8 @@ export default function UniversityTemplatesPage() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pending?.next
-                ? `Companies will be able to request MOAs using "${pending.offer.template.name}".`
-                : `Companies will no longer be able to request new MOAs using "${pending.offer.template.name}". Existing active MOAs are unaffected.`}
+                ? `Companies will be able to request MOAs using "${pending?.offer?.template?.name}".`
+                : `Companies will no longer be able to request new MOAs using "${pending?.offer?.template?.name}". Existing active MOAs are unaffected.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

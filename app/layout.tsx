@@ -6,6 +6,7 @@ import { SonnerToaster } from "@/components/sonner-toaster";
 export const metadata: Metadata = {
   title: "Institutional MOA Platform",
   description: "MOA management between companies and universities",
+  icons: { icon: "/BetterInternshipLogo.ico" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

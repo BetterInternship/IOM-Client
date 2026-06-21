@@ -149,78 +149,11 @@ function ReviewQueuePanel() {
 // ── Active partners ──────────────────────────────────────────────────────────
 function ActivePartnersPanel() {
   const { account } = useUniversityProfile();
-  const { data, isLoading } = useQuery({
-    queryKey: ["university-partners"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/partners")
-        .then((r) => r.data as { partners: Partner[] }),
-    enabled: !!account,
-  });
-
-  const partners = data?.partners ?? [];
-
-  if (isLoading) {
-    return (
-      <div className="space-y-2.5">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
-      </div>
-    );
-  }
-  if (partners.length === 0) {
-    return (
-      <EmptyState
-        title="No active partners yet"
-        description="Confirmed MOAs will list the partner company here."
-      />
-    );
-  }
-  return (
-    <div className="space-y-2.5">
-      {partners.map(({ company, latestMoaId, detailsChanged }) => (
-        <Link key={company.id} href={`/university/moas/${latestMoaId}`} className="block">
-          <Card className="flex-row items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-gray-50">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="bg-muted text-muted-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[0.33em]">
-                <Building2 className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-medium text-gray-900">
-                    {company.display_name}
-                  </p>
-                  {detailsChanged && (
-                    <Badge type="warning" strength="medium">
-                      Details changed
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                  {company.registered_name}
-                  {company.company_type &&
-                    ` · ${company.company_type.replace(/_/g, " ")}`}
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="text-muted-foreground h-4 w-4 flex-shrink-0" />
-          </Card>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-// ── Blacklist ────────────────────────────────────────────────────────────────
-function BlacklistPanel() {
-  const { account } = useUniversityProfile();
   const queryClient = useQueryClient();
   const [blacklistTarget, setBlacklistTarget] = useState<Partner | null>(null);
   const [reason, setReason] = useState("");
-  const [unblacklistTarget, setUnblacklistTarget] =
-    useState<BlacklistEntry | null>(null);
 
-  const { data: partnersData } = useQuery({
+  const { data: partnersData, isLoading } = useQuery({
     queryKey: ["university-partners"],
     queryFn: () =>
       preconfiguredAxios
@@ -229,7 +162,7 @@ function BlacklistPanel() {
     enabled: !!account,
   });
 
-  const { data: blacklistData, isLoading: blLoading } = useQuery({
+  const { data: blacklistData } = useQuery({
     queryKey: ["university-blacklist"],
     queryFn: () =>
       preconfiguredAxios
@@ -258,112 +191,73 @@ function BlacklistPanel() {
     },
   });
 
-  const unblacklistMutation = useMutation({
-    mutationFn: (companyId: string) =>
-      preconfiguredAxios.delete(`/api/university/blacklist/${companyId}`),
-    onSuccess: () => {
-      refresh();
-      setUnblacklistTarget(null);
-    },
-  });
-
-  const partners = partnersData?.partners ?? [];
-  const blacklist = blacklistData?.blacklist ?? [];
-  const blacklistedIds = new Set(blacklist.map((b) => b.company_id));
-  const eligiblePartners = partners.filter(
+  const blacklistedIds = new Set((blacklistData?.blacklist ?? []).map((b) => b.company_id));
+  const partners = (partnersData?.partners ?? []).filter(
     (p) => !blacklistedIds.has(p.company.id)
   );
 
+  if (isLoading) {
+    return (
+      <div className="space-y-2.5">
+        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full" />
+      </div>
+    );
+  }
+  if (partners.length === 0) {
+    return (
+      <EmptyState
+        title="No active partners yet"
+        description="Confirmed MOAs will list the partner company here."
+      />
+    );
+  }
   return (
-    <div className="space-y-8">
-      {eligiblePartners.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-            Current partners
-          </h2>
-          <div className="space-y-2.5">
-            {eligiblePartners.map(({ company }) => (
-              <Card
-                key={company.id}
-                className="flex-row items-center justify-between gap-4 px-5 py-4"
-              >
-                <div className="min-w-0">
+    <>
+      <div className="space-y-2.5">
+        {partners.map(({ company, latestMoaId, detailsChanged }) => (
+          <Card
+            key={company.id}
+            className="flex-row items-center justify-between gap-3 px-5 py-4"
+          >
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span className="bg-muted text-muted-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[0.33em]">
+                <Building2 className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
                   <p className="truncate text-sm font-medium text-gray-900">
                     {company.display_name}
                   </p>
-                  {company.registered_name && (
-                    <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                      {company.registered_name}
-                    </p>
+                  {detailsChanged && (
+                    <Badge type="warning" strength="medium">
+                      Details changed
+                    </Badge>
                   )}
                 </div>
-                <Button
-                  variant="outline"
-                  scheme="destructive"
-                  size="sm"
-                  className="flex-shrink-0"
-                  onClick={() =>
-                    setBlacklistTarget({
-                      company,
-                      latestMoaId: "",
-                      detailsChanged: false,
-                    })
-                  }
-                >
-                  Blacklist
-                </Button>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {blLoading && <Skeleton className="h-20 w-full" />}
-
-      {!blLoading && blacklist.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
-            Blacklisted ({blacklist.length})
-          </h2>
-          <div className="space-y-2.5">
-            {blacklist.map((entry) => (
-              <Card
-                key={entry.id}
-                className="border-destructive/20 bg-destructive/5 flex-row items-start justify-between gap-4 px-5 py-4"
+                <p className="text-muted-foreground mt-0.5 truncate text-xs">
+                  {company.registered_name}
+                  {company.company_type &&
+                    ` · ${company.company_type.replace(/_/g, " ")}`}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/university/moas/${latestMoaId}`}>View</Link>
+              </Button>
+              <Button
+                variant="outline"
+                scheme="destructive"
+                size="sm"
+                onClick={() => setBlacklistTarget({ company, latestMoaId, detailsChanged })}
               >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-gray-900">
-                    {entry.company.display_name}
-                  </p>
-                  {entry.reason && (
-                    <p className="text-muted-foreground mt-0.5 text-xs">
-                      Reason: {entry.reason}
-                    </p>
-                  )}
-                  {entry.actor_email && (
-                    <p className="text-muted-foreground mt-0.5 text-xs">
-                      By {entry.actor_email} &middot;{" "}
-                      {formatDateWithoutTime(entry.created_at)}
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-shrink-0"
-                  onClick={() => setUnblacklistTarget(entry)}
-                >
-                  Un-blacklist
-                </Button>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {!blLoading && blacklist.length === 0 && eligiblePartners.length === 0 && (
-        <EmptyState title="No companies to manage here yet" />
-      )}
+                Blacklist
+              </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
 
       <Dialog
         open={!!blacklistTarget}
@@ -426,6 +320,90 @@ function BlacklistPanel() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+}
+
+// ── Blacklist ────────────────────────────────────────────────────────────────
+function BlacklistPanel() {
+  const { account } = useUniversityProfile();
+  const queryClient = useQueryClient();
+  const [unblacklistTarget, setUnblacklistTarget] =
+    useState<BlacklistEntry | null>(null);
+
+  const { data: blacklistData, isLoading } = useQuery({
+    queryKey: ["university-blacklist"],
+    queryFn: () =>
+      preconfiguredAxios
+        .get("/api/university/blacklist")
+        .then((r) => r.data as { blacklist: BlacklistEntry[] }),
+    enabled: !!account,
+  });
+
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["university-partners"] });
+    queryClient.invalidateQueries({ queryKey: ["university-blacklist"] });
+    queryClient.invalidateQueries({ queryKey: ["university-review-queue"] });
+    queryClient.invalidateQueries({ queryKey: ["university-audit"] });
+  };
+
+  const unblacklistMutation = useMutation({
+    mutationFn: (companyId: string) =>
+      preconfiguredAxios.delete(`/api/university/blacklist/${companyId}`),
+    onSuccess: () => {
+      refresh();
+      setUnblacklistTarget(null);
+    },
+  });
+
+  const blacklist = blacklistData?.blacklist ?? [];
+
+  if (isLoading) return <Skeleton className="h-20 w-full" />;
+
+  if (blacklist.length === 0) {
+    return (
+      <EmptyState
+        title="No blacklisted companies"
+        description="Companies you blacklist will appear here."
+      />
+    );
+  }
+
+  return (
+    <>
+      <div className="space-y-2.5">
+        {blacklist.map((entry) => (
+          <Card
+            key={entry.id}
+            className="border-destructive/20 bg-destructive/5 flex-row items-start justify-between gap-4 px-5 py-4"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-gray-900">
+                {entry.company.display_name}
+              </p>
+              {entry.reason && (
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  Reason: {entry.reason}
+                </p>
+              )}
+              {entry.actor_email && (
+                <p className="text-muted-foreground mt-0.5 text-xs">
+                  By {entry.actor_email} &middot;{" "}
+                  {formatDateWithoutTime(entry.created_at)}
+                </p>
+              )}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-shrink-0"
+              onClick={() => setUnblacklistTarget(entry)}
+            >
+              Un-blacklist
+            </Button>
+          </Card>
+        ))}
+      </div>
 
       <AlertDialog
         open={!!unblacklistTarget}
@@ -454,7 +432,7 @@ function BlacklistPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
 

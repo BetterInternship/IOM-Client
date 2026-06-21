@@ -64,6 +64,11 @@ const buttonVariants = cva(
         scheme: "destructive",
         class: "bg-background border border-destructive text-destructive hover:bg-red-50",
       },
+      {
+        variant: "ghost",
+        scheme: "destructive",
+        class: "bg-transparent text-destructive hover:bg-red-50 hover:text-destructive",
+      },
     ],
     defaultVariants: {
       variant: "default",
