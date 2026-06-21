@@ -149,7 +149,7 @@ export default function UniversityMoaDetailPage() {
   ) : moa.status === "rejected" ? (
     <Badge type="destructive">Rejected</Badge>
   ) : moa.reviewed_at ? (
-    <Badge type="supportive">Confirmed</Badge>
+    <Badge type="supportive">Active</Badge>
   ) : null;
 
   return (
@@ -166,14 +166,12 @@ export default function UniversityMoaDetailPage() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold text-gray-900">
-                {company.display_name}
+                {company.registered_name}
+                <span className="font-normal text-muted-foreground">
+                  {" "}&ndash;{" "}({moa.template?.name})
+                </span>
               </h1>
-              <p className="text-muted-foreground mt-1 text-sm">
-                {company.registered_name && `${company.registered_name} · `}
-                {moa.template?.name}
-              </p>
               <p className="text-muted-foreground mt-0.5 text-xs">
-                Requested {formatDateWithoutTime(moa.created_at)} &middot;{" "}
                 {formatDateWithoutTime(moa.effective_date)} &ndash;{" "}
                 {formatDateWithoutTime(moa.expiry_date)}
               </p>
