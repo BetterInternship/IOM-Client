@@ -203,7 +203,7 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
       toast.success(mode === "new" ? "Template created" : "Template saved");
       router.push("/admin/templates");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const ready = !!pdfDoc && !!dims;

@@ -20,7 +20,7 @@ export default function UniversityLoginPage() {
     mutationFn: () =>
       preconfiguredAxios.post("/api/auth/university/login", { email, password }),
     onSuccess: () => router.replace("/university/partners"),
-    onError: (e: any) => setError(e.message),
+    onError: (e: Error) => setError(e.message),
   });
 
   return (

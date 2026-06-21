@@ -25,7 +25,7 @@ function UniversityResetPasswordForm() {
       setDone(true);
       setError("");
     },
-    onError: (e: any) => setError(e.message),
+    onError: (e: Error) => setError(e.message),
   });
 
   if (!token) {

@@ -4,11 +4,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { SonnerToaster } from "@/components/sonner-toaster";
 
 export const metadata: Metadata = {
-  title: "BetterInternship IOM",
+  title: "Institutional MOA Platform",
   description: "MOA management between companies and universities",
-  icons: {
-    icon: [{ url: "/BetterInternshipLogo.ico", sizes: "any" }],
-  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -66,7 +66,7 @@ function InviteStaffDialog() {
       setError("");
       setOpen(false);
     },
-    onError: (e: any) => setError(e.message),
+    onError: (e: Error) => setError(e.message),
   });
 
   return (
@@ -160,19 +160,19 @@ function ManagedAccountsPanel() {
     mutationFn: (id: string) =>
       preconfiguredAxios.patch(`/api/university/accounts/${id}/deactivate`),
     onSuccess: invalidate,
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
   const reactivate = useMutation({
     mutationFn: (id: string) =>
       preconfiguredAxios.patch(`/api/university/accounts/${id}/reactivate`),
     onSuccess: invalidate,
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
   const resendInvite = useMutation({
     mutationFn: (id: string) =>
       preconfiguredAxios.post(`/api/university/accounts/${id}/resend-invite`),
     onSuccess: () => toast.success("Invitation resent"),
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const staff = (data?.accounts ?? []).filter((a) => a.role === "staff");

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCompanyProfile } from "@/app/providers/company-profile.provider";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { preconfiguredAxios, type ApiError } from "@/app/api/preconfig.axios";
 import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -66,10 +66,11 @@ function RequestDialog({
       onClose();
       router.push(`/company/moas/${res.moa.id}`);
     },
-    onError: (e: any) => {
-      const code = e?.response?.data?.code || "";
+    onError: (e: Error) => {
+      const err = e as ApiError;
+      const code = err.response?.data?.code || "";
       if (code === "AT_ACTIVE_MOA_CAP") {
-        const limit = e?.response?.data?.data?.limit ?? "the maximum";
+        const limit = err.response?.data?.data?.limit ?? "the maximum";
         setError(
           `You have reached the maximum of ${limit} active MOAs with this university.`
         );

@@ -39,10 +39,31 @@ import {
   X,
 } from "lucide-react";
 
+interface MoaCompany {
+  display_name: string;
+  registered_name: string | null;
+  [key: string]: string | null;
+}
+
+interface MoaRecord {
+  company: MoaCompany;
+  template: { name: string } | null;
+  status: string;
+  reviewed_at: string | null;
+  created_at: string;
+  effective_date: string;
+  expiry_date: string;
+}
+
+interface MoaHistoryEntry {
+  id: string;
+  created_at: string;
+}
+
 interface MoaDetail {
-  moa: any;
-  snapshot: any;
-  history: any[];
+  moa: MoaRecord;
+  snapshot: { snapshot_json: Record<string, string | null> | null } | null;
+  history: MoaHistoryEntry[];
   detailsChanged: boolean;
   pdfUrl: string | null;
 }
@@ -121,7 +142,7 @@ export default function UniversityMoaDetailPage() {
   const { moa, snapshot, history, detailsChanged, pdfUrl } = data;
   const company = moa.company;
   const isPendingReview = moa.status === "active" && !moa.reviewed_at;
-  const snapshotJson = snapshot?.snapshot_json ?? {};
+  const snapshotJson: Record<string, string | null> = snapshot?.snapshot_json ?? {};
 
   const statusBadge = isPendingReview ? (
     <Badge type="warning">Pending review</Badge>
@@ -174,8 +195,8 @@ export default function UniversityMoaDetailPage() {
               </p>
               <div className="space-y-2">
                 {Object.entries(FIELD_LABELS).map(([key, label]) => {
-                  const atRequest = (snapshotJson as any)?.[key];
-                  const current = (company as any)?.[key];
+                  const atRequest = snapshotJson[key];
+                  const current = company[key];
                   if (atRequest === current) return null;
                   return (
                     <div
@@ -201,7 +222,7 @@ export default function UniversityMoaDetailPage() {
                 {history.length !== 1 ? "s" : ""} since request)
               </summary>
               <div className="space-y-2 border-t border-gray-100 p-4">
-                {history.map((h: any) => (
+                {history.map((h) => (
                   <p key={h.id} className="text-muted-foreground text-xs">
                     <span className="text-gray-400">
                       {formatDateWithoutTime(h.created_at)} —

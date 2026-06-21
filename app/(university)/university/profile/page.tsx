@@ -27,6 +27,16 @@ import {
 
 type SectionKey = "university" | "representative";
 
+interface UniversityProfile {
+  registered_name: string | null;
+  address: string | null;
+  rep_name: string | null;
+  rep_title: string | null;
+  rep_signature_url: string | null;
+  logo_url: string | null;
+  [key: string]: string | null;
+}
+
 export default function UniversityProfilePage() {
   const { account, isLoading, isSuperadmin } = useUniversityProfile();
   const queryClient = useQueryClient();
@@ -42,7 +52,7 @@ export default function UniversityProfilePage() {
     queryFn: () =>
       preconfiguredAxios
         .get("/api/university/profile")
-        .then((r) => r.data as { university: any }),
+        .then((r) => r.data as { university: UniversityProfile }),
     enabled: !!account,
   });
 
@@ -56,7 +66,7 @@ export default function UniversityProfilePage() {
       toast.success("Profile saved");
       cancelEdit();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const uploadLogo = useMutation({
@@ -69,7 +79,7 @@ export default function UniversityProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["university-profile"] });
       toast.success("Logo uploaded");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const uploadSig = useMutation({
@@ -82,7 +92,7 @@ export default function UniversityProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["university-profile"] });
       toast.success("Signature uploaded");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   if (isLoading || !account) return null;

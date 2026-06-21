@@ -54,7 +54,7 @@ export default function UniversityTemplatesPage() {
       }),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["university-templates"] }),
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   if (isLoading || !account || !isSuperadmin) return null;

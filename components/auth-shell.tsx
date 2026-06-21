@@ -26,19 +26,13 @@ export function AuthShell({
   return (
     <div className="bg-muted/40 flex min-h-screen flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/betterinternship-logo.png"
-            alt="BetterInternship"
-            className="h-8 w-auto"
-          />
-          {portal && (
+        {portal && (
+          <div className="mb-6 flex flex-col items-center gap-3 text-center">
             <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-              {portal} &middot; IOM Portal
+              {portal === "Platform Admin" ? `${portal} · ` : ""}Institutional MOA Platform
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         <div
           className={cn(

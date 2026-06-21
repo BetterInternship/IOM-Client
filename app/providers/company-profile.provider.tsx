@@ -15,7 +15,7 @@ interface CompanyProfile {
   rep_name: string | null;
   rep_title: string | null;
   rep_signature_url: string | null;
-  cosmetic: Record<string, any>;
+  cosmetic: Record<string, unknown>;
   is_deactivated: boolean | null;
 }
 

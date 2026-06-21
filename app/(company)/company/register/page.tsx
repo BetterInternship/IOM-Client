@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { preconfiguredAxios, type ApiError } from "@/app/api/preconfig.axios";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,9 +50,10 @@ export default function CompanyRegisterPage() {
       setError("");
       setTinTakenEmail("");
     },
-    onError: (e: any) => {
-      if (e?.code === "TIN_TAKEN") {
-        setTinTakenEmail(e.censoredEmail ?? "");
+    onError: (e: Error) => {
+      const err = e as ApiError;
+      if (err.code === "TIN_TAKEN") {
+        setTinTakenEmail(err.censoredEmail ?? "");
         setError("");
       } else {
         setError(e.message);
@@ -68,7 +69,7 @@ export default function CompanyRegisterPage() {
         code,
       }),
     onSuccess: () => router.replace("/company/dashboard"),
-    onError: (e: any) => setError(e.message),
+    onError: (e: Error) => setError(e.message),
   });
 
   const resend = useMutation({
@@ -80,7 +81,7 @@ export default function CompanyRegisterPage() {
       setResendIn(res.data?.resendIn ?? 60);
       setError("");
     },
-    onError: (e: any) => setError(e.message),
+    onError: (e: Error) => setError(e.message),
   });
 
   const field = (k: keyof typeof form) => ({

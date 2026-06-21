@@ -48,7 +48,7 @@ export default function AdminTemplatesPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-templates"] });
       toast.success("Template deleted");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const fieldCount = (t: Template) =>

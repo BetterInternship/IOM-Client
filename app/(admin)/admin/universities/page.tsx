@@ -61,7 +61,7 @@ function CreateUniversityDialog() {
       setError("");
       setOpen(false);
     },
-    onError: (e: any) => setError(e.message),
+    onError: (e: Error) => setError(e.message),
   });
 
   const valid = form.registered_name && form.superadmin_email;
@@ -171,7 +171,7 @@ export default function AdminUniversitiesPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-universities"] });
       toast.success("University deactivated");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return (

@@ -110,7 +110,7 @@ export default function CompanyProfilePage() {
       toast.success("Profile saved");
       cancelEdit();
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const uploadSig = useMutation({
@@ -123,7 +123,7 @@ export default function CompanyProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["company-me"] });
       toast.success("Signature uploaded");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const uploadDoc = useMutation({
@@ -137,15 +137,15 @@ export default function CompanyProfilePage() {
       refetchDocs();
       toast.success("Document uploaded");
     },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   if (isLoading || !company) return null;
 
   function persisted(key: string): string {
     if (COSMETIC_KEYS.includes(key))
-      return `${(company!.cosmetic as any)?.[key] ?? ""}`;
-    return `${(company as any)?.[key] ?? ""}`;
+      return String(company!.cosmetic?.[key] ?? "");
+    return String(company?.[key as keyof NonNullable<typeof company>] ?? "");
   }
   function draftVal(key: string): string {
     return key in draft ? draft[key] : persisted(key);

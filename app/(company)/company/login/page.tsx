@@ -20,7 +20,7 @@ export default function CompanyLoginPage() {
     mutationFn: () =>
       preconfiguredAxios.post("/api/auth/company/login", { tin, password }),
     onSuccess: () => router.replace("/company/dashboard"),
-    onError: (e: any) => setError(e.message),
+    onError: (e: Error) => setError(e.message),
   });
 
   const submit = (e: React.FormEvent) => {

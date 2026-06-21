@@ -10,6 +10,19 @@ import { MoaStatusBadge } from "@/components/status-badge";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
+interface CompanyMoaDetail {
+  moa: {
+    university: { registered_name: string };
+    template: { name: string };
+    effective_date: string;
+    expiry_date: string;
+    status: string;
+    is_expired: boolean | null;
+    rejection_reason: string | null;
+  };
+  pdfUrl: string | null;
+}
+
 export default function CompanyMoaDetailPage() {
   const { moaId } = useParams<{ moaId: string }>();
 
@@ -18,7 +31,7 @@ export default function CompanyMoaDetailPage() {
     queryFn: () =>
       preconfiguredAxios
         .get(`/api/company/moas/${moaId}`)
-        .then((r) => r.data as { moa: any; pdfUrl: string | null }),
+        .then((r) => r.data as CompanyMoaDetail),
     enabled: !!moaId,
   });
 
