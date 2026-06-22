@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
+  DialogBottomSheet,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -95,6 +96,7 @@ export default function UniversityMoaDetailPage() {
   const queryClient = useQueryClient();
   const [showReject, setShowReject] = useState(false);
   const [reason, setReason] = useState("");
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; label: string } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["university-moa", moaId],
@@ -290,8 +292,12 @@ export default function UniversityMoaDetailPage() {
               <div key={doc.id} className="flex items-center justify-between gap-3">
                 <span className="text-sm text-gray-700">{DOC_LABELS[doc.type] ?? doc.type}</span>
                 {doc.url ? (
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={doc.url} target="_blank" rel="noopener noreferrer">Preview</a>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPreviewDoc({ url: doc.url!, label: DOC_LABELS[doc.type] ?? doc.type })}
+                  >
+                    Preview
                   </Button>
                 ) : (
                   <span className="text-muted-foreground text-xs">Unavailable</span>
@@ -310,6 +316,22 @@ export default function UniversityMoaDetailPage() {
           </div>
         )}
       </Card>
+
+      {/* Document preview sheet */}
+      <Dialog open={!!previewDoc} onOpenChange={(o) => { if (!o) setPreviewDoc(null); }}>
+        <DialogBottomSheet className="flex flex-col" style={{ height: "90dvh" }}>
+          <DialogHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
+            <DialogTitle>{previewDoc?.label ?? "Document"}</DialogTitle>
+          </DialogHeader>
+          {previewDoc && (
+            <iframe
+              src={`${previewDoc.url}#navpanes=0`}
+              className="min-h-0 flex-1 w-full"
+              title={previewDoc.label}
+            />
+          )}
+        </DialogBottomSheet>
+      </Dialog>
 
       {/* Reject dialog */}
       <Dialog
