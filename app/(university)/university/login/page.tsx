@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 
 export default function UniversityLoginPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -19,7 +20,10 @@ export default function UniversityLoginPage() {
   const login = useMutation({
     mutationFn: () =>
       preconfiguredAxios.post("/api/auth/university/login", { email, password }),
-    onSuccess: () => router.replace("/partners"),
+    onSuccess: () => {
+      queryClient.resetQueries({ queryKey: ["university-me"] });
+      router.replace("/university/partners");
+    },
     onError: (e: Error) => setError(e.message),
   });
 

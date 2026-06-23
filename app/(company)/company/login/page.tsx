@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Loader2 } from "lucide-react";
 
 export default function CompanyLoginPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [tin, setTin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -19,7 +20,10 @@ export default function CompanyLoginPage() {
   const login = useMutation({
     mutationFn: () =>
       preconfiguredAxios.post("/api/auth/company/login", { tin, password }),
-    onSuccess: () => router.replace("/dashboard"),
+    onSuccess: () => {
+      queryClient.resetQueries({ queryKey: ["company-me"] });
+      router.replace("/company/dashboard");
+    },
     onError: (e: Error) => setError(e.message),
   });
 
