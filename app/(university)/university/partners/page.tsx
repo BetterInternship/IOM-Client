@@ -1,16 +1,17 @@
 "use client";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
-import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
+import { PageContainer, PageHeader } from "@/components/page-header";
 import { SideTabs, type SideTab } from "@/components/side-tabs";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataTable } from "@/components/ui/data-table";
 import {
   Dialog,
   DialogContent,
@@ -31,13 +32,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MoaStatusBadge } from "@/components/status-badge";
 import { formatDateWithoutTime } from "@/lib/utils";
-import { ArrowLeft, Ban, Building2, ChevronRight, ClipboardCheck, Loader2, Users2 } from "lucide-react";
+import { ArrowLeft, Ban, ClipboardCheck, Loader2, Users2 } from "lucide-react";
 
 interface MoaSummary {
   id: string;
   created_at: string;
-  effective_date: string;
-  expiry_date: string;
   company: { id: string; display_name: string; registered_name: string | null };
   template: { name: string };
 }
@@ -86,9 +85,47 @@ const TAB_TO_HASH: Record<string, string> = {
   blacklist: "#blacklist",
 };
 
+const reviewQueueColumns: ColumnDef<MoaSummary>[] = [
+  {
+    id: "company",
+    header: "Company",
+    accessorFn: (row) => row.company.display_name,
+    cell: ({ row }) => (
+      <div>
+        <p className="font-medium text-gray-900">{row.original.company.display_name}</p>
+        {row.original.company.registered_name &&
+          row.original.company.registered_name !== row.original.company.display_name && (
+            <p className="text-muted-foreground text-xs">{row.original.company.registered_name}</p>
+          )}
+      </div>
+    ),
+  },
+  {
+    id: "template",
+    header: "Template",
+    accessorFn: (row) => row.template.name,
+  },
+  {
+    id: "requested",
+    header: "Requested",
+    accessorFn: (row) => row.created_at,
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{formatDateWithoutTime(row.original.created_at)}</span>
+    ),
+  },
+  {
+    id: "status",
+    header: "Status",
+    enableSorting: false,
+    cell: () => <Badge type="warning">Pending</Badge>,
+  },
+];
+
 // ── Review queue ─────────────────────────────────────────────────────────────
 function ReviewQueuePanel() {
   const { account } = useUniversityProfile();
+  const router = useRouter();
+
   const { data, isLoading } = useQuery({
     queryKey: ["university-review-queue"],
     queryFn: () =>
@@ -101,56 +138,33 @@ function ReviewQueuePanel() {
 
   const moas = data?.moas ?? [];
 
-  if (isLoading) {
+  if (isLoading)
     return (
-      <div className="space-y-2.5">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
+      <div className="space-y-1">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-12 w-full" />
+        ))}
       </div>
     );
-  }
-  if (moas.length === 0) {
-    return (
-      <EmptyState
-        title="All caught up"
-        description="There are no pending MOA requests to review."
-      />
-    );
-  }
+
   return (
-    <div className="space-y-2.5">
-      {moas.map((moa) => (
-        <Link key={moa.id} href={`/university/moas/${moa.id}`} className="block">
-          <Card className="flex-row items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-gray-50">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-gray-900">
-                {moa.company.display_name}
-                {moa.company.registered_name &&
-                  moa.company.registered_name !== moa.company.display_name && (
-                    <span className="text-muted-foreground ml-1 font-normal">
-                      ({moa.company.registered_name})
-                    </span>
-                  )}
-              </p>
-              <p className="text-muted-foreground mt-0.5 text-xs">
-                {moa.template.name} &middot; requested{" "}
-                {formatDateWithoutTime(moa.created_at)}
-              </p>
-            </div>
-            <div className="flex flex-shrink-0 items-center gap-3">
-              <Badge type="warning">Pending</Badge>
-              <ChevronRight className="text-muted-foreground h-4 w-4" />
-            </div>
-          </Card>
-        </Link>
-      ))}
-    </div>
+    <DataTable
+      id="review-queue"
+      columns={reviewQueueColumns}
+      data={moas}
+      searchKey="company"
+      searchPlaceholder="Search by company or template..."
+      rowLabelSingular="request"
+      rowLabelPlural="requests"
+      onRowClick={(moa) => router.push(`/university/moas/${moa.id}`)}
+    />
   );
 }
 
 // ── Active partners ──────────────────────────────────────────────────────────
 function ActivePartnersPanel() {
   const { account } = useUniversityProfile();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [blacklistTarget, setBlacklistTarget] = useState<Partner | null>(null);
   const [reason, setReason] = useState("");
@@ -180,8 +194,7 @@ function ActivePartnersPanel() {
       preconfiguredAxios
         .get(`/api/university/partners/${selectedCompanyId}/moas`)
         .then(
-          (r) =>
-            r.data as { company: Partner["company"]; moas: PartnerMoaEntry[] },
+          (r) => r.data as { company: Partner["company"]; moas: PartnerMoaEntry[] },
         ),
     enabled: !!selectedCompanyId,
   });
@@ -209,17 +222,177 @@ function ActivePartnersPanel() {
 
   const blacklistedIds = new Set((blacklistData?.blacklist ?? []).map((b) => b.company_id));
   const partners = (partnersData?.partners ?? []).filter(
-    (p) => !blacklistedIds.has(p.company.id)
+    (p) => !blacklistedIds.has(p.company.id),
   );
 
-  if (isLoading) {
-    return (
-      <div className="space-y-2.5">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
-      </div>
-    );
-  }
+  const listColumns = useMemo<ColumnDef<Partner>[]>(
+    () => [
+      {
+        id: "company",
+        header: "Company",
+        accessorFn: (row) => row.company.display_name,
+        cell: ({ row }) => (
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="font-medium text-gray-900">{row.original.company.display_name}</p>
+              {row.original.detailsChanged && (
+                <Badge type="warning" strength="medium">
+                  Details changed
+                </Badge>
+              )}
+            </div>
+            {row.original.company.registered_name && (
+              <p className="text-muted-foreground text-xs">
+                {row.original.company.registered_name}
+              </p>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "type",
+        header: "Type",
+        accessorFn: (row) => row.company.company_type?.replace(/_/g, " ") ?? "—",
+      },
+      {
+        id: "actions",
+        header: "",
+        enableSorting: false,
+        enableResizing: false,
+        size: 120,
+        cell: ({ row }) => (
+          <Button
+            variant="outline"
+            scheme="destructive"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setBlacklistTarget(row.original);
+            }}
+          >
+            Blacklist
+          </Button>
+        ),
+      },
+    ],
+    [setBlacklistTarget],
+  );
+
+  const moaHistoryColumns = useMemo<ColumnDef<PartnerMoaEntry>[]>(
+    () => [
+      {
+        id: "template",
+        header: "Template",
+        accessorFn: (row) => row.template?.name ?? "—",
+        cell: ({ row }) => (
+          <span className="font-medium text-gray-900">{row.original.template?.name ?? "—"}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        enableSorting: false,
+        cell: ({ row }) => (
+          <div className="whitespace-normal">
+            {row.original.status === "active" && !row.original.reviewed_at ? (
+              <Badge type="warning">Pending review</Badge>
+            ) : (
+              <MoaStatusBadge status={row.original.status} isExpired={row.original.is_expired} />
+            )}
+            {row.original.rejection_reason && (
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {row.original.rejection_reason}
+              </p>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "requested",
+        header: "Requested",
+        accessorFn: (row) => row.created_at,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {formatDateWithoutTime(row.original.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: "period",
+        header: "Period",
+        accessorFn: (row) => row.effective_date ?? "",
+        cell: ({ row }) =>
+          row.original.effective_date ? (
+            <span className="text-muted-foreground">
+              {formatDateWithoutTime(row.original.effective_date)} –{" "}
+              {formatDateWithoutTime(row.original.expiry_date)}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">—</span>
+          ),
+      },
+    ],
+    [],
+  );
+
+  const BlacklistDialog = (
+    <Dialog
+      open={!!blacklistTarget}
+      onOpenChange={(o) => {
+        if (!o) {
+          setBlacklistTarget(null);
+          setReason("");
+        }
+      }}
+    >
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Blacklist company</DialogTitle>
+          <DialogDescription>{blacklistTarget?.company.display_name}</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="border-destructive/30 bg-destructive/5 text-destructive space-y-1 rounded-[0.33em] border p-3 text-sm">
+            <p>
+              This immediately <strong>revokes all active MOAs</strong> with this company and blocks
+              new requests.
+            </p>
+            <p className="text-destructive/80 text-xs">
+              Revoked MOAs cannot be restored. The company is not notified. This action is logged
+              under your name.
+            </p>
+          </div>
+          <Textarea
+            rows={2}
+            placeholder="Internal reason (optional — never shown to the company)"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setBlacklistTarget(null);
+              setReason("");
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            scheme="destructive"
+            disabled={blacklistMutation.isPending}
+            onClick={() =>
+              blacklistTarget &&
+              blacklistMutation.mutate({ companyId: blacklistTarget.company.id, reason })
+            }
+          >
+            {blacklistMutation.isPending && <Loader2 className="animate-spin" />}
+            {blacklistMutation.isPending ? "Blacklisting…" : "Blacklist company"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   // ── Detail view ────────────────────────────────────────────────────────────
   if (selectedCompanyId) {
@@ -228,7 +401,10 @@ function ActivePartnersPanel() {
     const partner = partners.find((p) => p.company.id === selectedCompanyId);
 
     return (
-      <div key={selectedCompanyId} className="animate-in slide-in-from-right duration-200 space-y-4">
+      <div
+        key={selectedCompanyId}
+        className="animate-in slide-in-from-right duration-200 space-y-4"
+      >
         <div className="flex items-center justify-between gap-3">
           <button
             onClick={() => setSelectedCompanyId(null)}
@@ -249,257 +425,61 @@ function ActivePartnersPanel() {
         </div>
 
         <div>
-          <h3 className="font-semibold text-gray-900">
-            {company?.display_name ?? "—"}
-          </h3>
+          <h3 className="font-semibold text-gray-900">{company?.display_name ?? "—"}</h3>
           {(company?.registered_name || company?.company_type) && (
             <p className="text-muted-foreground mt-0.5 text-xs">
               {company.registered_name}
-              {company.company_type &&
-                ` · ${company.company_type.replace(/_/g, " ")}`}
+              {company.company_type && ` · ${company.company_type.replace(/_/g, " ")}`}
             </p>
           )}
         </div>
 
         {isMoasLoading ? (
-          <div className="space-y-2.5">
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-          </div>
-        ) : moas.length === 0 ? (
-          <EmptyState
-            title="No MOA history"
-            description="No MOA requests found for this company."
-          />
-        ) : (
-          <div className="space-y-2.5">
-            {moas.map((moa) => (
-              <Link
-                key={moa.id}
-                href={`/university/moas/${moa.id}`}
-                className="block"
-              >
-                <Card className="flex-row items-start justify-between gap-3 px-5 py-4 transition-colors hover:bg-gray-50">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-gray-900">
-                      {moa.template?.name ?? "—"}
-                    </p>
-                    <p className="text-muted-foreground mt-0.5 text-xs">
-                      Requested {formatDateWithoutTime(moa.created_at)}
-                      {moa.effective_date &&
-                        ` · ${formatDateWithoutTime(moa.effective_date)} – ${formatDateWithoutTime(moa.expiry_date)}`}
-                    </p>
-                    {moa.rejection_reason && (
-                      <p className="text-muted-foreground mt-0.5 text-xs">
-                        Reason: {moa.rejection_reason}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex flex-shrink-0 items-center gap-3">
-                    {moa.status === "active" && !moa.reviewed_at ? (
-                      <Badge type="warning">Pending review</Badge>
-                    ) : (
-                      <MoaStatusBadge
-                        status={moa.status}
-                        isExpired={moa.is_expired}
-                      />
-                    )}
-                    <ChevronRight className="text-muted-foreground h-4 w-4" />
-                  </div>
-                </Card>
-              </Link>
+          <div className="space-y-1">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
+        ) : (
+          <DataTable
+            id={`partner-moas-${selectedCompanyId}`}
+            columns={moaHistoryColumns}
+            data={moas}
+            searchKey="template"
+            searchPlaceholder="Search MOAs..."
+            rowLabelSingular="MOA"
+            rowLabelPlural="MOAs"
+            onRowClick={(moa) => router.push(`/university/moas/${moa.id}`)}
+          />
         )}
 
-        <Dialog
-          open={!!blacklistTarget}
-          onOpenChange={(o) => {
-            if (!o) {
-              setBlacklistTarget(null);
-              setReason("");
-            }
-          }}
-        >
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Blacklist company</DialogTitle>
-              <DialogDescription>
-                {blacklistTarget?.company.display_name}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div className="border-destructive/30 bg-destructive/5 text-destructive space-y-1 rounded-[0.33em] border p-3 text-sm">
-                <p>
-                  This immediately <strong>revokes all active MOAs</strong> with
-                  this company and blocks new requests.
-                </p>
-                <p className="text-destructive/80 text-xs">
-                  Revoked MOAs cannot be restored. The company is not notified.
-                  This action is logged under your name.
-                </p>
-              </div>
-              <Textarea
-                rows={2}
-                placeholder="Internal reason (optional — never shown to the company)"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              />
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setBlacklistTarget(null);
-                  setReason("");
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                scheme="destructive"
-                disabled={blacklistMutation.isPending}
-                onClick={() =>
-                  blacklistTarget &&
-                  blacklistMutation.mutate({
-                    companyId: blacklistTarget.company.id,
-                    reason,
-                  })
-                }
-              >
-                {blacklistMutation.isPending && (
-                  <Loader2 className="animate-spin" />
-                )}
-                {blacklistMutation.isPending ? "Blacklisting…" : "Blacklist company"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        {BlacklistDialog}
       </div>
     );
   }
 
   // ── List view ──────────────────────────────────────────────────────────────
-  if (partners.length === 0) {
-    return (
-      <EmptyState
-        title="No active partners yet"
-        description="Confirmed MOAs will list the partner company here."
-      />
-    );
-  }
   return (
     <>
-      <div className="space-y-2.5">
-        {partners.map(({ company, latestMoaId, detailsChanged }) => (
-          <Card
-            key={company.id}
-            onClick={() => setSelectedCompanyId(company.id)}
-            className="flex-row cursor-pointer items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-gray-50"
-          >
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="bg-muted text-muted-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[0.33em]">
-                <Building2 className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-medium text-gray-900">
-                    {company.display_name}
-                  </p>
-                  {detailsChanged && (
-                    <Badge type="warning" strength="medium">
-                      Details changed
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                  {company.registered_name}
-                  {company.company_type &&
-                    ` · ${company.company_type.replace(/_/g, " ")}`}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-shrink-0 items-center gap-2">
-              <Button
-                variant="outline"
-                scheme="destructive"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setBlacklistTarget({ company, latestMoaId, detailsChanged });
-                }}
-              >
-                Blacklist
-              </Button>
-              <ChevronRight className="text-muted-foreground h-4 w-4" />
-            </div>
-          </Card>
-        ))}
-      </div>
-
-      <Dialog
-        open={!!blacklistTarget}
-        onOpenChange={(o) => {
-          if (!o) {
-            setBlacklistTarget(null);
-            setReason("");
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Blacklist company</DialogTitle>
-            <DialogDescription>
-              {blacklistTarget?.company.display_name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="border-destructive/30 bg-destructive/5 text-destructive space-y-1 rounded-[0.33em] border p-3 text-sm">
-              <p>
-                This immediately <strong>revokes all active MOAs</strong> with
-                this company and blocks new requests.
-              </p>
-              <p className="text-destructive/80 text-xs">
-                Revoked MOAs cannot be restored. The company is not notified.
-                This action is logged under your name.
-              </p>
-            </div>
-            <Textarea
-              rows={2}
-              placeholder="Internal reason (optional — never shown to the company)"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setBlacklistTarget(null);
-                setReason("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              scheme="destructive"
-              disabled={blacklistMutation.isPending}
-              onClick={() =>
-                blacklistTarget &&
-                blacklistMutation.mutate({
-                  companyId: blacklistTarget.company.id,
-                  reason,
-                })
-              }
-            >
-              {blacklistMutation.isPending && (
-                <Loader2 className="animate-spin" />
-              )}
-              {blacklistMutation.isPending ? "Blacklisting…" : "Blacklist company"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {isLoading ? (
+        <div className="space-y-1">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : (
+        <DataTable
+          id="active-partners"
+          columns={listColumns}
+          data={partners}
+          searchKey="company"
+          searchPlaceholder="Search by company..."
+          rowLabelSingular="partner"
+          rowLabelPlural="partners"
+          onRowClick={(partner) => setSelectedCompanyId(partner.company.id)}
+        />
+      )}
+      {BlacklistDialog}
     </>
   );
 }
@@ -508,8 +488,7 @@ function ActivePartnersPanel() {
 function BlacklistPanel() {
   const { account } = useUniversityProfile();
   const queryClient = useQueryClient();
-  const [unblacklistTarget, setUnblacklistTarget] =
-    useState<BlacklistEntry | null>(null);
+  const [unblacklistTarget, setUnblacklistTarget] = useState<BlacklistEntry | null>(null);
 
   const { data: blacklistData, isLoading } = useQuery({
     queryKey: ["university-blacklist"],
@@ -538,52 +517,78 @@ function BlacklistPanel() {
 
   const blacklist = blacklistData?.blacklist ?? [];
 
-  if (isLoading) return <Skeleton className="h-20 w-full" />;
-
-  if (blacklist.length === 0) {
-    return (
-      <EmptyState
-        title="No blacklisted companies"
-        description="Companies you blacklist will appear here."
-      />
-    );
-  }
+  const blacklistColumns = useMemo<ColumnDef<BlacklistEntry>[]>(
+    () => [
+      {
+        id: "company",
+        header: "Company",
+        accessorFn: (row) => row.company.display_name,
+        cell: ({ row }) => (
+          <span className="font-medium text-gray-900">{row.original.company.display_name}</span>
+        ),
+      },
+      {
+        id: "reason",
+        header: "Reason",
+        accessorFn: (row) => row.reason ?? "—",
+      },
+      {
+        id: "by",
+        header: "Blacklisted by",
+        accessorFn: (row) => row.actor_email ?? "—",
+      },
+      {
+        id: "date",
+        header: "Date",
+        accessorFn: (row) => row.created_at,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {formatDateWithoutTime(row.original.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "",
+        enableSorting: false,
+        enableResizing: false,
+        size: 120,
+        cell: ({ row }) => (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setUnblacklistTarget(row.original);
+            }}
+          >
+            Un-blacklist
+          </Button>
+        ),
+      },
+    ],
+    [setUnblacklistTarget],
+  );
 
   return (
     <>
-      <div className="space-y-2.5">
-        {blacklist.map((entry) => (
-          <Card
-            key={entry.id}
-            className="border-destructive/20 bg-destructive/5 flex-row items-start justify-between gap-4 px-5 py-4"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-gray-900">
-                {entry.company.display_name}
-              </p>
-              {entry.reason && (
-                <p className="text-muted-foreground mt-0.5 text-xs">
-                  Reason: {entry.reason}
-                </p>
-              )}
-              {entry.actor_email && (
-                <p className="text-muted-foreground mt-0.5 text-xs">
-                  By {entry.actor_email} &middot;{" "}
-                  {formatDateWithoutTime(entry.created_at)}
-                </p>
-              )}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-shrink-0"
-              onClick={() => setUnblacklistTarget(entry)}
-            >
-              Un-blacklist
-            </Button>
-          </Card>
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="space-y-1">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : (
+        <DataTable
+          id="blacklist"
+          columns={blacklistColumns}
+          data={blacklist}
+          searchKey="company"
+          searchPlaceholder="Search by company..."
+          rowLabelSingular="entry"
+          rowLabelPlural="entries"
+        />
+      )}
 
       <AlertDialog
         open={!!unblacklistTarget}
@@ -595,16 +600,15 @@ function BlacklistPanel() {
               Remove {unblacklistTarget?.company.display_name} from the blacklist?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This re-enables future requests from this company. Previously revoked
-              MOAs will not be restored.
+              This re-enables future requests from this company. Previously revoked MOAs will not be
+              restored.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() =>
-                unblacklistTarget &&
-                unblacklistMutation.mutate(unblacklistTarget.company_id)
+                unblacklistTarget && unblacklistMutation.mutate(unblacklistTarget.company_id)
               }
             >
               Remove

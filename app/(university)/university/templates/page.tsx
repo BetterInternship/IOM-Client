@@ -1,14 +1,15 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
-import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
-import { Card } from "@/components/ui/card";
+import { PageContainer, PageHeader } from "@/components/page-header";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataTable } from "@/components/ui/data-table";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -19,6 +20,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 interface TemplateOffer {
@@ -40,7 +42,7 @@ export default function UniversityTemplatesPage() {
   const [pending, setPending] = useState<{ offer: TemplateOffer; next: boolean } | null>(null);
 
   useEffect(() => {
-    if (!isLoading && !isSuperadmin) router.replace("/partners");
+    if (!isLoading && !isSuperadmin) router.replace("/university/partners");
   }, [isLoading, isSuperadmin, router]);
 
   const { data, isLoading: tLoading } = useQuery({
@@ -61,9 +63,70 @@ export default function UniversityTemplatesPage() {
     onSettled: () => setPending(null),
   });
 
-  if (isLoading || !account || !isSuperadmin) return null;
-
   const offers = (data?.templates ?? []).filter((o) => !o.template.is_deleted);
+
+  const templateColumns = useMemo<ColumnDef<TemplateOffer>[]>(
+    () => [
+      {
+        id: "template",
+        header: "Template",
+        accessorFn: (row) => row.template.name,
+        cell: ({ row }) => (
+          <div>
+            <p className="font-medium text-gray-900">{row.original.template.name}</p>
+            {row.original.template.description && (
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                {row.original.template.description}
+              </p>
+            )}
+          </div>
+        ),
+      },
+      {
+        id: "term",
+        header: "Term",
+        accessorFn: (row) => row.template.term_months,
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">{row.original.template.term_months} months</span>
+        ),
+      },
+      {
+        id: "available",
+        header: "Available",
+        enableSorting: false,
+        enableResizing: false,
+        size: 160,
+        cell: ({ row }) => (
+          <button
+            type="button"
+            className="flex cursor-pointer items-center gap-2 disabled:opacity-50"
+            onClick={() => setPending({ offer: row.original, next: !row.original.is_available })}
+            disabled={toggle.isPending}
+          >
+            <span
+              className={`text-xs font-medium ${
+                row.original.is_available ? "text-supportive" : "text-muted-foreground"
+              }`}
+            >
+              {row.original.is_available ? "Offered" : "Hidden"}
+            </span>
+            <Switch
+              checked={row.original.is_available}
+              onCheckedChange={() =>
+                setPending({ offer: row.original, next: !row.original.is_available })
+              }
+              className="data-[state=checked]:bg-supportive pointer-events-none"
+              tabIndex={-1}
+            />
+          </button>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [toggle.isPending],
+  );
+
+  if (isLoading || !account || !isSuperadmin) return null;
 
   return (
     <PageContainer className="space-y-8">
@@ -73,53 +136,21 @@ export default function UniversityTemplatesPage() {
       />
 
       {tLoading ? (
-        <div className="space-y-2.5">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      ) : offers.length === 0 ? (
-        <EmptyState title="No templates in the catalog yet" />
-      ) : (
-        <div className="space-y-2.5">
-          {offers.map((offer) => (
-            <Card
-              key={offer.id}
-              className="flex-row items-center justify-between gap-4 px-5 py-4"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900">{offer.template.name}</p>
-                {offer.template.description && (
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    {offer.template.description}
-                  </p>
-                )}
-                <p className="text-muted-foreground mt-0.5 text-xs">
-                  Term: {offer.template.term_months} months
-                </p>
-              </div>
-              <button
-                type="button"
-                className="flex flex-shrink-0 cursor-pointer items-center gap-2 disabled:opacity-50"
-                onClick={() => setPending({ offer, next: !offer.is_available })}
-                disabled={toggle.isPending}
-              >
-                <span
-                  className={`text-xs font-medium ${
-                    offer.is_available ? "text-supportive" : "text-muted-foreground"
-                  }`}
-                >
-                  {offer.is_available ? "Offered" : "Hidden"}
-                </span>
-                <Switch
-                  checked={offer.is_available}
-                  onCheckedChange={() => setPending({ offer, next: !offer.is_available })}
-                  className="data-[state=checked]:bg-supportive pointer-events-none"
-                  tabIndex={-1}
-                />
-              </button>
-            </Card>
+        <div className="space-y-1">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-12 w-full" />
           ))}
         </div>
+      ) : (
+        <DataTable
+          id="moa-templates"
+          columns={templateColumns}
+          data={offers}
+          searchKey="template"
+          searchPlaceholder="Search templates..."
+          rowLabelSingular="template"
+          rowLabelPlural="templates"
+        />
       )}
 
       <AlertDialog open={!!pending} onOpenChange={(o) => !o && setPending(null)}>

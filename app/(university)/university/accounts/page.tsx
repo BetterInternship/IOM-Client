@@ -1,17 +1,18 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
-import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
+import { PageContainer, PageHeader } from "@/components/page-header";
 import { SideTabs, type SideTab } from "@/components/side-tabs";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataTable } from "@/components/ui/data-table";
 import { FormError } from "@/components/auth-shell";
 import {
   Dialog,
@@ -86,8 +87,7 @@ function InviteStaffDialog() {
         <DialogHeader>
           <DialogTitle>Invite staff member</DialogTitle>
           <DialogDescription>
-            They&apos;ll receive an email to set their password and join your
-            institution.
+            They&apos;ll receive an email to set their password and join your institution.
           </DialogDescription>
         </DialogHeader>
         <form
@@ -177,83 +177,111 @@ function ManagedAccountsPanel() {
 
   const staff = (data?.accounts ?? []).filter((a) => a.role === "staff");
 
-  return (
-    <div className="space-y-4">
-      <div className="flex justify-end">
-        <InviteStaffDialog />
-      </div>
-      {isLoading ? (
-        <div className="space-y-2.5">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      ) : staff.length === 0 ? (
-        <EmptyState
-          title="No staff accounts yet"
-          description="Invite your first staff member to help review requests."
-        />
-      ) : (
-        <div className="space-y-2.5">
-          {staff.map((a) => (
-            <Card
-              key={a.id}
-              className="flex-row items-center justify-between gap-4 px-5 py-4"
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-medium text-gray-900">
-                    {a.display_name}
-                  </p>
-                  {a.is_deactivated && (
-                    <Badge type="destructive" strength="medium">
-                      Deactivated
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                  {a.email}
-                </p>
-              </div>
-              <div className="flex flex-shrink-0 items-center gap-2">
+  const staffColumns = useMemo<ColumnDef<StaffAccount>[]>(
+    () => [
+      {
+        id: "name",
+        header: "Name",
+        accessorKey: "display_name",
+        cell: ({ row }) => (
+          <span className="font-medium text-gray-900">{row.original.display_name}</span>
+        ),
+      },
+      {
+        id: "email",
+        header: "Email",
+        accessorKey: "email",
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">{row.original.email}</span>
+        ),
+      },
+      {
+        id: "status",
+        header: "Status",
+        enableSorting: false,
+        cell: ({ row }) =>
+          row.original.is_deactivated ? (
+            <Badge type="destructive" strength="medium">Deactivated</Badge>
+          ) : (
+            <Badge type="supportive" strength="medium">Active</Badge>
+          ),
+      },
+      {
+        id: "actions",
+        header: "",
+        enableSorting: false,
+        enableResizing: false,
+        size: 260,
+        cell: ({ row }) => {
+          const a = row.original;
+          return (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => resendInvite.mutate(a.id)}
+                disabled={resendInvite.isPending}
+              >
+                Resend invite
+              </Button>
+              {a.is_deactivated ? (
                 <Button
-                  variant="ghost"
+                  variant="outline"
+                  scheme="supportive"
                   size="sm"
-                  onClick={() => resendInvite.mutate(a.id)}
-                  disabled={resendInvite.isPending}
+                  onClick={() => reactivate.mutate(a.id)}
+                  disabled={reactivate.isPending}
                 >
-                  Resend invite
+                  Reactivate
                 </Button>
-                {a.is_deactivated ? (
-                  <Button
-                    variant="outline"
-                    scheme="supportive"
-                    size="sm"
-                    onClick={() => reactivate.mutate(a.id)}
-                    disabled={reactivate.isPending}
-                  >
-                    Reactivate
-                  </Button>
-                ) : (
-                  <Button
-                    variant="outline"
-                    scheme="destructive"
-                    size="sm"
-                    onClick={() => deactivate.mutate(a.id)}
-                    disabled={deactivate.isPending}
-                  >
-                    Deactivate
-                  </Button>
-                )}
-              </div>
-            </Card>
+              ) : (
+                <Button
+                  variant="outline"
+                  scheme="destructive"
+                  size="sm"
+                  onClick={() => deactivate.mutate(a.id)}
+                  disabled={deactivate.isPending}
+                >
+                  Deactivate
+                </Button>
+              )}
+            </div>
+          );
+        },
+      },
+    ],
+    [deactivate, reactivate, resendInvite],
+  );
+
+  if (isLoading)
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-end">
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="space-y-1">
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-12 w-full" />
           ))}
         </div>
-      )}
-    </div>
+      </div>
+    );
+
+  return (
+    <DataTable
+      id="staff-accounts"
+      columns={staffColumns}
+      data={staff}
+      searchKey="email"
+      searchPlaceholder="Search by name or email..."
+      rowLabelSingular="account"
+      rowLabelPlural="accounts"
+      toolbarActions={<InviteStaffDialog />}
+    />
   );
 }
 
-// ── Activity log (formerly Audit) ────────────────────────────────────────────
+// ── Activity log ─────────────────────────────────────────────────────────────
 const EVENT_LABELS: Record<string, string> = {
   request_received: "MOA request received",
   moa_confirmed: "MOA confirmed",
@@ -274,6 +302,51 @@ const EVENT_TYPES: Record<string, BadgeProps["type"]> = {
   company_unblacklisted: "default",
 };
 
+const auditColumns: ColumnDef<AuditEvent>[] = [
+  {
+    id: "event",
+    header: "Event",
+    accessorKey: "event_type",
+    cell: ({ row }) => (
+      <Badge type={EVENT_TYPES[row.original.event_type] ?? "default"}>
+        {EVENT_LABELS[row.original.event_type] ?? row.original.event_type}
+      </Badge>
+    ),
+  },
+  {
+    id: "company",
+    header: "Company",
+    accessorFn: (row) => row.company?.display_name ?? "—",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.original.company?.display_name ?? "—"}</span>
+    ),
+  },
+  {
+    id: "by",
+    header: "By",
+    accessorFn: (row) => row.actor_email ?? "—",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.original.actor_email ?? "—"}</span>
+    ),
+  },
+  {
+    id: "date",
+    header: "Date",
+    accessorKey: "created_at",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{formatDateTime(row.original.created_at)}</span>
+    ),
+  },
+  {
+    id: "detail",
+    header: "Detail",
+    accessorKey: "detail",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">{row.original.detail ?? "—"}</span>
+    ),
+  },
+];
+
 function ActivityLogPanel() {
   const { account } = useUniversityProfile();
   const { data, isLoading } = useQuery({
@@ -287,41 +360,26 @@ function ActivityLogPanel() {
 
   const events = data?.logs ?? [];
 
-  if (isLoading) {
+  if (isLoading)
     return (
-      <div className="space-y-2.5">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
+      <div className="space-y-1">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-12 w-full" />
+        ))}
       </div>
     );
-  }
-  if (events.length === 0) {
-    return <EmptyState title="No activity yet" />;
-  }
+
   return (
-    <div className="space-y-2.5">
-      {events.map((ev) => (
-        <Card key={ev.id} className="gap-1.5 px-5 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <Badge type={EVENT_TYPES[ev.event_type] ?? "default"}>
-              {EVENT_LABELS[ev.event_type] ?? ev.event_type}
-            </Badge>
-            <span className="text-muted-foreground text-xs">
-              {formatDateTime(ev.created_at)}
-            </span>
-          </div>
-          {ev.company && (
-            <p className="text-sm text-gray-800">{ev.company.display_name}</p>
-          )}
-          {ev.detail && (
-            <p className="text-muted-foreground text-xs">{ev.detail}</p>
-          )}
-          {ev.actor_email && (
-            <p className="text-muted-foreground text-xs">By {ev.actor_email}</p>
-          )}
-        </Card>
-      ))}
-    </div>
+    <DataTable
+      id="activity-log"
+      columns={auditColumns}
+      data={events}
+      searchKey="event"
+      searchPlaceholder="Search events..."
+      rowLabelSingular="event"
+      rowLabelPlural="events"
+      pageSizes={[25, 50, 100]}
+    />
   );
 }
 
