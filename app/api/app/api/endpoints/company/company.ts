@@ -361,6 +361,265 @@ export const useCompanyControllerPatchProfile = <
 
   return useMutation(mutationOptions, queryClient);
 };
+export const companyControllerGetVerification = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/company/verification`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getCompanyControllerGetVerificationQueryKey = () => {
+  return [`/api/company/verification`] as const;
+};
+
+export const getCompanyControllerGetVerificationQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerGetVerification>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerGetVerificationQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerGetVerification>>
+  > = ({ signal }) => companyControllerGetVerification(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerGetVerification>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerGetVerificationQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerGetVerification>>
+>;
+export type CompanyControllerGetVerificationQueryError = unknown;
+
+export function useCompanyControllerGetVerification<
+  TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetVerification>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerGetVerification>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerGetVerification>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetVerification<
+  TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetVerification>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerGetVerification>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerGetVerification>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetVerification<
+  TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetVerification>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerGetVerification<
+  TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetVerification>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getCompanyControllerGetVerificationQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getCompanyControllerGetVerificationSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerGetVerification>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerGetVerificationQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerGetVerification>>
+  > = ({ signal }) => companyControllerGetVerification(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerGetVerification>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerGetVerificationSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerGetVerification>>
+>;
+export type CompanyControllerGetVerificationSuspenseQueryError = unknown;
+
+export function useCompanyControllerGetVerificationSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetVerification>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetVerificationSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetVerification>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetVerificationSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetVerification>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerGetVerificationSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetVerification>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getCompanyControllerGetVerificationSuspenseQueryOptions(options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export const companyControllerUploadSignature = (signal?: AbortSignal) => {
   return preconfiguredAxiosFunction<void>({
     url: `/api/company/profile/signature`,

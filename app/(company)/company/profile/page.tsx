@@ -2,7 +2,10 @@
 import { useState, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useCompanyProfile } from "@/app/providers/company-profile.provider";
+import {
+  useCompanyProfile,
+  useCompanyVerification,
+} from "@/app/providers/company-profile.provider";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { resolveFile } from "@/app/lib/resolve-file";
 import { PageContainer, PageHeader } from "@/components/page-header";
@@ -29,6 +32,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import {
   Building2,
   Eye,
@@ -89,6 +102,11 @@ export default function CompanyProfilePage() {
     enabled: !!company,
   });
 
+  const { data: verification } = useCompanyVerification(!!company);
+  const verified = verification?.status === "verified";
+  // When set, a re-verification confirm dialog is shown; running it performs the edit.
+  const [pendingConfirm, setPendingConfirm] = useState<(() => void) | null>(null);
+
   const save = useMutation({
     mutationFn: () => {
       const g = (k: string) => (k in draft ? draft[k] : persisted(k));
@@ -106,6 +124,7 @@ export default function CompanyProfilePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["company-me"] });
+      queryClient.invalidateQueries({ queryKey: ["company-verification"] });
       toast.success("Profile saved");
       cancelEdit();
     },
@@ -134,6 +153,7 @@ export default function CompanyProfilePage() {
     },
     onSuccess: () => {
       refetchDocs();
+      queryClient.invalidateQueries({ queryKey: ["company-verification"] });
       toast.success("Document uploaded");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -161,6 +181,30 @@ export default function CompanyProfilePage() {
   function cancelEdit() {
     setEditing(null);
     setDraft({});
+  }
+
+  // Material fields whose change forces re-verification (the hash inputs).
+  const MATERIAL_KEYS_BY_SECTION: Record<string, string[]> = {
+    company: ["registered_name", "registered_address", "company_type"],
+    representative: ["rep_name", "rep_title"],
+  };
+
+  function attemptSave(sectionKey: SectionKey) {
+    const matKeys = MATERIAL_KEYS_BY_SECTION[sectionKey] ?? [];
+    const changedMaterial = matKeys.some((k) => k in draft && draft[k] !== persisted(k));
+    if (verified && changedMaterial) {
+      setPendingConfirm(() => () => save.mutate());
+    } else {
+      save.mutate();
+    }
+  }
+
+  function attemptUploadDoc(file: File, type: string) {
+    if (verified) {
+      setPendingConfirm(() => () => uploadDoc.mutate({ file, type }));
+    } else {
+      uploadDoc.mutate({ file, type });
+    }
   }
 
   async function preview(doc: CompanyDoc) {
@@ -222,7 +266,7 @@ export default function CompanyProfilePage() {
         >
           Cancel
         </Button>
-        <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
+        <Button size="sm" onClick={() => attemptSave(sectionKey)} disabled={save.isPending}>
           {save.isPending && <Loader2 className="animate-spin" />}
           Save
         </Button>
@@ -447,7 +491,8 @@ export default function CompanyProfilePage() {
                         className="hidden"
                         onChange={(e) => {
                           const f = e.target.files?.[0];
-                          if (f) uploadDoc.mutate({ file: f, type: value });
+                          if (f) attemptUploadDoc(f, value);
+                          e.target.value = "";
                         }}
                       />
                     </label>
@@ -505,6 +550,34 @@ export default function CompanyProfilePage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Re-verification warning (only when currently verified) */}
+      <AlertDialog
+        open={!!pendingConfirm}
+        onOpenChange={(o) => !o && setPendingConfirm(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>This change requires re-verification</AlertDialogTitle>
+            <AlertDialogDescription>
+              Changing this will require re-verification by the platform team. You
+              won&apos;t be able to request new MOAs until you&apos;re re-approved.
+              Your existing MOAs stay valid.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                pendingConfirm?.();
+                setPendingConfirm(null);
+              }}
+            >
+              Save anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }

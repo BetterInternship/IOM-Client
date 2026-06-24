@@ -345,6 +345,20 @@
         ]
       }
     },
+    "/api/company/verification": {
+      "get": {
+        "operationId": "CompanyController_getVerification",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "company"
+        ]
+      }
+    },
     "/api/company/profile/signature": {
       "post": {
         "operationId": "CompanyController_uploadSignature",
@@ -573,20 +587,6 @@
         ]
       }
     },
-    "/api/university/review-queue": {
-      "get": {
-        "operationId": "UniversityController_reviewQueue",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "university"
-        ]
-      }
-    },
     "/api/university/moas/{moaId}": {
       "get": {
         "operationId": "UniversityController_getMoaDetail",
@@ -610,12 +610,12 @@
         ]
       }
     },
-    "/api/university/moas/{moaId}/confirm": {
-      "post": {
-        "operationId": "UniversityController_confirmMoa",
+    "/api/university/partners/{companyId}/moas": {
+      "get": {
+        "operationId": "UniversityController_getPartnerMoas",
         "parameters": [
           {
-            "name": "moaId",
+            "name": "companyId",
             "required": true,
             "in": "path",
             "schema": {
@@ -623,39 +623,6 @@
             }
           }
         ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "tags": [
-          "university"
-        ]
-      }
-    },
-    "/api/university/moas/{moaId}/reject": {
-      "post": {
-        "operationId": "UniversityController_rejectMoa",
-        "parameters": [
-          {
-            "name": "moaId",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RejectMoaDto"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": ""
@@ -942,6 +909,99 @@
       "get": {
         "operationId": "AdminController_overview",
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/company-reviews": {
+      "get": {
+        "operationId": "AdminController_companyReviewQueue",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/companies/{companyId}/review": {
+      "get": {
+        "operationId": "AdminController_companyReviewDetail",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/companies/{companyId}/approve": {
+      "post": {
+        "operationId": "AdminController_approveCompany",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/admin/companies/{companyId}/reject": {
+      "post": {
+        "operationId": "AdminController_rejectCompany",
+        "parameters": [
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectCompanyReviewDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -1522,14 +1582,6 @@
           }
         }
       },
-      "RejectMoaDto": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string"
-          }
-        }
-      },
       "BlacklistCompanyDto": {
         "type": "object",
         "properties": {
@@ -1574,6 +1626,14 @@
         "type": "object",
         "properties": {
           "display_name": {
+            "type": "string"
+          }
+        }
+      },
+      "RejectCompanyReviewDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
             "type": "string"
           }
         }

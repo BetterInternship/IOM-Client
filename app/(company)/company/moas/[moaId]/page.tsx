@@ -1,29 +1,14 @@
 "use client";
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { PageContainer } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoaStatusBadge } from "@/components/status-badge";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
-import {
-  Dialog,
-  DialogBottomSheet,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-interface CompanyDoc {
-  id: string;
-  type: string;
-  filename: string;
-  url: string | null;
-}
 
 interface CompanyMoaDetail {
   moa: {
@@ -36,19 +21,10 @@ interface CompanyMoaDetail {
     rejection_reason: string | null;
   };
   pdfUrl: string | null;
-  companyDocuments: CompanyDoc[];
 }
-
-const DOC_LABELS: Record<string, string> = {
-  business_permit: "Business Permit",
-  mayor_permit: "Mayor's Permit",
-  or_registration: "OR Registration",
-  sec_dti_registration: "SEC/DTI Registration",
-};
 
 export default function CompanyMoaDetailPage() {
   const { moaId } = useParams<{ moaId: string }>();
-  const [previewDoc, setPreviewDoc] = useState<{ url: string; label: string } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["company-moa", moaId],
@@ -80,7 +56,7 @@ export default function CompanyMoaDetailPage() {
     );
   }
 
-  const { moa, pdfUrl, companyDocuments = [] } = data;
+  const { moa, pdfUrl } = data;
 
   return (
     <PageContainer className="max-w-3xl space-y-6">
@@ -117,26 +93,6 @@ export default function CompanyMoaDetailPage() {
           )}
         </CardContent>
 
-        {companyDocuments.length > 0 && (
-          <div className="border-t border-gray-100 px-6 py-4 space-y-2">
-            {companyDocuments.map((doc) => (
-              <div key={doc.id} className="flex items-center justify-between gap-3">
-                <span className="text-sm text-gray-700">{DOC_LABELS[doc.type] ?? doc.type}</span>
-                {doc.url ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPreviewDoc({ url: doc.url!, label: DOC_LABELS[doc.type] ?? doc.type })}
-                  >
-                    Preview
-                  </Button>
-                ) : (
-                  <span className="text-muted-foreground text-xs">Unavailable</span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
         {pdfUrl ? (
           <div className="border-t border-gray-100 px-6 pb-4 pt-4">
             <iframe
@@ -151,20 +107,6 @@ export default function CompanyMoaDetailPage() {
           </p>
         )}
       </Card>
-      <Dialog open={!!previewDoc} onOpenChange={(o) => { if (!o) setPreviewDoc(null); }}>
-        <DialogBottomSheet className="flex flex-col" style={{ height: "90dvh" }}>
-          <DialogHeader className="px-6 py-4 border-b border-gray-100 shrink-0">
-            <DialogTitle>{previewDoc?.label ?? "Document"}</DialogTitle>
-          </DialogHeader>
-          {previewDoc && (
-            <iframe
-              src={`${previewDoc.url}#navpanes=0`}
-              className="min-h-0 flex-1 w-full"
-              title={previewDoc.label}
-            />
-          )}
-        </DialogBottomSheet>
-      </Dialog>
     </PageContainer>
   );
 }

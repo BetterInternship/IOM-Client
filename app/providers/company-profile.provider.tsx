@@ -30,6 +30,26 @@ export function useCompanyProfile() {
   return useContext(CompanyProfileContext);
 }
 
+export type VerificationStatus = "incomplete" | "pending" | "verified" | "rejected";
+
+export interface CompanyVerification {
+  status: VerificationStatus;
+  rejectionReason: string | null;
+}
+
+/** Shared platform-verification state for the company (banner + request gate). */
+export function useCompanyVerification(enabled = true) {
+  return useQuery({
+    queryKey: ["company-verification"],
+    queryFn: async () => {
+      const res = await preconfiguredAxios.get("/api/company/verification");
+      return res.data as CompanyVerification;
+    },
+    enabled,
+    staleTime: 30_000,
+  });
+}
+
 export function CompanyProfileProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();

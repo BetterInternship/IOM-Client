@@ -27,7 +27,6 @@ import type {
   BlacklistCompanyDto,
   CreateStaffAccountDto,
   PatchUniversityProfileDto,
-  RejectMoaDto,
   ToggleTemplateOfferDto,
   UpdateStaffAccountDto,
 } from "../../models";
@@ -776,265 +775,6 @@ export const useUniversityControllerUploadSignature = <
 
   return useMutation(mutationOptions, queryClient);
 };
-export const universityControllerReviewQueue = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
-    url: `/api/university/review-queue`,
-    method: "GET",
-    signal,
-  });
-};
-
-export const getUniversityControllerReviewQueueQueryKey = () => {
-  return [`/api/university/review-queue`] as const;
-};
-
-export const getUniversityControllerReviewQueueQueryOptions = <
-  TData = Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-  TError = unknown,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<
-      Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-      TError,
-      TData
-    >
-  >;
-}) => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getUniversityControllerReviewQueueQueryKey();
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof universityControllerReviewQueue>>
-  > = ({ signal }) => universityControllerReviewQueue(signal);
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type UniversityControllerReviewQueueQueryResult = NonNullable<
-  Awaited<ReturnType<typeof universityControllerReviewQueue>>
->;
-export type UniversityControllerReviewQueueQueryError = unknown;
-
-export function useUniversityControllerReviewQueue<
-  TData = Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-  TError = unknown,
->(
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-          TError,
-          Awaited<ReturnType<typeof universityControllerReviewQueue>>
-        >,
-        "initialData"
-      >;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useUniversityControllerReviewQueue<
-  TData = Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-          TError,
-          Awaited<ReturnType<typeof universityControllerReviewQueue>>
-        >,
-        "initialData"
-      >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useUniversityControllerReviewQueue<
-  TData = Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-
-export function useUniversityControllerReviewQueue<
-  TData = Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getUniversityControllerReviewQueueQueryOptions(options);
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-export const getUniversityControllerReviewQueueSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-  TError = unknown,
->(options?: {
-  query?: Partial<
-    UseSuspenseQueryOptions<
-      Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-      TError,
-      TData
-    >
-  >;
-}) => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getUniversityControllerReviewQueueQueryKey();
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof universityControllerReviewQueue>>
-  > = ({ signal }) => universityControllerReviewQueue(signal);
-
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type UniversityControllerReviewQueueSuspenseQueryResult = NonNullable<
-  Awaited<ReturnType<typeof universityControllerReviewQueue>>
->;
-export type UniversityControllerReviewQueueSuspenseQueryError = unknown;
-
-export function useUniversityControllerReviewQueueSuspense<
-  TData = Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-  TError = unknown,
->(
-  options: {
-    query: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useUniversityControllerReviewQueueSuspense<
-  TData = Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useUniversityControllerReviewQueueSuspense<
-  TData = Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-
-export function useUniversityControllerReviewQueueSuspense<
-  TData = Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-  TError = unknown,
->(
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerReviewQueue>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions =
-    getUniversityControllerReviewQueueSuspenseQueryOptions(options);
-
-  const query = useSuspenseQuery(
-    queryOptions,
-    queryClient,
-  ) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>;
-  };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
 export const universityControllerGetMoaDetail = (
   moaId: string | undefined | null,
   signal?: AbortSignal,
@@ -1325,165 +1065,297 @@ export function useUniversityControllerGetMoaDetailSuspense<
   return query;
 }
 
-export const universityControllerConfirmMoa = (
-  moaId: string | undefined | null,
+export const universityControllerGetPartnerMoas = (
+  companyId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
   return preconfiguredAxiosFunction<void>({
-    url: `/api/university/moas/${moaId}/confirm`,
-    method: "POST",
+    url: `/api/university/partners/${companyId}/moas`,
+    method: "GET",
     signal,
   });
 };
 
-export const getUniversityControllerConfirmMoaMutationOptions = <
-  TError = unknown,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof universityControllerConfirmMoa>>,
-    TError,
-    { moaId: string | undefined | null },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof universityControllerConfirmMoa>>,
-  TError,
-  { moaId: string | undefined | null },
-  TContext
-> => {
-  const mutationKey = ["universityControllerConfirmMoa"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof universityControllerConfirmMoa>>,
-    { moaId: string | undefined | null }
-  > = (props) => {
-    const { moaId } = props ?? {};
-
-    return universityControllerConfirmMoa(moaId);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UniversityControllerConfirmMoaMutationResult = NonNullable<
-  Awaited<ReturnType<typeof universityControllerConfirmMoa>>
->;
-
-export type UniversityControllerConfirmMoaMutationError = unknown;
-
-export const useUniversityControllerConfirmMoa = <
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof universityControllerConfirmMoa>>,
-      TError,
-      { moaId: string | undefined | null },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof universityControllerConfirmMoa>>,
-  TError,
-  { moaId: string | undefined | null },
-  TContext
-> => {
-  const mutationOptions =
-    getUniversityControllerConfirmMoaMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
-export const universityControllerRejectMoa = (
-  moaId: string | undefined | null,
-  rejectMoaDto: RejectMoaDto,
-  signal?: AbortSignal,
+export const getUniversityControllerGetPartnerMoasQueryKey = (
+  companyId?: string | undefined | null,
 ) => {
-  return preconfiguredAxiosFunction<void>({
-    url: `/api/university/moas/${moaId}/reject`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: rejectMoaDto,
-    signal,
-  });
+  return [`/api/university/partners/${companyId}/moas`] as const;
 };
 
-export const getUniversityControllerRejectMoaMutationOptions = <
+export const getUniversityControllerGetPartnerMoasQueryOptions = <
+  TData = Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
   TError = unknown,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof universityControllerRejectMoa>>,
-    TError,
-    { moaId: string | undefined | null; data: RejectMoaDto },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof universityControllerRejectMoa>>,
-  TError,
-  { moaId: string | undefined | null; data: RejectMoaDto },
-  TContext
-> => {
-  const mutationKey = ["universityControllerRejectMoa"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof universityControllerRejectMoa>>,
-    { moaId: string | undefined | null; data: RejectMoaDto }
-  > = (props) => {
-    const { moaId, data } = props ?? {};
-
-    return universityControllerRejectMoa(moaId, data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UniversityControllerRejectMoaMutationResult = NonNullable<
-  Awaited<ReturnType<typeof universityControllerRejectMoa>>
->;
-export type UniversityControllerRejectMoaMutationBody = RejectMoaDto;
-export type UniversityControllerRejectMoaMutationError = unknown;
-
-export const useUniversityControllerRejectMoa = <
-  TError = unknown,
-  TContext = unknown,
 >(
+  companyId: string | undefined | null,
   options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof universityControllerRejectMoa>>,
-      TError,
-      { moaId: string | undefined | null; data: RejectMoaDto },
-      TContext
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getUniversityControllerGetPartnerMoasQueryKey(companyId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>
+  > = ({ signal }) => universityControllerGetPartnerMoas(companyId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!companyId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type UniversityControllerGetPartnerMoasQueryResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>
+>;
+export type UniversityControllerGetPartnerMoasQueryError = unknown;
+
+export function useUniversityControllerGetPartnerMoas<
+  TData = Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+          TError,
+          Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerGetPartnerMoas<
+  TData = Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+          TError,
+          Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerGetPartnerMoas<
+  TData = Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+        TError,
+        TData
+      >
     >;
   },
   queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof universityControllerRejectMoa>>,
-  TError,
-  { moaId: string | undefined | null; data: RejectMoaDto },
-  TContext
-> => {
-  const mutationOptions =
-    getUniversityControllerRejectMoaMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
 };
+
+export function useUniversityControllerGetPartnerMoas<
+  TData = Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getUniversityControllerGetPartnerMoasQueryOptions(
+    companyId,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getUniversityControllerGetPartnerMoasSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getUniversityControllerGetPartnerMoasQueryKey(companyId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>
+  > = ({ signal }) => universityControllerGetPartnerMoas(companyId, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type UniversityControllerGetPartnerMoasSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>
+>;
+export type UniversityControllerGetPartnerMoasSuspenseQueryError = unknown;
+
+export function useUniversityControllerGetPartnerMoasSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerGetPartnerMoasSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerGetPartnerMoasSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useUniversityControllerGetPartnerMoasSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerGetPartnerMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getUniversityControllerGetPartnerMoasSuspenseQueryOptions(
+      companyId,
+      options,
+    );
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export const universityControllerListPartners = (signal?: AbortSignal) => {
   return preconfiguredAxiosFunction<void>({
     url: `/api/university/partners`,

@@ -90,6 +90,8 @@ interface DataTableProps<TData, TValue> {
   onSelectionChange?: (rows: TData[]) => void;
   /** Optional: callback invoked when a data row is clicked */
   onRowClick?: (row: TData) => void;
+  /** Optional: return extra Tailwind classes for a given row (overrides default even/odd bg) */
+  getRowClassName?: (row: TData, index: number) => string | undefined;
 }
 
 function TruncatedCellValue({
@@ -185,6 +187,7 @@ export function DataTable<TData, TValue>({
   pageSizes = [5, 10, 20, 50],
   className,
   onRowClick,
+  getRowClassName,
 }: DataTableProps<TData, TValue>) {
   const columnSizingStorageKey = React.useMemo(() => `data-table:${id}:column-sizing`, [id]);
 
@@ -308,16 +311,11 @@ export function DataTable<TData, TValue>({
     minWidth: `${indexColumnWidthRem}rem`,
     maxWidth: `${indexColumnWidthRem}rem`,
   };
-  const tableMinWidthRem = Math.max(
-    48,
-    table.getVisibleLeafColumns().length * 12 +
-      (enableRowSelection ? 2.75 : 0) +
-      indexColumnWidthRem
-  );
-  const tableWidthPx = Math.max(
-    tableMinWidthRem * 16,
-    table.getTotalSize() + (enableRowSelection ? 42 : 0) + indexColumnWidthRem * 16
-  );
+  const extraWidthPx = (enableRowSelection ? 42 : 0) + indexColumnWidthRem * 16;
+  const tableMinWidthPx =
+    table.getVisibleLeafColumns().reduce((sum, col) => sum + (col.columnDef.minSize ?? 80), 0) +
+    extraWidthPx;
+  const tableWidthPx = Math.max(tableMinWidthPx, table.getTotalSize() + extraWidthPx);
   const { pageIndex, pageSize } = table.getState().pagination;
 
   return (
@@ -371,7 +369,7 @@ export function DataTable<TData, TValue>({
       <div className="h-[480px] rounded-[0.1em] [&_[data-slot=table-container]]:h-full [&_[data-slot=table-container]]:overflow-auto">
         <Table
           className="table-fixed"
-          style={{ minWidth: `${tableMinWidthRem}rem`, width: `max(100%, ${tableWidthPx}px)` }}
+          style={{ minWidth: `${tableMinWidthPx}px`, width: `max(100%, ${tableWidthPx}px)` }}
         >
           <colgroup>
             <col style={indexColumnStyle} />
@@ -476,10 +474,21 @@ export function DataTable<TData, TValue>({
 
           <TableBody>
             {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row, rowIndex) => (
+              table.getRowModel().rows.map((row, rowIndex) => {
+                const rowCustomClass = getRowClassName?.(row.original, rowIndex);
+                const defaultRowBg = rowIndex % 2 === 0 ? "bg-white" : "bg-muted/40";
+                const stickyBg = row.getIsSelected()
+                  ? "bg-muted"
+                  : rowCustomClass
+                    ? rowCustomClass
+                    : rowIndex % 2 === 0
+                      ? "bg-white"
+                      : "bg-gray-50";
+                return (
                 <TableRow
                   className={cn(
-                    "group even:bg-muted/40 hover:bg-primary/10 odd:bg-white",
+                    "group hover:bg-primary/10",
+                    rowCustomClass ?? defaultRowBg,
                     onRowClick && "cursor-pointer"
                   )}
                   key={row.id}
@@ -489,11 +498,7 @@ export function DataTable<TData, TValue>({
                   <TableCell
                     className={cn(
                       "text-muted-foreground sticky left-0 z-10 pr-2 text-right font-medium shadow-[inset_-2px_0_0_theme(colors.gray.200)]",
-                      row.getIsSelected()
-                        ? "bg-muted"
-                        : rowIndex % 2 === 0
-                          ? "bg-white"
-                          : "bg-gray-50"
+                      stickyBg
                     )}
                     style={indexColumnStyle}
                   >
@@ -524,7 +529,8 @@ export function DataTable<TData, TValue>({
                     </TableCell>
                   ))}
                 </TableRow>
-              ))
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell

@@ -80,9 +80,14 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
   const [scale, setScale] = useState(1);
   const [dims, setDims] = useState<{ w: number; h: number } | null>(null);
 
-  // Load PDF: from the uploaded File (new) or the resolved signed URL (edit).
+  // Load PDF: from the uploaded File (new) or via a same-origin proxy of the signed URL (edit).
+  // The proxy avoids CORS: pdfjs uses fetch() which triggers preflight; GCS signed URLs have no
+  // Access-Control-Allow-Origin header, so we proxy through Next.js server-side instead.
+  const proxyUrl = mode === "edit" && initial?.pdfUrl
+    ? `/gcs-proxy?url=${encodeURIComponent(initial.pdfUrl)}`
+    : null;
   const fromFile = usePdfDocumentFromFile(mode === "new" ? file : null);
-  const fromUrl = usePdfDocumentFromUrl(mode === "edit" ? initial?.pdfUrl ?? null : null);
+  const fromUrl = usePdfDocumentFromUrl(proxyUrl);
   const { pdfDoc, pageCount, isLoading, error } = mode === "new" ? fromFile : fromUrl;
 
   // Intrinsic page size (PDF points), captured from page 1 — stored as page_w/page_h.

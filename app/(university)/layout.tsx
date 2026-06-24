@@ -6,9 +6,11 @@ export default function UniversityLayout({ children }: { children: React.ReactNo
   return (
     <QueryProvider>
       <UniversityProfileProvider>
-        <div className="flex min-h-screen flex-col">
+        <div className="flex h-screen flex-col overflow-hidden">
           <UniversityHeader />
-          {children}
+          <div className="flex-1 overflow-y-auto">
+            {children}
+          </div>
         </div>
       </UniversityProfileProvider>
     </QueryProvider>

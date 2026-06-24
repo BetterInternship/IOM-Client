@@ -16,6 +16,7 @@ export function AdminHeader() {
       nav={[
         { href: "/universities", label: "Universities" },
         { href: "/templates", label: "MOA Templates" },
+        { href: "/reviews", label: "Company Reviews" },
       ]}
       userPrimary="Administrator"
       logoutPath="/api/auth/admin/logout"

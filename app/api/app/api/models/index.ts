@@ -33,3 +33,4 @@ export * from "./universityForgotDto";
 export * from "./universityLoginDto";
 export * from "./universityResetDto";
 export * from "./updateStaffAccountDto";
+export * from "./rejectCompanyReviewDto";

@@ -2,7 +2,11 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useCompanyProfile } from "@/app/providers/company-profile.provider";
+import Link from "next/link";
+import {
+  useCompanyProfile,
+  useCompanyVerification,
+} from "@/app/providers/company-profile.provider";
 import { preconfiguredAxios, type ApiError } from "@/app/api/preconfig.axios";
 import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -74,12 +78,11 @@ function RequestDialog({
         setError(
           `You have reached the maximum of ${limit} active MOAs with this university.`
         );
-      } else if (code === "PROFILE_INCOMPLETE") {
+      } else if (code === "COMPANY_NOT_VERIFIED") {
         setError(
-          "Your profile is incomplete. Please complete your profile and try again."
+          "Your company must be verified by the platform team before you can request MOAs. " +
+            "If you recently changed your details, they need to be re-verified."
         );
-      } else if (code === "DOCUMENTS_MISSING") {
-        setError("You must upload all required documents before requesting an MOA.");
       } else {
         setError(
           "Couldn't request from this university at this time. Please contact us for help."
@@ -175,16 +178,19 @@ export default function UniversityDirectoryPage() {
   const { company, isLoading } = useCompanyProfile();
   const [selected, setSelected] = useState<University | null>(null);
 
+  const { data: verification, isLoading: vLoading } = useCompanyVerification(!!company);
+  const verified = verification?.status === "verified";
+
   const { data, isLoading: uniLoading } = useQuery({
     queryKey: ["company-universities"],
     queryFn: () =>
       preconfiguredAxios
         .get("/api/company/universities")
         .then((r) => r.data as { universities: University[] }),
-    enabled: !!company,
+    enabled: !!company && verified,
   });
 
-  if (isLoading) {
+  if (isLoading || vLoading) {
     return (
       <PageContainer className="space-y-6">
         <Skeleton className="h-8 w-40" />
@@ -194,14 +200,33 @@ export default function UniversityDirectoryPage() {
   }
   if (!company) return null;
 
+  // Global gate: the request surface is hidden entirely until the company is
+  // platform-verified. Per-university conditions apply only after this passes.
+  if (!verified) {
+    const status = verification?.status;
+    return (
+      <PageContainer className="space-y-6">
+        <PageHeader
+          title="Request MOA"
+          description="This is a list of universities you can request a MOA with."
+        />
+        <div className="border-warning/30 bg-warning/10 rounded-[0.33em] border p-4 text-sm text-gray-700">
+          {status === "rejected"
+            ? verification?.rejectionReason ||
+              "Your company could not be verified. Please review your profile and documents."
+            : status === "incomplete"
+              ? "Complete your profile and upload all required documents so the platform team can verify your company."
+              : "Your company is pending verification by the platform team. You can request MOAs once it's approved."}{" "}
+          <Link href="/profile" className="text-primary underline">
+            Go to your profile
+          </Link>
+          .
+        </div>
+      </PageContainer>
+    );
+  }
+
   const universities = data?.universities ?? [];
-  const profileComplete = !!(
-    company.registered_name &&
-    company.company_type &&
-    company.registered_address &&
-    company.rep_name &&
-    company.rep_title
-  );
 
   return (
     <PageContainer className="space-y-6">
@@ -209,12 +234,6 @@ export default function UniversityDirectoryPage() {
         title="Request MOA"
         description="This is a list of universities you can request a MOA with."
       />
-
-      {!profileComplete && (
-        <div className="border-warning/30 bg-warning/10 rounded-[0.33em] border p-4 text-sm text-gray-700">
-          Complete your profile and upload all required documents to request MOAs.
-        </div>
-      )}
 
       {uniLoading ? (
         <div className="space-y-2.5">
@@ -245,7 +264,7 @@ export default function UniversityDirectoryPage() {
                   )}
                 </div>
               </div>
-              {uni.requestable && profileComplete ? (
+              {uni.requestable ? (
                 <Button
                   className="flex-shrink-0"
                   size="sm"
