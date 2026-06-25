@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/accordion";
 import {
   Dialog,
+  DialogBottomSheet,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -40,7 +42,7 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { formatDateWithoutTime } from "@/lib/utils";
-import { ArrowLeft, Check, Loader2, Plus, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Eye, Loader2, X } from "lucide-react";
 
 interface ReviewDoc {
   type: string;
@@ -48,14 +50,17 @@ interface ReviewDoc {
   url: string | null;
 }
 
+type ReviewFieldDetails = Record<string, { type?: string; document?: string; value: string }>;
+
 interface HistoryEntry {
   id: string;
   status: "approved" | "rejected" | "superseded" | null;
   created_at: string;
   reviewed_at: string | null;
+  approval_expires_at: string | null;
   reviewer_email: string | null;
   rejection_reason: string | null;
-  document_review_details: Record<string, Record<string, string>>;
+  document_review_details: ReviewFieldDetails;
   material: Record<string, string | null> | null;
   documents: ReviewDoc[];
 }
@@ -72,12 +77,6 @@ interface ReviewDetail {
   openReviewId: string | null;
 }
 
-const FIELD_LABELS: Record<string, string> = {
-  registered_name: "Legal name",
-  company_type: "Company type",
-  registered_address: "Address",
-};
-
 const DOC_LABELS: Record<string, string> = {
   business_permit: "Business Permit",
   mayor_permit: "Mayor's Permit",
@@ -92,188 +91,137 @@ function ReviewStatusBadge({ status }: { status: HistoryEntry["status"] }) {
   return <Badge type="default">{status}</Badge>;
 }
 
+const REVIEW_FIELDS = [
+  { key: "Date of Incorporation", type: "date", document: "SEC/DTI Registration" },
+  { key: "Company Registry Number", type: "text", document: "SEC/DTI Registration" },
+] as const;
+
+function ReviewFieldsEditor({
+  values,
+  onChange,
+}: {
+  values: Record<string, string>;
+  onChange: (next: Record<string, string>) => void;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="approval-expires" className="text-md">
+        Review Details
+      </Label>
+      <div className="divide-y divide-gray-100 rounded-[0.33em] border border-gray-200">
+        {REVIEW_FIELDS.map((field) => (
+          <div key={field.key} className="flex items-center gap-4 px-3 py-2.5">
+            <Label className="text-muted-foreground w-52 flex-shrink-0 text-xs font-normal">
+              {field.key}
+            </Label>
+            <Input
+              type={field.type}
+              className="h-7 text-xs"
+              value={values[field.key] ?? ""}
+              onChange={(e) => onChange({ ...values, [field.key]: e.target.value })}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function reviewFieldsComplete(values: Record<string, string>): boolean {
+  return REVIEW_FIELDS.every((f) => (values[f.key] ?? "").trim() !== "");
+}
+
+function buildReviewDetails(values: Record<string, string>): ReviewFieldDetails {
+  const out: ReviewFieldDetails = {};
+  for (const field of REVIEW_FIELDS) {
+    out[field.key] = { type: field.type, document: field.document, value: values[field.key] ?? "" };
+  }
+  return out;
+}
+
+function DocumentsReadOnly({ entry }: { entry: HistoryEntry }) {
+  const [previewDoc, setPreviewDoc] = useState<ReviewDoc | null>(null);
+  if (entry.documents.length === 0) return null;
+  const isImage = (filename: string) => /\.(png|jpe?g|gif|webp)$/i.test(filename);
+  return (
+    <>
+      <div className="divide-y divide-gray-100 rounded-[0.16em] border border-gray-200 bg-gray-50">
+        {entry.documents.map((doc) => (
+          <button
+            key={doc.type}
+            className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-left transition-colors hover:bg-gray-100 disabled:cursor-default disabled:opacity-50 bg-gray-50"
+            onClick={() => setPreviewDoc(doc)}
+            disabled={!doc.url}
+          >
+            <Eye className="text-muted-foreground h-3.5 w-3.5 flex-shrink-0" />
+            <span className="text-sm font-medium text-gray-900">
+              View {DOC_LABELS[doc.type] ?? doc.type.replace(/_/g, " ")}
+            </span>
+            {!doc.url && (
+              <span className="text-muted-foreground ml-auto text-xs">Unavailable</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <Dialog open={!!previewDoc} onOpenChange={(o) => !o && setPreviewDoc(null)}>
+        <DialogBottomSheet className="flex h-[88vh] flex-col p-0">
+          <div className="flex items-center border-b border-gray-100 px-5 py-3.5 pr-14">
+            <DialogTitle className="text-sm font-medium text-gray-900">
+              {previewDoc
+                ? (DOC_LABELS[previewDoc.type] ?? previewDoc.type.replace(/_/g, " "))
+                : ""}
+            </DialogTitle>
+          </div>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {previewDoc?.url &&
+              (isImage(previewDoc.filename) ? (
+                <img
+                  src={previewDoc.url}
+                  alt={DOC_LABELS[previewDoc.type] ?? previewDoc.type}
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <iframe
+                  src={previewDoc.url}
+                  className="h-full w-full border-none"
+                  title={DOC_LABELS[previewDoc.type] ?? previewDoc.type}
+                />
+              ))}
+          </div>
+        </DialogBottomSheet>
+      </Dialog>
+    </>
+  );
+}
+
 function MaterialFields({ entry }: { entry: HistoryEntry }) {
+  if (!entry.material) return null;
+  const fields = Object.entries(entry.material).filter(([, v]) => v !== null && v !== "");
+  if (fields.length === 0) return null;
   return (
     <div className="divide-y divide-gray-100 rounded-[0.33em] border border-gray-200">
-      {Object.entries(FIELD_LABELS).map(([key, label]) => (
+      {fields.map(([key, value]) => (
         <div key={key} className="flex items-start gap-4 px-3 py-2">
-          <p className="text-muted-foreground w-44 flex-shrink-0 text-xs">{label}</p>
-          <p className="min-w-0 flex-1 text-sm font-medium text-gray-900">
-            {entry.material?.[key]
-              ? key === "company_type"
-                ? entry.material[key]!.replace(/_/g, " ")
-                : entry.material[key]
-              : "—"}
-          </p>
+          <p className="text-muted-foreground w-44 flex-shrink-0 text-xs">{key.replace(/_/g, " ")}</p>
+          <p className="min-w-0 flex-1 text-sm text-gray-900">{value}</p>
         </div>
       ))}
     </div>
   );
 }
 
-type DocDetails = Record<string, Record<string, string>>;
-
-function docDetailsComplete(docs: ReviewDoc[], details: DocDetails): boolean {
-  if (docs.length === 0) return false;
-  return docs.every((doc) => {
-    const pairs = details[doc.type];
-    return (
-      pairs &&
-      Object.keys(pairs).length > 0 &&
-      Object.entries(pairs).every(([k, v]) => k.trim() && v.trim())
-    );
-  });
-}
-
-function DocumentsEditor({
-  entry,
-  value,
-  onChange,
-}: {
-  entry: HistoryEntry;
-  value: DocDetails;
-  onChange: (next: DocDetails) => void;
-}) {
-  if (entry.documents.length === 0) return null;
-
-  const addRow = (docType: string) => {
-    const existing = value[docType] ?? {};
-    onChange({ ...value, [docType]: { ...existing, "": "" } });
-  };
-
-  const updateKey = (docType: string, oldKey: string, newKey: string) => {
-    const pairs = { ...(value[docType] ?? {}) };
-    const val = pairs[oldKey] ?? "";
-    delete pairs[oldKey];
-    pairs[newKey] = val;
-    onChange({ ...value, [docType]: pairs });
-  };
-
-  const updateVal = (docType: string, key: string, newVal: string) => {
-    onChange({ ...value, [docType]: { ...(value[docType] ?? {}), [key]: newVal } });
-  };
-
-  const removeRow = (docType: string, key: string) => {
-    const pairs = { ...(value[docType] ?? {}) };
-    delete pairs[key];
-    onChange({ ...value, [docType]: pairs });
-  };
-
+function ReviewFieldsReadOnly({ details }: { details: ReviewFieldDetails }) {
+  const entries = Object.entries(details).filter(([, v]) => v.value);
+  if (entries.length === 0) return null;
   return (
     <div className="divide-y divide-gray-100 rounded-[0.33em] border border-gray-200">
-      {entry.documents.map((doc) => {
-        const pairs = Object.entries(value[doc.type] ?? {});
-        return (
-          <div key={doc.type} className="flex gap-0">
-            {/* Left: label + open link */}
-            <div className="flex w-44 flex-shrink-0 flex-col justify-start gap-1 py-2 pl-3 pr-3">
-              <span className="text-muted-foreground text-xs">
-                {DOC_LABELS[doc.type] ?? doc.type}
-              </span>
-              {doc.url ? (
-                <a
-                  href={doc.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary text-xs underline"
-                >
-                  Open
-                </a>
-              ) : (
-                <span className="text-muted-foreground text-xs">Unavailable</span>
-              )}
-            </div>
-            {/* Vertical divider */}
-            <div className="w-px self-stretch bg-gray-100" />
-            {/* Right: KV editor */}
-            <div className="min-w-0 flex-1 space-y-1.5 py-2 pl-3 pr-3">
-              {pairs.map(([key, val], i) => (
-                <div key={i} className="flex items-center gap-1.5">
-                  <Input
-                    className="h-7 text-xs"
-                    placeholder="Field name"
-                    value={key}
-                    onChange={(e) => updateKey(doc.type, key, e.target.value)}
-                  />
-                  <Input
-                    className="h-7 text-xs"
-                    placeholder="Value"
-                    value={val}
-                    onChange={(e) => updateVal(doc.type, key, e.target.value)}
-                  />
-                  <Button
-                    variant="ghost"
-                    scheme="destructive"
-                    size="xs"
-                    className="h-6 w-6 flex-shrink-0 p-0"
-                    onClick={() => removeRow(doc.type, key)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ))}
-              <Button
-                variant="outline"
-                size="xs"
-                className="w-full border-dashed border-primary text-primary opacity-60 hover:opacity-100"
-                onClick={() => addRow(doc.type)}
-              >
-                <Plus className="h-3 w-3" /> Add field
-              </Button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function DocumentsReadOnly({ entry, details }: { entry: HistoryEntry; details: DocDetails }) {
-  if (entry.documents.length === 0) return null;
-  return (
-    <div className="divide-y divide-gray-100 rounded-[0.33em] border border-gray-200">
-      {entry.documents.map((doc) => {
-        const pairs = Object.entries(details[doc.type] ?? {}).filter(([k, v]) => k || v);
-        return (
-          <div key={doc.type} className="flex gap-0">
-            {/* Left: label + open link */}
-            <div className="flex w-44 flex-shrink-0 flex-col justify-start gap-1 py-2 pl-3 pr-3">
-              <span className="text-muted-foreground text-xs">
-                {DOC_LABELS[doc.type] ?? doc.type}
-              </span>
-              {doc.url ? (
-                <a
-                  href={doc.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary text-xs underline"
-                >
-                  Open
-                </a>
-              ) : (
-                <span className="text-muted-foreground text-xs">Unavailable</span>
-              )}
-            </div>
-            {/* Vertical divider */}
-            <div className="w-px self-stretch bg-gray-100" />
-            {/* Right: KV details */}
-            <div className="min-w-0 flex-1 py-2 pl-3 pr-3">
-              {pairs.length > 0 ? (
-                <div className="space-y-0.5">
-                  {pairs.map(([k, v]) => (
-                    <p key={k} className="text-xs text-gray-700">
-                      <span className="text-muted-foreground">{k}:</span>{" "}
-                      <span className="font-medium">{v}</span>
-                    </p>
-                  ))}
-                </div>
-              ) : (
-                <span className="text-muted-foreground text-xs">—</span>
-              )}
-            </div>
-          </div>
-        );
-      })}
+      {entries.map(([key, field]) => (
+        <div key={key} className="flex items-start gap-4 px-3 py-2">
+          <p className="text-muted-foreground w-52 flex-shrink-0 text-xs">{key}</p>
+          <p className="min-w-0 flex-1 text-sm font-medium text-gray-900">{field.value}</p>
+        </div>
+      ))}
     </div>
   );
 }
@@ -310,7 +258,8 @@ export default function AdminCompanyReviewPage() {
   const queryClient = useQueryClient();
   const [showReject, setShowReject] = useState(false);
   const [reason, setReason] = useState("");
-  const [docDetails, setDocDetails] = useState<DocDetails>({});
+  const [reviewValues, setReviewValues] = useState<Record<string, string>>({});
+  const [approvalExpiresAt, setApprovalExpiresAt] = useState("");
   const [selectedPast, setSelectedPast] = useState<HistoryEntry | null>(null);
 
   const { data, isLoading, refetch } = useQuery({
@@ -340,11 +289,13 @@ export default function AdminCompanyReviewPage() {
   const approve = useMutation({
     mutationFn: () =>
       preconfiguredAxios.post(`/api/admin/companies/${companyId}/approve`, {
-        document_review_details: docDetails,
+        document_review_details: buildReviewDetails(reviewValues),
+        approval_expires_at: approvalExpiresAt,
       }),
     onSuccess: () => {
       toast.success("Company verified");
-      setDocDetails({});
+      setReviewValues({});
+      setApprovalExpiresAt("");
       invalidate();
     },
     onError: (e: Error) => {
@@ -375,7 +326,9 @@ export default function AdminCompanyReviewPage() {
     return { openEntry: open ?? null, pastEntries: past };
   }, [data]);
 
-  const canApprove = openEntry ? docDetailsComplete(openEntry.documents, docDetails) : false;
+  const canApprove = openEntry
+    ? reviewFieldsComplete(reviewValues) && !!approvalExpiresAt
+    : false;
 
   if (isLoading) {
     return (
@@ -410,67 +363,77 @@ export default function AdminCompanyReviewPage() {
       </Link>
 
       <div>
-        <h1 className="text-xl font-semibold text-gray-900">{company.display_name}</h1>
+        <h1 className="flex flex-row items-center gap-2 text-xl font-semibold text-gray-900">
+          {company.registered_name} 
+          <ReviewStatusBadge status={openEntry.status} />
+        </h1>
         <p className="text-muted-foreground mt-0.5 text-sm">
           {company.email}
-          {company.company_type && ` · ${company.company_type.replace(/_/g, " ")}`}
+        </p>
+        <p className="text-muted-foreground mt-0.5 text-sm">
+          Submitted {formatDateWithoutTime(openEntry.created_at)}
         </p>
       </div>
 
       {/* Pending review */}
       {openEntry ? (
-        <Card className="overflow-hidden">
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <ReviewStatusBadge status={openEntry.status} />
-              <span className="text-muted-foreground text-xs">
-                Submitted {formatDateWithoutTime(openEntry.created_at)}
-              </span>
-            </div>
-            <MaterialFields entry={openEntry} />
-            <DocumentsEditor entry={openEntry} value={docDetails} onChange={setDocDetails} />
-            <div className="flex gap-3 border-t border-gray-100 pt-4">
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    scheme="supportive"
-                    className="flex-1"
-                    disabled={approve.isPending || !canApprove}
+        <>
+          <DocumentsReadOnly entry={openEntry} />
+          <br />
+          <ReviewFieldsEditor values={reviewValues} onChange={setReviewValues} />
+          <div className="space-y-1.5">
+            <Label htmlFor="approval-expires" className="text-md">
+              Approval expires on
+            </Label>
+            <Input
+              id="approval-expires"
+              type="date"
+              className="h-8 text-xs"
+              value={approvalExpiresAt}
+              onChange={(e) => setApprovalExpiresAt(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-3 border-t border-gray-100 pt-4">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  scheme="supportive"
+                  className="flex-1"
+                  disabled={approve.isPending || !canApprove}
+                >
+                  {approve.isPending ? <Loader2 className="animate-spin" /> : <Check />}
+                  Approve
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Verify {company.display_name}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    The company will be able to request MOAs from any university and is emailed a
+                    confirmation.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-supportive text-supportive-foreground hover:bg-supportive/90"
+                    onClick={() => approve.mutate()}
                   >
-                    {approve.isPending ? <Loader2 className="animate-spin" /> : <Check />}
                     Approve
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Verify {company.display_name}?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      The company will be able to request MOAs from any university and is emailed a
-                      confirmation.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-supportive text-supportive-foreground hover:bg-supportive/90"
-                      onClick={() => approve.mutate()}
-                    >
-                      Approve
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button
-                variant="outline"
-                scheme="destructive"
-                className="flex-1"
-                onClick={() => setShowReject(true)}
-              >
-                <X /> Reject
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+            <Button
+              variant="outline"
+              scheme="destructive"
+              className="flex-1"
+              onClick={() => setShowReject(true)}
+            >
+              <X /> Reject
+            </Button>
+          </div>
+        </>
       ) : !pastEntries.length ? (
         <Card>
           <CardContent className="text-muted-foreground py-8 text-center text-sm">
@@ -529,11 +492,14 @@ export default function AdminCompanyReviewPage() {
                   Reason: {selectedPast.rejection_reason}
                 </p>
               )}
+              {selectedPast.approval_expires_at && (
+                <p className="text-muted-foreground text-xs">
+                  Approval expires: {formatDateWithoutTime(selectedPast.approval_expires_at)}
+                </p>
+              )}
               <MaterialFields entry={selectedPast} />
-              <DocumentsReadOnly
-                entry={selectedPast}
-                details={selectedPast.document_review_details ?? {}}
-              />
+              <DocumentsReadOnly entry={selectedPast} />
+              <ReviewFieldsReadOnly details={selectedPast.document_review_details ?? {}} />
             </div>
           )}
         </DialogContent>

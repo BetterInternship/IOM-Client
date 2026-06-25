@@ -111,7 +111,7 @@ function VerificationBanner({
   status,
   rejectionReason,
 }: {
-  status: "incomplete" | "pending" | "rejected";
+  status: "incomplete" | "pending" | "rejected" | "expired";
   rejectionReason: string | null;
 }) {
   if (status === "incomplete") {
@@ -148,6 +148,25 @@ function VerificationBanner({
           <p className="text-muted-foreground text-sm">
             You can request MOAs once the platform team verifies your company.
             We&apos;ll email you when it&apos;s done.
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (status === "expired") {
+    return (
+      <Card className="flex-row items-start gap-3 border-destructive/30 bg-destructive/5 px-5 py-4">
+        <AlertCircle className="text-destructive mt-0.5 h-5 w-5 flex-shrink-0" />
+        <div className="space-y-0.5">
+          <p className="text-sm font-medium text-gray-900">Verification expired</p>
+          <p className="text-muted-foreground text-sm">
+            Your company verification has expired. Please re-upload your documents to request
+            re-review.{" "}
+            <Link href="/profile" className="text-primary underline">
+              Update your profile
+            </Link>
+            .
           </p>
         </div>
       </Card>

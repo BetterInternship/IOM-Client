@@ -27,7 +27,7 @@ export function useCompanyProfile() {
   return useContext(CompanyProfileContext);
 }
 
-export type VerificationStatus = "incomplete" | "pending" | "verified" | "rejected";
+export type VerificationStatus = "incomplete" | "pending" | "verified" | "expired" | "rejected";
 
 export interface CompanyVerification {
   status: VerificationStatus;

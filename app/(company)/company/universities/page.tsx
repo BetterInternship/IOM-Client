@@ -301,7 +301,9 @@ export default function UniversityDirectoryPage() {
               "Your company could not be verified. Please review your profile and documents."
             : status === "incomplete"
               ? "Complete your profile and upload all required documents so the platform team can verify your company."
-              : "Your company is pending verification by the platform team. You can request MOAs once it's approved."}{" "}
+              : status === "expired"
+                ? "Your company verification has expired. Please re-upload your documents to request re-review."
+                : "Your company is pending verification by the platform team. You can request MOAs once it's approved."}{" "}
           <Link href="/profile" className="text-primary underline">
             Go to your profile
           </Link>

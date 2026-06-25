@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
 import {
   Dialog,
+  DialogBottomSheet,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -30,7 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { MoaStatusBadge } from "@/components/status-badge";
 import { formatDateWithoutTime, cn } from "@/lib/utils";
-import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Eye, Loader2, ShieldCheck } from "lucide-react";
 
 interface Partner {
   company: {
@@ -61,7 +62,7 @@ interface PartnerMoaEntry {
   template: { name: string } | null;
 }
 
-type DocReviewDetails = Record<string, Record<string, string>>;
+type DocReviewDetails = Record<string, { type?: string; document?: string; value: string }>;
 
 interface CompanyDoc {
   type: string;
@@ -76,65 +77,80 @@ const DOC_LABELS: Record<string, string> = {
   sec_dti_registration: "SEC/DTI Registration",
 };
 
-function VerifiedDocumentDetails({
-  details,
-  documents,
-}: {
-  details: DocReviewDetails;
-  documents: CompanyDoc[];
-}) {
-  const entries = Object.entries(details).filter(([, pairs]) => Object.keys(pairs).length > 0);
+function VerifiedDocumentDetails({ details }: { details: DocReviewDetails }) {
+  const entries = Object.entries(details).filter(([, v]) => v.value);
   if (entries.length === 0) return null;
-  const docByType = new Map(documents.map((d) => [d.type, d]));
   return (
     <div className="space-y-0 rounded-[0.33em] border border-gray-200">
       <div className="flex items-center gap-1.5 border-b border-gray-100 px-3 py-2 text-xs font-medium text-gray-700">
         <ShieldCheck className="h-3.5 w-3.5 text-supportive" />
-        Verified document details
+        Verified details
       </div>
       <div className="divide-y divide-gray-100">
-        {entries.map(([docType, pairs]) => {
-          const doc = docByType.get(docType);
-          const kvPairs = Object.entries(pairs).filter(([k, v]) => k || v);
-          return (
-            <div key={docType} className="flex gap-0">
-              <div className="flex w-44 flex-shrink-0 flex-col justify-start gap-1 py-2 pl-3 pr-3">
-                <span className="text-muted-foreground text-xs">
-                  {DOC_LABELS[docType] ?? docType.replace(/_/g, " ")}
-                </span>
-                {doc?.url ? (
-                  <a
-                    href={doc.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary text-xs underline"
-                  >
-                    Open
-                  </a>
-                ) : (
-                  <span className="text-muted-foreground text-xs">Unavailable</span>
-                )}
-              </div>
-              <div className="w-px self-stretch bg-gray-100" />
-              <div className="min-w-0 flex-1 py-2 pl-3 pr-3">
-                {kvPairs.length > 0 ? (
-                  <div className="space-y-0.5">
-                    {kvPairs.map(([k, v]) => (
-                      <p key={k} className="text-xs text-gray-700">
-                        <span className="text-muted-foreground">{k}:</span>{" "}
-                        <span className="font-medium">{v}</span>
-                      </p>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="text-muted-foreground text-xs">—</span>
-                )}
-              </div>
-            </div>
-          );
-        })}
+        {entries.map(([key, field]) => (
+          <div key={key} className="flex items-center gap-4 px-3 py-2">
+            <p className="text-muted-foreground w-44 flex-shrink-0 text-xs">{key}</p>
+            <p className="text-sm font-medium text-gray-900">{field.value}</p>
+          </div>
+        ))}
       </div>
     </div>
+  );
+}
+
+function DocumentsSection({ documents }: { documents: CompanyDoc[] }) {
+  const [previewDoc, setPreviewDoc] = useState<CompanyDoc | null>(null);
+  if (documents.length === 0) return null;
+  const isImage = (filename: string) => /\.(png|jpe?g|gif|webp)$/i.test(filename);
+  return (
+    <>
+      <div className="divide-y divide-gray-100 rounded-[0.33em] border border-gray-200">
+        {documents.map((doc) => (
+          <button
+            key={doc.type}
+            className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-gray-50 disabled:cursor-default disabled:opacity-50"
+            onClick={() => setPreviewDoc(doc)}
+            disabled={!doc.url}
+          >
+            <Eye className="text-muted-foreground h-3.5 w-3.5 flex-shrink-0" />
+            <span className="text-sm font-medium text-gray-900">
+              View {DOC_LABELS[doc.type] ?? doc.type.replace(/_/g, " ")}
+            </span>
+            {!doc.url && (
+              <span className="text-muted-foreground ml-auto text-xs">Unavailable</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <Dialog open={!!previewDoc} onOpenChange={(o) => !o && setPreviewDoc(null)}>
+        <DialogBottomSheet className="flex h-[88vh] flex-col p-0">
+          <div className="flex items-center border-b border-gray-100 px-5 py-3.5 pr-14">
+            <DialogTitle className="text-sm font-medium text-gray-900">
+              {previewDoc
+                ? (DOC_LABELS[previewDoc.type] ?? previewDoc.type.replace(/_/g, " "))
+                : ""}
+            </DialogTitle>
+          </div>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {previewDoc?.url &&
+              (isImage(previewDoc.filename) ? (
+                <img
+                  src={previewDoc.url}
+                  alt={DOC_LABELS[previewDoc.type] ?? previewDoc.type}
+                  className="h-full w-full object-contain"
+                />
+              ) : (
+                <iframe
+                  src={previewDoc.url}
+                  className="h-full w-full border-none"
+                  title={DOC_LABELS[previewDoc.type] ?? previewDoc.type}
+                />
+              ))}
+          </div>
+        </DialogBottomSheet>
+      </Dialog>
+    </>
   );
 }
 
@@ -467,8 +483,10 @@ export default function PartnersPage() {
             {partnerMoasData?.company?.document_review_details && (
               <VerifiedDocumentDetails
                 details={partnerMoasData.company.document_review_details}
-                documents={partnerMoasData.companyDocuments ?? []}
               />
+            )}
+            {partnerMoasData?.companyDocuments && (
+              <DocumentsSection documents={partnerMoasData.companyDocuments} />
             )}
 
             {isMoasLoading ? (
