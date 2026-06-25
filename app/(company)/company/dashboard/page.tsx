@@ -303,7 +303,7 @@ export default function CompanyDashboardPage() {
     // master exits left as the detail enters from the right (and reverses on back).
     return (
       <div
-        className="overflow-hidden transition-[height] duration-300 ease-out"
+        className="overflow-hidden"
         style={{ height: trackHeight }}
       >
         <div
@@ -393,10 +393,10 @@ export default function CompanyDashboardPage() {
             status={status}
             rejectionReason={verification?.rejectionReason ?? null}
           />
-          {partners.length > 0 && <PartnersView />}
+          {partners.length > 0 && PartnersView()}
         </>
       ) : (
-        <PartnersView />
+        PartnersView()
       )}
     </PageContainer>
   );
