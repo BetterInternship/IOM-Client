@@ -18,14 +18,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FormError } from "@/components/auth-shell";
 import {
   Dialog,
+  DialogBottomSheet,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { resolveFile } from "@/app/lib/resolve-file";
 import { cn } from "@/lib/utils";
-import { Building2, Check, Loader2, Upload } from "lucide-react";
+import { Building2, Check, Eye, Loader2, Upload, X } from "lucide-react";
 
 interface University {
   id: string;
@@ -42,6 +44,50 @@ interface Template {
   term_months: number;
 }
 
+function TemplatePreviewSheet({
+  template,
+  onClose,
+}: {
+  template: Template;
+  onClose: () => void;
+}) {
+  const { data: pdfUrl, isLoading } = useQuery({
+    queryKey: ["template-preview-url", template.id],
+    queryFn: () => resolveFile("template_pdf", template.id),
+  });
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogBottomSheet showCloseButton={false} className="flex h-[85vh] flex-col overflow-hidden">
+        <div className="flex flex-shrink-0 items-center justify-between border-b px-4 py-3">
+          <div className="min-w-0">
+            <DialogTitle className="text-sm font-medium text-gray-900">{template.name}</DialogTitle>
+            {template.description && (
+              <p className="text-muted-foreground truncate text-xs">{template.description}</p>
+            )}
+          </div>
+          <Button variant="ghost" size="icon" className="ml-4 flex-shrink-0" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="min-h-0 flex-1">
+          {isLoading ? (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="text-muted-foreground h-5 w-5 animate-spin" />
+            </div>
+          ) : pdfUrl ? (
+            <iframe src={pdfUrl} className="h-full w-full border-0" title={template.name} />
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-muted-foreground text-sm">Couldn't load the template PDF.</p>
+            </div>
+          )}
+        </div>
+      </DialogBottomSheet>
+    </Dialog>
+  );
+}
+
 function RequestDialog({
   university,
   onClose,
@@ -53,6 +99,7 @@ function RequestDialog({
   const queryClient = useQueryClient();
   const [step, setStep] = useState<1 | 2>(1);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
   const [repName, setRepName] = useState("");
   const [repTitle, setRepTitle] = useState("");
   const [sigMode, setSigMode] = useState<"type" | "upload">("type");
@@ -112,6 +159,7 @@ function RequestDialog({
   const step2Ready = !!repName.trim() && !!repTitle.trim() && sigReady;
 
   return (
+    <>
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
@@ -133,31 +181,41 @@ function RequestDialog({
             {templates.map((t) => {
               const selected = selectedTemplate === t.id;
               return (
-                <Button
+                <div
                   key={t.id}
-                  variant="ghost"
                   className={cn(
-                    "h-auto w-full items-start justify-start gap-3 rounded-[0.33em] border p-3 text-left",
+                    "relative flex items-stretch rounded-[0.33em] border",
                     selected ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
                   )}
-                  onClick={() => setSelectedTemplate(t.id)}
                 >
-                  <span
-                    className={cn(
-                      "mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border",
-                      selected ? "border-primary bg-primary text-white" : "border-gray-300"
-                    )}
+                  <Button
+                    variant="ghost"
+                    className="h-auto flex-1 items-start justify-start gap-3 rounded-r-none p-3 text-left hover:bg-transparent"
+                    onClick={() => setSelectedTemplate(t.id)}
                   >
-                    {selected && <Check className="h-3 w-3" />}
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-gray-900">{t.name}</span>
-                    {t.description && (
-                      <span className="text-muted-foreground mt-0.5 block text-xs">{t.description}</span>
-                    )}
-                    <span className="text-muted-foreground mt-1 block text-xs">Term: {t.term_months} months</span>
-                  </span>
-                </Button>
+                    <span
+                      className={cn(
+                        "mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border",
+                        selected ? "border-primary bg-primary text-white" : "border-gray-300"
+                      )}
+                    >
+                      {selected && <Check className="h-3 w-3" />}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-medium text-gray-900">{t.name}</span>
+                      {t.description && (
+                        <span className="text-muted-foreground mt-0.5 block text-xs">{t.description}</span>
+                      )}
+                      <span className="text-muted-foreground mt-1 block text-xs">Term: {t.term_months} months</span>
+                    </span>
+                  </Button>
+                  <div
+                    className="flex flex-row items-center text-muted-foreground bg-gray-50 p-2 px-4 gap-1 hover:cursor-pointer hover:bg-gray-200 duration-200 text-sm"
+                    onClick={() => setPreviewTemplate(t)}
+                  >
+                    Preview
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -256,6 +314,13 @@ function RequestDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    {previewTemplate && (
+      <TemplatePreviewSheet
+        template={previewTemplate}
+        onClose={() => setPreviewTemplate(null)}
+      />
+    )}
+    </>
   );
 }
 
