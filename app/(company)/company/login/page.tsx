@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { AuthShell, FormError } from "@/components/auth-shell";
@@ -10,9 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
-export default function CompanyLoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite_token") ?? "";
+
   const [tin, setTin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,8 +23,27 @@ export default function CompanyLoginPage() {
   const login = useMutation({
     mutationFn: () =>
       preconfiguredAxios.post("/api/auth/company/login", { tin, password }),
-    onSuccess: () => {
+    onSuccess: async () => {
       queryClient.resetQueries({ queryKey: ["company-me"] });
+
+      if (inviteToken) {
+        try {
+          const res = await preconfiguredAxios
+            .post("/api/company/invites/claim", { token: inviteToken })
+            .then((r) => r.data as { university_id: string; template_id: string | null });
+
+          if (res.university_id) {
+            const params = new URLSearchParams();
+            if (res.template_id) params.set("template_id", res.template_id);
+            const qs = params.toString() ? `?${params}` : "";
+            router.replace(`/company/universities/${res.university_id}/queue-moa${qs}`);
+            return;
+          }
+        } catch {
+          // Invite expired or already claimed — fall through to dashboard
+        }
+      }
+
       router.replace("/company/dashboard");
     },
     onError: (e: Error) => setError(e.message),
@@ -37,11 +59,22 @@ export default function CompanyLoginPage() {
     <AuthShell
       portal="Company"
       title="Sign in"
-      description="Use your company TIN and password to access the portal."
+      description={
+        inviteToken
+          ? "Sign in to continue with your invitation."
+          : "Use your company TIN and password to access the portal."
+      }
       footer={
         <>
           New here?{" "}
-          <Link href="/register" className="text-primary font-medium">
+          <Link
+            href={
+              inviteToken
+                ? `/company/register?invite_token=${encodeURIComponent(inviteToken)}`
+                : "/register"
+            }
+            className="text-primary font-medium"
+          >
             Register your company
           </Link>
         </>
@@ -96,5 +129,21 @@ export default function CompanyLoginPage() {
         </Button>
       </form>
     </AuthShell>
+  );
+}
+
+export default function CompanyLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthShell portal="Company" title="Sign in">
+          <div className="flex justify-center py-4">
+            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+          </div>
+        </AuthShell>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
   );
 }

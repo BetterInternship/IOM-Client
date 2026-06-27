@@ -19,6 +19,11 @@ import { MoaStatusBadge } from "@/components/status-badge";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { AlertCircle, ArrowLeft, ClipboardList, Clock, Plus } from "lucide-react";
 
+interface QueuedMoa {
+  id: string;
+  status: "pending" | "fulfilled" | "failed";
+}
+
 interface Moa {
   id: string;
   status: "active" | "rejected";
@@ -208,6 +213,15 @@ export default function CompanyDashboardPage() {
     enabled: !!company,
   });
 
+  const { data: queuedData } = useQuery({
+    queryKey: ["company-queued-moas"],
+    queryFn: () =>
+      preconfiguredAxios
+        .get("/api/company/queued-moas")
+        .then((r) => r.data as { queued: QueuedMoa[] }),
+    enabled: !!company,
+  });
+
   const { data: verification, isLoading: vLoading } = useCompanyVerification(!!company);
 
   // Keep the carousel's height matched to whichever panel is on screen so the
@@ -259,6 +273,8 @@ export default function CompanyDashboardPage() {
 
   const status = verification?.status;
   const canRequest = status === "verified";
+  const pendingQueued = (queuedData?.queued ?? []).filter((q) => q.status === "pending");
+  const failedQueued = (queuedData?.queued ?? []).filter((q) => q.status === "failed");
   const detail = lastSelectedId ? byUni.get(lastSelectedId) ?? null : null;
   const history = detail
     ? [...detail.moas].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
@@ -381,6 +397,39 @@ export default function CompanyDashboardPage() {
           </Button>
         )}
       </PageHeader>
+
+      {pendingQueued.length > 0 && (
+        <Card className="flex-row items-start gap-3 border-primary/30 bg-primary/5 px-5 py-4">
+          <Clock className="text-primary mt-0.5 h-5 w-5 flex-shrink-0" />
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-gray-900">
+              {pendingQueued.length === 1 ? "MOA request queued" : `${pendingQueued.length} MOA requests queued`}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              {pendingQueued.length === 1 ? "It" : "They"} will be issued automatically once the
+              platform verifies your company.
+            </p>
+          </div>
+        </Card>
+      )}
+
+      {failedQueued.length > 0 && (
+        <Card className="flex-row items-start gap-3 border-destructive/30 bg-destructive/5 px-5 py-4">
+          <AlertCircle className="text-destructive mt-0.5 h-5 w-5 flex-shrink-0" />
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium text-gray-900">
+              {failedQueued.length === 1 ? "A queued MOA failed" : `${failedQueued.length} queued MOAs failed`}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              Please contact us for help at{" "}
+              <a href="mailto:hello@betterinternship.com" className="text-primary underline">
+                hello@betterinternship.com
+              </a>
+              .
+            </p>
+          </div>
+        </Card>
+      )}
 
       {vLoading ? (
         <div className="space-y-2.5">

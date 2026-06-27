@@ -1,6 +1,8 @@
 "use client";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   useCompanyProfile,
@@ -81,7 +83,11 @@ interface CompanyDoc {
   uploaded_at: string;
 }
 
-export default function CompanyProfilePage() {
+function ProfileContent() {
+  const searchParams = useSearchParams();
+  const inviteUniId = searchParams.get("invite_uni");
+  const inviteTemplateId = searchParams.get("invite_template");
+
   const { company, isLoading } = useCompanyProfile();
   const queryClient = useQueryClient();
 
@@ -288,7 +294,29 @@ export default function CompanyProfilePage() {
         description="Both the company profile and required documents are needed before you can request MOAs."
       />
 
-      {incomplete && (
+      {inviteUniId && (
+        <div className="border-primary/30 bg-primary/5 rounded-[0.33em] border px-4 py-3 text-sm text-gray-700">
+          {incomplete ? (
+            <>
+              You have a pending MOA invitation. Complete your company profile and upload all
+              required documents to proceed.
+            </>
+          ) : (
+            <>
+              Your profile is ready.{" "}
+              <Link
+                href={`/company/universities/${inviteUniId}/queue-moa${inviteTemplateId ? `?template_id=${inviteTemplateId}` : ""}`}
+                className="text-primary font-medium underline"
+              >
+                {verification?.status === "verified" ? "Request" : "Queue"} your MOA now
+              </Link>
+              .
+            </>
+          )}
+        </div>
+      )}
+
+      {!inviteUniId && incomplete && (
         <div className="rounded-[0.33em] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           You need to complete your profile before you can start requesting MOAs on the site.
         </div>
@@ -496,5 +524,13 @@ export default function CompanyProfilePage() {
         </AlertDialogContent>
       </AlertDialog>
     </PageContainer>
+  );
+}
+
+export default function CompanyProfilePage() {
+  return (
+    <Suspense>
+      <ProfileContent />
+    </Suspense>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter, useSearchParams } from "next/navigation";
 import { preconfiguredAxios, type ApiError } from "@/app/api/preconfig.axios";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -21,9 +21,18 @@ import { ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
 
 type Step = "details" | "otp";
 
-export default function CompanyRegisterPage() {
+interface InvitePeek {
+  email: string;
+  university: { id: string; registered_name: string };
+  template: { id: string } | null;
+}
+
+function RegisterPageContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const inviteToken = searchParams.get("invite_token") ?? "";
+
   const [step, setStep] = useState<Step>("details");
   const [form, setForm] = useState({
     tin: "",
@@ -37,12 +46,23 @@ export default function CompanyRegisterPage() {
   const [tinTakenEmail, setTinTakenEmail] = useState("");
   const [resendIn, setResendIn] = useState(0);
 
+  const { data: invitePeek, isLoading: inviteLoading } = useQuery<InvitePeek>({
+    queryKey: ["invite-peek", inviteToken],
+    queryFn: () =>
+      preconfiguredAxios
+        .get(`/api/invite/company?token=${encodeURIComponent(inviteToken)}`)
+        .then((r) => r.data as InvitePeek),
+    enabled: !!inviteToken,
+    retry: false,
+  });
+
   useEffect(() => {
     if (resendIn <= 0) return;
     const t = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(t);
   }, [resendIn]);
 
+  // Standard registration
   const register = useMutation({
     mutationFn: () => preconfiguredAxios.post("/api/auth/company/register", form),
     onSuccess: (res) => {
@@ -50,6 +70,40 @@ export default function CompanyRegisterPage() {
       setStep("otp");
       setError("");
       setTinTakenEmail("");
+    },
+    onError: (e: Error) => {
+      const err = e as ApiError;
+      if (err.code === "TIN_TAKEN") {
+        setTinTakenEmail(err.censoredEmail ?? "");
+        setError("");
+      } else {
+        setError(e.message);
+        setTinTakenEmail("");
+      }
+    },
+  });
+
+  // Invite registration — no OTP, email locked to invite address
+  const registerInvited = useMutation({
+    mutationFn: () =>
+      preconfiguredAxios
+        .post("/api/auth/company/register-invited", {
+          token: inviteToken,
+          tin: form.tin,
+          legalIdentifier: form.legalIdentifier,
+          displayName: form.displayName,
+          password: form.password,
+        })
+        .then((r) => r.data as { university_id: string; template_id: string | null }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["company-me"] });
+      if (data.university_id) {
+        const params = new URLSearchParams({ invite_uni: data.university_id });
+        if (data.template_id) params.set("invite_template", data.template_id);
+        router.replace(`/company/profile?${params}`);
+      } else {
+        router.replace("/company/dashboard");
+      }
     },
     onError: (e: Error) => {
       const err = e as ApiError;
@@ -78,9 +132,7 @@ export default function CompanyRegisterPage() {
 
   const resend = useMutation({
     mutationFn: () =>
-      preconfiguredAxios.post("/api/auth/company/otp/request", {
-        repEmail: form.repEmail,
-      }),
+      preconfiguredAxios.post("/api/auth/company/otp/request", { repEmail: form.repEmail }),
     onSuccess: (res) => {
       setResendIn(res.data?.resendIn ?? 60);
       setError("");
@@ -94,8 +146,190 @@ export default function CompanyRegisterPage() {
       setForm({ ...form, [k]: e.target.value }),
   });
 
-  const detailsValid =
-    form.tin && form.legalIdentifier && form.repEmail && form.password.length >= 8;
+  // ── Invite flow ───────────────────────────────────────────────────────────
+
+  if (inviteToken) {
+    if (inviteLoading) {
+      return (
+        <AuthShell portal="Company" title="Loading invite…">
+          <div className="flex justify-center py-4">
+            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+          </div>
+        </AuthShell>
+      );
+    }
+
+    if (!invitePeek) {
+      return (
+        <AuthShell portal="Company" title="Invite not found">
+          <FormError>This invite link has expired or is no longer valid.</FormError>
+          <div className="mt-4 text-center">
+            <Link href="/register" className="text-primary text-sm font-medium">
+              Register without an invite
+            </Link>
+          </div>
+        </AuthShell>
+      );
+    }
+
+    const inviteDetailsValid =
+      !!form.tin && !!form.legalIdentifier && form.password.length >= 8;
+
+    return (
+      <AuthShell
+        portal="Company"
+        title="Create your account"
+        description={
+          <>
+            Invited by{" "}
+            <span className="text-foreground font-medium">
+              {invitePeek.university.registered_name}
+            </span>
+            . Your account email is pre-verified — no OTP needed.
+          </>
+        }
+        footer={
+          <>
+            Already registered?{" "}
+            <Link
+              href={`/company/login?invite_token=${encodeURIComponent(inviteToken)}`}
+              className="text-primary font-medium"
+            >
+              Sign in instead
+            </Link>
+          </>
+        }
+      >
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setError("");
+            setTinTakenEmail("");
+            registerInvited.mutate();
+          }}
+          className="space-y-4"
+        >
+          <FormError>{error}</FormError>
+
+          <div className="space-y-1.5">
+            <Label>Account email</Label>
+            <Input value={invitePeek.email} disabled className="bg-gray-50" />
+            <p className="text-muted-foreground text-xs">
+              Set by the inviting university. This will be your login email.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="tin">Company TIN</Label>
+            <Input
+              id="tin"
+              inputMode="numeric"
+              placeholder="123456789"
+              maxLength={9}
+              value={form.tin}
+              onChange={(e) =>
+                setForm({ ...form, tin: e.target.value.replace(/\D/g, "").slice(0, 9) })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="legalIdentifier">BIR-registered name</Label>
+            <Input
+              id="legalIdentifier"
+              placeholder="ACME CORPORATION, INC."
+              className="uppercase"
+              value={form.legalIdentifier}
+              onChange={(e) =>
+                setForm({ ...form, legalIdentifier: e.target.value.toUpperCase() })
+              }
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="displayName">Display name</Label>
+            <Input
+              id="displayName"
+              placeholder="ACME CORP"
+              className="uppercase"
+              value={form.displayName}
+              onChange={(e) =>
+                setForm({ ...form, displayName: e.target.value.toUpperCase() })
+              }
+            />
+            <p className="text-muted-foreground text-xs">
+              Shown across the platform. Defaults to your registered name.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              {...field("password")}
+              required
+            />
+          </div>
+
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={!inviteDetailsValid || registerInvited.isPending}
+          >
+            {registerInvited.isPending ? (
+              <>
+                <Loader2 className="animate-spin" />
+                Verifying with BIR…
+              </>
+            ) : (
+              "Create account"
+            )}
+          </Button>
+        </form>
+
+        <Dialog
+          open={!!tinTakenEmail}
+          onOpenChange={(open) => !open && setTinTakenEmail("")}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>TIN Already Registered</DialogTitle>
+              <DialogDescription asChild>
+                <div className="space-y-2 pt-1 text-sm">
+                  <p>
+                    This TIN is already registered under{" "}
+                    <span className="text-foreground font-mono font-medium">{tinTakenEmail}</span>
+                    .
+                  </p>
+                  <p>
+                    If that&apos;s your account,{" "}
+                    <Link
+                      href={`/company/login?invite_token=${encodeURIComponent(inviteToken)}`}
+                      className="text-primary font-medium underline"
+                    >
+                      sign in instead
+                    </Link>
+                    .
+                  </p>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={() => setTinTakenEmail("")}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </AuthShell>
+    );
+  }
+
+  // ── Standard registration flow ────────────────────────────────────────────
 
   if (step === "otp") {
     return (
@@ -167,6 +401,9 @@ export default function CompanyRegisterPage() {
       </AuthShell>
     );
   }
+
+  const detailsValid =
+    !!form.tin && !!form.legalIdentifier && !!form.repEmail && form.password.length >= 8;
 
   return (
     <AuthShell
@@ -316,5 +553,21 @@ export default function CompanyRegisterPage() {
         </DialogContent>
       </Dialog>
     </AuthShell>
+  );
+}
+
+export default function CompanyRegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <AuthShell portal="Company" title="Loading…">
+          <div className="flex justify-center py-4">
+            <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+          </div>
+        </AuthShell>
+      }
+    >
+      <RegisterPageContent />
+    </Suspense>
   );
 }
