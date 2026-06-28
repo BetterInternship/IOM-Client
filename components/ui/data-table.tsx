@@ -305,19 +305,19 @@ export function DataTable<TData, TValue>({
   }, [selectedSearchKey, searchKeys]);
 
   const filteredRowCount = table.getFilteredRowModel().rows.length;
-  const indexColumnWidthRem = Math.max(
-    3.25,
-    String(Math.max(filteredRowCount, 1)).length * 0.625 + 2
-  );
+  // Keep index column width in px so tableWidthPx can be an exact sum — no
+  // leftover space for table-fixed to redistribute into this column.
+  const INDEX_COL_W = Math.max(52, String(Math.max(filteredRowCount, 1)).length * 10 + 32);
   const indexColumnStyle: React.CSSProperties = {
-    width: `${indexColumnWidthRem}rem`,
-    minWidth: `${indexColumnWidthRem}rem`,
-    maxWidth: `${indexColumnWidthRem}rem`,
+    width: INDEX_COL_W,
+    minWidth: INDEX_COL_W,
+    maxWidth: INDEX_COL_W,
   };
-  const extraWidthPx = (enableRowSelection ? 42 : 0) + indexColumnWidthRem * 16;
+  const extraWidthPx = (enableRowSelection ? 42 : 0) + INDEX_COL_W;
   const tableMinWidthPx =
     table.getVisibleLeafColumns().reduce((sum, col) => sum + (col.columnDef.minSize ?? 80), 0) +
     extraWidthPx;
+  // Exact sum of all columns — avoids distributing leftover space to the index column.
   const tableWidthPx = Math.max(tableMinWidthPx, table.getTotalSize() + extraWidthPx);
   const { pageIndex, pageSize } = table.getState().pagination;
 
@@ -380,6 +380,7 @@ export function DataTable<TData, TValue>({
             {table.getVisibleLeafColumns().map((column) => (
               <col key={column.id} style={{ width: column.getSize() }} />
             ))}
+            <col /> {/* filler: absorbs leftover space so index column stays fixed */}
           </colgroup>
           <TableHeader className="[&_tr]:border-b-0">
             {table.getHeaderGroups().map((headerGroup) => (
@@ -471,6 +472,7 @@ export function DataTable<TData, TValue>({
                     )}
                   </TableHead>
                 ))}
+                <TableHead className="sticky top-0 z-20 bg-gray-100 shadow-[inset_0_-2px_0_theme(colors.gray.300)]" />
               </TableRow>
             ))}
           </TableHeader>
@@ -531,13 +533,14 @@ export function DataTable<TData, TValue>({
                       </TruncatedCellValue>
                     </TableCell>
                   ))}
+                  <TableCell className="p-0" />
                 </TableRow>
                 );
               })
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={table.getVisibleLeafColumns().length + (enableRowSelection ? 1 : 0) + 1}
+                  colSpan={table.getVisibleLeafColumns().length + (enableRowSelection ? 1 : 0) + 2}
                   className="h-24 px-1.5 text-center"
                 >
                   No results.

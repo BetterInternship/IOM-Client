@@ -64,7 +64,7 @@ export default function CompanyMoaDetailPage() {
         href="/dashboard"
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
       >
-        <ArrowLeft className="h-4 w-4" /> Active MOAs
+        <ArrowLeft className="h-4 w-4" /> Partners
       </Link>
 
       <Card className="overflow-hidden">

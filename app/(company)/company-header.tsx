@@ -25,9 +25,9 @@ export function CompanyHeader() {
   // Hide the app chrome on the unauthenticated pages.
   if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
 
-  // Active MOAs and the request surface are hidden until the company has a complete profile.
+  // Partners and the request surface are hidden until the company has a complete profile.
   const nav: NavItem[] = [
-    ...(!incomplete ? [{ href: "/dashboard", label: "Active MOAs" }] : []),
+    ...(!incomplete ? [{ href: "/dashboard", label: "Partners" }] : []),
     ...(verified ? [{ href: "/universities", label: "Request MOA" }] : []),
     { href: "/profile", label: "Profile" },
   ];
