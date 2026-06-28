@@ -488,51 +488,6 @@ export default function PartnersPage() {
     [],
   );
 
-  const moaHistoryColumns = useMemo<ColumnDef<PartnerMoaEntry>[]>(
-    () => [
-      {
-        id: "template",
-        header: "Template",
-        accessorFn: (row) => row.template?.name ?? "—",
-        cell: ({ row }) => (
-          <span className="font-medium text-gray-900">{row.original.template?.name ?? "—"}</span>
-        ),
-      },
-      {
-        id: "status",
-        header: "Status",
-        enableSorting: false,
-        cell: ({ row }) => (
-          <MoaStatusBadge status={row.original.status} isExpired={row.original.is_expired} />
-        ),
-      },
-      {
-        id: "requested",
-        header: "Requested",
-        accessorFn: (row) => row.created_at,
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">
-            {formatDateWithoutTime(row.original.created_at)}
-          </span>
-        ),
-      },
-      {
-        id: "period",
-        header: "Period",
-        accessorFn: (row) => row.effective_date ?? "",
-        cell: ({ row }) =>
-          row.original.effective_date ? (
-            <span className="text-muted-foreground">
-              {formatDateWithoutTime(row.original.effective_date)} –{" "}
-              {formatDateWithoutTime(row.original.expiry_date)}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          ),
-      },
-    ],
-    [],
-  );
 
   const navigateToDetail = (companyId: string) => {
     clearTimeout(timerRef.current);
@@ -717,16 +672,38 @@ export default function PartnersPage() {
                 ))}
               </div>
             ) : moas.length > 0 ? (
-              <DataTable
-                id={`partner-moas-${currentCompanyId}`}
-                columns={moaHistoryColumns}
-                data={moas}
-                searchKey="template"
-                searchPlaceholder="Search MOAs..."
-                rowLabelSingular="MOA"
-                rowLabelPlural="MOAs"
-                onRowClick={(moa) => router.push(`/university/moas/${moa.id}`)}
-              />
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left">
+                    <th className="pb-2 pr-4 font-medium text-gray-500">Status</th>
+                    <th className="pb-2 pr-4 font-medium text-gray-500">Template</th>
+                    <th className="pb-2 pr-4 font-medium text-gray-500">Requested</th>
+                    <th className="pb-2 font-medium text-gray-500">Period</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {moas.map((moa) => (
+                    <tr
+                      key={moa.id}
+                      className="cursor-pointer align-top hover:bg-gray-50"
+                      onClick={() => router.push(`/university/moas/${moa.id}`)}
+                    >
+                      <td className="py-2.5 pr-4">
+                        <MoaStatusBadge status={moa.status} isExpired={moa.is_expired} />
+                      </td>
+                      <td className="py-2.5 pr-4 text-gray-600">{moa.template?.name ?? "—"}</td>
+                      <td className="py-2.5 pr-4 text-gray-600">
+                        {formatDateWithoutTime(moa.created_at)}
+                      </td>
+                      <td className="py-2.5 text-gray-600">
+                        {moa.effective_date
+                          ? `${formatDateWithoutTime(moa.effective_date)} – ${formatDateWithoutTime(moa.expiry_date)}`
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             ) : (
               <p className="text-muted-foreground text-sm">No MOA history.</p>
             )}

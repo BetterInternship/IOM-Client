@@ -15,7 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatDateWithoutTime } from "@/lib/utils";
-import { ArrowLeft, ExternalLink, FileText } from "lucide-react";
+import { ArrowLeft, CircleAlert, CircleCheck } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -40,6 +40,8 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   sec_dti_registration: "SEC/DTI Registration",
   mayor_permit: "Mayor's Permit",
 };
+
+const DOC_TYPES_LIST = Object.entries(DOC_TYPE_LABELS);
 
 type VerificationStatus = "incomplete" | "pending" | "verified" | "expired" | "rejected";
 
@@ -230,43 +232,36 @@ export default function AdminCompanyProfilePage() {
         </div>
       </Card>
 
-      <Card className="gap-4 px-5 py-5">
-        <p className="text-sm font-semibold text-gray-900">Documents</p>
-        {documents.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No documents uploaded.</p>
-        ) : (
-          <div className="space-y-2">
-            {documents.map((doc) => (
+      <Card className="gap-4 py-5">
+        <p className="px-5 text-sm font-semibold text-gray-900">Documents</p>
+        <div className="space-y-1">
+          {DOC_TYPES_LIST.map(([type, label]) => {
+            const doc = documents.find((d) => d.type === type);
+            return (
               <div
-                key={doc.id}
-                className="flex items-center justify-between rounded-[0.33em] border border-gray-200 px-3 py-2.5"
+                key={type}
+                className="flex flex-row items-center px-5 duration-200 hover:cursor-pointer hover:bg-gray-50"
+                onClick={() => doc?.url && setPreviewDoc(doc)}
               >
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <FileText className="text-muted-foreground h-4 w-4 flex-shrink-0" />
+                {doc
+                  ? <CircleCheck className="text-supportive flex-shrink-0" />
+                  : <CircleAlert className="text-warning flex-shrink-0" />
+                }
+                <div className="flex flex-1 items-center gap-3 rounded-[0.16em] p-3">
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
-                      {DOC_TYPE_LABELS[doc.type] ?? doc.type}
-                    </p>
-                    <p className="text-muted-foreground truncate text-xs">{doc.filename}</p>
+                    <p className="text-sm font-medium text-gray-800">{label}</p>
+                    {doc && (
+                      <p className="text-muted-foreground mt-0.5 truncate text-xs">{doc.filename}</p>
+                    )}
                   </div>
                 </div>
-                {doc.url && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-shrink-0"
-                    onClick={() => setPreviewDoc(doc)}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" /> View
-                  </Button>
-                )}
               </div>
-            ))}
-          </div>
-        )}
+            );
+          })}
+        </div>
       </Card>
 
-      <Card className="gap-4 px-5 py-5">
+      <div className="space-y-3">
         <p className="text-sm font-semibold text-gray-900">Review history</p>
         {reviewHistory.length === 0 ? (
           <p className="text-muted-foreground text-sm">No reviews yet.</p>
@@ -306,7 +301,7 @@ export default function AdminCompanyProfilePage() {
             </tbody>
           </table>
         )}
-      </Card>
+      </div>
 
       {previewDoc && (
         <Dialog open onOpenChange={(o) => !o && setPreviewDoc(null)}>
