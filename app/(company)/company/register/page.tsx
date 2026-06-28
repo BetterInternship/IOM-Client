@@ -23,6 +23,7 @@ type Step = "details" | "otp";
 
 interface InvitePeek {
   email: string;
+  invite_id: string;
   university: { id: string; registered_name: string };
   template: { id: string } | null;
 }
@@ -100,6 +101,7 @@ function RegisterPageContent() {
       if (data.university_id) {
         const params = new URLSearchParams({ invite_uni: data.university_id });
         if (data.template_id) params.set("invite_template", data.template_id);
+        if (invitePeek?.invite_id) params.set("invite_id", invitePeek.invite_id);
         router.replace(`/company/profile?${params}`);
       } else {
         router.replace("/company/dashboard");

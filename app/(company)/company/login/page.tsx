@@ -30,11 +30,19 @@ function LoginPageContent() {
         try {
           const res = await preconfiguredAxios
             .post("/api/company/invites/claim", { token: inviteToken })
-            .then((r) => r.data as { university_id: string; template_id: string | null });
+            .then(
+              (r) =>
+                r.data as {
+                  university_id: string;
+                  template_id: string | null;
+                  invite_id: string;
+                },
+            );
 
           if (res.university_id) {
             const params = new URLSearchParams();
             if (res.template_id) params.set("template_id", res.template_id);
+            if (res.invite_id) params.set("invite_id", res.invite_id);
             const qs = params.toString() ? `?${params}` : "";
             router.replace(`/company/universities/${res.university_id}/queue-moa${qs}`);
             return;

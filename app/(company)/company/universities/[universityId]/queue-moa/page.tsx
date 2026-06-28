@@ -91,6 +91,7 @@ function QueueMoaContent() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const defaultTemplateId = searchParams.get("template_id") ?? null;
+  const inviteId = searchParams.get("invite_id") ?? null;
 
   const { company, isLoading: companyLoading } = useCompanyProfile();
   const { data: verification, isLoading: vLoading } = useCompanyVerification(!!company);
@@ -128,6 +129,7 @@ function QueueMoaContent() {
       } else {
         fd.append("repSignatureText", sigText);
       }
+      if (inviteId) fd.append("invite_id", inviteId);
       const endpoint = verified ? "/api/company/moas" : "/api/company/queued-moas";
       return preconfiguredAxios
         .post(endpoint, fd)
@@ -139,7 +141,7 @@ function QueueMoaContent() {
         router.push(`/company/moas/${res.moa.id}`);
       } else {
         toast(
-          "MOA queued — it will be issued automatically once your company is verified.",
+          "MOA request submitted — it will be issued automatically once your company is verified.",
           toastPresets.success,
         );
         router.push("/company/dashboard");
@@ -165,14 +167,14 @@ function QueueMoaContent() {
     return (
       <PageContainer className="max-w-lg space-y-6">
         <PageHeader
-          title="Queue MOA"
+          title="Sign MOA"
           description={university ? `With ${university.registered_name}` : undefined}
         />
         <Card className="gap-3 px-5 py-5">
           <p className="text-sm font-medium text-gray-900">Complete your profile first</p>
           <p className="text-muted-foreground text-sm">
-            Fill in your company details and upload all required documents before you can queue
-            or request a MOA.
+            Fill in your company details and upload all required documents before you can sign
+            a MOA.
           </p>
           <Button asChild className="mt-1 w-fit">
             <Link href="/company/profile">Go to profile</Link>
@@ -185,8 +187,8 @@ function QueueMoaContent() {
   const sigReady = sigMode === "upload" ? !!sigFile : !!sigText.trim();
   const step2Ready = !!repName.trim() && !!repTitle.trim() && sigReady;
 
-  const pageTitle = verified ? "Request MOA" : "Queue MOA";
-  const submitLabel = verified ? "Request MOA" : "Queue MOA";
+  const pageTitle = verified ? "Request MOA" : "Sign MOA";
+  const submitLabel = verified ? "Request MOA" : "Sign MOA";
 
   return (
     <>
@@ -198,7 +200,7 @@ function QueueMoaContent() {
 
         {!verified && (
           <div className="border-primary/30 bg-primary/5 rounded-[0.33em] border px-4 py-3 text-sm text-gray-700">
-            Your company is not yet verified. This MOA will be queued and issued automatically
+            Your company is not yet verified. This MOA request will be issued automatically
             once the platform approves your company.
           </div>
         )}

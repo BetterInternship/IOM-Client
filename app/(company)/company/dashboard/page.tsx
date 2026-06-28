@@ -24,6 +24,12 @@ interface QueuedMoa {
   status: "pending" | "fulfilled" | "failed";
 }
 
+interface PendingInvite {
+  id: string;
+  university: { id: string; registered_name: string } | null;
+  template: { id: string; name: string } | null;
+}
+
 interface Moa {
   id: string;
   status: "active" | "rejected";
@@ -222,6 +228,15 @@ export default function CompanyDashboardPage() {
     enabled: !!company,
   });
 
+  const { data: invitesData } = useQuery({
+    queryKey: ["company-pending-invites"],
+    queryFn: () =>
+      preconfiguredAxios
+        .get("/api/company/invites/pending")
+        .then((r) => r.data as { invites: PendingInvite[] }),
+    enabled: !!company,
+  });
+
   const { data: verification, isLoading: vLoading } = useCompanyVerification(!!company);
 
   // Keep the carousel's height matched to whichever panel is on screen so the
@@ -275,6 +290,7 @@ export default function CompanyDashboardPage() {
   const canRequest = status === "verified";
   const pendingQueued = (queuedData?.queued ?? []).filter((q) => q.status === "pending");
   const failedQueued = (queuedData?.queued ?? []).filter((q) => q.status === "failed");
+  const pendingInvites = (invitesData?.invites ?? []).filter((inv) => inv.university !== null);
   const detail = lastSelectedId ? byUni.get(lastSelectedId) ?? null : null;
   const history = detail
     ? [...detail.moas].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
@@ -397,6 +413,31 @@ export default function CompanyDashboardPage() {
           </Button>
         )}
       </PageHeader>
+
+      {pendingInvites.map((invite) => {
+        const params = new URLSearchParams({ invite_id: invite.id });
+        if (invite.template) params.set("template_id", invite.template.id);
+        const href = `/company/universities/${invite.university!.id}/queue-moa?${params}`;
+        return (
+          <Card
+            key={invite.id}
+            className="gap-2 border-primary/30 bg-primary/5 px-5 py-4"
+          >
+            <p className="text-sm font-medium text-gray-900">
+              MOA invitation from {invite.university!.registered_name}
+            </p>
+            <p className="text-muted-foreground text-sm">
+              You were invited to sign a MOA
+              {invite.template ? ` using the "${invite.template.name}" template` : ""}.
+            </p>
+            <div className="pt-1">
+              <Button asChild size="sm">
+                <Link href={href}>Sign MOA</Link>
+              </Button>
+            </div>
+          </Card>
+        );
+      })}
 
       {pendingQueued.length > 0 && (
         <Card className="flex-row items-start gap-3 border-primary/30 bg-primary/5 px-5 py-4">

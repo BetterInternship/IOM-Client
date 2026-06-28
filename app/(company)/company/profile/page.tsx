@@ -1,7 +1,7 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -85,8 +85,10 @@ interface CompanyDoc {
 
 function ProfileContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const inviteUniId = searchParams.get("invite_uni");
   const inviteTemplateId = searchParams.get("invite_template");
+  const inviteId = searchParams.get("invite_id");
 
   const { company, isLoading } = useCompanyProfile();
   const queryClient = useQueryClient();
@@ -107,9 +109,20 @@ function ProfileContent() {
     enabled: !!company,
   });
 
-  const { data: verification } = useCompanyVerification(!!company);
+  const { data: verification, isLoading: vLoading } = useCompanyVerification(!!company);
   const verified = verification?.status === "verified";
   const incomplete = verification?.status === "incomplete";
+
+  // Auto-redirect to queue-moa as soon as profile is complete (invite flow).
+  useEffect(() => {
+    if (!inviteUniId || isLoading || vLoading || !company || !verification) return;
+    if (verification.status === "incomplete") return;
+    const params = new URLSearchParams();
+    if (inviteTemplateId) params.set("template_id", inviteTemplateId);
+    if (inviteId) params.set("invite_id", inviteId);
+    router.replace(`/company/universities/${inviteUniId}/queue-moa?${params}`);
+  }, [inviteUniId, isLoading, vLoading, company, verification, inviteTemplateId, inviteId, router]);
+
   // When set, a re-verification confirm dialog is shown; running it performs the edit.
   const [pendingConfirm, setPendingConfirm] = useState<(() => void) | null>(null);
 
@@ -176,7 +189,7 @@ function ProfileContent() {
 
   // Material fields whose change forces re-verification (the hash inputs).
   const MATERIAL_KEYS_BY_SECTION: Record<string, string[]> = {
-    company: ["registered_name", "registered_address", "company_type"],
+    company: ["registered_name"],
   };
 
   function attemptSave(sectionKey: SectionKey) {
@@ -305,10 +318,13 @@ function ProfileContent() {
             <>
               Your profile is ready.{" "}
               <Link
-                href={`/company/universities/${inviteUniId}/queue-moa${inviteTemplateId ? `?template_id=${inviteTemplateId}` : ""}`}
+                href={`/company/universities/${inviteUniId}/queue-moa?${new URLSearchParams({
+                  ...(inviteTemplateId ? { template_id: inviteTemplateId } : {}),
+                  ...(inviteId ? { invite_id: inviteId } : {}),
+                })}`}
                 className="text-primary font-medium underline"
               >
-                {verification?.status === "verified" ? "Request" : "Queue"} your MOA now
+                Sign your MOA
               </Link>
               .
             </>
