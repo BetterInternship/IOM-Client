@@ -2,14 +2,15 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { ColumnDef } from "@tanstack/react-table";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
-import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
+import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataTable } from "@/components/ui/data-table";
 import { FormError } from "@/components/auth-shell";
 import {
   Dialog,
@@ -31,13 +32,13 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
-import { Building2, Loader2, Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 
 interface University {
   id: string;
   registered_name: string;
   is_deactivated: boolean | null;
-  university_accounts?: { email: string }[];
+  university_accounts: { email: string; display_name: string }[];
 }
 
 const EMPTY_FORM = {
@@ -103,9 +104,7 @@ function CreateUniversityDialog() {
               id="registered_name"
               placeholder="De La Salle University"
               value={form.registered_name}
-              onChange={(e) =>
-                setForm({ ...form, registered_name: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, registered_name: e.target.value })}
               required
             />
           </div>
@@ -116,9 +115,7 @@ function CreateUniversityDialog() {
               type="email"
               placeholder="admin@university.edu"
               value={form.superadmin_email}
-              onChange={(e) =>
-                setForm({ ...form, superadmin_email: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, superadmin_email: e.target.value })}
               required
             />
           </div>
@@ -153,25 +150,104 @@ function CreateUniversityDialog() {
   );
 }
 
-export default function AdminUniversitiesPage() {
+function DeactivateCell({ uni }: { uni: University }) {
   const queryClient = useQueryClient();
 
+  const deactivate = useMutation({
+    mutationFn: () =>
+      preconfiguredAxios.patch(`/api/admin/universities/${uni.id}/deactivate`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-universities"] });
+      toast.success("University deactivated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (uni.is_deactivated) return null;
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="outline"
+          scheme="destructive"
+          size="sm"
+          onClick={(e) => e.stopPropagation()}
+        >
+          Deactivate
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Deactivate {uni.registered_name}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Staff will lose access and the institution can no longer receive new MOA
+            requests. This can be reversed later.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => deactivate.mutate()}
+          >
+            Deactivate
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+const columns: ColumnDef<University>[] = [
+  {
+    id: "name",
+    header: "University",
+    accessorFn: (row) => row.registered_name,
+    cell: ({ row }) => (
+      <span className="font-medium text-gray-900">{row.original.registered_name}</span>
+    ),
+  },
+  {
+    id: "superadmin",
+    header: "Superadmin",
+    accessorFn: (row) => row.university_accounts[0]?.email ?? "",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">
+        {row.original.university_accounts[0]?.email ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "status",
+    header: "Status",
+    enableSorting: false,
+    accessorFn: (row) => (row.is_deactivated ? "Deactivated" : "Active"),
+    cell: ({ row }) =>
+      row.original.is_deactivated ? (
+        <Badge type="destructive" strength="medium">Deactivated</Badge>
+      ) : (
+        <Badge type="supportive" strength="medium">Active</Badge>
+      ),
+  },
+  {
+    id: "actions",
+    header: "",
+    enableSorting: false,
+    enableResizing: false,
+    size: 120,
+    minSize: 120,
+    cell: ({ row }) => <DeactivateCell uni={row.original} />,
+  },
+];
+
+export default function AdminUniversitiesPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-universities"],
     queryFn: async () => {
       const res = await preconfiguredAxios.get("/api/admin/universities");
       return res.data.universities as University[];
     },
-  });
-
-  const deactivate = useMutation({
-    mutationFn: (id: string) =>
-      preconfiguredAxios.patch(`/api/admin/universities/${id}/deactivate`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-universities"] });
-      toast.success("University deactivated");
-    },
-    onError: (e: Error) => toast.error(e.message),
   });
 
   return (
@@ -185,79 +261,19 @@ export default function AdminUniversitiesPage() {
 
       {isLoading ? (
         <div className="space-y-2.5">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-10 w-96" />
+          <Skeleton className="h-64 w-full" />
         </div>
-      ) : !data || data.length === 0 ? (
-        <EmptyState
-          title="No universities yet"
-          description="Add your first institution to get started."
-        />
       ) : (
-        <div className="space-y-2.5">
-          {data.map((uni) => (
-            <Card
-              key={uni.id}
-              className="flex-row items-center justify-between gap-4 px-5 py-4"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="bg-muted text-muted-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[0.33em]">
-                  <Building2 className="h-4 w-4" />
-                </span>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-medium text-gray-900">
-                      {uni.registered_name}
-                    </p>
-                    {uni.is_deactivated && (
-                      <Badge type="destructive" strength="medium">
-                        Deactivated
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                    {uni.university_accounts?.[0]?.email ?? "No superadmin"}
-                  </p>
-                </div>
-              </div>
-
-              {!uni.is_deactivated && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      scheme="destructive"
-                      size="sm"
-                      className="flex-shrink-0"
-                    >
-                      Deactivate
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Deactivate {uni.registered_name}?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Staff will lose access and the institution can no longer
-                        receive new MOA requests. This can be reversed later.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        onClick={() => deactivate.mutate(uni.id)}
-                      >
-                        Deactivate
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </Card>
-          ))}
-        </div>
+        <DataTable
+          id="admin-universities"
+          columns={columns}
+          data={data ?? []}
+          searchPlaceholder="Search universities..."
+          rowLabelSingular="university"
+          rowLabelPlural="universities"
+          pageSizes={[10, 25, 50]}
+        />
       )}
     </PageContainer>
   );

@@ -1,13 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import type { ColumnDef } from "@tanstack/react-table";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
-import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { PageContainer, PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DataTable } from "@/components/ui/data-table";
 import { formatDateWithoutTime } from "@/lib/utils";
-import { Building2, ChevronRight } from "lucide-react";
 
 interface ReviewRow {
   id: string;
@@ -21,6 +20,44 @@ interface ReviewRow {
     company_type: string | null;
   } | null;
 }
+
+const columns: ColumnDef<ReviewRow>[] = [
+  {
+    id: "company",
+    header: "Company",
+    accessorFn: (row) => row.company?.display_name ?? "",
+    cell: ({ row }) => (
+      <div className="min-w-0">
+        <p className="font-medium text-gray-900">
+          {row.original.company?.display_name ?? "Unknown company"}
+        </p>
+        <p className="text-muted-foreground truncate text-xs">
+          {row.original.company?.email}
+        </p>
+      </div>
+    ),
+  },
+  {
+    id: "registered_name",
+    header: "Registered name",
+    accessorFn: (row) => row.company?.registered_name ?? "",
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">
+        {row.original.company?.registered_name ?? "—"}
+      </span>
+    ),
+  },
+  {
+    id: "submitted",
+    header: "Submitted",
+    accessorFn: (row) => row.created_at,
+    cell: ({ row }) => (
+      <span className="text-muted-foreground">
+        {formatDateWithoutTime(row.original.created_at)}
+      </span>
+    ),
+  },
+];
 
 export default function AdminReviewsPage() {
   const router = useRouter();
@@ -43,51 +80,20 @@ export default function AdminReviewsPage() {
 
       {isLoading ? (
         <div className="space-y-2.5">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
+          <Skeleton className="h-10 w-96" />
+          <Skeleton className="h-64 w-full" />
         </div>
-      ) : !data || data.length === 0 ? (
-        <EmptyState
-          title="No companies awaiting review"
-          description="New verification requests will appear here when companies complete their material."
-        />
       ) : (
-        <div className="space-y-2.5">
-          {data.map((r) => (
-            <Card
-              key={r.id}
-              role="button"
-              onClick={() => router.push(`/companies/${r.company_id}/review`)}
-              className="flex-row items-center justify-between gap-4 px-5 py-4 transition-colors hover:bg-gray-50 cursor-pointer"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <span className="bg-muted text-muted-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-[0.33em]">
-                  <Building2 className="h-4 w-4" />
-                </span>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-medium text-gray-900">
-                      {r.company?.display_name ?? "Unknown company"}
-                    </p>
-                    <Badge type="warning" strength="medium">
-                      Pending
-                    </Badge>
-                  </div>
-                  <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                    {r.company?.email}
-                    {r.company?.company_type && ` · ${r.company.company_type.replace(/_/g, " ")}`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-shrink-0 items-center gap-3">
-                <span className="text-muted-foreground text-xs">
-                  {formatDateWithoutTime(r.created_at)}
-                </span>
-                <ChevronRight className="text-muted-foreground h-4 w-4" />
-              </div>
-            </Card>
-          ))}
-        </div>
+        <DataTable
+          id="admin-reviews"
+          columns={columns}
+          data={data ?? []}
+          searchPlaceholder="Search companies..."
+          rowLabelSingular="review"
+          rowLabelPlural="reviews"
+          pageSizes={[10, 25, 50]}
+          onRowClick={(r) => router.push(`/companies/${r.company_id}/review`)}
+        />
       )}
     </PageContainer>
   );

@@ -15,6 +15,7 @@ export function AdminHeader() {
       homeHref="/universities"
       nav={[
         { href: "/universities", label: "Universities" },
+        { href: "/companies", label: "Companies" },
         { href: "/templates", label: "MOA Templates" },
         { href: "/reviews", label: "Company Reviews" },
       ]}
