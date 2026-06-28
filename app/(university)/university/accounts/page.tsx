@@ -1,16 +1,15 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { toast } from "sonner";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { PageContainer, PageHeader } from "@/components/page-header";
-import { SideTabs, type SideTab } from "@/components/side-tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
 import { FormError } from "@/components/auth-shell";
@@ -23,8 +22,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { formatDateTime } from "@/lib/utils";
-import { Loader2, Plus, ScrollText, Users2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 
 interface StaffAccount {
   id: string;
@@ -35,17 +33,6 @@ interface StaffAccount {
   created_at: string;
 }
 
-interface AuditEvent {
-  id: string;
-  event_type: string;
-  actor_email: string | null;
-  detail: string | null;
-  created_at: string;
-  company?: { display_name: string } | null;
-  moa?: { id: string } | null;
-}
-
-// ── Managed accounts (superadmin) ────────────────────────────────────────────
 function InviteStaffDialog() {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -140,17 +127,17 @@ function InviteStaffDialog() {
   );
 }
 
-function ManagedAccountsPanel() {
-  const { account } = useUniversityProfile();
+export default function AccountsPage() {
+  const { account, isLoading, isSuperadmin } = useUniversityProfile();
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading: accountsLoading } = useQuery({
     queryKey: ["university-accounts"],
     queryFn: () =>
       preconfiguredAxios
         .get("/api/university/accounts")
         .then((r) => r.data as { accounts: StaffAccount[] }),
-    enabled: !!account,
+    enabled: !!account && isSuperadmin,
   });
 
   const invalidate = () =>
@@ -174,8 +161,6 @@ function ManagedAccountsPanel() {
     onSuccess: () => toast.success("Invitation resent"),
     onError: (e: Error) => toast.error(e.message),
   });
-
-  const staff = (data?.accounts ?? []).filter((a) => a.role === "staff");
 
   const staffColumns = useMemo<ColumnDef<StaffAccount>[]>(
     () => [
@@ -253,190 +238,40 @@ function ManagedAccountsPanel() {
     [deactivate, reactivate, resendInvite],
   );
 
-  if (isLoading)
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-end">
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <div className="space-y-1">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      </div>
-    );
-
-  return (
-    <DataTable
-      id="staff-accounts"
-      columns={staffColumns}
-      data={staff}
-      searchKey="email"
-      searchPlaceholder="Search by name or email..."
-      rowLabelSingular="account"
-      rowLabelPlural="accounts"
-      toolbarActions={<InviteStaffDialog />}
-    />
-  );
-}
-
-// ── Activity log ─────────────────────────────────────────────────────────────
-const EVENT_LABELS: Record<string, string> = {
-  request_received: "MOA request received",
-  moa_confirmed: "MOA confirmed",
-  moa_rejected: "MOA rejected",
-  partner_details_changed: "Partner details changed",
-  moa_revoked: "MOA revoked",
-  company_blacklisted: "Company blacklisted",
-  company_unblacklisted: "Company removed from blacklist",
-};
-
-const EVENT_TYPES: Record<string, BadgeProps["type"]> = {
-  request_received: "primary",
-  moa_confirmed: "supportive",
-  moa_rejected: "destructive",
-  partner_details_changed: "warning",
-  moa_revoked: "destructive",
-  company_blacklisted: "destructive",
-  company_unblacklisted: "default",
-};
-
-const auditColumns: ColumnDef<AuditEvent>[] = [
-  {
-    id: "event",
-    header: "Event",
-    accessorKey: "event_type",
-    cell: ({ row }) => (
-      <Badge type={EVENT_TYPES[row.original.event_type] ?? "default"}>
-        {EVENT_LABELS[row.original.event_type] ?? row.original.event_type}
-      </Badge>
-    ),
-  },
-  {
-    id: "company",
-    header: "Company",
-    accessorFn: (row) => row.company?.display_name ?? "—",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.company?.display_name ?? "—"}</span>
-    ),
-  },
-  {
-    id: "by",
-    header: "By",
-    accessorFn: (row) => row.actor_email ?? "—",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.actor_email ?? "—"}</span>
-    ),
-  },
-  {
-    id: "date",
-    header: "Date",
-    accessorKey: "created_at",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{formatDateTime(row.original.created_at)}</span>
-    ),
-  },
-  {
-    id: "detail",
-    header: "Detail",
-    accessorKey: "detail",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">{row.original.detail ?? "—"}</span>
-    ),
-  },
-];
-
-function ActivityLogPanel() {
-  const { account } = useUniversityProfile();
-  const { data, isLoading } = useQuery({
-    queryKey: ["university-audit"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/audit?limit=100")
-        .then((r) => r.data as { logs: AuditEvent[] }),
-    enabled: !!account,
-  });
-
-  const events = data?.logs ?? [];
-
-  if (isLoading)
-    return (
-      <div className="space-y-1">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-12 w-full" />
-        ))}
-      </div>
-    );
-
-  return (
-    <DataTable
-      id="activity-log"
-      columns={auditColumns}
-      data={events}
-      searchKey="event"
-      searchPlaceholder="Search events..."
-      rowLabelSingular="event"
-      rowLabelPlural="events"
-      pageSizes={[25, 50, 100]}
-    />
-  );
-}
-
-const HASH_TO_TAB: Record<string, string> = {
-  "#managed-accounts": "managed",
-  "#activity-log": "activity",
-};
-
-const TAB_TO_HASH: Record<string, string> = {
-  managed: "#managed-accounts",
-  activity: "#activity-log",
-};
-
-export default function AccountsPage() {
-  const { account, isLoading, isSuperadmin } = useUniversityProfile();
-  const [tab, setTab] = useState("managed");
-
-  useEffect(() => {
-    const matched = HASH_TO_TAB[window.location.hash];
-    if (matched) setTab(matched);
-  }, []);
-
-  const handleTabChange = (newTab: string) => {
-    setTab(newTab);
-    window.history.replaceState(null, "", TAB_TO_HASH[newTab] ?? "");
-  };
-
   if (isLoading || !account) return null;
+  if (!isSuperadmin) return null;
 
-  if (!isSuperadmin) {
-    return (
-      <PageContainer className="space-y-6">
-        <PageHeader
-          title="Activity Log"
-          description="Review your institution's activity."
-        />
-        <ActivityLogPanel />
-      </PageContainer>
-    );
-  }
-
-  const tabs: SideTab[] = [
-    { key: "managed", label: "Managed Accounts", icon: Users2 },
-    { key: "activity", label: "Activity Log", icon: ScrollText },
-  ];
-  const active = tabs.some((t) => t.key === tab) ? tab : tabs[0].key;
+  const staff = (data?.accounts ?? []).filter((a) => a.role === "staff");
 
   return (
     <PageContainer className="space-y-6">
       <PageHeader
         title="Accounts"
-        description="Manage staff accounts and review your institution's activity."
+        description="Manage staff accounts for your institution."
       />
-      <SideTabs tabs={tabs} active={active} onChange={handleTabChange}>
-        {active === "managed" && <ManagedAccountsPanel />}
-        {active === "activity" && <ActivityLogPanel />}
-      </SideTabs>
+      {accountsLoading ? (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Skeleton className="h-10 w-32" />
+          </div>
+          <div className="space-y-1">
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <DataTable
+          id="staff-accounts"
+          columns={staffColumns}
+          data={staff}
+          searchKey="email"
+          searchPlaceholder="Search by name or email..."
+          rowLabelSingular="account"
+          rowLabelPlural="accounts"
+          toolbarActions={<InviteStaffDialog />}
+        />
+      )}
     </PageContainer>
   );
 }
