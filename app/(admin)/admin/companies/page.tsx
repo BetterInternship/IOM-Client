@@ -99,7 +99,7 @@ export default function AdminCompaniesPage() {
           rowLabelSingular="company"
           rowLabelPlural="companies"
           pageSizes={[10, 25, 50]}
-          onRowClick={(company) => router.push(`/admin/companies/${company.id}/review`)}
+          onRowClick={(company) => router.push(`/admin/companies/${company.id}`)}
         />
       )}
     </PageContainer>
