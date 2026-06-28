@@ -2,13 +2,19 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Autocomplete } from "@/components/ui/autocomplete";
 import { Loader2 } from "lucide-react";
+
+interface CompanyListItem {
+  tin: string;
+  display_name: string;
+}
 
 function LoginPageContent() {
   const router = useRouter();
@@ -16,13 +22,28 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("invite_token") ?? "";
 
-  const [tin, setTin] = useState("");
+  const [selectedTin, setSelectedTin] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  const { data: companyList = [] } = useQuery({
+    queryKey: ["company-list"],
+    queryFn: () =>
+      preconfiguredAxios
+        .get("/api/auth/company/list")
+        .then((r) => r.data.companies as CompanyListItem[]),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const options = companyList.map((c) => ({ id: c.tin, name: c.display_name }));
+  const selectedCompany = companyList.find((c) => c.tin === selectedTin) ?? null;
+
   const login = useMutation({
     mutationFn: () =>
-      preconfiguredAxios.post("/api/auth/company/login", { tin, password }),
+      preconfiguredAxios.post("/api/auth/company/login", {
+        tin: selectedTin,
+        password,
+      }),
     onSuccess: async () => {
       queryClient.resetQueries({ queryKey: ["company-me"] });
 
@@ -70,7 +91,7 @@ function LoginPageContent() {
       description={
         inviteToken
           ? "Sign in to continue with your invitation."
-          : "Use your company TIN and password to access the portal."
+          : "Select your company and enter your password to access the portal."
       }
       footer={
         <>
@@ -92,17 +113,22 @@ function LoginPageContent() {
         <FormError>{error}</FormError>
 
         <div className="space-y-1.5">
-          <Label htmlFor="tin">Company TIN</Label>
-          <Input
-            id="tin"
-            inputMode="numeric"
-            autoComplete="username"
-            placeholder="123456789"
-            maxLength={9}
-            value={tin}
-            onChange={(e) => setTin(e.target.value.replace(/\D/g, "").slice(0, 9))}
-            required
-          />
+          <Label>Company name</Label>
+          <div>
+            <Autocomplete
+              options={options}
+              value={selectedTin}
+              onChange={(tin) => setSelectedTin(tin as string | null)}
+              placeholder="Search for your company…"
+              inputClassName="rounded-b-none"
+            />
+            <div className="flex items-center gap-2 rounded-b-[0.33em] border border-t-0 border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm">
+              <span className="text-muted-foreground text-xs font-medium">TIN</span>
+              <span className="font-mono text-gray-800">
+                {selectedCompany?.tin ?? <span className="text-muted-foreground">—</span>}
+              </span>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-1.5">
@@ -130,7 +156,7 @@ function LoginPageContent() {
           type="submit"
           size="lg"
           className="w-full"
-          disabled={login.isPending || !tin || !password}
+          disabled={login.isPending || !selectedTin || !password}
         >
           {login.isPending && <Loader2 className="animate-spin" />}
           {login.isPending ? "Signing in…" : "Sign in"}

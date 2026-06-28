@@ -1,22 +1,44 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { AuthShell, FormError, FormSuccess } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Autocomplete } from "@/components/ui/autocomplete";
 import { Loader2 } from "lucide-react";
 
+interface CompanyListItem {
+  tin: string;
+  display_name: string;
+}
+
 export default function CompanyForgotPasswordPage() {
-  const [tin, setTin] = useState("");
+  const [selectedTin, setSelectedTin] = useState<string | null>(null);
+  const [censoredEmail, setCensoredEmail] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
+  const { data: companyList = [] } = useQuery({
+    queryKey: ["company-list"],
+    queryFn: () =>
+      preconfiguredAxios
+        .get("/api/auth/company/list")
+        .then((r) => r.data.companies as CompanyListItem[]),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const options = companyList.map((c) => ({ id: c.tin, name: c.display_name }));
+  const selectedCompany = companyList.find((c) => c.tin === selectedTin) ?? null;
+
   const forgot = useMutation({
-    mutationFn: () => preconfiguredAxios.post("/api/auth/company/forgot", { tin }),
-    onSuccess: () => {
+    mutationFn: () =>
+      preconfiguredAxios
+        .post("/api/auth/company/forgot", { tin: selectedTin })
+        .then((r) => r.data as { censoredEmail: string | null }),
+    onSuccess: (data) => {
+      setCensoredEmail(data.censoredEmail);
       setSent(true);
       setError("");
     },
@@ -27,7 +49,7 @@ export default function CompanyForgotPasswordPage() {
     <AuthShell
       portal="Company"
       title="Reset password"
-      description="Enter your company TIN and we'll email a reset link to your representative."
+      description="Select your company and we'll email a reset link to your representative."
       footer={
         <Link href="/login" className="text-primary font-medium">
           Back to sign in
@@ -36,8 +58,9 @@ export default function CompanyForgotPasswordPage() {
     >
       {sent ? (
         <FormSuccess>
-          If a matching account exists, a reset link has been sent to your
-          representative email.
+          {censoredEmail
+            ? `A reset link has been sent to ${censoredEmail}.`
+            : "If a matching account exists, a reset link has been sent to your representative email."}
         </FormSuccess>
       ) : (
         <form
@@ -51,22 +74,29 @@ export default function CompanyForgotPasswordPage() {
           <FormError>{error}</FormError>
 
           <div className="space-y-1.5">
-            <Label htmlFor="tin">Company TIN</Label>
-            <Input
-              id="tin"
-              inputMode="numeric"
-              placeholder="000-000-000-000"
-              value={tin}
-              onChange={(e) => setTin(e.target.value)}
-              required
-            />
+            <Label>Company name</Label>
+            <div>
+              <Autocomplete
+                options={options}
+                value={selectedTin}
+                onChange={(tin) => setSelectedTin(tin as string | null)}
+                placeholder="Search for your company…"
+                inputClassName="rounded-b-none"
+              />
+              <div className="flex items-center gap-2 rounded-b-[0.33em] border border-t-0 border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm">
+                <span className="text-muted-foreground text-xs font-medium">TIN</span>
+                <span className="font-mono text-gray-800">
+                  {selectedCompany?.tin ?? <span className="text-muted-foreground">—</span>}
+                </span>
+              </div>
+            </div>
           </div>
 
           <Button
             type="submit"
             size="lg"
             className="w-full"
-            disabled={!tin || forgot.isPending}
+            disabled={!selectedTin || forgot.isPending}
           >
             {forgot.isPending && <Loader2 className="animate-spin" />}
             {forgot.isPending ? "Sending…" : "Send reset link"}
