@@ -411,7 +411,7 @@ function RegisterPageContent() {
     <AuthShell
       portal="Company"
       title="Register your company"
-      description="Your TIN is verified against BIR ORUS before your account is created."
+      description="You can refer to an Official Receipt (OR) issued by your company for the exact TIN and company name to use."
       footer={
         <>
           Already registered?{" "}
