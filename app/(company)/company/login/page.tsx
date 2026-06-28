@@ -13,7 +13,7 @@ import { Loader2 } from "lucide-react";
 
 interface CompanyListItem {
   id: string;
-  display_name: string;
+  registered_name: string;
   censored_tin: string;
 }
 
@@ -36,7 +36,7 @@ function LoginPageContent() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const options = companyList.map((c) => ({ id: c.id, name: c.display_name }));
+  const options = companyList.map((c) => ({ id: c.id, name: c.registered_name }));
   const selectedCompany = companyList.find((c) => c.id === selectedId) ?? null;
 
   const login = useMutation({

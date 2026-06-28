@@ -64,8 +64,7 @@ interface ReviewEntry {
 
 interface CompanyProfile {
   id: string;
-  display_name: string;
-  registered_name: string | null;
+  registered_name: string;
   email: string;
   tin: string | null;
   company_type: string | null;
@@ -160,7 +159,7 @@ export default function AdminCompanyProfilePage() {
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-              {company.display_name}
+              {company.registered_name}
             </h1>
             <p className="text-muted-foreground text-sm">
               Joined {formatDateWithoutTime(company.created_at)}
@@ -181,7 +180,7 @@ export default function AdminCompanyProfilePage() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Deactivate {company.display_name}?</AlertDialogTitle>
+                  <AlertDialogTitle>Deactivate {company.registered_name}?</AlertDialogTitle>
                   <AlertDialogDescription>
                     The company will lose access and can no longer request MOAs. This can be
                     reversed later.
@@ -212,7 +211,6 @@ export default function AdminCompanyProfilePage() {
       <Card className="gap-4 px-5 py-5">
         <p className="text-sm font-semibold text-gray-900">Company details</p>
         <div className="space-y-3">
-          <Field label="Display name" value={company.display_name} />
           <Field label="Registered name" value={company.registered_name} />
           <Field label="Email" value={company.email} />
           <Field label="TIN" value={company.tin} />

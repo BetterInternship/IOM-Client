@@ -38,7 +38,6 @@ function RegisterPageContent() {
   const [form, setForm] = useState({
     tin: "",
     legalIdentifier: "",
-    displayName: "",
     repEmail: "",
     password: "",
   });
@@ -92,7 +91,6 @@ function RegisterPageContent() {
           token: inviteToken,
           tin: form.tin,
           legalIdentifier: form.legalIdentifier,
-          displayName: form.displayName,
           password: form.password,
         })
         .then((r) => r.data as { university_id: string; template_id: string | null }),
@@ -174,8 +172,7 @@ function RegisterPageContent() {
       );
     }
 
-    const inviteDetailsValid =
-      !!form.tin && !!form.legalIdentifier && form.password.length >= 8;
+    const inviteDetailsValid = !!form.tin && !!form.legalIdentifier && form.password.length >= 8;
 
     return (
       <AuthShell
@@ -248,22 +245,6 @@ function RegisterPageContent() {
               }
               required
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="displayName">Display name</Label>
-            <Input
-              id="displayName"
-              placeholder="ACME CORP"
-              className="uppercase"
-              value={form.displayName}
-              onChange={(e) =>
-                setForm({ ...form, displayName: e.target.value.toUpperCase() })
-              }
-            />
-            <p className="text-muted-foreground text-xs">
-              Shown across the platform. Defaults to your registered name.
-            </p>
           </div>
 
           <div className="space-y-1.5">
@@ -461,22 +442,6 @@ function RegisterPageContent() {
           />
           <p className="text-muted-foreground text-xs">
             Must match your BIR registration exactly. Saved in uppercase.
-          </p>
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="displayName">Display name</Label>
-          <Input
-            id="displayName"
-            placeholder="ACME CORP"
-            className="uppercase"
-            value={form.displayName}
-            onChange={(e) =>
-              setForm({ ...form, displayName: e.target.value.toUpperCase() })
-            }
-          />
-          <p className="text-muted-foreground text-xs">
-            Shown across the platform. Defaults to your registered name.
           </p>
         </div>
 

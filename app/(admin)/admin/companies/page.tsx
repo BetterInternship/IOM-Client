@@ -11,8 +11,7 @@ import { formatDateWithoutTime } from "@/lib/utils";
 
 interface Company {
   id: string;
-  display_name: string;
-  registered_name: string | null;
+  registered_name: string;
   email: string;
   email_verified: boolean | null;
   is_deactivated: boolean | null;
@@ -25,25 +24,17 @@ const columns: ColumnDef<Company>[] = [
   {
     id: "name",
     header: "Company",
-    accessorFn: (row) => row.display_name,
+    accessorFn: (row) => row.registered_name,
     cell: ({ row }) => (
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="font-medium text-gray-900">{row.original.display_name}</p>
-          {row.original.is_deactivated ? (
-            <Badge type="destructive" strength="medium">Deactivated</Badge>
-          ) : row.original.has_pending_review ? (
-            <Badge type="warning" strength="medium">Pending</Badge>
-          ) : row.original.is_profile_incomplete ? (
-            <Badge type="default" strength="medium">Incomplete</Badge>
-          ) : null}
-        </div>
-        {row.original.registered_name &&
-          row.original.registered_name !== row.original.display_name && (
-            <p className="text-muted-foreground truncate text-xs">
-              {row.original.registered_name}
-            </p>
-          )}
+      <div className="flex items-center gap-2 min-w-0">
+        <p className="font-medium text-gray-900">{row.original.registered_name}</p>
+        {row.original.is_deactivated ? (
+          <Badge type="destructive" strength="medium">Deactivated</Badge>
+        ) : row.original.has_pending_review ? (
+          <Badge type="warning" strength="medium">Pending</Badge>
+        ) : row.original.is_profile_incomplete ? (
+          <Badge type="default" strength="medium">Incomplete</Badge>
+        ) : null}
       </div>
     ),
   },

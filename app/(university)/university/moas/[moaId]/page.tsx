@@ -19,8 +19,7 @@ import { formatDateWithoutTime } from "@/lib/utils";
 import { ArrowLeft } from "lucide-react";
 
 interface MoaCompany {
-  display_name: string;
-  registered_name: string | null;
+  registered_name: string;
   [key: string]: string | null;
 }
 

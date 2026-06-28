@@ -68,8 +68,7 @@ interface HistoryEntry {
 interface ReviewDetail {
   company: {
     id: string;
-    display_name: string;
-    registered_name: string | null;
+    registered_name: string;
     email: string;
     company_type: string | null;
   };
@@ -411,7 +410,7 @@ export default function AdminCompanyReviewPage() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Verify {company.display_name}?</AlertDialogTitle>
+                  <AlertDialogTitle>Verify {company.registered_name}?</AlertDialogTitle>
                   <AlertDialogDescription>
                     The company will be able to request MOAs from any university and is emailed a
                     confirmation.
@@ -521,7 +520,7 @@ export default function AdminCompanyReviewPage() {
           <DialogHeader>
             <DialogTitle>Reject verification</DialogTitle>
             <DialogDescription>
-              {company.display_name} will be asked to update their details. The reason is emailed to
+              {company.registered_name} will be asked to update their details. The reason is emailed to
               the company.
             </DialogDescription>
           </DialogHeader>

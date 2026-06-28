@@ -42,8 +42,7 @@ import { ArrowLeft, CircleAlert, CircleCheck, Loader2, Mail, Plus, ShieldCheck }
 interface Partner {
   company: {
     id: string;
-    display_name: string;
-    registered_name: string | null;
+    registered_name: string;
     company_type: string | null;
   };
   latestMoaId: string;
@@ -55,7 +54,7 @@ interface BlacklistEntry {
   reason: string | null;
   created_at: string;
   actor_email: string | null;
-  company: { id: string; display_name: string; registered_name: string | null };
+  company: { id: string; registered_name: string };
 }
 
 interface PartnerMoaEntry {
@@ -169,8 +168,7 @@ function DocumentsSection({ documents }: { documents: CompanyDoc[] }) {
 interface CombinedEntry {
   company: {
     id: string;
-    display_name: string;
-    registered_name: string | null;
+    registered_name: string;
     company_type: string | null;
   };
   latestMoaId: string | null;
@@ -187,7 +185,7 @@ interface CompanyInvite {
   template_id: string | null;
   personal_message: string | null;
   created_at: string;
-  registered_company: { display_name: string; registered_name: string | null } | null;
+  registered_company: { registered_name: string } | null;
 }
 
 interface AvailableTemplate {
@@ -469,21 +467,14 @@ export default function PartnersPage() {
       {
         id: "company",
         header: "Company",
-        accessorFn: (row) => row.company.display_name,
+        accessorFn: (row) => row.company.registered_name,
         cell: ({ row }) => (
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="font-medium text-gray-900">{row.original.company.display_name}</p>
-              {row.original.isBlacklisted && (
-                <span className="inline-flex shrink-0 items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                  Blacklisted
-                </span>
-              )}
-            </div>
-            {row.original.company.registered_name && (
-              <p className="text-muted-foreground text-xs">
-                {row.original.company.registered_name}
-              </p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-gray-900">{row.original.company.registered_name}</p>
+            {row.original.isBlacklisted && (
+              <span className="inline-flex shrink-0 items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                Blacklisted
+              </span>
             )}
           </div>
         ),
@@ -598,8 +589,7 @@ export default function PartnersPage() {
                   {(invitesData?.invites ?? []).map((invite) => {
                     const registeredName =
                       invite.status === "accepted" && invite.registered_company
-                        ? invite.registered_company.registered_name ||
-                          invite.registered_company.display_name
+                        ? invite.registered_company.registered_name
                         : null;
                     const displayName = registeredName
                       ? invite.company_name && invite.company_name !== registeredName
@@ -670,11 +660,10 @@ export default function PartnersPage() {
             </div>
 
             <div>
-              <h3 className="font-semibold text-gray-900">{company?.display_name ?? "—"}</h3>
-              {(company?.registered_name || company?.company_type) && (
+              <h3 className="font-semibold text-gray-900">{company?.registered_name ?? "—"}</h3>
+              {company?.company_type && (
                 <p className="text-muted-foreground mt-0.5 text-xs">
-                  {company?.registered_name}
-                  {company?.company_type && ` · ${company.company_type.replace(/_/g, " ")}`}
+                  {company.company_type.replace(/_/g, " ")}
                 </p>
               )}
             </div>
@@ -773,7 +762,7 @@ export default function PartnersPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Blacklist company</DialogTitle>
-            <DialogDescription>{blacklistTarget?.company.display_name}</DialogDescription>
+            <DialogDescription>{blacklistTarget?.company.registered_name}</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="border-destructive/30 bg-destructive/5 text-destructive space-y-1 rounded-[0.33em] border p-3 text-sm">
@@ -826,7 +815,7 @@ export default function PartnersPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Remove {unblacklistTarget?.company.display_name} from the blacklist?
+              Remove {unblacklistTarget?.company.registered_name} from the blacklist?
             </AlertDialogTitle>
             <AlertDialogDescription>
               This re-enables future requests from this company. Previously revoked MOAs will not be

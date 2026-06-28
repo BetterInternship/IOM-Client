@@ -15,7 +15,7 @@ interface AuditEvent {
   actor_email: string | null;
   detail: string | null;
   created_at: string;
-  company?: { display_name: string } | null;
+  company?: { registered_name: string } | null;
   moa?: { id: string } | null;
 }
 

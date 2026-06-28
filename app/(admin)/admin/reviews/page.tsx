@@ -14,8 +14,7 @@ interface ReviewRow {
   created_at: string;
   company: {
     id: string;
-    display_name: string;
-    registered_name: string | null;
+    registered_name: string;
     email: string;
     company_type: string | null;
   } | null;
@@ -25,26 +24,16 @@ const columns: ColumnDef<ReviewRow>[] = [
   {
     id: "company",
     header: "Company",
-    accessorFn: (row) => row.company?.display_name ?? "",
+    accessorFn: (row) => row.company?.registered_name ?? "",
     cell: ({ row }) => (
       <div className="min-w-0">
         <p className="font-medium text-gray-900">
-          {row.original.company?.display_name ?? "Unknown company"}
+          {row.original.company?.registered_name ?? "Unknown company"}
         </p>
         <p className="text-muted-foreground truncate text-xs">
           {row.original.company?.email}
         </p>
       </div>
-    ),
-  },
-  {
-    id: "registered_name",
-    header: "Registered name",
-    accessorFn: (row) => row.company?.registered_name ?? "",
-    cell: ({ row }) => (
-      <span className="text-muted-foreground">
-        {row.original.company?.registered_name ?? "—"}
-      </span>
     ),
   },
   {

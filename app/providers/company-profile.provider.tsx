@@ -7,9 +7,8 @@ import { preconfiguredAxios } from "@/preconfig.axios";
 interface CompanyProfile {
   id: string;
   tin: string;
-  display_name: string;
   email: string;
-  registered_name: string | null;
+  registered_name: string;
   company_type: string | null;
   registered_address: string | null;
   cosmetic: Record<string, unknown>;

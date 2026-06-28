@@ -309,7 +309,7 @@ function ProfileContent() {
   return (
     <PageContainer className="max-w-2xl space-y-6">
       <PageHeader
-        title={company.display_name}
+        title={company.registered_name}
         description="Both the company profile and required documents are needed before you can request MOAs."
       />
 
