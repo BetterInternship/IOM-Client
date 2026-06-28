@@ -78,7 +78,6 @@ interface CompanyDoc {
 const DOC_LABELS: Record<string, string> = {
   business_permit: "Business Permit",
   mayor_permit: "Mayor's Permit",
-  or_registration: "OR Registration",
   sec_dti_registration: "SEC/DTI Registration",
 };
 

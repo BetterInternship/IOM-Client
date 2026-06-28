@@ -73,7 +73,6 @@ const DOC_TYPES = [
   { value: "business_permit", label: "Business Permit" },
   { value: "sec_dti_registration", label: "SEC/DTI Registration" },
   { value: "mayor_permit", label: "Mayor's Permit" },
-  { value: "or_registration", label: "Official Receipt (OR)" },
 ];
 
 interface CompanyDoc {
