@@ -106,11 +106,9 @@ function MorphHeight({ children }: { children: React.ReactNode }) {
 }
 
 function InviteModal({
-  isSuperadmin,
   onClose,
   onSent,
 }: {
-  isSuperadmin: boolean;
   onClose: () => void;
   onSent: () => void;
 }) {
@@ -149,7 +147,6 @@ function InviteModal({
       preconfiguredAxios
         .get("/api/university/templates")
         .then((r) => r.data as { templates: AvailableTemplate[] }),
-    enabled: isSuperadmin,
   });
 
   const availableTemplates = (templatesData?.templates ?? []).filter((t) => t.is_available);
@@ -325,7 +322,7 @@ function InviteModal({
               )}
             </div>
 
-            {isSuperadmin && availableTemplates.length > 0 && (
+            {availableTemplates.length > 0 && (
               <div className="space-y-1.5">
                 <Label htmlFor="invite-template">MOA template to send (optional)</Label>
                 <div className="relative">
@@ -423,7 +420,7 @@ function resolveDisplayName(invite: CompanyInvite): string {
 }
 
 export default function InvitesPage() {
-  const { account, isSuperadmin } = useUniversityProfile();
+  const { account } = useUniversityProfile();
   const [showInviteModal, setShowInviteModal] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
@@ -519,7 +516,6 @@ export default function InvitesPage() {
 
       {showInviteModal && (
         <InviteModal
-          isSuperadmin={isSuperadmin}
           onClose={() => setShowInviteModal(false)}
           onSent={() => refetch()}
         />
