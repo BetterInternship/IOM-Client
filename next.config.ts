@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {
     routes.forEach(({ hosts, destination }) => {
       hosts.forEach((host) => {
         rewrites.push({
-          source: "/:path((?!_next|company/|university/|admin/|gcs-proxy|invite).*)*",
+          source: "/:path((?!_next|company/|university/|admin/|gcs-proxy|invite(?!s)).*)*",
           has: [{ type: "host", value: host }],
           destination: `/${destination}/:path*`,
         });

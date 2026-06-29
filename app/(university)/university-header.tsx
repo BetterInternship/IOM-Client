@@ -19,6 +19,7 @@ export function UniversityHeader() {
 
   const nav: NavItem[] = [
     { href: "/partners", label: "Partners" },
+    { href: "/invites", label: "Invites" },
     ...(isSuperadmin
       ? [{ href: "/accounts", label: "Accounts" }]
       : []),

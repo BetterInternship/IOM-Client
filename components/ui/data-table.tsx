@@ -46,13 +46,6 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectTrigger,
-  SelectItem,
-  SelectValue,
-  SelectContent,
-} from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 /**
@@ -85,8 +78,6 @@ interface DataTableProps<TData, TValue> {
   /** Optional: labels used in the pagination row count */
   rowLabelSingular?: string;
   rowLabelPlural?: string;
-  /** Optional: page size options */
-  pageSizes?: number[];
   /** Optional: className for wrapper */
   className?: string;
   onSelectionChange?: (rows: TData[]) => void;
@@ -187,7 +178,6 @@ export function DataTable<TData, TValue>({
   searchPlaceholder = "Search forms...",
   rowLabelSingular = "form",
   rowLabelPlural = "forms",
-  pageSizes = [5, 10, 20, 50],
   className,
   onRowClick,
   getRowClassName,
@@ -278,7 +268,7 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     // Keep page size stable across renders
-    initialState: { pagination: { pageSize: pageSizes[0] ?? 10 } },
+    initialState: { pagination: { pageSize: 20 } },
   });
 
   const searchKeys = React.useMemo(() => {
@@ -368,8 +358,16 @@ export function DataTable<TData, TValue>({
         <div className="flex items-center gap-2">{toolbarActions}</div>
       </div>
 
-      {/* Table */}
-      <div className="h-[480px] rounded-[0.1em] [&_[data-slot=table-container]]:h-full [&_[data-slot=table-container]]:overflow-auto">
+      {/* Table + Pagination — share a merged border */}
+      <div className="flex flex-col">
+      <div className="relative h-[480px] overflow-hidden rounded-t-sm border border-b-0 border-gray-200 [&_[data-slot=table-container]]:h-full [&_[data-slot=table-container]]:overflow-auto">
+        <div
+          className="pointer-events-none absolute top-0 left-0 z-[25] h-10 w-16 bg-gradient-to-r from-gray-200 to-transparent"
+        />
+        <div
+          className="pointer-events-none absolute top-10 bottom-0 z-[5] w-px bg-gray-200"
+          style={{ left: INDEX_COL_W - 1 }}
+        />
         <Table
           className="table-fixed"
           style={{ minWidth: `${tableMinWidthPx}px`, width: `max(100%, ${tableWidthPx}px)` }}
@@ -384,13 +382,13 @@ export function DataTable<TData, TValue>({
           </colgroup>
           <TableHeader className="[&_tr]:border-b-0">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 <TableHead
-                  className="sticky top-0 left-0 z-30 bg-gray-100 pr-2 text-right text-gray-600 shadow-[inset_-2px_0_0_theme(colors.gray.300),inset_0_-2px_0_theme(colors.gray.300)]"
+                  className="sticky top-0 left-0 z-30 bg-gray-200 pr-2 text-right text-gray-700"
                   style={indexColumnStyle}
                 ></TableHead>
                 {enableRowSelection && (
-                  <TableHead className="sticky top-0 z-20 w-[42px] bg-gray-100 shadow-[inset_0_-2px_0_theme(colors.gray.300)]">
+                  <TableHead className="sticky top-0 z-20 w-[42px] bg-gray-200">
                     <Checkbox
                       checked={
                         table.getIsAllPageRowsSelected() ||
@@ -405,9 +403,9 @@ export function DataTable<TData, TValue>({
                   <TableHead
                     key={header.id}
                     className={cn(
-                      "group font-heading sticky top-0 z-20 max-w-0 bg-gray-100 tracking-tight text-gray-600 shadow-[inset_0_-2px_0_theme(colors.gray.300)] transition-colors duration-300",
-                      header.column.getCanSort() && "cursor-pointer select-none hover:bg-gray-200",
-                      header.column.getIsSorted() && "bg-gray-50 hover:bg-gray-200"
+                      "group font-heading sticky top-0 z-20 max-w-0 bg-gray-200 tracking-tight text-gray-700 transition-colors duration-300",
+                      header.column.getCanSort() && "cursor-pointer select-none hover:bg-gray-300",
+                      header.column.getIsSorted() && "hover:bg-gray-300"
                     )}
                     style={{ width: header.getSize() }}
                   >
@@ -420,24 +418,24 @@ export function DataTable<TData, TValue>({
                           <span
                             className={cn(
                               "font-semibold min-w-0 truncate rounded px-1.5 py-0.5 transition-colors duration-300",
-                              header.column.getIsSorted() && "text-primary"
+                              header.column.getIsSorted() && "text-gray-900"
                             )}
                           >
                             {flexRender(header.column.columnDef.header, header.getContext())}
                           </span>
                           {header.column.getCanSort() && !header.column.getIsSorted() && (
-                            <ChevronsUpDown className="text-muted-foreground/40 mt-0.5 h-4 w-4 shrink-0" />
+                            <ChevronsUpDown className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
                           )}
                           {header.column.getIsSorted() === "asc" && (
-                            <ChevronUp className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                            <ChevronUp className="mt-0.5 h-4 w-4 shrink-0 text-gray-600" />
                           )}
                           {header.column.getIsSorted() === "desc" && (
-                            <ChevronDown className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                            <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-gray-600" />
                           )}
                         </div>
                         <span
                           className={cn(
-                            "bg-primary/85 mr-2 h-3 w-3 shrink-0 rounded-full transition-all duration-300 ease-out",
+                            "mr-2 h-3 w-3 shrink-0 rounded-full bg-gray-500 transition-all duration-300 ease-out",
                             header.column.getIsSorted()
                               ? "scale-100 opacity-100"
                               : "scale-50 opacity-0"
@@ -472,12 +470,12 @@ export function DataTable<TData, TValue>({
                     )}
                   </TableHead>
                 ))}
-                <TableHead className="sticky top-0 z-20 bg-gray-100 shadow-[inset_0_-2px_0_theme(colors.gray.300)]" />
+                <TableHead className="sticky top-0 z-20 bg-gray-200" />
               </TableRow>
             ))}
           </TableHeader>
 
-          <TableBody>
+          <TableBody className="[&_tr:last-child]:!border-b">
             {table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row, rowIndex) => {
                 const rowCustomClass = getRowClassName?.(row.original, rowIndex);
@@ -552,69 +550,55 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="z-10 flex shrink-0 flex-col items-center justify-between gap-1 border-t bg-white py-1 sm:flex-row">
+      <div className="z-10 flex shrink-0 flex-col items-center justify-between gap-1 rounded-b-sm border border-gray-200 bg-white px-3 py-2 sm:flex-row">
         <div className="text-muted-foreground px-1.5 text-sm">
           {table.getFilteredRowModel().rows.length}{" "}
           {table.getFilteredRowModel().rows.length === 1 ? rowLabelSingular : rowLabelPlural}
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-sm">Rows per page</span>
-          <Select
-            value={String(table.getState().pagination.pageSize)}
-            onValueChange={(val: string) => table.setPageSize(Number(val))}
-          >
-            <SelectTrigger className="w-fit!">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent align="end">
-              {pageSizes.map((s) => (
-                <SelectItem key={s} value={String(s)}>
-                  {s}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => table.setPageIndex(0)}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="px-1 text-sm">
-              Page {table.getState().pagination.pageIndex + 1} {""}
-              of {table.getPageCount() || 1}
-            </span>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              disabled={!table.getCanNextPage()}
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
+        {table.getPageCount() > 1 && (
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => table.setPageIndex(0)}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="px-1 text-sm">
+                Page {table.getState().pagination.pageIndex + 1} {""}
+                of {table.getPageCount()}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                disabled={!table.getCanNextPage()}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
+      </div>
       </div>
     </div>
   );

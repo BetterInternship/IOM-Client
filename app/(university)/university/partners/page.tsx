@@ -7,10 +7,7 @@ import { useUniversityProfile } from "@/app/providers/university-profile.provide
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
 import {
@@ -35,9 +32,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { MoaStatusBadge } from "@/components/status-badge";
 import { formatDateWithoutTime, cn } from "@/lib/utils";
-import { toast } from "sonner";
-import { toastPresets } from "@/components/sonner-toaster";
-import { ArrowLeft, CircleAlert, CircleCheck, Loader2, Mail, Plus, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CircleAlert, CircleCheck, Loader2, ShieldCheck } from "lucide-react";
 
 interface Partner {
   company: {
@@ -176,177 +171,6 @@ interface CombinedEntry {
   blacklistEntry: BlacklistEntry | null;
 }
 
-interface CompanyInvite {
-  id: string;
-  invited_email: string;
-  company_name: string | null;
-  status: "pending" | "accepted" | "expired";
-  expires_at: string;
-  template_id: string | null;
-  personal_message: string | null;
-  created_at: string;
-  registered_company: { registered_name: string } | null;
-}
-
-interface AvailableTemplate {
-  id: string;
-  template: { id: string; name: string };
-  is_available: boolean;
-}
-
-function InviteStatusBadge({ status }: { status: CompanyInvite["status"] }) {
-  if (status === "accepted") return <Badge type="supportive">Accepted</Badge>;
-  if (status === "expired") return <Badge type="destructive">Expired — not used</Badge>;
-  return <Badge type="warning">Pending</Badge>;
-}
-
-function InviteModal({
-  isSuperadmin,
-  onClose,
-  onSent,
-}: {
-  isSuperadmin: boolean;
-  onClose: () => void;
-  onSent: () => void;
-}) {
-  const [companyName, setCompanyName] = useState("");
-  const [email, setEmail] = useState("");
-  const [templateId, setTemplateId] = useState<string>("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-
-  const { data: templatesData } = useQuery({
-    queryKey: ["university-templates-for-invite"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/templates")
-        .then((r) => r.data as { templates: AvailableTemplate[] }),
-    enabled: isSuperadmin,
-  });
-
-  const availableTemplates = (templatesData?.templates ?? []).filter((t) => t.is_available);
-
-  const send = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios
-        .post("/api/university/invites", {
-          invitedEmail: email.trim(),
-          companyName: companyName.trim() || undefined,
-          templateId: templateId || undefined,
-          personalMessage: message.trim() || undefined,
-        })
-        .then((r) => r.data as { superseded: boolean; message: string }),
-    onSuccess: (res) => {
-      if (res.superseded) {
-        toast(
-          "Invite sent. A previous pending invite to this email was superseded.",
-          toastPresets.success,
-        );
-      } else {
-        toast("Invite sent.", toastPresets.success);
-      }
-      onSent();
-      onClose();
-    },
-    onError: (e: Error) => setError(e.message),
-  });
-
-  return (
-    <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Invite a company</DialogTitle>
-          <DialogDescription>
-            The company will receive an email with a link to register and sign a MOA with your
-            university.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="invite-company-name">Company name</Label>
-            <Input
-              id="invite-company-name"
-              placeholder="Acme Corporation"
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              autoFocus
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="invite-email">Company email</Label>
-            <Input
-              id="invite-email"
-              type="email"
-              placeholder="rep@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          {isSuperadmin && availableTemplates.length > 0 && (
-            <div className="space-y-1.5">
-              <Label htmlFor="invite-template">MOA template (optional)</Label>
-              <select
-                id="invite-template"
-                value={templateId}
-                onChange={(e) => setTemplateId(e.target.value)}
-                className="border-input bg-background focus:ring-ring w-full rounded-[0.33em] border px-3 py-2 text-sm focus:outline-none focus:ring-1"
-              >
-                <option value="">No specific template</option>
-                {availableTemplates.map((t) => (
-                  <option key={t.template.id} value={t.template.id}>
-                    {t.template.name}
-                  </option>
-                ))}
-              </select>
-              <p className="text-muted-foreground text-xs">
-                If specified, the company will be directed to this template.
-              </p>
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label htmlFor="invite-message">Personal message (optional)</Label>
-            <Textarea
-              id="invite-message"
-              rows={3}
-              placeholder="Add a note to the company…"
-              maxLength={500}
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-            />
-            <p className="text-muted-foreground text-right text-xs">{message.length}/500</p>
-          </div>
-
-          {error && (
-            <p className="text-destructive rounded-[0.33em] bg-red-50 px-3 py-2 text-sm">
-              {error}
-            </p>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={() => {
-              setError("");
-              send.mutate();
-            }}
-            disabled={!companyName.trim() || !email.trim() || send.isPending}
-          >
-            {send.isPending && <Loader2 className="animate-spin" />}
-            {send.isPending ? "Sending…" : "Send invite"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 // "list" and "detail" are stable states; "to-detail" / "to-list" are mid-transition.
 type Phase = "list" | "to-detail" | "detail" | "to-list";
 
@@ -364,18 +188,6 @@ export default function PartnersPage() {
   const [blacklistTarget, setBlacklistTarget] = useState<CombinedEntry | null>(null);
   const [unblacklistTarget, setUnblacklistTarget] = useState<CombinedEntry | null>(null);
   const [reason, setReason] = useState("");
-  const [showInviteModal, setShowInviteModal] = useState(false);
-
-  const isSuperadmin = account?.role === "superadmin";
-
-  const { data: invitesData, refetch: refetchInvites } = useQuery({
-    queryKey: ["university-invites"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/invites")
-        .then((r) => r.data as { invites: CompanyInvite[] }),
-    enabled: !!account,
-  });
 
   // Clean up timer on unmount.
   useEffect(() => () => clearTimeout(timerRef.current), []);
@@ -554,11 +366,7 @@ export default function PartnersPage() {
                 `absolute inset-x-0 top-0 animate-in slide-in-from-left fade-in duration-${ANIM_DURATION}`,
             )}
           >
-            <PageHeader title="Partners" description="Manage your active partners and blacklist.">
-              <Button onClick={() => setShowInviteModal(true)}>
-                <Plus /> Invite company
-              </Button>
-            </PageHeader>
+            <PageHeader title="Partners" description="Manage your active partners and blacklist." />
             {isLoading ? (
               <div className="space-y-1">
                 {[0, 1, 2].map((i) => (
@@ -579,47 +387,6 @@ export default function PartnersPage() {
               />
             )}
 
-            {/* Invite history */}
-            {(invitesData?.invites ?? []).length > 0 && (
-              <div className="space-y-2 pt-4">
-                <div className="flex items-center gap-2">
-                  <Mail className="text-muted-foreground h-4 w-4" />
-                  <h3 className="text-sm font-semibold text-gray-900">Company invites</h3>
-                </div>
-                <div className="divide-y divide-gray-100 overflow-hidden rounded-[0.33em] border border-gray-200">
-                  {(invitesData?.invites ?? []).map((invite) => {
-                    const registeredName =
-                      invite.status === "accepted" && invite.registered_company
-                        ? invite.registered_company.registered_name
-                        : null;
-                    const displayName = registeredName
-                      ? invite.company_name && invite.company_name !== registeredName
-                        ? `${registeredName} (${invite.company_name})`
-                        : registeredName
-                      : invite.company_name ?? null;
-                    return (
-                      <div key={invite.id} className="flex items-center gap-3 px-4 py-3">
-                        <div className="min-w-0 flex-1">
-                          {displayName && (
-                            <p className="truncate text-sm font-medium text-gray-900">
-                              {displayName}
-                            </p>
-                          )}
-                          <p className={displayName ? "text-muted-foreground truncate text-xs" : "truncate text-sm font-medium text-gray-900"}>
-                            {invite.invited_email}
-                          </p>
-                          <p className="text-muted-foreground text-xs">
-                            Sent {formatDateWithoutTime(invite.created_at)} · Expires{" "}
-                            {formatDateWithoutTime(invite.expires_at)}
-                          </p>
-                        </div>
-                        <InviteStatusBadge status={invite.status} />
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -741,14 +508,6 @@ export default function PartnersPage() {
           </div>
         )}
       </div>
-
-      {showInviteModal && (
-        <InviteModal
-          isSuperadmin={isSuperadmin}
-          onClose={() => setShowInviteModal(false)}
-          onSent={() => refetchInvites()}
-        />
-      )}
 
       {/* ── Blacklist dialog ─────────────────────────────────────────────── */}
       <Dialog
