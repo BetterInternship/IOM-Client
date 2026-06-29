@@ -42,7 +42,7 @@ jobs:
       - name: Deploy to Vercel
         id: vercel
         run: |
-          URL=$(npx vercel --prod --token="${{ secrets.VERCEL_TOKEN }}" --name=better-internship-iom-client --confirm)
+          URL=$(npx vercel --prod --token="${{ secrets.VERCEL_TOKEN }}" --name=iom-client --confirm)
           echo "url=$URL" >> $GITHUB_OUTPUT
 
       - name: Notify Discord of Success
