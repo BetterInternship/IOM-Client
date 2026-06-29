@@ -34,15 +34,15 @@ const nextConfig: NextConfig = {
   async rewrites() {
     const routes = [
       {
-        hosts: ["moa.betterinternship.com", "moa.localhost"],
+        hosts: ["moa.betterinternship.com", "dev.moa.betterinternship.com", "moa.localhost"],
         destination: "company",
       },
       {
-        hosts: ["uni.betterinternship.com", "uni.localhost"],
+        hosts: ["uni.betterinternship.com", "dev.uni.betterinternship.com", "uni.localhost"],
         destination: "university",
       },
       {
-        hosts: ["admin.iom.betterinternship.com", "admin.iom.localhost"],
+        hosts: ["admin.iom.betterinternship.com", "dev.admin.iom.betterinternship.com", "admin.iom.localhost"],
         destination: "admin",
       },
     ];

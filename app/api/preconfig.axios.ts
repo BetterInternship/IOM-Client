@@ -12,7 +12,16 @@ export interface ApiError extends Error {
   response?: { data?: { code?: string; data?: { limit?: number | string } } };
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_IOM_SERVER_URL || "http://localhost:5600";
+function getAPIBase(): string {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    if (host.startsWith("dev.")) return "https://dev.api.iom.betterinternship.com";
+    if (host.endsWith(".betterinternship.com")) return "https://api.iom.betterinternship.com";
+  }
+  return process.env.NEXT_PUBLIC_IOM_SERVER_URL || "http://localhost:5600";
+}
+
+const API_BASE = getAPIBase();
 
 export const preconfiguredAxios = axios.create({
   baseURL: API_BASE,
