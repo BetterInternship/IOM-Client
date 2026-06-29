@@ -202,7 +202,7 @@ export default function AccountsPage() {
           return (
             <div className="flex items-center justify-end gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => resendInvite.mutate(a.id)}
                 disabled={resendInvite.isPending}

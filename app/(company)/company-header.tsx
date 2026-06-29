@@ -29,7 +29,6 @@ export function CompanyHeader() {
   const nav: NavItem[] = [
     ...(!incomplete ? [{ href: "/dashboard", label: "Partners" }] : []),
     ...(verified ? [{ href: "/universities", label: "Request MOA" }] : []),
-    { href: "/profile", label: "Profile" },
   ];
 
   return (
@@ -41,6 +40,7 @@ export function CompanyHeader() {
       userSecondary={company?.email ?? undefined}
       logoutPath="/api/auth/company/logout"
       postLogoutPath="/login"
+      profileHref="/profile"
     />
   );
 }

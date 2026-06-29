@@ -26,7 +26,6 @@ export function UniversityHeader() {
     ...(isSuperadmin
       ? [{ href: "/templates", label: "MOA Templates" }]
       : []),
-    { href: "/profile", label: "Profile" },
   ];
 
   return (
@@ -38,6 +37,8 @@ export function UniversityHeader() {
       userSecondary={account?.email}
       logoutPath="/api/auth/university/logout"
       postLogoutPath="/login"
+      profileHref="/profile"
+      userAvatarUrl={account?.university.logo_url}
     />
   );
 }
