@@ -34,7 +34,7 @@ export function UniversityHeader() {
       portal="University"
       homeHref="/partners"
       nav={nav}
-      userPrimary={account?.display_name ?? account?.university.registered_name}
+      userPrimary={account?.university.registered_name}
       userSecondary={account?.email}
       logoutPath="/api/auth/university/logout"
       postLogoutPath="/login"
