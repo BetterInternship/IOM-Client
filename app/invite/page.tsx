@@ -128,7 +128,6 @@ function InvitePageContent() {
 
   const { email, company_name, email_status, university, template, invite } = data!;
   const registerHref = `/company/register?invite_token=${encodeURIComponent(token)}`;
-  const loginHref = `/company/login?invite_token=${encodeURIComponent(token)}`;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
@@ -197,10 +196,10 @@ function InvitePageContent() {
                     <Link href={registerHref}>Create company account</Link>
                   </Button>
                 </>
-              ) : email_status === "registered_verified" ? (
+              ) : (
                 <>
                   <p className="text-sm text-gray-700">
-                    Your company is already registered and verified.
+                    Your company already has an account.
                   </p>
                   {loginError && (
                     <p className="text-destructive rounded-[0.33em] bg-red-50 px-3 py-2 text-sm">
@@ -213,20 +212,8 @@ function InvitePageContent() {
                     onClick={() => loginViaInvite.mutate()}
                     disabled={loginViaInvite.isPending}
                   >
-                    {loginViaInvite.isPending ? (
-                      <Loader2 className="animate-spin" />
-                    ) : null}
-                    {loginViaInvite.isPending ? "Signing in…" : "Sign MOA"}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-gray-700">
-                    Your company is registered but not yet verified. Sign in to finish your profile
-                    and queue the MOA — it will be issued automatically once approved.
-                  </p>
-                  <Button size="lg" className="w-full" asChild>
-                    <Link href={loginHref}>Sign in to continue</Link>
+                    {loginViaInvite.isPending && <Loader2 className="animate-spin" />}
+                    {loginViaInvite.isPending ? "Signing in…" : email_status === "registered_verified" ? "Sign MOA" : "Continue"}
                   </Button>
                 </>
               )}

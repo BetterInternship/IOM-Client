@@ -62,11 +62,10 @@ function LoginPageContent() {
             );
 
           if (res.university_id) {
-            const params = new URLSearchParams();
+            const params = new URLSearchParams({ open_university_id: res.university_id });
             if (res.template_id) params.set("template_id", res.template_id);
             if (res.invite_id) params.set("invite_id", res.invite_id);
-            const qs = params.toString() ? `?${params}` : "";
-            router.replace(`/company/universities/${res.university_id}/queue-moa${qs}`);
+            router.replace(`/company/universities?${params}`);
             return;
           }
         } catch {

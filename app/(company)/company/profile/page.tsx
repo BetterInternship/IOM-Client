@@ -114,14 +114,14 @@ function ProfileContent() {
   const verified = verification?.status === "verified";
   const incomplete = verification?.status === "incomplete";
 
-  // Auto-redirect to queue-moa as soon as profile is complete (invite flow).
+  // Auto-redirect to the MOA modal as soon as profile is complete (invite flow).
   useEffect(() => {
     if (!inviteUniId || isLoading || vLoading || !company || !verification) return;
     if (verification.status === "incomplete") return;
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ open_university_id: inviteUniId });
     if (inviteTemplateId) params.set("template_id", inviteTemplateId);
     if (inviteId) params.set("invite_id", inviteId);
-    router.replace(`/company/universities/${inviteUniId}/queue-moa?${params}`);
+    router.replace(`/company/universities?${params}`);
   }, [inviteUniId, isLoading, vLoading, company, verification, inviteTemplateId, inviteId, router]);
 
   // When set, a re-verification confirm dialog is shown; running it performs the edit.
@@ -324,7 +324,8 @@ function ProfileContent() {
             <>
               Your profile is ready.{" "}
               <Link
-                href={`/company/universities/${inviteUniId}/queue-moa?${new URLSearchParams({
+                href={`/company/universities?${new URLSearchParams({
+                  open_university_id: inviteUniId!,
                   ...(inviteTemplateId ? { template_id: inviteTemplateId } : {}),
                   ...(inviteId ? { invite_id: inviteId } : {}),
                 })}`}
