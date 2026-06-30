@@ -18,6 +18,7 @@ import { LogOut, Menu, Loader2, UserRound } from "lucide-react";
 export interface NavItem {
   href: string;
   label: string;
+  badge?: number;
 }
 
 interface AppHeaderProps {
@@ -72,7 +73,14 @@ export function AppHeader({
             <DropdownMenuContent align="start" className="w-48">
               {nav.map((item) => (
                 <DropdownMenuItem key={item.href} asChild>
-                  <Link href={item.href}>{item.label}</Link>
+                  <Link href={item.href} className="flex items-center gap-1.5">
+                    {item.label}
+                    {!!item.badge && (
+                      <span className="inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold leading-none text-amber-900">
+                        !
+                      </span>
+                    )}
+                  </Link>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -86,13 +94,18 @@ export function AppHeader({
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
               className={cn(
-                "flex-shrink-0 rounded-[0.33em] px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
+                "flex flex-shrink-0 items-center gap-1.5 rounded-[0.33em] px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors",
                 isActive(item.href)
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
             >
               {item.label}
+              {!!item.badge && (
+                <span className="inline-flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold leading-none text-amber-900">
+                  !
+                </span>
+              )}
             </Link>
           ))}
         </nav>

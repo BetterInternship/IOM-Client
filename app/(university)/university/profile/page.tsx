@@ -233,7 +233,7 @@ export default function UniversityProfilePage() {
         </div>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-            University profile
+            {account.university.registered_name}
           </h1>
           <p className="text-muted-foreground text-sm">
             Institution details and the signatory used on your MOA templates.

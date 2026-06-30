@@ -378,7 +378,8 @@ export function DataTable<TData, TValue>({
             {table.getVisibleLeafColumns().map((column) => (
               <col key={column.id} style={{ width: column.getSize() }} />
             ))}
-            <col /> {/* filler: absorbs leftover space so index column stays fixed */}
+            {/* filler col: absorbs leftover space so the index column stays fixed */}
+            <col />
           </colgroup>
           <TableHeader className="[&_tr]:border-b-0">
             {table.getHeaderGroups().map((headerGroup) => (

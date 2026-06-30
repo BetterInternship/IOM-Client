@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
@@ -17,7 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
 import { MoaStatusBadge } from "@/components/status-badge";
 import { formatDateWithoutTime, cn } from "@/lib/utils";
-import { AlertCircle, ArrowLeft, ClipboardList, Clock, Plus } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowUpRight, ClipboardList, Clock, Plus } from "lucide-react";
+import { RequestDialog } from "@/components/moa-request-dialog";
 
 // "list" and "detail" are stable states; "to-detail" / "to-list" are mid-transition.
 type Phase = "list" | "to-detail" | "detail" | "to-list";
@@ -27,6 +28,9 @@ const ANIM_DURATION = 200;
 interface QueuedMoa {
   id: string;
   status: "pending" | "fulfilled" | "failed";
+  failure_reason: string | null;
+  university: { id: string; registered_name: string; logo_url: string | null } | null;
+  template: { id: string; name: string; description: string | null } | null;
 }
 
 interface PendingInvite {
@@ -209,9 +213,13 @@ function VerificationBanner({
   );
 }
 
-export default function CompanyDashboardPage() {
+function CompanyDashboardContent() {
   const { company, isLoading } = useCompanyProfile();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const openUniversityId = searchParams.get("open_university_id");
+  const inviteTemplateId = searchParams.get("template_id");
+  const inviteId = searchParams.get("invite_id");
 
   const [phase, setPhase] = useState<Phase>("list");
   const [currentUniId, setCurrentUniId] = useState<string | null>(null);
@@ -243,6 +251,17 @@ export default function CompanyDashboardPage() {
   });
 
   const { data: verification, isLoading: vLoading } = useCompanyVerification(!!company);
+  const verified = verification?.status === "verified";
+
+  const inviteDialog = openUniversityId ? (
+    <RequestDialog
+      universityId={openUniversityId}
+      defaultTemplateId={inviteTemplateId}
+      inviteId={inviteId}
+      verified={verified}
+      onClose={() => router.replace("/company/dashboard")}
+    />
+  ) : null;
 
   // Clean up timer on unmount.
   useEffect(() => () => clearTimeout(timerRef.current), []);
@@ -269,13 +288,16 @@ export default function CompanyDashboardPage() {
 
   if (isLoading) {
     return (
-      <PageContainer className="space-y-8">
-        <Skeleton className="h-8 w-56" />
-        <div className="space-y-2.5">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      </PageContainer>
+      <>
+        <PageContainer className="space-y-8">
+          <Skeleton className="h-8 w-56" />
+          <div className="space-y-2.5">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
+          </div>
+        </PageContainer>
+        {inviteDialog}
+      </>
     );
   }
   if (!company) return null;
@@ -377,6 +399,8 @@ export default function CompanyDashboardPage() {
   };
 
   return (
+    <>
+    {inviteDialog}
     <PageContainer>
       {/* overflow-hidden clips the sliding panels; relative enables absolute children */}
       <div className="relative overflow-hidden">
@@ -405,18 +429,31 @@ export default function CompanyDashboardPage() {
               )}
             </PageHeader>
 
-            {pendingInvites.map((invite) => {
-              const params = new URLSearchParams({ invite_id: invite.id });
+            {pendingInvites.length > 0 && (() => {
+              const invite = pendingInvites[0];
+              const params = new URLSearchParams({ open_university_id: invite.university!.id, invite_id: invite.id });
               if (invite.template) params.set("template_id", invite.template.id);
-              const href = `/company/universities/${invite.university!.id}/queue-moa?${params}`;
+              const href = `/company/dashboard?${params}`;
               return (
                 <Card
                   key={invite.id}
                   className="gap-2 border-primary/30 bg-primary/5 px-5 py-4"
                 >
-                  <p className="text-sm font-medium text-gray-900">
-                    MOA invitation from {invite.university!.registered_name}
-                  </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium text-gray-900">
+                      MOA invitation from {invite.university!.registered_name}
+                    </p>
+                    <Link
+                      href="/invites"
+                      className="text-muted-foreground hover:text-foreground flex flex-shrink-0 items-center gap-1 text-xs transition-colors"
+                    >
+                      {pendingInvites.length > 1 && (
+                        <span className="font-medium">{pendingInvites.length - 1} more</span>
+                      )}
+                      View all
+                      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Link>
+                  </div>
                   <p className="text-muted-foreground text-sm">
                     You were invited to sign a MOA
                     {invite.template ? ` using the "${invite.template.name}" template` : ""}.
@@ -428,21 +465,28 @@ export default function CompanyDashboardPage() {
                   </div>
                 </Card>
               );
-            })}
+            })()}
 
             {pendingQueued.length > 0 && (
-              <Card className="flex-row items-start gap-3 border-primary/30 bg-primary/5 px-5 py-4">
-                <Clock className="text-primary mt-0.5 h-5 w-5 flex-shrink-0" />
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium text-gray-900">
-                    {pendingQueued.length === 1 ? "MOA request queued" : `${pendingQueued.length} MOA requests queued`}
-                  </p>
-                  <p className="text-muted-foreground text-sm">
-                    {pendingQueued.length === 1 ? "It" : "They"} will be issued automatically once the
-                    platform verifies your company.
-                  </p>
-                </div>
-              </Card>
+              <div className="space-y-3">
+                <h2 className="text-sm font-semibold text-gray-900">Pending MOAs</h2>
+                <p className="text-muted-foreground -mt-1 text-xs">
+                  These will be issued automatically once your company is verified.
+                </p>
+                {pendingQueued.map((q) => (
+                  <Card key={q.id} className="flex-row items-center gap-3 border-primary/20 bg-primary/5 px-5 py-3.5">
+                    <Clock className="text-primary h-4 w-4 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-gray-900">
+                        {q.university?.registered_name ?? "Unknown university"}
+                      </p>
+                      {q.template && (
+                        <p className="text-muted-foreground truncate text-xs">{q.template.name}</p>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
             )}
 
             {failedQueued.length > 0 && (
@@ -525,5 +569,14 @@ export default function CompanyDashboardPage() {
         )}
       </div>
     </PageContainer>
+    </>
+  );
+}
+
+export default function CompanyDashboardPage() {
+  return (
+    <Suspense>
+      <CompanyDashboardContent />
+    </Suspense>
   );
 }

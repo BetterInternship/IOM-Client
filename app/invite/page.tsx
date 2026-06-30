@@ -1,8 +1,8 @@
 "use client";
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { useResolvedFile } from "@/app/lib/resolve-file";
 import { Button } from "@/components/ui/button";
@@ -68,8 +68,28 @@ function TemplatePreviewSheet({
 
 function InvitePageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const token = searchParams.get("token") ?? "";
   const [showPreview, setShowPreview] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
+  const loginViaInvite = useMutation({
+    mutationFn: () =>
+      preconfiguredAxios
+        .post("/api/auth/company/login-invite", { token })
+        .then(
+          (r) =>
+            r.data as { university_id: string; template_id: string | null; invite_id: string },
+        ),
+    onSuccess: (res) => {
+      const params = new URLSearchParams();
+      params.set("open_university_id", res.university_id);
+      if (res.template_id) params.set("template_id", res.template_id);
+      if (res.invite_id) params.set("invite_id", res.invite_id);
+      router.replace(`/company/dashboard?${params}`);
+    },
+    onError: (e: Error) => setLoginError(e.message),
+  });
 
   const { data, isLoading, error } = useQuery<InviteData>({
     queryKey: ["invite-peek", token],
@@ -108,7 +128,6 @@ function InvitePageContent() {
 
   const { email, company_name, email_status, university, template, invite } = data!;
   const registerHref = `/company/register?invite_token=${encodeURIComponent(token)}`;
-  const loginHref = `/company/login?invite_token=${encodeURIComponent(token)}`;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
@@ -177,23 +196,24 @@ function InvitePageContent() {
                     <Link href={registerHref}>Create company account</Link>
                   </Button>
                 </>
-              ) : email_status === "registered_verified" ? (
-                <>
-                  <p className="text-sm text-gray-700">
-                    Your company is already registered and verified. Sign in to request the MOA now.
-                  </p>
-                  <Button size="lg" className="w-full" asChild>
-                    <Link href={loginHref}>Sign in to request MOA</Link>
-                  </Button>
-                </>
               ) : (
                 <>
                   <p className="text-sm text-gray-700">
-                    Your company is registered but not yet verified. Sign in to finish your profile
-                    and queue the MOA — it will be issued automatically once approved.
+                    Your company already has an account.
                   </p>
-                  <Button size="lg" className="w-full" asChild>
-                    <Link href={loginHref}>Sign in to continue</Link>
+                  {loginError && (
+                    <p className="text-destructive rounded-[0.33em] bg-red-50 px-3 py-2 text-sm">
+                      {loginError}
+                    </p>
+                  )}
+                  <Button
+                    size="lg"
+                    className="w-full"
+                    onClick={() => loginViaInvite.mutate()}
+                    disabled={loginViaInvite.isPending}
+                  >
+                    {loginViaInvite.isPending && <Loader2 className="animate-spin" />}
+                    {loginViaInvite.isPending ? "Signing in…" : email_status === "registered_verified" ? "Sign MOA" : "Continue"}
                   </Button>
                 </>
               )}
@@ -201,9 +221,6 @@ function InvitePageContent() {
           </div>
         </div>
 
-        <p className="text-center text-xs text-white/70 drop-shadow">
-          Institutional MOA Platform
-        </p>
       </div>
 
       {template && showPreview && (

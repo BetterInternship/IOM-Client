@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoaStatusBadge } from "@/components/status-badge";
 import { formatDateWithoutTime } from "@/lib/utils";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 
 interface CompanyMoaDetail {
   moa: {
@@ -58,32 +58,43 @@ export default function CompanyMoaDetailPage() {
   }
 
   const { moa, pdfUrl } = data;
+  const isActive = moa.status === "active" && !moa.is_expired;
 
   return (
     <PageContainer className="max-w-3xl space-y-6">
       <Link
-        href="/dashboard"
+        href="/company/dashboard"
         className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
       >
-        <ArrowLeft className="h-4 w-4" /> Partners
+        <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Dashboard
       </Link>
 
       <Card className="overflow-hidden">
+        {isActive && (
+          <div className="bg-supportive/10 border-b border-supportive/20 px-6 py-4 flex items-center gap-3">
+            <ShieldCheck className="h-5 w-5 text-supportive flex-shrink-0" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-supportive">This MOA is signed and in effect</p>
+              <p className="text-xs text-supportive/80 mt-0.5">
+                Valid until {formatDateWithoutTime(moa.expiry_date)}
+              </p>
+            </div>
+          </div>
+        )}
+
         <CardContent className="space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="truncate text-xl font-semibold text-gray-900">
+              <h1 className="text-xl font-semibold text-gray-900 text-wrap-balance">
                 {moa.university.registered_name}
-                <span className="font-normal text-muted-foreground">
-                  {" "}&ndash;{" "}({moa.template.name})
-                </span>
               </h1>
-              <p className="text-muted-foreground mt-1 text-sm">
+              <p className="text-muted-foreground mt-0.5 text-sm">{moa.template.name}</p>
+              <p className="text-muted-foreground mt-1 text-xs">
                 {formatDateWithoutTime(moa.effective_date)} &ndash;{" "}
                 {formatDateWithoutTime(moa.expiry_date)}
               </p>
             </div>
-            <MoaStatusBadge status={moa.status} isExpired={moa.is_expired} />
+            {!isActive && <MoaStatusBadge status={moa.status} isExpired={moa.is_expired} />}
           </div>
 
           {moa.status === "rejected" && moa.rejection_reason && (
