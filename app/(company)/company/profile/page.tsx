@@ -121,7 +121,7 @@ function ProfileContent() {
     const params = new URLSearchParams({ open_university_id: inviteUniId });
     if (inviteTemplateId) params.set("template_id", inviteTemplateId);
     if (inviteId) params.set("invite_id", inviteId);
-    router.replace(`/company/universities?${params}`);
+    router.replace(`/company/dashboard?${params}`);
   }, [inviteUniId, isLoading, vLoading, company, verification, inviteTemplateId, inviteId, router]);
 
   // When set, a re-verification confirm dialog is shown; running it performs the edit.
@@ -324,7 +324,7 @@ function ProfileContent() {
             <>
               Your profile is ready.{" "}
               <Link
-                href={`/company/universities?${new URLSearchParams({
+                href={`/company/dashboard?${new URLSearchParams({
                   open_university_id: inviteUniId!,
                   ...(inviteTemplateId ? { template_id: inviteTemplateId } : {}),
                   ...(inviteId ? { invite_id: inviteId } : {}),

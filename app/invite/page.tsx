@@ -86,7 +86,7 @@ function InvitePageContent() {
       params.set("open_university_id", res.university_id);
       if (res.template_id) params.set("template_id", res.template_id);
       if (res.invite_id) params.set("invite_id", res.invite_id);
-      router.replace(`/company/universities?${params}`);
+      router.replace(`/company/dashboard?${params}`);
     },
     onError: (e: Error) => setLoginError(e.message),
   });
