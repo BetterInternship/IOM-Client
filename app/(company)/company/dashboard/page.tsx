@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
 import { MoaStatusBadge } from "@/components/status-badge";
 import { formatDateWithoutTime, cn } from "@/lib/utils";
-import { AlertCircle, ArrowLeft, ClipboardList, Clock, Plus } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowUpRight, ClipboardList, Clock, Plus } from "lucide-react";
 import { RequestDialog } from "@/components/moa-request-dialog";
 
 // "list" and "detail" are stable states; "to-detail" / "to-list" are mid-transition.
@@ -429,7 +429,8 @@ function CompanyDashboardContent() {
               )}
             </PageHeader>
 
-            {pendingInvites.map((invite) => {
+            {pendingInvites.length > 0 && (() => {
+              const invite = pendingInvites[0];
               const params = new URLSearchParams({ open_university_id: invite.university!.id, invite_id: invite.id });
               if (invite.template) params.set("template_id", invite.template.id);
               const href = `/company/dashboard?${params}`;
@@ -438,9 +439,21 @@ function CompanyDashboardContent() {
                   key={invite.id}
                   className="gap-2 border-primary/30 bg-primary/5 px-5 py-4"
                 >
-                  <p className="text-sm font-medium text-gray-900">
-                    MOA invitation from {invite.university!.registered_name}
-                  </p>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium text-gray-900">
+                      MOA invitation from {invite.university!.registered_name}
+                    </p>
+                    <Link
+                      href="/invites"
+                      className="text-muted-foreground hover:text-foreground flex flex-shrink-0 items-center gap-1 text-xs transition-colors"
+                    >
+                      {pendingInvites.length > 1 && (
+                        <span className="font-medium">{pendingInvites.length - 1} more</span>
+                      )}
+                      View all
+                      <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Link>
+                  </div>
                   <p className="text-muted-foreground text-sm">
                     You were invited to sign a MOA
                     {invite.template ? ` using the "${invite.template.name}" template` : ""}.
@@ -452,7 +465,7 @@ function CompanyDashboardContent() {
                   </div>
                 </Card>
               );
-            })}
+            })()}
 
             {pendingQueued.length > 0 && (
               <div className="space-y-3">
