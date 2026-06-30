@@ -24,6 +24,7 @@ import { formatDateWithoutTime } from "@/lib/utils";
 import { toast } from "sonner";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Autocomplete } from "@/components/ui/autocomplete";
+import Link from "next/link";
 import { ChevronDown, Loader2, Plus } from "lucide-react";
 
 interface CompanyInvite {
@@ -422,6 +423,7 @@ function resolveDisplayName(invite: CompanyInvite): string {
 export default function InvitesPage() {
   const { account } = useUniversityProfile();
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showNoTemplatesPrompt, setShowNoTemplatesPrompt] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["university-invites"],
@@ -431,6 +433,24 @@ export default function InvitesPage() {
         .then((r) => r.data as { invites: CompanyInvite[] }),
     enabled: !!account,
   });
+
+  const { data: templatesData } = useQuery({
+    queryKey: ["university-templates-for-invite"],
+    queryFn: () =>
+      preconfiguredAxios
+        .get("/api/university/templates")
+        .then((r) => r.data as { templates: AvailableTemplate[] }),
+    enabled: !!account,
+  });
+  const availableTemplates = (templatesData?.templates ?? []).filter((t) => t.is_available);
+
+  const handleInviteClick = () => {
+    if (availableTemplates.length === 0) {
+      setShowNoTemplatesPrompt(true);
+    } else {
+      setShowInviteModal(true);
+    }
+  };
 
   const invites = data?.invites ?? [];
 
@@ -491,7 +511,7 @@ export default function InvitesPage() {
         title="Company Invites"
         description="Track and manage invitations sent to companies."
       >
-        <Button onClick={() => setShowInviteModal(true)}>
+        <Button onClick={handleInviteClick}>
           <Plus /> Invite company
         </Button>
       </PageHeader>
@@ -519,6 +539,28 @@ export default function InvitesPage() {
           onClose={() => setShowInviteModal(false)}
           onSent={() => refetch()}
         />
+      )}
+
+      {showNoTemplatesPrompt && (
+        <Dialog open onOpenChange={(o) => !o && setShowNoTemplatesPrompt(false)}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>No active templates</DialogTitle>
+              <DialogDescription>
+                You need at least one active MOA template before you can invite companies.
+                Go to your templates page to activate one.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowNoTemplatesPrompt(false)}>
+                Cancel
+              </Button>
+              <Button asChild>
+                <Link href="/templates">Go to Templates</Link>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </PageContainer>
   );

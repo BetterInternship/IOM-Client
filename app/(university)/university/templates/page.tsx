@@ -57,8 +57,10 @@ export default function UniversityTemplatesPage() {
   const toggle = useMutation({
     mutationFn: ({ templateId, is_available }: { templateId: string; is_available: boolean }) =>
       preconfiguredAxios.put(`/api/university/templates/${templateId}`, { is_available }),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["university-templates"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["university-templates"] });
+      queryClient.invalidateQueries({ queryKey: ["university-templates-for-invite"] });
+    },
     onError: (e: Error) => toast.error(e.message),
     onSettled: () => setPending(null),
   });
