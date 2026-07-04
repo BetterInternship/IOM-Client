@@ -7,5 +7,5 @@
  */
 
 export interface CompanyForgotDto {
-  tin: string;
+  companyId: string;
 }

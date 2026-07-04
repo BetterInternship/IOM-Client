@@ -25,6 +25,7 @@ import type {
 
 import type {
   BlacklistCompanyDto,
+  CreateCompanyInviteDto,
   CreateStaffAccountDto,
   PatchUniversityProfileDto,
   ToggleTemplateOfferDto,
@@ -2031,6 +2032,641 @@ export const useUniversityControllerUnblacklistCompany = <
 
   return useMutation(mutationOptions, queryClient);
 };
+export const universityControllerListRegisteredCompanies = (
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/university/companies`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getUniversityControllerListRegisteredCompaniesQueryKey = () => {
+  return [`/api/university/companies`] as const;
+};
+
+export const getUniversityControllerListRegisteredCompaniesQueryOptions = <
+  TData = Awaited<
+    ReturnType<typeof universityControllerListRegisteredCompanies>
+  >,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getUniversityControllerListRegisteredCompaniesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>
+  > = ({ signal }) => universityControllerListRegisteredCompanies(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type UniversityControllerListRegisteredCompaniesQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>
+  >;
+export type UniversityControllerListRegisteredCompaniesQueryError = unknown;
+
+export function useUniversityControllerListRegisteredCompanies<
+  TData = Awaited<
+    ReturnType<typeof universityControllerListRegisteredCompanies>
+  >,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<
+            ReturnType<typeof universityControllerListRegisteredCompanies>
+          >,
+          TError,
+          Awaited<
+            ReturnType<typeof universityControllerListRegisteredCompanies>
+          >
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerListRegisteredCompanies<
+  TData = Awaited<
+    ReturnType<typeof universityControllerListRegisteredCompanies>
+  >,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<
+            ReturnType<typeof universityControllerListRegisteredCompanies>
+          >,
+          TError,
+          Awaited<
+            ReturnType<typeof universityControllerListRegisteredCompanies>
+          >
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerListRegisteredCompanies<
+  TData = Awaited<
+    ReturnType<typeof universityControllerListRegisteredCompanies>
+  >,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useUniversityControllerListRegisteredCompanies<
+  TData = Awaited<
+    ReturnType<typeof universityControllerListRegisteredCompanies>
+  >,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getUniversityControllerListRegisteredCompaniesQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getUniversityControllerListRegisteredCompaniesSuspenseQueryOptions =
+  <
+    TData = Awaited<
+      ReturnType<typeof universityControllerListRegisteredCompanies>
+    >,
+    TError = unknown,
+  >(options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+        TError,
+        TData
+      >
+    >;
+  }) => {
+    const { query: queryOptions } = options ?? {};
+
+    const queryKey =
+      queryOptions?.queryKey ??
+      getUniversityControllerListRegisteredCompaniesQueryKey();
+
+    const queryFn: QueryFunction<
+      Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>
+    > = ({ signal }) => universityControllerListRegisteredCompanies(signal);
+
+    return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+      TError,
+      TData
+    > & { queryKey: DataTag<QueryKey, TData, TError> };
+  };
+
+export type UniversityControllerListRegisteredCompaniesSuspenseQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>
+  >;
+export type UniversityControllerListRegisteredCompaniesSuspenseQueryError =
+  unknown;
+
+export function useUniversityControllerListRegisteredCompaniesSuspense<
+  TData = Awaited<
+    ReturnType<typeof universityControllerListRegisteredCompanies>
+  >,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerListRegisteredCompaniesSuspense<
+  TData = Awaited<
+    ReturnType<typeof universityControllerListRegisteredCompanies>
+  >,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerListRegisteredCompaniesSuspense<
+  TData = Awaited<
+    ReturnType<typeof universityControllerListRegisteredCompanies>
+  >,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useUniversityControllerListRegisteredCompaniesSuspense<
+  TData = Awaited<
+    ReturnType<typeof universityControllerListRegisteredCompanies>
+  >,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListRegisteredCompanies>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getUniversityControllerListRegisteredCompaniesSuspenseQueryOptions(options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const universityControllerSendInvite = (
+  createCompanyInviteDto: CreateCompanyInviteDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/university/invites`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: createCompanyInviteDto,
+    signal,
+  });
+};
+
+export const getUniversityControllerSendInviteMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerSendInvite>>,
+    TError,
+    { data: CreateCompanyInviteDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerSendInvite>>,
+  TError,
+  { data: CreateCompanyInviteDto },
+  TContext
+> => {
+  const mutationKey = ["universityControllerSendInvite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerSendInvite>>,
+    { data: CreateCompanyInviteDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return universityControllerSendInvite(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityControllerSendInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerSendInvite>>
+>;
+export type UniversityControllerSendInviteMutationBody = CreateCompanyInviteDto;
+export type UniversityControllerSendInviteMutationError = unknown;
+
+export const useUniversityControllerSendInvite = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerSendInvite>>,
+      TError,
+      { data: CreateCompanyInviteDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerSendInvite>>,
+  TError,
+  { data: CreateCompanyInviteDto },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerSendInviteMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerListInvites = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/university/invites`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getUniversityControllerListInvitesQueryKey = () => {
+  return [`/api/university/invites`] as const;
+};
+
+export const getUniversityControllerListInvitesQueryOptions = <
+  TData = Awaited<ReturnType<typeof universityControllerListInvites>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof universityControllerListInvites>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getUniversityControllerListInvitesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof universityControllerListInvites>>
+  > = ({ signal }) => universityControllerListInvites(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof universityControllerListInvites>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type UniversityControllerListInvitesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerListInvites>>
+>;
+export type UniversityControllerListInvitesQueryError = unknown;
+
+export function useUniversityControllerListInvites<
+  TData = Awaited<ReturnType<typeof universityControllerListInvites>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListInvites>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof universityControllerListInvites>>,
+          TError,
+          Awaited<ReturnType<typeof universityControllerListInvites>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerListInvites<
+  TData = Awaited<ReturnType<typeof universityControllerListInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListInvites>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof universityControllerListInvites>>,
+          TError,
+          Awaited<ReturnType<typeof universityControllerListInvites>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerListInvites<
+  TData = Awaited<ReturnType<typeof universityControllerListInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useUniversityControllerListInvites<
+  TData = Awaited<ReturnType<typeof universityControllerListInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getUniversityControllerListInvitesQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getUniversityControllerListInvitesSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof universityControllerListInvites>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof universityControllerListInvites>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getUniversityControllerListInvitesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof universityControllerListInvites>>
+  > = ({ signal }) => universityControllerListInvites(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof universityControllerListInvites>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type UniversityControllerListInvitesSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerListInvites>>
+>;
+export type UniversityControllerListInvitesSuspenseQueryError = unknown;
+
+export function useUniversityControllerListInvitesSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerListInvites>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerListInvitesSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerListInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useUniversityControllerListInvitesSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerListInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useUniversityControllerListInvitesSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerListInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof universityControllerListInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getUniversityControllerListInvitesSuspenseQueryOptions(options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export const universityControllerGetAuditLog = (signal?: AbortSignal) => {
   return preconfiguredAxiosFunction<void>({
     url: `/api/university/audit`,

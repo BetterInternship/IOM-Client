@@ -24,6 +24,8 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ApproveCompanyReviewDto,
+  CreateCompanyAdminDto,
   CreateTemplateDto,
   CreateUniversityDto,
   PatchCompanyAdminDto,
@@ -845,11 +847,14 @@ export function useAdminControllerCompanyReviewDetailSuspense<
 
 export const adminControllerApproveCompany = (
   companyId: string | undefined | null,
+  approveCompanyReviewDto: ApproveCompanyReviewDto,
   signal?: AbortSignal,
 ) => {
   return preconfiguredAxiosFunction<void>({
     url: `/api/admin/companies/${companyId}/approve`,
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: approveCompanyReviewDto,
     signal,
   });
 };
@@ -861,13 +866,13 @@ export const getAdminControllerApproveCompanyMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminControllerApproveCompany>>,
     TError,
-    { companyId: string | undefined | null },
+    { companyId: string | undefined | null; data: ApproveCompanyReviewDto },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof adminControllerApproveCompany>>,
   TError,
-  { companyId: string | undefined | null },
+  { companyId: string | undefined | null; data: ApproveCompanyReviewDto },
   TContext
 > => {
   const mutationKey = ["adminControllerApproveCompany"];
@@ -881,11 +886,11 @@ export const getAdminControllerApproveCompanyMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminControllerApproveCompany>>,
-    { companyId: string | undefined | null }
+    { companyId: string | undefined | null; data: ApproveCompanyReviewDto }
   > = (props) => {
-    const { companyId } = props ?? {};
+    const { companyId, data } = props ?? {};
 
-    return adminControllerApproveCompany(companyId);
+    return adminControllerApproveCompany(companyId, data);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -894,7 +899,7 @@ export const getAdminControllerApproveCompanyMutationOptions = <
 export type AdminControllerApproveCompanyMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerApproveCompany>>
 >;
-
+export type AdminControllerApproveCompanyMutationBody = ApproveCompanyReviewDto;
 export type AdminControllerApproveCompanyMutationError = unknown;
 
 export const useAdminControllerApproveCompany = <
@@ -905,7 +910,7 @@ export const useAdminControllerApproveCompany = <
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof adminControllerApproveCompany>>,
       TError,
-      { companyId: string | undefined | null },
+      { companyId: string | undefined | null; data: ApproveCompanyReviewDto },
       TContext
     >;
   },
@@ -913,7 +918,7 @@ export const useAdminControllerApproveCompany = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof adminControllerApproveCompany>>,
   TError,
-  { companyId: string | undefined | null },
+  { companyId: string | undefined | null; data: ApproveCompanyReviewDto },
   TContext
 > => {
   const mutationOptions =
@@ -1573,6 +1578,86 @@ export const useAdminControllerSeedOrReassignSuperadmin = <
 
   return useMutation(mutationOptions, queryClient);
 };
+export const adminControllerCreateCompany = (
+  createCompanyAdminDto: CreateCompanyAdminDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/admin/companies`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: createCompanyAdminDto,
+    signal,
+  });
+};
+
+export const getAdminControllerCreateCompanyMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerCreateCompany>>,
+    TError,
+    { data: CreateCompanyAdminDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminControllerCreateCompany>>,
+  TError,
+  { data: CreateCompanyAdminDto },
+  TContext
+> => {
+  const mutationKey = ["adminControllerCreateCompany"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminControllerCreateCompany>>,
+    { data: CreateCompanyAdminDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminControllerCreateCompany(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminControllerCreateCompanyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerCreateCompany>>
+>;
+export type AdminControllerCreateCompanyMutationBody = CreateCompanyAdminDto;
+export type AdminControllerCreateCompanyMutationError = unknown;
+
+export const useAdminControllerCreateCompany = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof adminControllerCreateCompany>>,
+      TError,
+      { data: CreateCompanyAdminDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof adminControllerCreateCompany>>,
+  TError,
+  { data: CreateCompanyAdminDto },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminControllerCreateCompanyMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export const adminControllerListCompanies = (signal?: AbortSignal) => {
   return preconfiguredAxiosFunction<void>({
     url: `/api/admin/companies`,
@@ -1832,82 +1917,294 @@ export function useAdminControllerListCompaniesSuspense<
   return query;
 }
 
-export const adminControllerDeactivateCompany = (
+export const adminControllerGetCompany = (
   companyId: string | undefined | null,
+  signal?: AbortSignal,
 ) => {
   return preconfiguredAxiosFunction<void>({
-    url: `/api/admin/companies/${companyId}/deactivate`,
-    method: "PATCH",
+    url: `/api/admin/companies/${companyId}`,
+    method: "GET",
+    signal,
   });
 };
 
-export const getAdminControllerDeactivateCompanyMutationOptions = <
-  TError = unknown,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminControllerDeactivateCompany>>,
-    TError,
-    { companyId: string | undefined | null },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof adminControllerDeactivateCompany>>,
-  TError,
-  { companyId: string | undefined | null },
-  TContext
-> => {
-  const mutationKey = ["adminControllerDeactivateCompany"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminControllerDeactivateCompany>>,
-    { companyId: string | undefined | null }
-  > = (props) => {
-    const { companyId } = props ?? {};
-
-    return adminControllerDeactivateCompany(companyId);
-  };
-
-  return { mutationFn, ...mutationOptions };
+export const getAdminControllerGetCompanyQueryKey = (
+  companyId?: string | undefined | null,
+) => {
+  return [`/api/admin/companies/${companyId}`] as const;
 };
 
-export type AdminControllerDeactivateCompanyMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminControllerDeactivateCompany>>
->;
-
-export type AdminControllerDeactivateCompanyMutationError = unknown;
-
-export const useAdminControllerDeactivateCompany = <
+export const getAdminControllerGetCompanyQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
   TError = unknown,
-  TContext = unknown,
 >(
+  companyId: string | undefined | null,
   options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof adminControllerDeactivateCompany>>,
-      TError,
-      { companyId: string | undefined | null },
-      TContext
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetCompany>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminControllerGetCompanyQueryKey(companyId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminControllerGetCompany>>
+  > = ({ signal }) => adminControllerGetCompany(companyId, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!companyId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminControllerGetCompany>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminControllerGetCompanyQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerGetCompany>>
+>;
+export type AdminControllerGetCompanyQueryError = unknown;
+
+export function useAdminControllerGetCompany<
+  TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetCompany>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminControllerGetCompany>>,
+          TError,
+          Awaited<ReturnType<typeof adminControllerGetCompany>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerGetCompany<
+  TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetCompany>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminControllerGetCompany>>,
+          TError,
+          Awaited<ReturnType<typeof adminControllerGetCompany>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerGetCompany<
+  TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetCompany>>,
+        TError,
+        TData
+      >
     >;
   },
   queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof adminControllerDeactivateCompany>>,
-  TError,
-  { companyId: string | undefined | null },
-  TContext
-> => {
-  const mutationOptions =
-    getAdminControllerDeactivateCompanyMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
 };
+
+export function useAdminControllerGetCompany<
+  TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetCompany>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminControllerGetCompanyQueryOptions(
+    companyId,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getAdminControllerGetCompanySuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetCompany>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminControllerGetCompanyQueryKey(companyId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminControllerGetCompany>>
+  > = ({ signal }) => adminControllerGetCompany(companyId, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof adminControllerGetCompany>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminControllerGetCompanySuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerGetCompany>>
+>;
+export type AdminControllerGetCompanySuspenseQueryError = unknown;
+
+export function useAdminControllerGetCompanySuspense<
+  TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetCompany>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerGetCompanySuspense<
+  TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetCompany>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerGetCompanySuspense<
+  TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetCompany>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useAdminControllerGetCompanySuspense<
+  TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
+  TError = unknown,
+>(
+  companyId: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetCompany>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminControllerGetCompanySuspenseQueryOptions(
+    companyId,
+    options,
+  );
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export const adminControllerPatchCompanyAdmin = (
   companyId: string | undefined | null,
   patchCompanyAdminDto: PatchCompanyAdminDto,
@@ -1984,6 +2281,82 @@ export const useAdminControllerPatchCompanyAdmin = <
 > => {
   const mutationOptions =
     getAdminControllerPatchCompanyAdminMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const adminControllerDeactivateCompany = (
+  companyId: string | undefined | null,
+) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/admin/companies/${companyId}/deactivate`,
+    method: "PATCH",
+  });
+};
+
+export const getAdminControllerDeactivateCompanyMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerDeactivateCompany>>,
+    TError,
+    { companyId: string | undefined | null },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminControllerDeactivateCompany>>,
+  TError,
+  { companyId: string | undefined | null },
+  TContext
+> => {
+  const mutationKey = ["adminControllerDeactivateCompany"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminControllerDeactivateCompany>>,
+    { companyId: string | undefined | null }
+  > = (props) => {
+    const { companyId } = props ?? {};
+
+    return adminControllerDeactivateCompany(companyId);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminControllerDeactivateCompanyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerDeactivateCompany>>
+>;
+
+export type AdminControllerDeactivateCompanyMutationError = unknown;
+
+export const useAdminControllerDeactivateCompany = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof adminControllerDeactivateCompany>>,
+      TError,
+      { companyId: string | undefined | null },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof adminControllerDeactivateCompany>>,
+  TError,
+  { companyId: string | undefined | null },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminControllerDeactivateCompanyMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

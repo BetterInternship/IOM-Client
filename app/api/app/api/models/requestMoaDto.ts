@@ -9,4 +9,8 @@
 export interface RequestMoaDto {
   universityId: string;
   templateId: string;
+  repName: string;
+  repTitle: string;
+  repSignatureText?: string;
+  invite_id?: string;
 }
