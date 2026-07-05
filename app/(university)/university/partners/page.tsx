@@ -557,7 +557,7 @@ export default function PartnersPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="iom-partners">IOM Partners</TabsTrigger>
-          <TabsTrigger value="legacy-companies">Legacy Companies</TabsTrigger>
+          <TabsTrigger value="legacy-companies">Legacy Partners</TabsTrigger>
         </TabsList>
 
         <TabsContent value="iom-partners" className="mt-4">
