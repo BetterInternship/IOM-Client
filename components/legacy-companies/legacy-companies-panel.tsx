@@ -41,7 +41,7 @@ export interface LegacyCompanySummary {
   valid_until: string | null;
 }
 
-interface LegacyCompanyDetail {
+export interface LegacyCompanyDetail {
   id: string;
   company_name: string;
   company_details: Record<string, unknown>;
@@ -76,18 +76,18 @@ type LegacyCompaniesPanelProps = {
   showDetailBackButton?: boolean;
 };
 
-function formatLegacyLabel(value: string) {
+export function formatLegacyLabel(value: string) {
   return value.replace(/_/g, " ");
 }
 
-function formatLegacyFieldLabel(value: string) {
+export function formatLegacyFieldLabel(value: string) {
   if (value === "tin") return "TIN";
   return value
     .replace(/_/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function isFilledValue(value: unknown) {
+export function isFilledValue(value: unknown) {
   if (value === null || value === undefined) return false;
   return String(value).trim() !== "";
 }
@@ -101,7 +101,7 @@ const DOCUMENT_TYPE_OPTIONS = [
   "other",
 ];
 
-function isLegacyMoaExpired(expiryDate: string) {
+export function isLegacyMoaExpired(expiryDate: string) {
   const today = new Date().toISOString().slice(0, 10);
   return expiryDate < today;
 }

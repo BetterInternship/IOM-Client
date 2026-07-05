@@ -9,9 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogBottomSheet,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { DataTable } from "@/components/ui/data-table";
-import { LegacyCompaniesPanel } from "@/components/legacy-companies/legacy-companies-panel";
-import { ArrowLeft, CircleAlert, CircleCheck, ShieldCheck } from "lucide-react";
+import { LegacyCompaniesPanel, LegacyCompanyDetail, formatLegacyLabel, formatLegacyFieldLabel, isFilledValue, isLegacyMoaExpired } from "@/components/legacy-companies/legacy-companies-panel";
+import { ArrowLeft, ChevronDown, ChevronRight, CircleAlert, CircleCheck, Eye, ShieldCheck } from "lucide-react";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { MoaStatusBadge } from "@/components/status-badge";
 
@@ -97,6 +102,202 @@ function VerifiedDocumentDetails({ details }: { details: DocReviewDetails }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function ReadOnlyLegacyDetail({
+  company,
+  onPreviewDoc,
+}: {
+  company: LegacyCompanyDetail;
+  onPreviewDoc: (url: string, title: string) => void;
+}) {
+  const details = company.company_details as Record<string, unknown>;
+  const companyType = typeof details.company_type === "string" ? details.company_type : null;
+  const standardDetailKeys = [
+    "company_type",
+    "tin",
+    "registered_address",
+    "contact_person",
+    "contact_email",
+    "contact_phone",
+  ];
+  const detailEntries = [
+    ...standardDetailKeys.map((key) => [formatLegacyFieldLabel(key), details[key]] as const),
+    ...Object.entries(details)
+      .filter(([key, value]) => !standardDetailKeys.includes(key) && isFilledValue(value))
+      .map(([key, value]) => [formatLegacyFieldLabel(key), value] as const),
+  ];
+
+  return (
+    <>
+      <div>
+        <p className="text-sm font-semibold text-gray-900">{company.company_name}</p>
+        {companyType && (
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            {formatLegacyLabel(companyType)}
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-0 rounded-[0.33em] border border-gray-200">
+        <div className="flex items-center gap-1.5 border-b border-gray-100 px-3 py-2 text-xs font-medium text-gray-700">
+          Company details
+        </div>
+        <div className="divide-y divide-gray-100">
+          {detailEntries.map(([label, value]) => (
+            <div key={label} className="flex items-center gap-4 px-3 py-2">
+              <p className="text-muted-foreground w-44 flex-shrink-0 text-xs">{label}</p>
+              <p className="text-sm font-medium text-gray-900">
+                {isFilledValue(value) ? String(value) : "—"}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Card className="gap-4 py-5">
+        <p className="px-5 text-sm font-semibold text-gray-900">Documents</p>
+        <div className="space-y-1">
+          {company.company_documents.length === 0 ? (
+            <p className="px-5 text-sm text-muted-foreground">No documents.</p>
+          ) : (
+            company.company_documents.map((doc) => (
+              <div
+                key={doc.id}
+                className={"flex flex-row items-center px-5 duration-200" + (doc.url ? " hover:cursor-pointer hover:bg-gray-50" : "")}
+                onClick={() => doc.url && onPreviewDoc(doc.url, doc.filename)}
+              >
+                <CircleCheck className="text-supportive flex-shrink-0" />
+                <div className="flex flex-1 items-center gap-3 rounded-[0.16em] p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800">
+                      {doc.type === "other" ? "Company document" : formatLegacyLabel(doc.type)}
+                    </p>
+                    <p className="text-muted-foreground mt-0.5 truncate text-xs">{doc.filename}</p>
+                    {doc.expiry_date && (
+                      <p className="text-muted-foreground mt-0.5 text-xs">
+                        Expires {formatDateWithoutTime(doc.expiry_date)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Card>
+
+      {company.moas.length > 0 ? (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 text-left">
+              <th className="pb-2 pr-4 font-medium text-gray-500">Status</th>
+              <th className="pb-2 pr-4 font-medium text-gray-500">Document</th>
+              <th className="pb-2 pr-4 font-medium text-gray-500">Created</th>
+              <th className="pb-2 font-medium text-gray-500">Period</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {company.moas.map((moa) => (
+              <tr
+                key={moa.id}
+                className={"align-top" + (moa.document_url ? " cursor-pointer hover:bg-gray-50" : "")}
+                onClick={() => moa.document_url && onPreviewDoc(moa.document_url, moa.filename ?? "MOA Document")}
+              >
+                <td className="py-2.5 pr-4 text-gray-600">
+                  <MoaStatusBadge status="active" isExpired={isLegacyMoaExpired(moa.expiry_date)} />
+                </td>
+                <td className="py-2.5 pr-4 text-gray-600">
+                  {moa.document_url ? (
+                    <span className="inline-flex items-center gap-1.5 text-primary">
+                      <Eye className="h-3.5 w-3.5" /> {moa.filename ?? "MOA Document"}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="py-2.5 pr-4 text-gray-600">
+                  {formatDateWithoutTime(moa.created_at)}
+                </td>
+                <td className="py-2.5 text-gray-600">
+                  {formatDateWithoutTime(moa.effective_date)} – {formatDateWithoutTime(moa.expiry_date)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="text-sm text-muted-foreground">No MOA history.</p>
+      )}
+    </>
+  );
+}
+
+function LegacyRecordsSection({ universityId, companyId }: { universityId: string; companyId: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-partner-legacy-company", universityId, companyId],
+    queryFn: () =>
+      preconfiguredAxios
+        .get(`/api/admin/universities/${universityId}/partners/${companyId}/legacy-companies`)
+        .then((r) => r.data as { legacyCompany: LegacyCompanyDetail | null }),
+    enabled: open && !!companyId && !!universityId,
+  });
+
+  const company = data?.legacyCompany;
+
+  return (
+    <div className="rounded-[0.33em] border border-gray-200">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-gray-900 hover:bg-gray-50"
+      >
+        <span>Legacy records</span>
+        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+      </button>
+
+      {open && (
+        <div className="space-y-4 border-t border-gray-200 p-4">
+          {isLoading ? (
+            <>
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </>
+          ) : !company ? (
+            <p className="text-sm text-muted-foreground">No legacy records matched.</p>
+          ) : (
+            <ReadOnlyLegacyDetail
+              company={company}
+              onPreviewDoc={(url, title) => setPreviewDoc({ url, title })}
+            />
+          )}
+        </div>
+      )}
+
+      {previewDoc && (
+        <Dialog open onOpenChange={(o) => !o && setPreviewDoc(null)}>
+          <DialogBottomSheet className="flex h-[88vh] flex-col p-0">
+            <div className="flex items-center border-b border-gray-100 px-5 py-3.5 pr-14">
+              <DialogTitle className="text-sm font-medium text-gray-900">
+                {previewDoc.title}
+              </DialogTitle>
+            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <iframe
+                src={previewDoc.url}
+                className="h-full w-full border-none"
+                title={previewDoc.title}
+              />
+            </div>
+          </DialogBottomSheet>
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -371,6 +572,8 @@ export default function AdminUniversityPartnersPage() {
               ) : (
                 <p className="text-muted-foreground text-sm">No MOA history.</p>
               )}
+
+            <LegacyRecordsSection universityId={universityId} companyId={currentCompanyId} />
             </div>
           )}
         </TabsContent>
