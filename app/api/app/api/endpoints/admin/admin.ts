@@ -32,6 +32,7 @@ import type {
   PatchTemplateDto,
   RejectCompanyReviewDto,
   SeedSuperadminDto,
+  VerifyTinDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
@@ -1578,6 +1579,85 @@ export const useAdminControllerSeedOrReassignSuperadmin = <
 
   return useMutation(mutationOptions, queryClient);
 };
+export const adminControllerVerifyTin = (
+  verifyTinDto: VerifyTinDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/admin/companies/verify-tin`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: verifyTinDto,
+    signal,
+  });
+};
+
+export const getAdminControllerVerifyTinMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerVerifyTin>>,
+    TError,
+    { data: VerifyTinDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminControllerVerifyTin>>,
+  TError,
+  { data: VerifyTinDto },
+  TContext
+> => {
+  const mutationKey = ["adminControllerVerifyTin"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminControllerVerifyTin>>,
+    { data: VerifyTinDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminControllerVerifyTin(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminControllerVerifyTinMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerVerifyTin>>
+>;
+export type AdminControllerVerifyTinMutationBody = VerifyTinDto;
+export type AdminControllerVerifyTinMutationError = unknown;
+
+export const useAdminControllerVerifyTin = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof adminControllerVerifyTin>>,
+      TError,
+      { data: VerifyTinDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof adminControllerVerifyTin>>,
+  TError,
+  { data: VerifyTinDto },
+  TContext
+> => {
+  const mutationOptions = getAdminControllerVerifyTinMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export const adminControllerCreateCompany = (
   createCompanyAdminDto: CreateCompanyAdminDto,
   signal?: AbortSignal,
@@ -1917,6 +1997,79 @@ export function useAdminControllerListCompaniesSuspense<
   return query;
 }
 
+export const adminControllerBulkCreateCompanies = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/admin/companies/bulk`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getAdminControllerBulkCreateCompaniesMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>,
+    TError,
+    void,
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["adminControllerBulkCreateCompanies"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>,
+    void
+  > = () => {
+    return adminControllerBulkCreateCompanies();
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminControllerBulkCreateCompaniesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>
+>;
+
+export type AdminControllerBulkCreateCompaniesMutationError = unknown;
+
+export const useAdminControllerBulkCreateCompanies = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>,
+      TError,
+      void,
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationOptions =
+    getAdminControllerBulkCreateCompaniesMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export const adminControllerGetCompany = (
   companyId: string | undefined | null,
   signal?: AbortSignal,
