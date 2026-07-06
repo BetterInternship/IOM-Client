@@ -27,6 +27,7 @@ import type {
   ClaimInviteDto,
   CompanyMeResponse,
   CompanyPatchProfileResponse,
+  CompanyPendingInvitesResponse,
   CompanyVerificationResponse,
   ErrorResponse,
   PatchCompanyProfileDto,
@@ -2305,7 +2306,7 @@ export const useCompanyControllerClaimInvite = <
   return useMutation(mutationOptions, queryClient);
 };
 export const companyControllerListPendingInvites = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyPendingInvitesResponse>({
     url: `/api/company/invites/pending`,
     method: "GET",
     signal,
@@ -2318,7 +2319,7 @@ export const getCompanyControllerListPendingInvitesQueryKey = () => {
 
 export const getCompanyControllerListPendingInvitesQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -2347,11 +2348,11 @@ export const getCompanyControllerListPendingInvitesQueryOptions = <
 export type CompanyControllerListPendingInvitesQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerListPendingInvites>>
 >;
-export type CompanyControllerListPendingInvitesQueryError = unknown;
+export type CompanyControllerListPendingInvitesQueryError = ErrorResponse;
 
 export function useCompanyControllerListPendingInvites<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -2376,7 +2377,7 @@ export function useCompanyControllerListPendingInvites<
 };
 export function useCompanyControllerListPendingInvites<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2401,7 +2402,7 @@ export function useCompanyControllerListPendingInvites<
 };
 export function useCompanyControllerListPendingInvites<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2419,7 +2420,7 @@ export function useCompanyControllerListPendingInvites<
 
 export function useCompanyControllerListPendingInvites<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2449,7 +2450,7 @@ export function useCompanyControllerListPendingInvites<
 
 export const getCompanyControllerListPendingInvitesSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -2477,11 +2478,12 @@ export const getCompanyControllerListPendingInvitesSuspenseQueryOptions = <
 
 export type CompanyControllerListPendingInvitesSuspenseQueryResult =
   NonNullable<Awaited<ReturnType<typeof companyControllerListPendingInvites>>>;
-export type CompanyControllerListPendingInvitesSuspenseQueryError = unknown;
+export type CompanyControllerListPendingInvitesSuspenseQueryError =
+  ErrorResponse;
 
 export function useCompanyControllerListPendingInvitesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -2498,7 +2500,7 @@ export function useCompanyControllerListPendingInvitesSuspense<
 };
 export function useCompanyControllerListPendingInvitesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2515,7 +2517,7 @@ export function useCompanyControllerListPendingInvitesSuspense<
 };
 export function useCompanyControllerListPendingInvitesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2533,7 +2535,7 @@ export function useCompanyControllerListPendingInvitesSuspense<
 
 export function useCompanyControllerListPendingInvitesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<

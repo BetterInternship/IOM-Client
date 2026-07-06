@@ -1,13 +1,12 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { AppHeader, type NavItem } from "@/components/app-header";
 import {
   useCompanyProfile,
   useCompanyVerification,
 } from "@/app/providers/company-profile.provider";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { companyAuthControllerLogout, useCompanyControllerListPendingInvites } from "@/app/api";
 
 const AUTH_SUFFIXES = [
   "/login",
@@ -24,14 +23,11 @@ export function CompanyHeader() {
   const verified = status === "verified";
   const incomplete = status === "incomplete";
 
-  const { data: invitesData } = useQuery({
-    queryKey: ["company-pending-invites"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/company/invites/pending")
-        .then((r) => r.data as { invites: Array<{ id: string; university: { id: string } | null }> }),
-    enabled: !!company && !incomplete,
-    staleTime: 30_000,
+  const { data: invitesData } = useCompanyControllerListPendingInvites({
+    query: {
+      enabled: !!company && !incomplete,
+      staleTime: 30_000,
+    },
   });
   const pendingInviteCount = (invitesData?.invites ?? []).filter((inv) => inv.university !== null).length;
 
@@ -52,7 +48,7 @@ export function CompanyHeader() {
       nav={nav}
       userPrimary={company?.registered_name ?? undefined}
       userSecondary={company?.email ?? undefined}
-      logoutPath="/api/auth/company/logout"
+      logout={companyAuthControllerLogout}
       postLogoutPath="/login"
       profileHref="/profile"
     />
