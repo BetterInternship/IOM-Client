@@ -1,8 +1,7 @@
 "use client";
 import { createContext, useContext } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useRouter, usePathname } from "next/navigation";
-import { preconfiguredAxios } from "@/preconfig.axios";
+import { useCompanyControllerMe, useCompanyControllerGetVerification } from "@/app/api";
 
 interface CompanyProfile {
   id: string;
@@ -35,29 +34,18 @@ export interface CompanyVerification {
 
 /** Shared platform-verification state for the company (banner + request gate). */
 export function useCompanyVerification(enabled = true) {
-  return useQuery({
-    queryKey: ["company-verification"],
-    queryFn: async () => {
-      const res = await preconfiguredAxios.get("/api/company/verification");
-      return res.data as CompanyVerification;
-    },
-    enabled,
-    staleTime: 30_000,
+  const { data, ...rest } = useCompanyControllerGetVerification({
+    query: { enabled, staleTime: 30_000 },
   });
+  return { data: data as CompanyVerification | undefined, ...rest };
 }
 
 export function CompanyProfileProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["company-me"],
-    queryFn: async () => {
-      const res = await preconfiguredAxios.get("/api/company/me");
-      return res.data.company as CompanyProfile;
-    },
-    retry: false,
-    staleTime: Infinity,
+  const { data, isLoading, isError } = useCompanyControllerMe({
+    query: { retry: false, staleTime: Infinity },
   });
 
   // Gate: redirect to login on 401 (isError catches axios 401).
@@ -80,7 +68,7 @@ export function CompanyProfileProvider({ children }: { children: React.ReactNode
   }
 
   return (
-    <CompanyProfileContext.Provider value={{ company: data ?? null, isLoading }}>
+    <CompanyProfileContext.Provider value={{ company: (data?.company as CompanyProfile) ?? null, isLoading }}>
       {children}
     </CompanyProfileContext.Provider>
   );

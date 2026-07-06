@@ -5,7 +5,10 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
+import type { CompanyAuthListItemDto } from "./companyAuthListItemDto";
 
-export interface RejectMoaDto {
-  reason?: string;
+export interface CompanyAuthListResponse {
+  success: boolean;
+  message?: string;
+  companies: CompanyAuthListItemDto[];
 }

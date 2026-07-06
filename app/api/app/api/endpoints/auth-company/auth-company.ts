@@ -24,19 +24,27 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  BaseResponse,
+  CompanyAuthListResponse,
   CompanyForgotDto,
+  CompanyForgotResponse,
   CompanyLoginDto,
+  CompanyLoginInviteResponse,
   CompanyOtpRequestDto,
+  CompanyOtpRequestResponse,
   CompanyOtpVerifyDto,
   CompanyRegisterDto,
+  CompanyRegisterInvitedResponse,
+  CompanyRegisterResponse,
   CompanyResetDto,
+  ErrorResponse,
   RegisterInvitedCompanyDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
 
 export const companyAuthControllerList = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyAuthListResponse>({
     url: `/api/auth/company/list`,
     method: "GET",
     signal,
@@ -49,7 +57,7 @@ export const getCompanyAuthControllerListQueryKey = () => {
 
 export const getCompanyAuthControllerListQueryOptions = <
   TData = Awaited<ReturnType<typeof companyAuthControllerList>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -78,11 +86,11 @@ export const getCompanyAuthControllerListQueryOptions = <
 export type CompanyAuthControllerListQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyAuthControllerList>>
 >;
-export type CompanyAuthControllerListQueryError = unknown;
+export type CompanyAuthControllerListQueryError = ErrorResponse;
 
 export function useCompanyAuthControllerList<
   TData = Awaited<ReturnType<typeof companyAuthControllerList>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -107,7 +115,7 @@ export function useCompanyAuthControllerList<
 };
 export function useCompanyAuthControllerList<
   TData = Awaited<ReturnType<typeof companyAuthControllerList>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -132,7 +140,7 @@ export function useCompanyAuthControllerList<
 };
 export function useCompanyAuthControllerList<
   TData = Awaited<ReturnType<typeof companyAuthControllerList>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -150,7 +158,7 @@ export function useCompanyAuthControllerList<
 
 export function useCompanyAuthControllerList<
   TData = Awaited<ReturnType<typeof companyAuthControllerList>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -179,7 +187,7 @@ export function useCompanyAuthControllerList<
 
 export const getCompanyAuthControllerListSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyAuthControllerList>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -208,11 +216,11 @@ export const getCompanyAuthControllerListSuspenseQueryOptions = <
 export type CompanyAuthControllerListSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyAuthControllerList>>
 >;
-export type CompanyAuthControllerListSuspenseQueryError = unknown;
+export type CompanyAuthControllerListSuspenseQueryError = ErrorResponse;
 
 export function useCompanyAuthControllerListSuspense<
   TData = Awaited<ReturnType<typeof companyAuthControllerList>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -229,7 +237,7 @@ export function useCompanyAuthControllerListSuspense<
 };
 export function useCompanyAuthControllerListSuspense<
   TData = Awaited<ReturnType<typeof companyAuthControllerList>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -246,7 +254,7 @@ export function useCompanyAuthControllerListSuspense<
 };
 export function useCompanyAuthControllerListSuspense<
   TData = Awaited<ReturnType<typeof companyAuthControllerList>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -264,7 +272,7 @@ export function useCompanyAuthControllerListSuspense<
 
 export function useCompanyAuthControllerListSuspense<
   TData = Awaited<ReturnType<typeof companyAuthControllerList>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -298,7 +306,7 @@ export const companyAuthControllerRegister = (
   companyRegisterDto: CompanyRegisterDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyRegisterResponse>({
     url: `/api/auth/company/register`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -308,7 +316,7 @@ export const companyAuthControllerRegister = (
 };
 
 export const getCompanyAuthControllerRegisterMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -348,10 +356,10 @@ export type CompanyAuthControllerRegisterMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyAuthControllerRegister>>
 >;
 export type CompanyAuthControllerRegisterMutationBody = CompanyRegisterDto;
-export type CompanyAuthControllerRegisterMutationError = unknown;
+export type CompanyAuthControllerRegisterMutationError = ErrorResponse;
 
 export const useCompanyAuthControllerRegister = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -378,7 +386,7 @@ export const companyAuthControllerOtpRequest = (
   companyOtpRequestDto: CompanyOtpRequestDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyOtpRequestResponse>({
     url: `/api/auth/company/otp/request`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -388,7 +396,7 @@ export const companyAuthControllerOtpRequest = (
 };
 
 export const getCompanyAuthControllerOtpRequestMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -428,10 +436,10 @@ export type CompanyAuthControllerOtpRequestMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyAuthControllerOtpRequest>>
 >;
 export type CompanyAuthControllerOtpRequestMutationBody = CompanyOtpRequestDto;
-export type CompanyAuthControllerOtpRequestMutationError = unknown;
+export type CompanyAuthControllerOtpRequestMutationError = ErrorResponse;
 
 export const useCompanyAuthControllerOtpRequest = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -458,7 +466,7 @@ export const companyAuthControllerOtpVerify = (
   companyOtpVerifyDto: CompanyOtpVerifyDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/company/otp/verify`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -468,7 +476,7 @@ export const companyAuthControllerOtpVerify = (
 };
 
 export const getCompanyAuthControllerOtpVerifyMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -508,10 +516,10 @@ export type CompanyAuthControllerOtpVerifyMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyAuthControllerOtpVerify>>
 >;
 export type CompanyAuthControllerOtpVerifyMutationBody = CompanyOtpVerifyDto;
-export type CompanyAuthControllerOtpVerifyMutationError = unknown;
+export type CompanyAuthControllerOtpVerifyMutationError = ErrorResponse;
 
 export const useCompanyAuthControllerOtpVerify = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -538,7 +546,7 @@ export const companyAuthControllerLogin = (
   companyLoginDto: CompanyLoginDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/company/login`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -548,7 +556,7 @@ export const companyAuthControllerLogin = (
 };
 
 export const getCompanyAuthControllerLoginMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -588,10 +596,10 @@ export type CompanyAuthControllerLoginMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyAuthControllerLogin>>
 >;
 export type CompanyAuthControllerLoginMutationBody = CompanyLoginDto;
-export type CompanyAuthControllerLoginMutationError = unknown;
+export type CompanyAuthControllerLoginMutationError = ErrorResponse;
 
 export const useCompanyAuthControllerLogin = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -614,7 +622,7 @@ export const useCompanyAuthControllerLogin = <
   return useMutation(mutationOptions, queryClient);
 };
 export const companyAuthControllerLogout = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/company/logout`,
     method: "POST",
     signal,
@@ -622,7 +630,7 @@ export const companyAuthControllerLogout = (signal?: AbortSignal) => {
 };
 
 export const getCompanyAuthControllerLogoutMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -660,10 +668,10 @@ export type CompanyAuthControllerLogoutMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyAuthControllerLogout>>
 >;
 
-export type CompanyAuthControllerLogoutMutationError = unknown;
+export type CompanyAuthControllerLogoutMutationError = ErrorResponse;
 
 export const useCompanyAuthControllerLogout = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -690,7 +698,7 @@ export const companyAuthControllerForgot = (
   companyForgotDto: CompanyForgotDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyForgotResponse>({
     url: `/api/auth/company/forgot`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -700,7 +708,7 @@ export const companyAuthControllerForgot = (
 };
 
 export const getCompanyAuthControllerForgotMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -740,10 +748,10 @@ export type CompanyAuthControllerForgotMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyAuthControllerForgot>>
 >;
 export type CompanyAuthControllerForgotMutationBody = CompanyForgotDto;
-export type CompanyAuthControllerForgotMutationError = unknown;
+export type CompanyAuthControllerForgotMutationError = ErrorResponse;
 
 export const useCompanyAuthControllerForgot = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -770,7 +778,7 @@ export const companyAuthControllerRegisterInvited = (
   registerInvitedCompanyDto: RegisterInvitedCompanyDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyRegisterInvitedResponse>({
     url: `/api/auth/company/register-invited`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -780,7 +788,7 @@ export const companyAuthControllerRegisterInvited = (
 };
 
 export const getCompanyAuthControllerRegisterInvitedMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -821,10 +829,10 @@ export type CompanyAuthControllerRegisterInvitedMutationResult = NonNullable<
 >;
 export type CompanyAuthControllerRegisterInvitedMutationBody =
   RegisterInvitedCompanyDto;
-export type CompanyAuthControllerRegisterInvitedMutationError = unknown;
+export type CompanyAuthControllerRegisterInvitedMutationError = ErrorResponse;
 
 export const useCompanyAuthControllerRegisterInvited = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -848,7 +856,7 @@ export const useCompanyAuthControllerRegisterInvited = <
   return useMutation(mutationOptions, queryClient);
 };
 export const companyAuthControllerLoginViaInvite = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyLoginInviteResponse>({
     url: `/api/auth/company/login-invite`,
     method: "POST",
     signal,
@@ -856,7 +864,7 @@ export const companyAuthControllerLoginViaInvite = (signal?: AbortSignal) => {
 };
 
 export const getCompanyAuthControllerLoginViaInviteMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -894,10 +902,10 @@ export type CompanyAuthControllerLoginViaInviteMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyAuthControllerLoginViaInvite>>
 >;
 
-export type CompanyAuthControllerLoginViaInviteMutationError = unknown;
+export type CompanyAuthControllerLoginViaInviteMutationError = ErrorResponse;
 
 export const useCompanyAuthControllerLoginViaInvite = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -924,7 +932,7 @@ export const companyAuthControllerReset = (
   companyResetDto: CompanyResetDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/company/reset`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -934,7 +942,7 @@ export const companyAuthControllerReset = (
 };
 
 export const getCompanyAuthControllerResetMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -974,10 +982,10 @@ export type CompanyAuthControllerResetMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyAuthControllerReset>>
 >;
 export type CompanyAuthControllerResetMutationBody = CompanyResetDto;
-export type CompanyAuthControllerResetMutationError = unknown;
+export type CompanyAuthControllerResetMutationError = ErrorResponse;
 
 export const useCompanyAuthControllerReset = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {

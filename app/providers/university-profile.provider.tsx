@@ -1,8 +1,7 @@
 "use client";
 import { createContext, useContext } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useRouter, usePathname } from "next/navigation";
-import { preconfiguredAxios } from "@/preconfig.axios";
+import { useUniversityControllerMe } from "@/app/api";
 
 interface UniversityAccount {
   id: string;
@@ -42,14 +41,8 @@ export function UniversityProfileProvider({ children }: { children: React.ReactN
   const router = useRouter();
   const pathname = usePathname();
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["university-me"],
-    queryFn: async () => {
-      const res = await preconfiguredAxios.get("/api/university/me");
-      return res.data.account as UniversityAccount;
-    },
-    retry: false,
-    staleTime: Infinity,
+  const { data, isLoading, isError } = useUniversityControllerMe({
+    query: { retry: false, staleTime: Infinity },
   });
 
   // pathname is the browser URL path — on subdomain routing it won't carry the /university prefix.
@@ -65,7 +58,7 @@ export function UniversityProfileProvider({ children }: { children: React.ReactN
 
   return (
     <UniversityProfileContext.Provider
-      value={{ account: data ?? null, isLoading, isSuperadmin: data?.role === "superadmin" }}
+      value={{ account: (data?.account as UniversityAccount) ?? null, isLoading, isSuperadmin: data?.account?.role === "superadmin" }}
     >
       {children}
     </UniversityProfileContext.Provider>

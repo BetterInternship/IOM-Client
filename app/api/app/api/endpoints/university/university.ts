@@ -28,15 +28,19 @@ import type {
   CreateCompanyInviteDto,
   CreateLegacyMoaDto,
   CreateStaffAccountDto,
+  ErrorResponse,
   PatchUniversityProfileDto,
   ToggleTemplateOfferDto,
+  UniversityGetProfileResponse,
+  UniversityMeResponse,
+  UniversityPatchProfileResponse,
   UpdateStaffAccountDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
 
 export const universityControllerMe = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityMeResponse>({
     url: `/api/university/me`,
     method: "GET",
     signal,
@@ -49,7 +53,7 @@ export const getUniversityControllerMeQueryKey = () => {
 
 export const getUniversityControllerMeQueryOptions = <
   TData = Awaited<ReturnType<typeof universityControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -78,11 +82,11 @@ export const getUniversityControllerMeQueryOptions = <
 export type UniversityControllerMeQueryResult = NonNullable<
   Awaited<ReturnType<typeof universityControllerMe>>
 >;
-export type UniversityControllerMeQueryError = unknown;
+export type UniversityControllerMeQueryError = ErrorResponse;
 
 export function useUniversityControllerMe<
   TData = Awaited<ReturnType<typeof universityControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -107,7 +111,7 @@ export function useUniversityControllerMe<
 };
 export function useUniversityControllerMe<
   TData = Awaited<ReturnType<typeof universityControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -132,7 +136,7 @@ export function useUniversityControllerMe<
 };
 export function useUniversityControllerMe<
   TData = Awaited<ReturnType<typeof universityControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -150,7 +154,7 @@ export function useUniversityControllerMe<
 
 export function useUniversityControllerMe<
   TData = Awaited<ReturnType<typeof universityControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -179,7 +183,7 @@ export function useUniversityControllerMe<
 
 export const getUniversityControllerMeSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof universityControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -208,11 +212,11 @@ export const getUniversityControllerMeSuspenseQueryOptions = <
 export type UniversityControllerMeSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof universityControllerMe>>
 >;
-export type UniversityControllerMeSuspenseQueryError = unknown;
+export type UniversityControllerMeSuspenseQueryError = ErrorResponse;
 
 export function useUniversityControllerMeSuspense<
   TData = Awaited<ReturnType<typeof universityControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -229,7 +233,7 @@ export function useUniversityControllerMeSuspense<
 };
 export function useUniversityControllerMeSuspense<
   TData = Awaited<ReturnType<typeof universityControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -246,7 +250,7 @@ export function useUniversityControllerMeSuspense<
 };
 export function useUniversityControllerMeSuspense<
   TData = Awaited<ReturnType<typeof universityControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -264,7 +268,7 @@ export function useUniversityControllerMeSuspense<
 
 export function useUniversityControllerMeSuspense<
   TData = Awaited<ReturnType<typeof universityControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -294,7 +298,7 @@ export function useUniversityControllerMeSuspense<
 }
 
 export const universityControllerGetProfile = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityGetProfileResponse>({
     url: `/api/university/profile`,
     method: "GET",
     signal,
@@ -307,7 +311,7 @@ export const getUniversityControllerGetProfileQueryKey = () => {
 
 export const getUniversityControllerGetProfileQueryOptions = <
   TData = Awaited<ReturnType<typeof universityControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -336,11 +340,11 @@ export const getUniversityControllerGetProfileQueryOptions = <
 export type UniversityControllerGetProfileQueryResult = NonNullable<
   Awaited<ReturnType<typeof universityControllerGetProfile>>
 >;
-export type UniversityControllerGetProfileQueryError = unknown;
+export type UniversityControllerGetProfileQueryError = ErrorResponse;
 
 export function useUniversityControllerGetProfile<
   TData = Awaited<ReturnType<typeof universityControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -365,7 +369,7 @@ export function useUniversityControllerGetProfile<
 };
 export function useUniversityControllerGetProfile<
   TData = Awaited<ReturnType<typeof universityControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -390,7 +394,7 @@ export function useUniversityControllerGetProfile<
 };
 export function useUniversityControllerGetProfile<
   TData = Awaited<ReturnType<typeof universityControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -408,7 +412,7 @@ export function useUniversityControllerGetProfile<
 
 export function useUniversityControllerGetProfile<
   TData = Awaited<ReturnType<typeof universityControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -437,7 +441,7 @@ export function useUniversityControllerGetProfile<
 
 export const getUniversityControllerGetProfileSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof universityControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -466,11 +470,11 @@ export const getUniversityControllerGetProfileSuspenseQueryOptions = <
 export type UniversityControllerGetProfileSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof universityControllerGetProfile>>
 >;
-export type UniversityControllerGetProfileSuspenseQueryError = unknown;
+export type UniversityControllerGetProfileSuspenseQueryError = ErrorResponse;
 
 export function useUniversityControllerGetProfileSuspense<
   TData = Awaited<ReturnType<typeof universityControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -487,7 +491,7 @@ export function useUniversityControllerGetProfileSuspense<
 };
 export function useUniversityControllerGetProfileSuspense<
   TData = Awaited<ReturnType<typeof universityControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -504,7 +508,7 @@ export function useUniversityControllerGetProfileSuspense<
 };
 export function useUniversityControllerGetProfileSuspense<
   TData = Awaited<ReturnType<typeof universityControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -522,7 +526,7 @@ export function useUniversityControllerGetProfileSuspense<
 
 export function useUniversityControllerGetProfileSuspense<
   TData = Awaited<ReturnType<typeof universityControllerGetProfile>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -555,7 +559,7 @@ export function useUniversityControllerGetProfileSuspense<
 export const universityControllerPatchProfile = (
   patchUniversityProfileDto: PatchUniversityProfileDto,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityPatchProfileResponse>({
     url: `/api/university/profile`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -564,7 +568,7 @@ export const universityControllerPatchProfile = (
 };
 
 export const getUniversityControllerPatchProfileMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -605,10 +609,10 @@ export type UniversityControllerPatchProfileMutationResult = NonNullable<
 >;
 export type UniversityControllerPatchProfileMutationBody =
   PatchUniversityProfileDto;
-export type UniversityControllerPatchProfileMutationError = unknown;
+export type UniversityControllerPatchProfileMutationError = ErrorResponse;
 
 export const useUniversityControllerPatchProfile = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -1888,8 +1892,7 @@ export const universityControllerCreateLegacyCompany = (
 ) => {
   const formData = new FormData();
   formData.append(`company_name`, createLegacyMoaDto.company_name);
-  formData.append(`effective_date`, createLegacyMoaDto.effective_date);
-  formData.append(`expiry_date`, createLegacyMoaDto.expiry_date);
+  formData.append(`moas`, createLegacyMoaDto.moas);
   if (createLegacyMoaDto.tin !== undefined) {
     formData.append(`tin`, createLegacyMoaDto.tin);
   }
@@ -1911,8 +1914,17 @@ export const universityControllerCreateLegacyCompany = (
   if (createLegacyMoaDto.contact_phone !== undefined) {
     formData.append(`contact_phone`, createLegacyMoaDto.contact_phone);
   }
-  if (createLegacyMoaDto.notes !== undefined) {
-    formData.append(`notes`, createLegacyMoaDto.notes);
+  if (createLegacyMoaDto.documentNames !== undefined) {
+    formData.append(`documentNames`, createLegacyMoaDto.documentNames);
+  }
+  if (createLegacyMoaDto.documentExpiryDates !== undefined) {
+    formData.append(
+      `documentExpiryDates`,
+      createLegacyMoaDto.documentExpiryDates,
+    );
+  }
+  if (createLegacyMoaDto.documentTypes !== undefined) {
+    formData.append(`documentTypes`, createLegacyMoaDto.documentTypes);
   }
 
   return preconfiguredAxiosFunction<void>({
@@ -2367,6 +2379,188 @@ export const useUniversityControllerAppendLegacyCompanyDocuments = <
 > => {
   const mutationOptions =
     getUniversityControllerAppendLegacyCompanyDocumentsMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerBulkCreateLegacyCompaniesFromCsv = (
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/university/legacy-companies/bulk/csv`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getUniversityControllerBulkCreateLegacyCompaniesFromCsvMutationOptions =
+  <TError = unknown, TContext = unknown>(options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+      >,
+      TError,
+      void,
+      TContext
+    >;
+  }): UseMutationOptions<
+    Awaited<
+      ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+    >,
+    TError,
+    void,
+    TContext
+  > => {
+    const mutationKey = [
+      "universityControllerBulkCreateLegacyCompaniesFromCsv",
+    ];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+      >,
+      void
+    > = () => {
+      return universityControllerBulkCreateLegacyCompaniesFromCsv();
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type UniversityControllerBulkCreateLegacyCompaniesFromCsvMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+    >
+  >;
+
+export type UniversityControllerBulkCreateLegacyCompaniesFromCsvMutationError =
+  unknown;
+
+export const useUniversityControllerBulkCreateLegacyCompaniesFromCsv = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+      >,
+      TError,
+      void,
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<
+    ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+  >,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerBulkCreateLegacyCompaniesFromCsvMutationOptions(
+      options,
+    );
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerBulkCreateLegacyCompaniesFromZip = (
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/university/legacy-companies/bulk/zip`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getUniversityControllerBulkCreateLegacyCompaniesFromZipMutationOptions =
+  <TError = unknown, TContext = unknown>(options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+      >,
+      TError,
+      void,
+      TContext
+    >;
+  }): UseMutationOptions<
+    Awaited<
+      ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+    >,
+    TError,
+    void,
+    TContext
+  > => {
+    const mutationKey = [
+      "universityControllerBulkCreateLegacyCompaniesFromZip",
+    ];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+      >,
+      void
+    > = () => {
+      return universityControllerBulkCreateLegacyCompaniesFromZip();
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type UniversityControllerBulkCreateLegacyCompaniesFromZipMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+    >
+  >;
+
+export type UniversityControllerBulkCreateLegacyCompaniesFromZipMutationError =
+  unknown;
+
+export const useUniversityControllerBulkCreateLegacyCompaniesFromZip = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+      >,
+      TError,
+      void,
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<
+    ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+  >,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerBulkCreateLegacyCompaniesFromZipMutationOptions(
+      options,
+    );
 
   return useMutation(mutationOptions, queryClient);
 };

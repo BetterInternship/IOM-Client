@@ -25,6 +25,10 @@ import type {
 
 import type {
   ClaimInviteDto,
+  CompanyMeResponse,
+  CompanyPatchProfileResponse,
+  CompanyVerificationResponse,
+  ErrorResponse,
   PatchCompanyProfileDto,
   RequestMoaDto,
 } from "../../models";
@@ -32,7 +36,7 @@ import type {
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
 
 export const companyControllerMe = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyMeResponse>({
     url: `/api/company/me`,
     method: "GET",
     signal,
@@ -45,7 +49,7 @@ export const getCompanyControllerMeQueryKey = () => {
 
 export const getCompanyControllerMeQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -73,11 +77,11 @@ export const getCompanyControllerMeQueryOptions = <
 export type CompanyControllerMeQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerMe>>
 >;
-export type CompanyControllerMeQueryError = unknown;
+export type CompanyControllerMeQueryError = ErrorResponse;
 
 export function useCompanyControllerMe<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -102,7 +106,7 @@ export function useCompanyControllerMe<
 };
 export function useCompanyControllerMe<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -127,7 +131,7 @@ export function useCompanyControllerMe<
 };
 export function useCompanyControllerMe<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -145,7 +149,7 @@ export function useCompanyControllerMe<
 
 export function useCompanyControllerMe<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -174,7 +178,7 @@ export function useCompanyControllerMe<
 
 export const getCompanyControllerMeSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -202,11 +206,11 @@ export const getCompanyControllerMeSuspenseQueryOptions = <
 export type CompanyControllerMeSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerMe>>
 >;
-export type CompanyControllerMeSuspenseQueryError = unknown;
+export type CompanyControllerMeSuspenseQueryError = ErrorResponse;
 
 export function useCompanyControllerMeSuspense<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -223,7 +227,7 @@ export function useCompanyControllerMeSuspense<
 };
 export function useCompanyControllerMeSuspense<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -240,7 +244,7 @@ export function useCompanyControllerMeSuspense<
 };
 export function useCompanyControllerMeSuspense<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -258,7 +262,7 @@ export function useCompanyControllerMeSuspense<
 
 export function useCompanyControllerMeSuspense<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -290,7 +294,7 @@ export function useCompanyControllerMeSuspense<
 export const companyControllerPatchProfile = (
   patchCompanyProfileDto: PatchCompanyProfileDto,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyPatchProfileResponse>({
     url: `/api/company/profile`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -299,7 +303,7 @@ export const companyControllerPatchProfile = (
 };
 
 export const getCompanyControllerPatchProfileMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -339,10 +343,10 @@ export type CompanyControllerPatchProfileMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerPatchProfile>>
 >;
 export type CompanyControllerPatchProfileMutationBody = PatchCompanyProfileDto;
-export type CompanyControllerPatchProfileMutationError = unknown;
+export type CompanyControllerPatchProfileMutationError = ErrorResponse;
 
 export const useCompanyControllerPatchProfile = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -366,7 +370,7 @@ export const useCompanyControllerPatchProfile = <
   return useMutation(mutationOptions, queryClient);
 };
 export const companyControllerGetVerification = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyVerificationResponse>({
     url: `/api/company/verification`,
     method: "GET",
     signal,
@@ -379,7 +383,7 @@ export const getCompanyControllerGetVerificationQueryKey = () => {
 
 export const getCompanyControllerGetVerificationQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -408,11 +412,11 @@ export const getCompanyControllerGetVerificationQueryOptions = <
 export type CompanyControllerGetVerificationQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerGetVerification>>
 >;
-export type CompanyControllerGetVerificationQueryError = unknown;
+export type CompanyControllerGetVerificationQueryError = ErrorResponse;
 
 export function useCompanyControllerGetVerification<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -437,7 +441,7 @@ export function useCompanyControllerGetVerification<
 };
 export function useCompanyControllerGetVerification<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -462,7 +466,7 @@ export function useCompanyControllerGetVerification<
 };
 export function useCompanyControllerGetVerification<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -480,7 +484,7 @@ export function useCompanyControllerGetVerification<
 
 export function useCompanyControllerGetVerification<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -509,7 +513,7 @@ export function useCompanyControllerGetVerification<
 
 export const getCompanyControllerGetVerificationSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -538,11 +542,11 @@ export const getCompanyControllerGetVerificationSuspenseQueryOptions = <
 export type CompanyControllerGetVerificationSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerGetVerification>>
 >;
-export type CompanyControllerGetVerificationSuspenseQueryError = unknown;
+export type CompanyControllerGetVerificationSuspenseQueryError = ErrorResponse;
 
 export function useCompanyControllerGetVerificationSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -559,7 +563,7 @@ export function useCompanyControllerGetVerificationSuspense<
 };
 export function useCompanyControllerGetVerificationSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -576,7 +580,7 @@ export function useCompanyControllerGetVerificationSuspense<
 };
 export function useCompanyControllerGetVerificationSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -594,7 +598,7 @@ export function useCompanyControllerGetVerificationSuspense<
 
 export function useCompanyControllerGetVerificationSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
