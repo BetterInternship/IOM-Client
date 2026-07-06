@@ -7,21 +7,31 @@
  */
 
 export * from "./adminLoginDto";
+export * from "./approveCompanyReviewDto";
+export * from "./approveCompanyReviewDtoDocumentReviewDetails";
 export * from "./blacklistCompanyDto";
+export * from "./claimInviteDto";
 export * from "./companyForgotDto";
 export * from "./companyLoginDto";
 export * from "./companyOtpRequestDto";
 export * from "./companyOtpVerifyDto";
 export * from "./companyRegisterDto";
 export * from "./companyResetDto";
+export * from "./createCompanyAdminDto";
+export * from "./createCompanyAdminDtoCompanyType";
+export * from "./createCompanyInviteDto";
+export * from "./createLegacyMoaDto";
 export * from "./createStaffAccountDto";
 export * from "./createTemplateDto";
 export * from "./createUniversityDto";
+export * from "./inviteControllerResolveCompanyInviteParams";
 export * from "./patchCompanyAdminDto";
 export * from "./patchCompanyProfileDto";
 export * from "./patchCompanyProfileDtoCompanyType";
 export * from "./patchTemplateDto";
 export * from "./patchUniversityProfileDto";
+export * from "./registerInvitedCompanyDto";
+export * from "./rejectCompanyReviewDto";
 export * from "./rejectMoaDto";
 export * from "./requestMoaDto";
 export * from "./resolveFileDto";
@@ -33,4 +43,4 @@ export * from "./universityForgotDto";
 export * from "./universityLoginDto";
 export * from "./universityResetDto";
 export * from "./updateStaffAccountDto";
-export * from "./rejectCompanyReviewDto";
+export * from "./verifyTinDto";

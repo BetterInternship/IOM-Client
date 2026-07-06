@@ -23,7 +23,11 @@ import type {
   UseSuspenseQueryResult,
 } from "@tanstack/react-query";
 
-import type { PatchCompanyProfileDto, RequestMoaDto } from "../../models";
+import type {
+  ClaimInviteDto,
+  PatchCompanyProfileDto,
+  RequestMoaDto,
+} from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
 
@@ -620,79 +624,6 @@ export function useCompanyControllerGetVerificationSuspense<
   return query;
 }
 
-export const companyControllerUploadSignature = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
-    url: `/api/company/profile/signature`,
-    method: "POST",
-    signal,
-  });
-};
-
-export const getCompanyControllerUploadSignatureMutationOptions = <
-  TError = unknown,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof companyControllerUploadSignature>>,
-    TError,
-    void,
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof companyControllerUploadSignature>>,
-  TError,
-  void,
-  TContext
-> => {
-  const mutationKey = ["companyControllerUploadSignature"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof companyControllerUploadSignature>>,
-    void
-  > = () => {
-    return companyControllerUploadSignature();
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type CompanyControllerUploadSignatureMutationResult = NonNullable<
-  Awaited<ReturnType<typeof companyControllerUploadSignature>>
->;
-
-export type CompanyControllerUploadSignatureMutationError = unknown;
-
-export const useCompanyControllerUploadSignature = <
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof companyControllerUploadSignature>>,
-      TError,
-      void,
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof companyControllerUploadSignature>>,
-  TError,
-  void,
-  TContext
-> => {
-  const mutationOptions =
-    getCompanyControllerUploadSignatureMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
 export const companyControllerUploadLogo = (signal?: AbortSignal) => {
   return preconfiguredAxiosFunction<void>({
     url: `/api/company/profile/logo`,
@@ -1657,11 +1588,23 @@ export const companyControllerRequestMoa = (
   requestMoaDto: RequestMoaDto,
   signal?: AbortSignal,
 ) => {
+  const formData = new FormData();
+  formData.append(`universityId`, requestMoaDto.universityId);
+  formData.append(`templateId`, requestMoaDto.templateId);
+  formData.append(`repName`, requestMoaDto.repName);
+  formData.append(`repTitle`, requestMoaDto.repTitle);
+  if (requestMoaDto.repSignatureText !== undefined) {
+    formData.append(`repSignatureText`, requestMoaDto.repSignatureText);
+  }
+  if (requestMoaDto.invite_id !== undefined) {
+    formData.append(`invite_id`, requestMoaDto.invite_id);
+  }
+
   return preconfiguredAxiosFunction<void>({
     url: `/api/company/moas`,
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: requestMoaDto,
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
     signal,
   });
 };
@@ -2264,6 +2207,696 @@ export function useCompanyControllerGetMoaSuspense<
     moaId,
     options,
   );
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const companyControllerClaimInvite = (
+  claimInviteDto: ClaimInviteDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/company/invites/claim`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: claimInviteDto,
+    signal,
+  });
+};
+
+export const getCompanyControllerClaimInviteMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyControllerClaimInvite>>,
+    TError,
+    { data: ClaimInviteDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyControllerClaimInvite>>,
+  TError,
+  { data: ClaimInviteDto },
+  TContext
+> => {
+  const mutationKey = ["companyControllerClaimInvite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyControllerClaimInvite>>,
+    { data: ClaimInviteDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return companyControllerClaimInvite(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyControllerClaimInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerClaimInvite>>
+>;
+export type CompanyControllerClaimInviteMutationBody = ClaimInviteDto;
+export type CompanyControllerClaimInviteMutationError = unknown;
+
+export const useCompanyControllerClaimInvite = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyControllerClaimInvite>>,
+      TError,
+      { data: ClaimInviteDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyControllerClaimInvite>>,
+  TError,
+  { data: ClaimInviteDto },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyControllerClaimInviteMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const companyControllerListPendingInvites = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/company/invites/pending`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getCompanyControllerListPendingInvitesQueryKey = () => {
+  return [`/api/company/invites/pending`] as const;
+};
+
+export const getCompanyControllerListPendingInvitesQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerListPendingInvitesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerListPendingInvites>>
+  > = ({ signal }) => companyControllerListPendingInvites(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerListPendingInvitesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerListPendingInvites>>
+>;
+export type CompanyControllerListPendingInvitesQueryError = unknown;
+
+export function useCompanyControllerListPendingInvites<
+  TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerListPendingInvites>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListPendingInvites<
+  TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerListPendingInvites>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListPendingInvites<
+  TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerListPendingInvites<
+  TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getCompanyControllerListPendingInvitesQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getCompanyControllerListPendingInvitesSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerListPendingInvitesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerListPendingInvites>>
+  > = ({ signal }) => companyControllerListPendingInvites(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerListPendingInvitesSuspenseQueryResult =
+  NonNullable<Awaited<ReturnType<typeof companyControllerListPendingInvites>>>;
+export type CompanyControllerListPendingInvitesSuspenseQueryError = unknown;
+
+export function useCompanyControllerListPendingInvitesSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListPendingInvitesSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListPendingInvitesSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerListPendingInvitesSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getCompanyControllerListPendingInvitesSuspenseQueryOptions(options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const companyControllerCreateQueuedMoa = (
+  requestMoaDto: RequestMoaDto,
+  signal?: AbortSignal,
+) => {
+  const formData = new FormData();
+  formData.append(`universityId`, requestMoaDto.universityId);
+  formData.append(`templateId`, requestMoaDto.templateId);
+  formData.append(`repName`, requestMoaDto.repName);
+  formData.append(`repTitle`, requestMoaDto.repTitle);
+  if (requestMoaDto.repSignatureText !== undefined) {
+    formData.append(`repSignatureText`, requestMoaDto.repSignatureText);
+  }
+  if (requestMoaDto.invite_id !== undefined) {
+    formData.append(`invite_id`, requestMoaDto.invite_id);
+  }
+
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/company/queued-moas`,
+    method: "POST",
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
+    signal,
+  });
+};
+
+export const getCompanyControllerCreateQueuedMoaMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
+    TError,
+    { data: RequestMoaDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
+  TError,
+  { data: RequestMoaDto },
+  TContext
+> => {
+  const mutationKey = ["companyControllerCreateQueuedMoa"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
+    { data: RequestMoaDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return companyControllerCreateQueuedMoa(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyControllerCreateQueuedMoaMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>
+>;
+export type CompanyControllerCreateQueuedMoaMutationBody = RequestMoaDto;
+export type CompanyControllerCreateQueuedMoaMutationError = unknown;
+
+export const useCompanyControllerCreateQueuedMoa = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
+      TError,
+      { data: RequestMoaDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
+  TError,
+  { data: RequestMoaDto },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyControllerCreateQueuedMoaMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const companyControllerListQueuedMoas = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/company/queued-moas`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getCompanyControllerListQueuedMoasQueryKey = () => {
+  return [`/api/company/queued-moas`] as const;
+};
+
+export const getCompanyControllerListQueuedMoasQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerListQueuedMoasQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
+  > = ({ signal }) => companyControllerListQueuedMoas(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerListQueuedMoasQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
+>;
+export type CompanyControllerListQueuedMoasQueryError = unknown;
+
+export function useCompanyControllerListQueuedMoas<
+  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListQueuedMoas<
+  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListQueuedMoas<
+  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerListQueuedMoas<
+  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getCompanyControllerListQueuedMoasQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getCompanyControllerListQueuedMoasSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+  TError = unknown,
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerListQueuedMoasQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
+  > = ({ signal }) => companyControllerListQueuedMoas(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerListQueuedMoasSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
+>;
+export type CompanyControllerListQueuedMoasSuspenseQueryError = unknown;
+
+export function useCompanyControllerListQueuedMoasSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+  TError = unknown,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListQueuedMoasSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListQueuedMoasSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerListQueuedMoasSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+  TError = unknown,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getCompanyControllerListQueuedMoasSuspenseQueryOptions(options);
 
   const query = useSuspenseQuery(
     queryOptions,

@@ -30,6 +30,8 @@ const EVENT_LABELS: Record<string, string> = {
   company_invite_sent: "Company invite sent",
   company_invite_registered: "Company registered via invite",
   company_invite_accepted: "Company queued MOA via invite",
+  legacy_moa_created: "Legacy MOA created",
+  legacy_document_uploaded: "Legacy document uploaded",
 };
 
 const EVENT_TYPES: Record<string, BadgeProps["type"]> = {
@@ -43,6 +45,8 @@ const EVENT_TYPES: Record<string, BadgeProps["type"]> = {
   company_invite_sent: "primary",
   company_invite_registered: "warning",
   company_invite_accepted: "supportive",
+  legacy_moa_created: "default",
+  legacy_document_uploaded: "default",
 };
 
 const columns: ColumnDef<AuditEvent>[] = [

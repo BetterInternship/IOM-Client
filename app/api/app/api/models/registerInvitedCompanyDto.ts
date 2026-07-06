@@ -6,10 +6,9 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface CompanyRegisterDto {
+export interface RegisterInvitedCompanyDto {
+  token: string;
   tin: string;
   legalIdentifier: string;
-  repEmail: string;
   password: string;
-  cfToken?: string;
 }

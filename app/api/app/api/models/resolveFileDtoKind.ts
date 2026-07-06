@@ -11,7 +11,6 @@ export type ResolveFileDtoKind =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ResolveFileDtoKind = {
-  company_signature: "company_signature",
   signatory_signature: "signatory_signature",
   template_pdf: "template_pdf",
   moa_pdf: "moa_pdf",

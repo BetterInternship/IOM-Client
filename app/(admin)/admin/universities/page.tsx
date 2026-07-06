@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -242,6 +243,7 @@ const columns: ColumnDef<University>[] = [
 ];
 
 export default function AdminUniversitiesPage() {
+  const router = useRouter();
   const { data, isLoading } = useQuery({
     queryKey: ["admin-universities"],
     queryFn: async () => {
@@ -273,6 +275,7 @@ export default function AdminUniversitiesPage() {
           rowLabelSingular="university"
           rowLabelPlural="universities"
           pageSizes={[10, 25, 50]}
+          onRowClick={(uni) => router.push(`/admin/universities/${uni.id}`)}
         />
       )}
     </PageContainer>

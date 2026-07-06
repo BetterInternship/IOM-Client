@@ -8,7 +8,6 @@
 import type { PatchCompanyProfileDtoCompanyType } from "./patchCompanyProfileDtoCompanyType";
 
 export interface PatchCompanyProfileDto {
-  display_name?: string;
   registered_name?: string;
   company_type?: PatchCompanyProfileDtoCompanyType;
   registered_address?: string;

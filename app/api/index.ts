@@ -6,3 +6,4 @@ export * from "./app/api/endpoints/university/university";
 export * from "./app/api/endpoints/admin/admin";
 export * from "./app/api/endpoints/files/files";
 export * from "./app/api/models";
+export * from "./app/api/endpoints/invite/invite";

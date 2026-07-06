@@ -7,7 +7,7 @@
  */
 
 export interface CompanyLoginDto {
-  tin: string;
+  companyId: string;
   password: string;
   cfToken?: string;
 }
