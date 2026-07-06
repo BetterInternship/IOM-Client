@@ -813,6 +813,7 @@ export default function PartnersPage() {
         <LegacyCompaniesPanel
           listEndpoint="/api/university/legacy-companies"
           uploadEndpoint="/api/university/legacy-companies"
+          bulkCsvEndpoint="/api/university/legacy-companies/bulk/csv"
           detailEndpoint={(id) => `/api/university/legacy-companies/${id}`}
           addDocumentsEndpoint={(id) => `/api/university/legacy-companies/${id}/documents`}
           canUpload={true}
