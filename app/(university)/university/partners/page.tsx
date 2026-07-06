@@ -808,6 +808,8 @@ export default function PartnersPage() {
       </TabsContent>
 
       <TabsContent value="legacy-companies" className="mt-4">
+        <div className="space-y-6">
+        <PageHeader title="Legacy Partners" description="Manage legacy MOA partnerships recorded outside IOM." />
         <LegacyCompaniesPanel
           listEndpoint="/api/university/legacy-companies"
           uploadEndpoint="/api/university/legacy-companies"
@@ -816,6 +818,7 @@ export default function PartnersPage() {
           canUpload={true}
           queryKeyPrefix="university-legacy-companies"
         />
+      </div>
       </TabsContent>
     </Tabs>
     </PageContainer>
