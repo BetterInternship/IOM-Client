@@ -22,6 +22,7 @@ export default function LegacyPartnersPage() {
           bulkZipEndpoint="/api/university/legacy-companies/bulk/zip"
           detailEndpoint={(id) => `/api/university/legacy-companies/${id}`}
           addDocumentsEndpoint={(id) => `/api/university/legacy-companies/${id}/documents`}
+          addMoaEndpoint={(id) => `/api/university/legacy-companies/${id}/moas`}
           canUpload={true}
           queryKeyPrefix="university-legacy-companies"
         />

@@ -20,6 +20,7 @@ export default function AdminUniversityLegacyPartnersPage() {
           bulkZipEndpoint={`/api/admin/universities/${universityId}/legacy-companies/bulk/zip`}
           detailEndpoint={(id) => `/api/admin/universities/${universityId}/legacy-companies/${id}`}
           addDocumentsEndpoint={(id) => `/api/admin/universities/${universityId}/legacy-companies/${id}/documents`}
+          addMoaEndpoint={(id) => `/api/admin/universities/${universityId}/legacy-companies/${id}/moas`}
           canUpload={true}
           queryKeyPrefix="admin-university-legacy-companies"
           showDetailBackButton={false}

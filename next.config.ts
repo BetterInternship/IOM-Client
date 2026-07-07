@@ -49,7 +49,7 @@ const nextConfig: NextConfig = {
 
     const rewrites: {
       source: string;
-      has: { type: string; value: string }[];
+      has: { type: "host"; key: "host"; value: string }[];
       destination: string;
     }[] = [];
 
@@ -57,7 +57,7 @@ const nextConfig: NextConfig = {
       hosts.forEach((host) => {
         rewrites.push({
           source: "/:path((?!_next|company/|university/|admin/|gcs-proxy|invite(?!s)).*)*",
-          has: [{ type: "host", value: host }],
+          has: [{ type: "host", key: "host", value: host }],
           destination: `/${destination}/:path*`,
         });
       });
