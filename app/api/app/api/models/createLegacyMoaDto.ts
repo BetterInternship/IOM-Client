@@ -8,13 +8,18 @@
 
 export interface CreateLegacyMoaDto {
   company_name: string;
-  effective_date: string;
-  expiry_date: string;
+  /** JSON array of MOA records: [{ effective_date, expiry_date, notes?, document_file_index? }] */
+  moas?: string;
   tin?: string;
   company_type?: string;
   registered_address?: string;
   contact_person?: string;
   contact_email?: string;
   contact_phone?: string;
-  notes?: string;
+  /** JSON array of display names for company document files */
+  documentNames?: string;
+  /** JSON array of expiry dates for company document files */
+  documentExpiryDates?: string;
+  /** JSON array of document types for company document files */
+  documentTypes?: string;
 }

@@ -70,8 +70,9 @@ export interface LegacyCompanyDetail {
   }[];
   moas: {
     id: string;
-    effective_date: string;
-    expiry_date: string;
+    effective_date: string | null;
+    expiry_date: string | null;
+    is_perpetual?: boolean;
     document_url: string | null;
     filename: string | null;
     notes: string | null;
@@ -117,7 +118,9 @@ const DOCUMENT_TYPE_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
-export function isLegacyMoaExpired(expiryDate: string) {
+export function isLegacyMoaExpired(expiryDate: string | null, isPerpetual?: boolean) {
+  if (isPerpetual) return false;
+  if (!expiryDate) return false;
   const today = new Date().toISOString().slice(0, 10);
   return expiryDate < today;
 }
@@ -569,7 +572,7 @@ function DetailView({
                 <td className="py-2.5 pr-4 text-gray-600">
                   <MoaStatusBadge
                     status="active"
-                    isExpired={isLegacyMoaExpired(moa.expiry_date)}
+                    isExpired={isLegacyMoaExpired(moa.expiry_date, moa.is_perpetual)}
                   />
                 </td>
                 <td className="py-2.5 pr-4 text-gray-600">
@@ -586,8 +589,13 @@ function DetailView({
                   {formatDateWithoutTime(moa.created_at)}
                 </td>
                 <td className="py-2.5 text-gray-600">
-                  {formatDateWithoutTime(moa.effective_date)} –{" "}
-                  {formatDateWithoutTime(moa.expiry_date)}
+                  {moa.is_perpetual
+                    ? (moa.effective_date
+                        ? `${formatDateWithoutTime(moa.effective_date)} – Perpetual`
+                        : "Effective date unknown – Perpetual")
+                    : `${formatDateWithoutTime(moa.effective_date)} – ${
+                        moa.expiry_date ? formatDateWithoutTime(moa.expiry_date) : "—"
+                      }`}
                 </td>
               </tr>
             ))}
@@ -760,6 +768,7 @@ interface MoaRecordInput {
   id: string;
   effectiveDate: string;
   expiryDate: string;
+  isPerpetual: boolean;
   file: File | null;
   name: string;
 }
@@ -769,6 +778,7 @@ function createEmptyMoaRecord(): MoaRecordInput {
     id: crypto.randomUUID(),
     effectiveDate: "",
     expiryDate: "",
+    isPerpetual: false,
     file: null,
     name: "",
   };
@@ -777,23 +787,27 @@ function createEmptyMoaRecord(): MoaRecordInput {
 function buildMoaFormData(moas: MoaRecordInput[]) {
   const formData = new FormData();
   const moaPayload: {
-    effective_date: string;
-    expiry_date: string;
+    effective_date: string | null;
+    expiry_date: string | null;
+    is_perpetual: boolean;
     name: string | null;
     document_file_index: number | null;
   }[] = [];
   const moaFiles: File[] = [];
 
   for (const m of moas) {
-    if (!m.effectiveDate || !m.expiryDate) continue;
+    const isPerpetual = m.isPerpetual;
+    const hasDates = !!m.effectiveDate && !!m.expiryDate;
+    if (!isPerpetual && !hasDates) continue;
     let document_file_index: number | null = null;
     if (m.file) {
       document_file_index = moaFiles.length;
       moaFiles.push(m.file);
     }
     moaPayload.push({
-      effective_date: m.effectiveDate,
-      expiry_date: m.expiryDate,
+      effective_date: m.effectiveDate || null,
+      expiry_date: isPerpetual ? null : (m.expiryDate || null),
+      is_perpetual: isPerpetual,
       name: m.name || null,
       document_file_index,
     });
@@ -824,7 +838,7 @@ function MoaUploadDialog({
   const removeMoa = (id: string) => {
     setMoas((prev) => prev.filter((m) => m.id !== id));
   };
-  const hasValidMoa = moas.some((m) => m.effectiveDate && m.expiryDate);
+  const hasValidMoa = moas.some((m) => m.isPerpetual || (m.effectiveDate && m.expiryDate));
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -854,9 +868,21 @@ function MoaUploadDialog({
                   </Button>
                 )}
               </div>
+              <div className="mb-2 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id={`perpetual-${moa.id}`}
+                  className="h-4 w-4"
+                  checked={moa.isPerpetual}
+                  onChange={(e) => updateMoa(moa.id, { isPerpetual: e.target.checked, expiryDate: "" })}
+                />
+                <Label htmlFor={`perpetual-${moa.id}`} className="text-xs cursor-pointer">
+                  Perpetual MOA
+                </Label>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Effective Date *</Label>
+                  <Label className="text-xs">{moa.isPerpetual ? "Effective Date (optional)" : "Effective Date *"}</Label>
                   <Input
                     type="date"
                     className="h-8 text-xs"
@@ -865,11 +891,12 @@ function MoaUploadDialog({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Expiry Date *</Label>
+                  <Label className="text-xs">{moa.isPerpetual ? "N/A" : "Expiry Date *"}</Label>
                   <Input
                     type="date"
                     className="h-8 text-xs"
                     value={moa.expiryDate}
+                    disabled={moa.isPerpetual}
                     onChange={(e) => updateMoa(moa.id, { expiryDate: e.target.value })}
                   />
                 </div>
@@ -1030,9 +1057,21 @@ function UploadDialog({
                     </Button>
                   )}
                 </div>
+                <div className="mb-2 flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id={`perpetual-${moa.id}`}
+                    className="h-4 w-4"
+                    checked={moa.isPerpetual}
+                    onChange={(e) => updateMoa(moa.id, { isPerpetual: e.target.checked, expiryDate: "" })}
+                  />
+                  <Label htmlFor={`perpetual-${moa.id}`} className="text-xs cursor-pointer">
+                    Perpetual MOA
+                  </Label>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Effective Date *</Label>
+                    <Label className="text-xs">{moa.isPerpetual ? "Effective Date (optional)" : "Effective Date *"}</Label>
                     <Input
                       type="date"
                       className="h-8 text-xs"
@@ -1043,11 +1082,12 @@ function UploadDialog({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs">Expiry Date *</Label>
+                    <Label className="text-xs">{moa.isPerpetual ? "N/A" : "Expiry Date *"}</Label>
                     <Input
                       type="date"
                       className="h-8 text-xs"
                       value={moa.expiryDate}
+                      disabled={moa.isPerpetual}
                       onChange={(e) =>
                         updateMoa(moa.id, { expiryDate: e.target.value })
                       }
@@ -1313,14 +1353,20 @@ function CsvUploadDialog({
     {
       name: "effective_date",
       required: false,
-      description: "MOA start date (YYYY-MM-DD). Required when adding an MOA",
+      description: "MOA start date (YYYY-MM-DD). Required when adding a normal MOA",
       example: "2023-01-15",
     },
     {
       name: "expiry_date",
       required: false,
-      description: "MOA expiry date (YYYY-MM-DD). Required when adding an MOA",
+      description: "MOA expiry date (YYYY-MM-DD). Required when adding a normal MOA",
       example: "2025-01-15",
+    },
+    {
+      name: "is_perpetual",
+      required: false,
+      description: 'Set to "true"/"yes"/"1" for a perpetual MOA (no expiry)',
+      example: "true",
     },
     {
       name: "tin",
@@ -1364,6 +1410,7 @@ function CsvUploadDialog({
     company_name: "Acme Corporation",
     effective_date: "2023-01-15",
     expiry_date: "2025-01-15",
+    is_perpetual: "false",
     tin: "123-456-789",
     company_type: "Corporation",
     registered_address: "Makati City",
@@ -1503,8 +1550,9 @@ function CsvUploadDialog({
                   </table>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Each row creates or updates one legacy company. Add both effective_date
-                  and expiry_date when the row should also add an MOA. Wrap values containing commas in
+                  Each row creates or updates one legacy company. To add a normal MOA, include both effective_date
+                  and expiry_date. To add a perpetual MOA (no expiry), set is_perpetual to "true" (effective_date is optional).
+                  Wrap values containing commas in
                   double quotes (e.g.{" "}
                   <code className="text-xs">&quot;Acme, Inc.&quot;</code>). Use
                   two double quotes to escape a literal quote (e.g.{" "}
@@ -1679,19 +1727,25 @@ function ZipUploadDialog({
     {
       name: "effective_date",
       required: false,
-      description: "MOA start date (YYYY-MM-DD). Required when adding an MOA",
+      description: "MOA start date (YYYY-MM-DD). Required when adding a normal MOA",
       example: "2023-01-15",
     },
     {
       name: "expiry_date",
       required: false,
-      description: "MOA expiry date (YYYY-MM-DD). Required when adding an MOA",
+      description: "MOA expiry date (YYYY-MM-DD). Required when adding a normal MOA",
       example: "2025-01-15",
+    },
+    {
+      name: "is_perpetual",
+      required: false,
+      description: 'Set to "true"/"yes"/"1" for a perpetual MOA (no expiry)',
+      example: "true",
     },
     {
       name: "moa_file",
       required: false,
-      description: "Path to MOA PDF inside ZIP",
+      description: "Path to MOA PDF inside ZIP. Requires normal MOA dates or is_perpetual=true",
       example: "moas/acme-2024.pdf",
     },
     {
@@ -1754,6 +1808,7 @@ function ZipUploadDialog({
     company_name: "Acme Corporation",
     effective_date: "2023-01-15",
     expiry_date: "2025-01-15",
+    is_perpetual: "false",
     moa_file: "moas/acme-2024.pdf",
     business_permit_file: "company-documents/acme-permit.pdf",
     mayor_permit_file: "company-documents/acme-mayor.pdf",
@@ -1912,8 +1967,9 @@ company-documents/acme-mayor.pdf`}
                   </table>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Each row creates or updates one legacy company. Add both effective_date
-                  and expiry_date when the row should also add an MOA. A moa_file requires both MOA dates.
+                  Each row creates or updates one legacy company. To add a normal MOA, include both effective_date
+                  and expiry_date. To add a perpetual MOA (no expiry), set is_perpetual to "true" (effective_date is optional).
+                  A moa_file requires a normal MOA (dates) or is_perpetual=true.
                   File columns reference paths inside the ZIP. Invalid rows are skipped; valid rows are still
                   uploaded. Wrap values containing commas in double quotes.
                 </p>

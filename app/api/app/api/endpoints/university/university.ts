@@ -24,6 +24,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AppendLegacyMoasDto,
   BlacklistCompanyDto,
   CreateCompanyInviteDto,
   CreateLegacyMoaDto,
@@ -1888,8 +1889,9 @@ export const universityControllerCreateLegacyCompany = (
 ) => {
   const formData = new FormData();
   formData.append(`company_name`, createLegacyMoaDto.company_name);
-  formData.append(`effective_date`, createLegacyMoaDto.effective_date);
-  formData.append(`expiry_date`, createLegacyMoaDto.expiry_date);
+  if (createLegacyMoaDto.moas !== undefined) {
+    formData.append(`moas`, createLegacyMoaDto.moas);
+  }
   if (createLegacyMoaDto.tin !== undefined) {
     formData.append(`tin`, createLegacyMoaDto.tin);
   }
@@ -1911,8 +1913,17 @@ export const universityControllerCreateLegacyCompany = (
   if (createLegacyMoaDto.contact_phone !== undefined) {
     formData.append(`contact_phone`, createLegacyMoaDto.contact_phone);
   }
-  if (createLegacyMoaDto.notes !== undefined) {
-    formData.append(`notes`, createLegacyMoaDto.notes);
+  if (createLegacyMoaDto.documentNames !== undefined) {
+    formData.append(`documentNames`, createLegacyMoaDto.documentNames);
+  }
+  if (createLegacyMoaDto.documentExpiryDates !== undefined) {
+    formData.append(
+      `documentExpiryDates`,
+      createLegacyMoaDto.documentExpiryDates,
+    );
+  }
+  if (createLegacyMoaDto.documentTypes !== undefined) {
+    formData.append(`documentTypes`, createLegacyMoaDto.documentTypes);
   }
 
   return preconfiguredAxiosFunction<void>({
@@ -2367,6 +2378,274 @@ export const useUniversityControllerAppendLegacyCompanyDocuments = <
 > => {
   const mutationOptions =
     getUniversityControllerAppendLegacyCompanyDocumentsMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerAppendLegacyCompanyMoas = (
+  legacyCompanyId: string | undefined | null,
+  appendLegacyMoasDto: AppendLegacyMoasDto,
+  signal?: AbortSignal,
+) => {
+  const formData = new FormData();
+  formData.append(`moas`, appendLegacyMoasDto.moas);
+
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/university/legacy-companies/${legacyCompanyId}/moas`,
+    method: "POST",
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
+    signal,
+  });
+};
+
+export const getUniversityControllerAppendLegacyCompanyMoasMutationOptions = <
+  TError = unknown,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerAppendLegacyCompanyMoas>>,
+    TError,
+    { legacyCompanyId: string | undefined | null; data: AppendLegacyMoasDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerAppendLegacyCompanyMoas>>,
+  TError,
+  { legacyCompanyId: string | undefined | null; data: AppendLegacyMoasDto },
+  TContext
+> => {
+  const mutationKey = ["universityControllerAppendLegacyCompanyMoas"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerAppendLegacyCompanyMoas>>,
+    { legacyCompanyId: string | undefined | null; data: AppendLegacyMoasDto }
+  > = (props) => {
+    const { legacyCompanyId, data } = props ?? {};
+
+    return universityControllerAppendLegacyCompanyMoas(legacyCompanyId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityControllerAppendLegacyCompanyMoasMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof universityControllerAppendLegacyCompanyMoas>>
+  >;
+export type UniversityControllerAppendLegacyCompanyMoasMutationBody =
+  AppendLegacyMoasDto;
+export type UniversityControllerAppendLegacyCompanyMoasMutationError = unknown;
+
+export const useUniversityControllerAppendLegacyCompanyMoas = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerAppendLegacyCompanyMoas>>,
+      TError,
+      { legacyCompanyId: string | undefined | null; data: AppendLegacyMoasDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerAppendLegacyCompanyMoas>>,
+  TError,
+  { legacyCompanyId: string | undefined | null; data: AppendLegacyMoasDto },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerAppendLegacyCompanyMoasMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerBulkCreateLegacyCompaniesFromCsv = (
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/university/legacy-companies/bulk/csv`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getUniversityControllerBulkCreateLegacyCompaniesFromCsvMutationOptions =
+  <TError = unknown, TContext = unknown>(options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+      >,
+      TError,
+      void,
+      TContext
+    >;
+  }): UseMutationOptions<
+    Awaited<
+      ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+    >,
+    TError,
+    void,
+    TContext
+  > => {
+    const mutationKey = [
+      "universityControllerBulkCreateLegacyCompaniesFromCsv",
+    ];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+      >,
+      void
+    > = () => {
+      return universityControllerBulkCreateLegacyCompaniesFromCsv();
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type UniversityControllerBulkCreateLegacyCompaniesFromCsvMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+    >
+  >;
+
+export type UniversityControllerBulkCreateLegacyCompaniesFromCsvMutationError =
+  unknown;
+
+export const useUniversityControllerBulkCreateLegacyCompaniesFromCsv = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+      >,
+      TError,
+      void,
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<
+    ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromCsv>
+  >,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerBulkCreateLegacyCompaniesFromCsvMutationOptions(
+      options,
+    );
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerBulkCreateLegacyCompaniesFromZip = (
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<void>({
+    url: `/api/university/legacy-companies/bulk/zip`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getUniversityControllerBulkCreateLegacyCompaniesFromZipMutationOptions =
+  <TError = unknown, TContext = unknown>(options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+      >,
+      TError,
+      void,
+      TContext
+    >;
+  }): UseMutationOptions<
+    Awaited<
+      ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+    >,
+    TError,
+    void,
+    TContext
+  > => {
+    const mutationKey = [
+      "universityControllerBulkCreateLegacyCompaniesFromZip",
+    ];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+      >,
+      void
+    > = () => {
+      return universityControllerBulkCreateLegacyCompaniesFromZip();
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type UniversityControllerBulkCreateLegacyCompaniesFromZipMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+    >
+  >;
+
+export type UniversityControllerBulkCreateLegacyCompaniesFromZipMutationError =
+  unknown;
+
+export const useUniversityControllerBulkCreateLegacyCompaniesFromZip = <
+  TError = unknown,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+      >,
+      TError,
+      void,
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<
+    ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromZip>
+  >,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerBulkCreateLegacyCompaniesFromZipMutationOptions(
+      options,
+    );
 
   return useMutation(mutationOptions, queryClient);
 };
