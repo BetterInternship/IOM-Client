@@ -1,23 +1,26 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogBottomSheet,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DataTable } from "@/components/ui/data-table";
-import { LegacyCompaniesPanel, LegacyCompanyDetail, formatLegacyLabel, formatLegacyFieldLabel, formatLegacyMoaPeriod, isFilledValue, isLegacyMoaExpired } from "@/components/legacy-companies/legacy-companies-panel";
-import { ArrowLeft, ChevronDown, ChevronRight, CircleAlert, CircleCheck, Eye, ShieldCheck } from "lucide-react";
+import { LegacyCompanyDetail, formatLegacyLabel, formatLegacyFieldLabel, formatLegacyMoaPeriod, isFilledValue, isLegacyMoaExpired } from "@/components/legacy-companies/legacy-companies-panel";
+import { UploadDialog, CsvUploadDialog, ZipUploadDialog } from "@/components/legacy-companies/legacy-companies-panel";
+import { ArrowLeft, ChevronDown, ChevronRight, CircleAlert, CircleCheck, Eye, Plus, ShieldCheck, Upload } from "lucide-react";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { MoaStatusBadge } from "@/components/status-badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface University {
   id: string;
@@ -33,7 +36,12 @@ interface PartnerCompany {
 
 interface Partner {
   company: PartnerCompany | null;
-  latestMoaId: string;
+  latestMoaId: string | null;
+  latestMoaStatus: string;
+  effective_date: string | null;
+  expiry_date: string | null;
+  is_expired: boolean | null;
+  hasActiveMoa: boolean;
 }
 
 interface BlacklistEntry {
@@ -43,6 +51,20 @@ interface BlacklistEntry {
   created_at: string;
   actor_email: string | null;
   company: { id: string; registered_name: string } | null;
+}
+
+interface LegacyCompanySummary {
+  id: string;
+  company_name: string;
+  company_details: Record<string, unknown>;
+  moaCount: number;
+  documentCount: number;
+  valid_until: string | null;
+  hasMoa: boolean;
+  hasPerpetualMoa: boolean;
+  latestMoaEffectiveDate: string | null;
+  latestMoaExpiryDate: string | null;
+  latestMoaIsPerpetual: boolean;
 }
 
 interface PartnerMoaEntry {
@@ -69,11 +91,26 @@ interface PartnerMoasData {
   companyDocuments: CompanyDoc[];
 }
 
-interface CombinedEntry {
-  company: PartnerCompany;
-  latestMoaId: string;
+interface PartnerTableRow {
+  id: string;
+  displayName: string;
+
+  // Registered partner data
+  partnerCompany: PartnerCompany | null;
+  latestMoaId: string | null;
+  latestMoaStatus: string | null;
+  hasActiveMoa: boolean;
+  effectiveDate: string | null;
+  expiryDate: string | null;
+  isPartnerExpired: boolean | null;
+
+  // Blacklist
   isBlacklisted: boolean;
   blacklistEntry: BlacklistEntry | null;
+
+  // Legacy
+  legacyEntry: LegacyCompanySummary | null;
+  isImported: boolean;
 }
 
 const DOC_LABELS: Record<string, string> = {
@@ -83,6 +120,14 @@ const DOC_LABELS: Record<string, string> = {
 };
 
 const DOC_TYPES_LIST = Object.entries(DOC_LABELS);
+
+function PartnerStatusBadge({ status }: { status: string }) {
+  if (status === "Active") return <Badge className="border-transparent bg-supportive text-white">Active</Badge>;
+  if (status === "Expired") return <Badge className="border-transparent bg-destructive text-white">Expired</Badge>;
+  if (status === "Blacklisted" || status === "Revoked") return <Badge className="border-transparent bg-destructive text-white">{status}</Badge>;
+  if (status === "None") return <Badge className="border-transparent bg-gray-500 text-white">None</Badge>;
+  return <Badge className="border-transparent bg-primary text-white">{status}</Badge>;
+}
 
 function VerifiedDocumentDetails({ details }: { details: DocReviewDetails }) {
   const entries = Object.entries(details).filter(([, v]) => v.value);
@@ -304,9 +349,16 @@ function LegacyRecordsSection({ universityId, companyId }: { universityId: strin
 export default function AdminUniversityPartnersPage() {
   const { universityId } = useParams<{ universityId: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const [currentCompanyId, setCurrentCompanyId] = useState<string | null>(null);
-  const [showDetail, setShowDetail] = useState(false);
+  const [detailType, setDetailType] = useState<"partner" | "legacy" | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [legacyUploadOpen, setLegacyUploadOpen] = useState(false);
+  const [csvUploadOpen, setCsvUploadOpen] = useState(false);
+  const [zipUploadOpen, setZipUploadOpen] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string } | null>(null);
+
+  const showDetail = detailType !== null;
 
   const { data: uniData, isLoading: uniLoading } = useQuery({
     queryKey: ["admin-university", universityId],
@@ -326,53 +378,149 @@ export default function AdminUniversityPartnersPage() {
     enabled: !!universityId,
   });
 
-  const { data: partnerMoasData, isLoading: moasLoading } = useQuery({
-    queryKey: ["admin-university-partner-moas", universityId, currentCompanyId],
+  const { data: legacyData, isLoading: legacyLoading } = useQuery({
+    queryKey: ["admin-university-legacy", universityId],
     queryFn: () =>
       preconfiguredAxios
-        .get(`/api/admin/universities/${universityId}/partners/${currentCompanyId}/moas`)
-        .then((r) => r.data as PartnerMoasData),
-    enabled: !!currentCompanyId,
+        .get(`/api/admin/universities/${universityId}/legacy-companies`)
+        .then((r) => r.data as { legacyCompanies: LegacyCompanySummary[] }),
+    enabled: !!universityId,
   });
 
-  const combined = useMemo<CombinedEntry[]>(() => {
-    if (!partnersData) return [];
-    const map = new Map<string, CombinedEntry>();
-    for (const p of partnersData.partners) {
+  const { data: partnerMoasData, isLoading: moasLoading } = useQuery({
+    queryKey: ["admin-university-partner-moas", universityId, detailId],
+    queryFn: () =>
+      preconfiguredAxios
+        .get(`/api/admin/universities/${universityId}/partners/${detailId}/moas`)
+        .then((r) => r.data as PartnerMoasData),
+    enabled: detailType === "partner" && !!detailId,
+  });
+
+  const { data: legacyDetailData, isLoading: legacyDetailLoading } = useQuery({
+    queryKey: ["admin-university-legacy-detail", universityId, detailId],
+    queryFn: () =>
+      preconfiguredAxios
+        .get(`/api/admin/universities/${universityId}/legacy-companies/${detailId}`)
+        .then((r) => r.data as { legacyCompany: LegacyCompanyDetail }),
+    enabled: detailType === "legacy" && !!detailId,
+  });
+
+  const rows = useMemo<PartnerTableRow[]>(() => {
+    const map = new Map<string, PartnerTableRow>();
+
+    for (const p of partnersData?.partners ?? []) {
       if (!p.company) continue;
-      map.set(p.company.id, {
-        company: p.company,
+      map.set(`registered:${p.company.id}`, {
+        id: `registered:${p.company.id}`,
+        displayName: p.company.registered_name,
+        partnerCompany: p.company,
         latestMoaId: p.latestMoaId,
+        latestMoaStatus: p.latestMoaStatus,
+        hasActiveMoa: p.hasActiveMoa,
+        effectiveDate: p.effective_date,
+        expiryDate: p.expiry_date,
+        isPartnerExpired: p.is_expired,
         isBlacklisted: false,
         blacklistEntry: null,
+        legacyEntry: null,
+        isImported: false,
       });
     }
-    for (const b of partnersData.blacklist) {
-      const existing = map.get(b.company_id);
+
+    for (const b of partnersData?.blacklist ?? []) {
+      const key = `registered:${b.company_id}`;
+      const existing = map.get(key);
       if (existing) {
         existing.isBlacklisted = true;
         existing.blacklistEntry = b;
       } else if (b.company) {
-        map.set(b.company_id, {
-          company: { ...b.company, company_type: null },
-          latestMoaId: "",
+        map.set(key, {
+          id: key,
+          displayName: b.company.registered_name,
+          partnerCompany: { ...b.company, company_type: null },
+          latestMoaId: null,
+          latestMoaStatus: null,
+          hasActiveMoa: false,
+          effectiveDate: null,
+          expiryDate: null,
+          isPartnerExpired: null,
           isBlacklisted: true,
           blacklistEntry: b,
+          legacyEntry: null,
+          isImported: false,
         });
       }
     }
-    return [...map.values()];
-  }, [partnersData]);
 
-  const listColumns = useMemo<ColumnDef<CombinedEntry>[]>(
+    for (const l of legacyData?.legacyCompanies ?? []) {
+      map.set(`legacy:${l.id}`, {
+        id: `legacy:${l.id}`,
+        displayName: l.company_name,
+        partnerCompany: null,
+        latestMoaId: null,
+        latestMoaStatus: null,
+        hasActiveMoa: false,
+        effectiveDate: null,
+        expiryDate: null,
+        isPartnerExpired: null,
+        isBlacklisted: false,
+        blacklistEntry: null,
+        legacyEntry: l,
+        isImported: true,
+      });
+    }
+
+    return [...map.values()];
+  }, [partnersData, legacyData]);
+
+  const handleRowClick = (row: PartnerTableRow) => {
+    if (row.isImported && row.legacyEntry) {
+      setDetailType("legacy");
+      setDetailId(row.legacyEntry.id);
+    } else {
+      setDetailType("partner");
+      setDetailId(row.id.replace("registered:", ""));
+    }
+  };
+
+  const navigateBack = () => {
+    setDetailType(null);
+    setDetailId(null);
+  };
+
+  const isLoading = partnersLoading || legacyLoading;
+
+  const listColumns = useMemo<ColumnDef<PartnerTableRow>[]>(
     () => [
+      {
+        id: "status",
+        header: "Status",
+        minSize: 130,
+        size: 140,
+        accessorFn: (row) => {
+          if (row.isBlacklisted) return "Blacklisted";
+          if (row.isImported && row.legacyEntry) {
+            if (!row.legacyEntry.hasMoa) return "None";
+            if (row.legacyEntry.hasPerpetualMoa) return "Active";
+            if (row.legacyEntry.valid_until && row.legacyEntry.valid_until < new Date().toISOString()) return "Expired";
+            return "Active";
+          }
+          if (row.hasActiveMoa) return "Active";
+          if (row.isPartnerExpired) return "Expired";
+          if (row.latestMoaStatus === "revoked") return "Revoked";
+          return row.latestMoaStatus ?? "None";
+        },
+        cell: ({ getValue }) => <PartnerStatusBadge status={getValue() as string} />,
+      },
       {
         id: "company",
         header: "Company",
-        accessorFn: (row) => row.company.registered_name,
+        minSize: 280,
+        size: 360,
+        accessorFn: (row) => row.displayName,
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <p className="font-medium text-gray-900">{row.original.company.registered_name}</p>
+            <p className="font-medium text-gray-900">{row.original.displayName}</p>
             {row.original.isBlacklisted && (
               <span className="inline-flex shrink-0 items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                 Blacklisted
@@ -382,18 +530,50 @@ export default function AdminUniversityPartnersPage() {
         ),
       },
       {
-        id: "type",
-        header: "Type",
-        accessorFn: (row) => row.company.company_type?.replace(/_/g, " ") ?? "—",
+        id: "period",
+        header: "Period",
+        minSize: 220,
+        size: 260,
+        accessorFn: (row) => {
+          if (row.isImported && row.legacyEntry) {
+            if (row.legacyEntry.latestMoaIsPerpetual) return "Perpetual";
+            if (row.legacyEntry.latestMoaEffectiveDate || row.legacyEntry.latestMoaExpiryDate) {
+              const from = row.legacyEntry.latestMoaEffectiveDate
+                ? formatDateWithoutTime(row.legacyEntry.latestMoaEffectiveDate)
+                : "—";
+              const to = row.legacyEntry.latestMoaExpiryDate
+                ? formatDateWithoutTime(row.legacyEntry.latestMoaExpiryDate)
+                : "—";
+              return `${from} – ${to}`;
+            }
+            return "—";
+          }
+          if (row.effectiveDate || row.expiryDate) {
+            const from = row.effectiveDate ? formatDateWithoutTime(row.effectiveDate) : "—";
+            const to = row.expiryDate ? formatDateWithoutTime(row.expiryDate) : "—";
+            return `${from} – ${to}`;
+          }
+          return "—";
+        },
+      },
+      {
+        id: "imported",
+        header: "Imported",
+        minSize: 120,
+        size: 130,
+        accessorFn: (row) => (row.isImported ? "Yes" : "—"),
+        cell: ({ row }) => row.original.isImported ? <Badge className="border-transparent bg-primary text-white">Imported</Badge> : <span className="text-muted-foreground">—</span>,
       },
     ],
     [],
   );
 
-  const entry = currentCompanyId ? combined.find((e) => e.company.id === currentCompanyId) : null;
-  const company = partnerMoasData?.company ?? entry?.company;
+  const partnerEntry = detailType === "partner" && detailId
+    ? rows.find((r) => r.id === `registered:${detailId}`)
+    : null;
+  const company = partnerMoasData?.company ?? partnerEntry?.partnerCompany;
   const moas = partnerMoasData?.moas ?? [];
-  const isPartnerDetail = showDetail;
+  const legacyCompany = legacyDetailData?.legacyCompany;
 
   if (!uniData && !uniLoading) {
     return (
@@ -404,12 +584,11 @@ export default function AdminUniversityPartnersPage() {
   }
 
   return (
-    <PageContainer>
+    <PageContainer className="max-w-none">
       <button
         onClick={() => {
           if (showDetail) {
-            setShowDetail(false);
-            setCurrentCompanyId(null);
+            navigateBack();
           } else {
             router.push("/admin/universities");
           }
@@ -432,20 +611,13 @@ export default function AdminUniversityPartnersPage() {
 
       <PageHeader
         title="Partners"
-        description={
-          <>
-            Manage partners for this university.{' '}
-            <a href={`/admin/universities/${universityId}/legacy-partners`} target="_blank" className="underline">
-              View legacy partners
-            </a>
-            .
-          </>
-        }
+        description="Manage partners for this university."
       />
+
       <div className="mt-6">
       {!showDetail && (
         <>
-          {partnersLoading ? (
+          {isLoading ? (
             <div className="space-y-1">
               {[0, 1, 2].map((i) => (
                 <Skeleton key={i} className="h-12 w-full" />
@@ -453,24 +625,49 @@ export default function AdminUniversityPartnersPage() {
             </div>
           ) : (
             <DataTable
-              id="admin-university-partners"
+              id="admin-university-partners-merged-v2"
               columns={listColumns}
-              data={combined}
+              data={rows}
+              showRowNumbers={false}
               searchKey="company"
               searchPlaceholder="Search by company..."
               rowLabelSingular="partner"
               rowLabelPlural="partners"
-              onRowClick={(e) => {
-                setCurrentCompanyId(e.company.id);
-                setShowDetail(true);
-              }}
+              onRowClick={handleRowClick}
               getRowClassName={(row) => (row.isBlacklisted ? "bg-red-50" : undefined)}
+              toolbarActions={
+                <div className="flex">
+                  <Button
+                    onClick={() => setLegacyUploadOpen(true)}
+                    className={(true) ? "rounded-r-none" : undefined}
+                  >
+                    <Plus /> Import Partner
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button className="rounded-l-none border-l-0 px-2">
+                        <ChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => setCsvUploadOpen(true)}>
+                        <Upload className="h-4 w-4" />
+                        Bulk upload via CSV
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => setZipUploadOpen(true)}>
+                        <Upload className="h-4 w-4" />
+                        Bulk upload via ZIP
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              }
             />
           )}
         </>
       )}
 
-      {showDetail && (
+      {showDetail && detailType === "partner" && (
         <div className="space-y-4">
           <div>
             <h3 className="font-semibold text-gray-900">{company?.registered_name ?? "—"}</h3>
@@ -481,19 +678,19 @@ export default function AdminUniversityPartnersPage() {
             )}
           </div>
 
-          {entry?.isBlacklisted && entry.blacklistEntry && (
+          {partnerEntry?.isBlacklisted && partnerEntry.blacklistEntry && (
             <div className="border-destructive/30 bg-destructive/5 text-destructive space-y-1 rounded-[0.33em] border p-3 text-sm">
               <p>
                 This company is <strong>blacklisted</strong>.
               </p>
-              {entry.blacklistEntry.reason && (
+              {partnerEntry.blacklistEntry.reason && (
                 <p className="text-destructive/80 text-xs">
-                  Reason: {entry.blacklistEntry.reason}
+                  Reason: {partnerEntry.blacklistEntry.reason}
                 </p>
               )}
               <p className="text-destructive/60 text-xs">
-                Blacklisted on {formatDateWithoutTime(entry.blacklistEntry.created_at)}
-                {entry.blacklistEntry.actor_email && ` by ${entry.blacklistEntry.actor_email}`}
+                Blacklisted on {formatDateWithoutTime(partnerEntry.blacklistEntry.created_at)}
+                {partnerEntry.blacklistEntry.actor_email && ` by ${partnerEntry.blacklistEntry.actor_email}`}
               </p>
             </div>
           )}
@@ -572,10 +769,84 @@ export default function AdminUniversityPartnersPage() {
             <p className="text-muted-foreground text-sm">No MOA history.</p>
           )}
 
-          <LegacyRecordsSection universityId={universityId} companyId={currentCompanyId} />
+          <LegacyRecordsSection universityId={universityId} companyId={detailId} />
+        </div>
+      )}
+
+      {showDetail && detailType === "legacy" && (
+        <div className="space-y-4">
+          {legacyDetailLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          ) : legacyCompany ? (
+            <ReadOnlyLegacyDetail
+              company={legacyCompany}
+              onPreviewDoc={(url, title) => setPreviewDoc({ url, title })}
+            />
+          ) : (
+            <p className="text-muted-foreground text-sm">Legacy company not found.</p>
+          )}
         </div>
       )}
     </div>
+
+    {previewDoc && (
+      <Dialog open onOpenChange={(o) => !o && setPreviewDoc(null)}>
+        <DialogBottomSheet className="flex h-[88vh] flex-col p-0">
+          <div className="flex items-center border-b border-gray-100 px-5 py-3.5 pr-14">
+            <DialogTitle className="text-sm font-medium text-gray-900">
+              {previewDoc.title}
+            </DialogTitle>
+          </div>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <iframe
+              src={previewDoc.url}
+              className="h-full w-full border-none"
+              title={previewDoc.title}
+            />
+          </div>
+        </DialogBottomSheet>
+      </Dialog>
+    )}
+
+    {legacyUploadOpen && (
+      <UploadDialog
+        uploadEndpoint={`/api/admin/universities/${universityId}/legacy-companies`}
+        queryKeyPrefix={`admin-university-legacy-${universityId}`}
+        onClose={() => {
+          setLegacyUploadOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["admin-university-partners", universityId] });
+          queryClient.invalidateQueries({ queryKey: ["admin-university-legacy", universityId] });
+        }}
+      />
+    )}
+
+    {csvUploadOpen && (
+      <CsvUploadDialog
+        csvEndpoint={`/api/admin/universities/${universityId}/legacy-companies/bulk/csv`}
+        queryKeyPrefix={`admin-university-legacy-${universityId}`}
+        onClose={() => {
+          setCsvUploadOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["admin-university-partners", universityId] });
+          queryClient.invalidateQueries({ queryKey: ["admin-university-legacy", universityId] });
+        }}
+      />
+    )}
+
+    {zipUploadOpen && (
+      <ZipUploadDialog
+        zipEndpoint={`/api/admin/universities/${universityId}/legacy-companies/bulk/zip`}
+        queryKeyPrefix={`admin-university-legacy-${universityId}`}
+        onClose={() => {
+          setZipUploadOpen(false);
+          queryClient.invalidateQueries({ queryKey: ["admin-university-partners", universityId] });
+          queryClient.invalidateQueries({ queryKey: ["admin-university-legacy", universityId] });
+        }}
+      />
+    )}
     </PageContainer>
   );
 }

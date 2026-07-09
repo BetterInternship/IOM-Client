@@ -65,6 +65,8 @@ interface DataTableProps<TData, TValue> {
   enableSearch?: boolean;
   /** Optional: show column visibility menu (default: true) */
   enableColumnVisibility?: boolean;
+  /** Optional: show the sticky row-number column (default: true) */
+  showRowNumbers?: boolean;
   /** Optional: enable row selection with checkboxes (default: false) */
   enableRowSelection?: boolean;
   /** Optional: initial sorting state */
@@ -171,6 +173,7 @@ export function DataTable<TData, TValue>({
   searchKey,
   enableSearch = true,
   enableColumnVisibility = false,
+  showRowNumbers = true,
   enableRowSelection = false,
   initialSorting,
   sortingStorageKey,
@@ -297,7 +300,7 @@ export function DataTable<TData, TValue>({
   const filteredRowCount = table.getFilteredRowModel().rows.length;
   // Keep index column width in px so tableWidthPx can be an exact sum — no
   // leftover space for table-fixed to redistribute into this column.
-  const INDEX_COL_W = Math.max(52, String(Math.max(filteredRowCount, 1)).length * 10 + 32);
+  const INDEX_COL_W = showRowNumbers ? Math.max(52, String(Math.max(filteredRowCount, 1)).length * 10 + 32) : 0;
   const indexColumnStyle: React.CSSProperties = {
     width: INDEX_COL_W,
     minWidth: INDEX_COL_W,
@@ -361,19 +364,23 @@ export function DataTable<TData, TValue>({
       {/* Table + Pagination — share a merged border */}
       <div className="flex flex-col">
       <div className="relative h-[480px] overflow-hidden rounded-t-sm border border-b-0 border-gray-200 [&_[data-slot=table-container]]:h-full [&_[data-slot=table-container]]:overflow-auto">
-        <div
-          className="pointer-events-none absolute top-0 left-0 z-[25] h-10 w-16 bg-gradient-to-r from-gray-200 to-transparent"
-        />
-        <div
-          className="pointer-events-none absolute top-10 bottom-0 z-[5] w-px bg-gray-200"
-          style={{ left: INDEX_COL_W - 1 }}
-        />
+        {showRowNumbers && (
+          <>
+            <div
+              className="pointer-events-none absolute top-0 left-0 z-[25] h-10 w-16 bg-gradient-to-r from-gray-200 to-transparent"
+            />
+            <div
+              className="pointer-events-none absolute top-10 bottom-0 z-[5] w-px bg-gray-200"
+              style={{ left: INDEX_COL_W - 1 }}
+            />
+          </>
+        )}
         <Table
           className="table-fixed"
           style={{ minWidth: `${tableMinWidthPx}px`, width: `max(100%, ${tableWidthPx}px)` }}
         >
           <colgroup>
-            <col style={indexColumnStyle} />
+            {showRowNumbers && <col style={indexColumnStyle} />}
             {enableRowSelection && <col style={{ width: 42, minWidth: 42, maxWidth: 42 }} />}
             {table.getVisibleLeafColumns().map((column) => (
               <col key={column.id} style={{ width: column.getSize() }} />
@@ -384,10 +391,12 @@ export function DataTable<TData, TValue>({
           <TableHeader className="[&_tr]:border-b-0">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                <TableHead
-                  className="sticky top-0 left-0 z-30 bg-gray-200 pr-2 text-right text-gray-700"
-                  style={indexColumnStyle}
-                ></TableHead>
+                {showRowNumbers && (
+                  <TableHead
+                    className="sticky top-0 left-0 z-30 bg-gray-200 pr-2 text-right text-gray-700"
+                    style={indexColumnStyle}
+                  ></TableHead>
+                )}
                 {enableRowSelection && (
                   <TableHead className="sticky top-0 z-20 w-[42px] bg-gray-200">
                     <Checkbox
@@ -499,19 +508,21 @@ export function DataTable<TData, TValue>({
                   data-state={row.getIsSelected() && "selected"}
                   onClick={onRowClick ? () => onRowClick(row.original) : undefined}
                 >
-                  <TableCell
-                    className={cn(
-                      "text-muted-foreground sticky left-0 z-10 pr-2 text-right font-medium shadow-[inset_-2px_0_0_theme(colors.gray.200)]",
-                      stickyBg
-                    )}
-                    style={indexColumnStyle}
-                  >
-                    <span
-                      className="absolute top-1/2 left-1.5 ml-1 h-2.5 w-2.5 -translate-y-1/2 scale-50 rounded-full bg-gray-400 opacity-0 transition-all duration-300 ease-out group-hover:scale-100 group-hover:opacity-100"
-                      aria-hidden="true"
-                    />
-                    <span>{pageIndex * pageSize + rowIndex + 1}</span>
-                  </TableCell>
+                  {showRowNumbers && (
+                    <TableCell
+                      className={cn(
+                        "text-muted-foreground sticky left-0 z-10 pr-2 text-right font-medium shadow-[inset_-2px_0_0_theme(colors.gray.200)]",
+                        stickyBg
+                      )}
+                      style={indexColumnStyle}
+                    >
+                      <span
+                        className="absolute top-1/2 left-1.5 ml-1 h-2.5 w-2.5 -translate-y-1/2 scale-50 rounded-full bg-gray-400 opacity-0 transition-all duration-300 ease-out group-hover:scale-100 group-hover:opacity-100"
+                        aria-hidden="true"
+                      />
+                      <span>{pageIndex * pageSize + rowIndex + 1}</span>
+                    </TableCell>
+                  )}
                   {enableRowSelection && (
                     <TableCell className="w-[42px]">
                       <Checkbox

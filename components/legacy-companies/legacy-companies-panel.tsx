@@ -938,7 +938,7 @@ function MoaUploadDialog({
   );
 }
 
-function UploadDialog({
+export function UploadDialog({
   uploadEndpoint,
   queryKeyPrefix,
   onClose,
@@ -1308,7 +1308,7 @@ interface CsvUploadDialogProps {
   onClose: () => void;
 }
 
-function CsvUploadDialog({
+export function CsvUploadDialog({
   csvEndpoint,
   queryKeyPrefix,
   onClose,
@@ -1682,7 +1682,7 @@ interface ZipUploadDialogProps {
   onClose: () => void;
 }
 
-function ZipUploadDialog({
+export function ZipUploadDialog({
   zipEndpoint,
   queryKeyPrefix,
   onClose,
