@@ -125,6 +125,22 @@ export function isLegacyMoaExpired(expiryDate: string | null, isPerpetual?: bool
   return expiryDate < today;
 }
 
+export function formatLegacyMoaPeriod(moa: {
+  effective_date: string | null;
+  expiry_date: string | null;
+  is_perpetual?: boolean;
+}) {
+  if (moa.is_perpetual) {
+    return moa.effective_date
+      ? `${formatDateWithoutTime(moa.effective_date)} – Perpetual`
+      : "Effective date unknown – Perpetual";
+  }
+
+  return `${moa.effective_date ? formatDateWithoutTime(moa.effective_date) : "—"} – ${
+    moa.expiry_date ? formatDateWithoutTime(moa.expiry_date) : "—"
+  }`;
+}
+
 export function LegacyCompaniesPanel({
   listEndpoint,
   uploadEndpoint,
@@ -589,13 +605,7 @@ function DetailView({
                   {formatDateWithoutTime(moa.created_at)}
                 </td>
                 <td className="py-2.5 text-gray-600">
-                  {moa.is_perpetual
-                    ? (moa.effective_date
-                        ? `${formatDateWithoutTime(moa.effective_date)} – Perpetual`
-                        : "Effective date unknown – Perpetual")
-                    : `${formatDateWithoutTime(moa.effective_date)} – ${
-                        moa.expiry_date ? formatDateWithoutTime(moa.expiry_date) : "—"
-                      }`}
+                  {formatLegacyMoaPeriod(moa)}
                 </td>
               </tr>
             ))}

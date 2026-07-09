@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { DataTable } from "@/components/ui/data-table";
-import { LegacyCompaniesPanel, LegacyCompanyDetail, formatLegacyLabel, formatLegacyFieldLabel, isFilledValue, isLegacyMoaExpired } from "@/components/legacy-companies/legacy-companies-panel";
+import { LegacyCompaniesPanel, LegacyCompanyDetail, formatLegacyLabel, formatLegacyFieldLabel, formatLegacyMoaPeriod, isFilledValue, isLegacyMoaExpired } from "@/components/legacy-companies/legacy-companies-panel";
 import { ArrowLeft, ChevronDown, ChevronRight, CircleAlert, CircleCheck, Eye, ShieldCheck } from "lucide-react";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { MoaStatusBadge } from "@/components/status-badge";
@@ -206,7 +206,7 @@ function ReadOnlyLegacyDetail({
                 onClick={() => moa.document_url && onPreviewDoc(moa.document_url, moa.filename ?? "MOA Document")}
               >
                 <td className="py-2.5 pr-4 text-gray-600">
-                  <MoaStatusBadge status="active" isExpired={isLegacyMoaExpired(moa.expiry_date)} />
+                  <MoaStatusBadge status="active" isExpired={isLegacyMoaExpired(moa.expiry_date, moa.is_perpetual)} />
                 </td>
                 <td className="py-2.5 pr-4 text-gray-600">
                   {moa.document_url ? (
@@ -221,7 +221,7 @@ function ReadOnlyLegacyDetail({
                   {formatDateWithoutTime(moa.created_at)}
                 </td>
                 <td className="py-2.5 text-gray-600">
-                  {formatDateWithoutTime(moa.effective_date)} – {formatDateWithoutTime(moa.expiry_date)}
+                  {formatLegacyMoaPeriod(moa)}
                 </td>
               </tr>
             ))}
