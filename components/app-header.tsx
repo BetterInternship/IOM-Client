@@ -74,6 +74,7 @@ function labelIcon(label: string): LucideIcon {
 }
 
 export function AppHeader({
+  portal,
   homeHref,
   nav,
   userPrimary,
@@ -127,6 +128,9 @@ export function AppHeader({
             />
             <h1 className="font-display flex flex-row items-center space-x-2 text-lg font-bold text-gray-900">
               Partners
+              <span className="ml-2 mt-0.5 rounded-[0.33em] border border-gray-200 bg-gray-50 p-1 text-xs font-medium text-gray-400 leading-none">
+                {portal}
+              </span>
             </h1>
           </div>
         </Link>
@@ -243,6 +247,7 @@ export function AppHeader({
             <div className="flex items-center gap-2">
               <Image src="/betterinternship-logo.png" alt="" width={25} height={25} className="h-6 w-6 rounded object-contain" />
               <span className="text-sm font-semibold">Partners</span>
+              <span className="rounded border border-gray-200 bg-gray-50 px-1 py-0 text-[10px] font-medium text-gray-400 leading-none">{portal}</span>
             </div>
             <button
               type="button"
