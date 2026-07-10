@@ -125,12 +125,18 @@ export function AppHeader({
               height={25}
               className="flex-none"
             />
-            <h1 className="font-display flex flex-row items-center space-x-2 text-lg font-bold text-gray-900">
-              Partners
-              <span className="ml-2 mt-0.5 rounded-[0.33em] border border-gray-200 bg-gray-50 p-1 text-xs font-medium text-gray-400 leading-none">
-                {portal}
+            <div className="flex items-center">
+              <h1 className="font-display text-lg font-bold text-gray-900">
+                Partners
+              </h1>
+              <span
+                className="mx-2.5 h-4 w-px bg-gray-300"
+                aria-hidden="true"
+              />
+              <span className="font-display text-gray-500">
+                {portal === "Platform Admin" ? portal : `${portal} Portal`}
               </span>
-            </h1>
+            </div>
           </div>
         </Link>
 
