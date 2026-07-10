@@ -6,10 +6,11 @@ import { useCompanyControllerGetMoa } from "@/app/api";
 import { useModal } from "@/app/providers/modal-provider";
 import { PageContainer } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoaStatusBadge } from "@/components/status-badge";
 import { formatDateWithoutTime } from "@/lib/utils";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Download, ShieldCheck } from "lucide-react";
 
 interface CompanyMoaDetail {
   moa: {
@@ -69,6 +70,7 @@ export default function CompanyMoaDetailPage() {
 
   const { moa, pdfUrl } = detail!;
   const isActive = moa.status === "active" && !moa.is_expired;
+  const downloadFilename = `${moa.university.registered_name} MOA.pdf`;
 
   return (
     <PageContainer className="max-w-3xl space-y-6">
@@ -82,11 +84,18 @@ export default function CompanyMoaDetailPage() {
       <Card className="overflow-hidden">
         {isActive && (
           <div className="bg-supportive/10 border-b border-supportive/20 px-6 py-4 flex items-center gap-3">
-            <ShieldCheck className="h-5 w-5 text-supportive flex-shrink-0" aria-hidden="true" />
+            <ShieldCheck
+              className="h-5 w-5 text-supportive flex-shrink-0"
+              aria-hidden="true"
+            />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-supportive">This MOA is signed and in effect</p>
+              <p className="text-sm font-semibold text-supportive">
+                This MOA is signed and in effect
+              </p>
               <p className="text-xs text-supportive/80 mt-0.5">
-                {moa.expiry_date ? `Valid until ${formatDateWithoutTime(moa.expiry_date)}` : "Perpetual — no expiry"}
+                {moa.expiry_date
+                  ? `Valid until ${formatDateWithoutTime(moa.expiry_date)}`
+                  : "Perpetual — no expiry"}
               </p>
             </div>
           </div>
@@ -98,13 +107,35 @@ export default function CompanyMoaDetailPage() {
               <h1 className="text-xl font-semibold text-gray-900 text-wrap-balance">
                 {moa.university.registered_name}
               </h1>
-              <p className="text-muted-foreground mt-0.5 text-sm">{moa.template.name}</p>
+              <p className="text-muted-foreground mt-0.5 text-sm">
+                {moa.template.name}
+              </p>
               <p className="text-muted-foreground mt-1 text-xs">
                 {formatDateWithoutTime(moa.effective_date)} &ndash;{" "}
-                {moa.expiry_date ? formatDateWithoutTime(moa.expiry_date) : "Perpetual"}
+                {moa.expiry_date
+                  ? formatDateWithoutTime(moa.expiry_date)
+                  : "Perpetual"}
               </p>
             </div>
-            {!isActive && <MoaStatusBadge status={moa.status} isExpired={moa.is_expired} />}
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              {!isActive && (
+                <MoaStatusBadge
+                  status={moa.status}
+                  isExpired={moa.is_expired}
+                />
+              )}
+              {pdfUrl && (
+                <Button asChild variant="outline" size="sm">
+                  <a
+                    href={`/gcs-proxy?url=${encodeURIComponent(pdfUrl)}`}
+                    download={downloadFilename}
+                  >
+                    <Download aria-hidden="true" />
+                    Download MOA
+                  </a>
+                </Button>
+              )}
+            </div>
           </div>
 
           {moa.status === "rejected" && moa.rejection_reason && (
