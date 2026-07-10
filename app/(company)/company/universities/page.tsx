@@ -211,8 +211,7 @@ export default function UniversityDirectoryPage() {
                           className="max-w-64 bg-gray-900 px-3 py-2 leading-5 text-white shadow-sm"
                           arrowClassName="fill-gray-900"
                         >
-                          Internships become compliant immediately after MOA
-                          approval.
+                          MOAs are approved instantly upon submission.
                         </TooltipContent>
                       </Tooltip>
                     </div>
