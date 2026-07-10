@@ -2,8 +2,8 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useQueryClient } from "@tanstack/react-query";
+import { getCompanyControllerMeQueryKey, useCompanyAuthControllerList, useCompanyAuthControllerLogin, companyControllerClaimInvite } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,39 +27,20 @@ function LoginPageContent() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const { data: companyList = [] } = useQuery({
-    queryKey: ["company-list"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/auth/company/list")
-        .then((r) => r.data.companies as CompanyListItem[]),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: companyListResponse } = useCompanyAuthControllerList();
+  const companyList = (companyListResponse?.companies ?? []) as CompanyListItem[];
 
   const options = companyList.map((c) => ({ id: c.id, name: c.registered_name }));
   const selectedCompany = companyList.find((c) => c.id === selectedId) ?? null;
 
-  const login = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post("/api/auth/company/login", {
-        companyId: selectedId,
-        password,
-      }),
+  const login = useCompanyAuthControllerLogin({
+    mutation: {
     onSuccess: async () => {
-      queryClient.resetQueries({ queryKey: ["company-me"] });
+      queryClient.resetQueries({ queryKey: getCompanyControllerMeQueryKey() });
 
       if (inviteToken) {
         try {
-          const res = await preconfiguredAxios
-            .post("/api/company/invites/claim", { token: inviteToken })
-            .then(
-              (r) =>
-                r.data as {
-                  university_id: string;
-                  template_id: string | null;
-                  invite_id: string;
-                },
-            );
+          const res = await companyControllerClaimInvite({ token: inviteToken });
 
           if (res.university_id) {
             const params = new URLSearchParams({ open_university_id: res.university_id });
@@ -76,12 +57,13 @@ function LoginPageContent() {
       router.replace("/company/dashboard");
     },
     onError: (e: Error) => setError(e.message),
+    },
   });
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    login.mutate();
+    login.mutate({ data: { companyId: selectedId!, password } });
   };
 
   return (

@@ -1,6 +1,5 @@
 "use client";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -8,7 +7,11 @@ import {
   useCompanyProfile,
   useCompanyVerification,
 } from "@/app/providers/company-profile.provider";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import {
+  useCompanyControllerListMoas,
+  useCompanyControllerListQueuedMoas,
+  useCompanyControllerListPendingInvites,
+} from "@/app/api";
 import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -225,29 +228,17 @@ function CompanyDashboardContent() {
   const [currentUniId, setCurrentUniId] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const { data: moasData, isLoading: moasLoading } = useQuery({
-    queryKey: ["company-moas"],
-    queryFn: () =>
-      preconfiguredAxios.get("/api/company/moas?limit=100").then((r) => r.data),
-    enabled: !!company,
+  const { data: moasData, isLoading: moasLoading } = useCompanyControllerListMoas(
+    { limit: 100 },
+    { query: { enabled: !!company } },
+  );
+
+  const { data: queuedData } = useCompanyControllerListQueuedMoas({
+    query: { enabled: !!company },
   });
 
-  const { data: queuedData } = useQuery({
-    queryKey: ["company-queued-moas"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/company/queued-moas")
-        .then((r) => r.data as { queued: QueuedMoa[] }),
-    enabled: !!company,
-  });
-
-  const { data: invitesData } = useQuery({
-    queryKey: ["company-pending-invites"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/company/invites/pending")
-        .then((r) => r.data as { invites: PendingInvite[] }),
-    enabled: !!company,
+  const { data: invitesData } = useCompanyControllerListPendingInvites({
+    query: { enabled: !!company },
   });
 
   const { data: verification, isLoading: vLoading } = useCompanyVerification(!!company);
@@ -274,9 +265,7 @@ function CompanyDashboardContent() {
   }, []);
   useEffect(() => {
     if (!hashId || moasLoading || !moasData) return;
-    const exists = (moasData?.moas ?? []).some(
-      (m: Moa) => m.university?.id === hashId,
-    );
+    const exists = (moasData?.moas ?? []).some((m) => m.university?.id === hashId);
     if (exists) {
       setCurrentUniId(hashId);
       setPhase("detail");
@@ -302,7 +291,9 @@ function CompanyDashboardContent() {
   }
   if (!company) return null;
 
-  const moas: Moa[] = moasData?.moas ?? [];
+  const moas = (moasData?.moas ?? []) as unknown as Moa[];
+  const pendingQueued = (queuedData?.queued ?? []).filter((q) => q.status === "pending");
+  const failedQueued = (queuedData?.queued ?? []).filter((q) => q.status === "failed");
 
   // Group MOAs by university into partner rows (newest MOA first within each).
   const byUni = new Map<string, PartnerUniversity>();
@@ -323,8 +314,6 @@ function CompanyDashboardContent() {
 
   const status = verification?.status;
   const canRequest = status === "verified";
-  const pendingQueued = (queuedData?.queued ?? []).filter((q) => q.status === "pending");
-  const failedQueued = (queuedData?.queued ?? []).filter((q) => q.status === "failed");
   const pendingInvites = (invitesData?.invites ?? []).filter((inv) => inv.university !== null);
   const detail = currentUniId ? byUni.get(currentUniId) ?? null : null;
   const history = detail

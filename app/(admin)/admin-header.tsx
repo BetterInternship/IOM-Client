@@ -1,20 +1,19 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { AppHeader } from "@/components/app-header";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { adminAuthControllerLogout, useAdminControllerOverview } from "@/app/api";
 
 export function AdminHeader() {
   const pathname = usePathname() ?? "";
 
-  const { data: overview } = useQuery({
-    queryKey: ["admin-me"],
-    queryFn: () => preconfiguredAxios.get("/api/admin/overview").then((r) => r.data),
-    staleTime: Infinity,
-    retry: false,
+  const { data: overview } = useAdminControllerOverview({
+    query: {
+      staleTime: Infinity,
+      retry: false,
+    },
   });
-  const pendingReviewCount = (overview as { pendingReviewCount?: number })?.pendingReviewCount ?? 0;
+  const pendingReviewCount = overview?.pendingReviewCount ?? 0;
 
   // Hide the app chrome on the login page.
   if (pathname.endsWith("/login")) return null;
@@ -30,7 +29,7 @@ export function AdminHeader() {
         ...(pendingReviewCount > 0 ? [{ href: "/reviews", label: "Company Reviews", badge: pendingReviewCount }] : []),
       ]}
       userPrimary="Administrator"
-      logoutPath="/api/auth/admin/logout"
+      logout={adminAuthControllerLogout}
       postLogoutPath="/login"
     />
   );

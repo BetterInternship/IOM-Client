@@ -130,7 +130,6 @@ export default function AdminTemplatesPage() {
           searchPlaceholder="Search templates..."
           rowLabelSingular="template"
           rowLabelPlural="templates"
-          pageSizes={[10, 25, 50]}
           onRowClick={(t) => router.push(`/templates/${t.id}`)}
         />
       )}

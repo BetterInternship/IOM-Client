@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { filesControllerResolve } from "@/app/api/app/api/endpoints/files/files";
+import type { ResolveFileDtoKind } from "@/app/api";
 
 const TTL_MS = 28 * 60 * 1000; // 28 min — server signs for 30, refresh 2 min early
 
@@ -8,9 +9,9 @@ type CacheEntry = { url: string; expiresAt: number };
 const cache = new Map<string, CacheEntry>();
 const inflight = new Map<string, Promise<string | null>>();
 
-const key = (kind: string, id: string) => `${kind}:${id}`;
+const key = (kind: ResolveFileDtoKind, id: string) => `${kind}:${id}`;
 
-export async function resolveFile(kind: string, id: string): Promise<string | null> {
+export async function resolveFile(kind: ResolveFileDtoKind, id: string): Promise<string | null> {
   const k = key(kind, id);
 
   const cached = cache.get(k);
@@ -19,10 +20,9 @@ export async function resolveFile(kind: string, id: string): Promise<string | nu
   const existing = inflight.get(k);
   if (existing) return existing;
 
-  const promise = preconfiguredAxios
-    .post("/api/files/resolve", { kind, id })
+  const promise = filesControllerResolve({ kind, id })
     .then((res) => {
-      const url: string | null = res.data?.url ?? null;
+      const url: string | null = res.url ?? null;
       if (url) cache.set(k, { url, expiresAt: Date.now() + TTL_MS });
       inflight.delete(k);
       return url;
@@ -36,7 +36,7 @@ export async function resolveFile(kind: string, id: string): Promise<string | nu
   return promise;
 }
 
-export function useResolvedFile(kind: string, id: string | null | undefined) {
+export function useResolvedFile(kind: ResolveFileDtoKind, id: string | null | undefined) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(!!id);
 

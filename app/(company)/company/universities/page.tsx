@@ -1,12 +1,11 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
   useCompanyProfile,
   useCompanyVerification,
 } from "@/app/providers/company-profile.provider";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useCompanyControllerListUniversities, type CompanyUniversityDirectoryItemDto } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,14 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
 import { RequestDialog } from "@/components/moa-request-dialog";
 import Link from "next/link";
-
-interface University {
-  id: string;
-  registered_name: string;
-  logo_url: string | null;
-  address: string | null;
-  requestable: boolean;
-}
 
 interface DialogState {
   universityId: string;
@@ -34,16 +25,13 @@ export default function UniversityDirectoryPage() {
 
   const [dialogState, setDialogState] = useState<DialogState | null>(null);
 
-  const { data, isLoading: uniLoading } = useQuery({
-    queryKey: ["company-universities"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/company/universities")
-        .then((r) => r.data as { universities: University[] }),
-    enabled: !!company && verified,
+  const { data, isLoading: uniLoading } = useCompanyControllerListUniversities({
+    query: {
+      enabled: !!company && verified,
+    },
   });
 
-  const columns = useMemo<ColumnDef<University>[]>(
+  const columns = useMemo<ColumnDef<CompanyUniversityDirectoryItemDto>[]>(
     () => [
       {
         id: "name",
@@ -136,7 +124,6 @@ export default function UniversityDirectoryPage() {
           searchPlaceholder="Search universities..."
           rowLabelSingular="university"
           rowLabelPlural="universities"
-          pageSizes={[10, 25, 50]}
         />
       )}
 

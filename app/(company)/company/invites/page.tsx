@@ -1,22 +1,15 @@
 "use client";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import {
   useCompanyProfile,
   useCompanyVerification,
 } from "@/app/providers/company-profile.provider";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useCompanyControllerListPendingInvites } from "@/app/api";
 import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RequestDialog } from "@/components/moa-request-dialog";
-
-interface PendingInvite {
-  id: string;
-  university: { id: string; registered_name: string } | null;
-  template: { id: string; name: string } | null;
-}
 
 interface DialogState {
   universityId: string;
@@ -30,13 +23,8 @@ export default function CompanyInvitesPage() {
   const verified = verification?.status === "verified";
   const [dialogState, setDialogState] = useState<DialogState | null>(null);
 
-  const { data, isLoading: invitesLoading } = useQuery({
-    queryKey: ["company-pending-invites"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/company/invites/pending")
-        .then((r) => r.data as { invites: PendingInvite[] }),
-    enabled: !!company,
+  const { data, isLoading: invitesLoading } = useCompanyControllerListPendingInvites({
+    query: { enabled: !!company },
   });
 
   const invites = (data?.invites ?? []).filter((inv) => inv.university !== null);

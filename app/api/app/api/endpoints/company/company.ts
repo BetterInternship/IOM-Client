@@ -25,14 +25,34 @@ import type {
 
 import type {
   ClaimInviteDto,
+  CompanyClaimInviteResponse,
+  CompanyControllerCreateQueuedMoaBody,
+  CompanyControllerListMoasParams,
+  CompanyControllerRequestMoaBody,
+  CompanyControllerUploadDocumentBody,
+  CompanyControllerUploadLogoBody,
+  CompanyCreateQueuedMoaResponse,
+  CompanyDocumentsResponse,
+  CompanyMeResponse,
+  CompanyMoaDetailResponse,
+  CompanyMoasResponse,
+  CompanyPatchProfileResponse,
+  CompanyPendingInvitesResponse,
+  CompanyQueuedMoasResponse,
+  CompanyRequestMoaResponse,
+  CompanyRequestableTemplatesResponse,
+  CompanyUniversitiesResponse,
+  CompanyUploadDocumentResponse,
+  CompanyUploadLogoResponse,
+  CompanyVerificationResponse,
+  ErrorResponse,
   PatchCompanyProfileDto,
-  RequestMoaDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
 
 export const companyControllerMe = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyMeResponse>({
     url: `/api/company/me`,
     method: "GET",
     signal,
@@ -45,7 +65,7 @@ export const getCompanyControllerMeQueryKey = () => {
 
 export const getCompanyControllerMeQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -73,11 +93,11 @@ export const getCompanyControllerMeQueryOptions = <
 export type CompanyControllerMeQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerMe>>
 >;
-export type CompanyControllerMeQueryError = unknown;
+export type CompanyControllerMeQueryError = ErrorResponse;
 
 export function useCompanyControllerMe<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -102,7 +122,7 @@ export function useCompanyControllerMe<
 };
 export function useCompanyControllerMe<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -127,7 +147,7 @@ export function useCompanyControllerMe<
 };
 export function useCompanyControllerMe<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -145,7 +165,7 @@ export function useCompanyControllerMe<
 
 export function useCompanyControllerMe<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -174,7 +194,7 @@ export function useCompanyControllerMe<
 
 export const getCompanyControllerMeSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -202,11 +222,11 @@ export const getCompanyControllerMeSuspenseQueryOptions = <
 export type CompanyControllerMeSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerMe>>
 >;
-export type CompanyControllerMeSuspenseQueryError = unknown;
+export type CompanyControllerMeSuspenseQueryError = ErrorResponse;
 
 export function useCompanyControllerMeSuspense<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -223,7 +243,7 @@ export function useCompanyControllerMeSuspense<
 };
 export function useCompanyControllerMeSuspense<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -240,7 +260,7 @@ export function useCompanyControllerMeSuspense<
 };
 export function useCompanyControllerMeSuspense<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -258,7 +278,7 @@ export function useCompanyControllerMeSuspense<
 
 export function useCompanyControllerMeSuspense<
   TData = Awaited<ReturnType<typeof companyControllerMe>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -290,7 +310,7 @@ export function useCompanyControllerMeSuspense<
 export const companyControllerPatchProfile = (
   patchCompanyProfileDto: PatchCompanyProfileDto,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyPatchProfileResponse>({
     url: `/api/company/profile`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -299,7 +319,7 @@ export const companyControllerPatchProfile = (
 };
 
 export const getCompanyControllerPatchProfileMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -339,10 +359,10 @@ export type CompanyControllerPatchProfileMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerPatchProfile>>
 >;
 export type CompanyControllerPatchProfileMutationBody = PatchCompanyProfileDto;
-export type CompanyControllerPatchProfileMutationError = unknown;
+export type CompanyControllerPatchProfileMutationError = ErrorResponse;
 
 export const useCompanyControllerPatchProfile = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -366,7 +386,7 @@ export const useCompanyControllerPatchProfile = <
   return useMutation(mutationOptions, queryClient);
 };
 export const companyControllerGetVerification = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyVerificationResponse>({
     url: `/api/company/verification`,
     method: "GET",
     signal,
@@ -379,7 +399,7 @@ export const getCompanyControllerGetVerificationQueryKey = () => {
 
 export const getCompanyControllerGetVerificationQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -408,11 +428,11 @@ export const getCompanyControllerGetVerificationQueryOptions = <
 export type CompanyControllerGetVerificationQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerGetVerification>>
 >;
-export type CompanyControllerGetVerificationQueryError = unknown;
+export type CompanyControllerGetVerificationQueryError = ErrorResponse;
 
 export function useCompanyControllerGetVerification<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -437,7 +457,7 @@ export function useCompanyControllerGetVerification<
 };
 export function useCompanyControllerGetVerification<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -462,7 +482,7 @@ export function useCompanyControllerGetVerification<
 };
 export function useCompanyControllerGetVerification<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -480,7 +500,7 @@ export function useCompanyControllerGetVerification<
 
 export function useCompanyControllerGetVerification<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -509,7 +529,7 @@ export function useCompanyControllerGetVerification<
 
 export const getCompanyControllerGetVerificationSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -538,11 +558,11 @@ export const getCompanyControllerGetVerificationSuspenseQueryOptions = <
 export type CompanyControllerGetVerificationSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerGetVerification>>
 >;
-export type CompanyControllerGetVerificationSuspenseQueryError = unknown;
+export type CompanyControllerGetVerificationSuspenseQueryError = ErrorResponse;
 
 export function useCompanyControllerGetVerificationSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -559,7 +579,7 @@ export function useCompanyControllerGetVerificationSuspense<
 };
 export function useCompanyControllerGetVerificationSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -576,7 +596,7 @@ export function useCompanyControllerGetVerificationSuspense<
 };
 export function useCompanyControllerGetVerificationSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -594,7 +614,7 @@ export function useCompanyControllerGetVerificationSuspense<
 
 export function useCompanyControllerGetVerificationSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetVerification>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -624,28 +644,36 @@ export function useCompanyControllerGetVerificationSuspense<
   return query;
 }
 
-export const companyControllerUploadLogo = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+export const companyControllerUploadLogo = (
+  companyControllerUploadLogoBody: CompanyControllerUploadLogoBody,
+  signal?: AbortSignal,
+) => {
+  const formData = new FormData();
+  formData.append(`file`, companyControllerUploadLogoBody.file);
+
+  return preconfiguredAxiosFunction<CompanyUploadLogoResponse>({
     url: `/api/company/profile/logo`,
     method: "POST",
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
     signal,
   });
 };
 
 export const getCompanyControllerUploadLogoMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof companyControllerUploadLogo>>,
     TError,
-    void,
+    { data: CompanyControllerUploadLogoBody },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof companyControllerUploadLogo>>,
   TError,
-  void,
+  { data: CompanyControllerUploadLogoBody },
   TContext
 > => {
   const mutationKey = ["companyControllerUploadLogo"];
@@ -659,9 +687,11 @@ export const getCompanyControllerUploadLogoMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof companyControllerUploadLogo>>,
-    void
-  > = () => {
-    return companyControllerUploadLogo();
+    { data: CompanyControllerUploadLogoBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return companyControllerUploadLogo(data);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -670,18 +700,19 @@ export const getCompanyControllerUploadLogoMutationOptions = <
 export type CompanyControllerUploadLogoMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerUploadLogo>>
 >;
-
-export type CompanyControllerUploadLogoMutationError = unknown;
+export type CompanyControllerUploadLogoMutationBody =
+  CompanyControllerUploadLogoBody;
+export type CompanyControllerUploadLogoMutationError = ErrorResponse;
 
 export const useCompanyControllerUploadLogo = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof companyControllerUploadLogo>>,
       TError,
-      void,
+      { data: CompanyControllerUploadLogoBody },
       TContext
     >;
   },
@@ -689,7 +720,7 @@ export const useCompanyControllerUploadLogo = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof companyControllerUploadLogo>>,
   TError,
-  void,
+  { data: CompanyControllerUploadLogoBody },
   TContext
 > => {
   const mutationOptions =
@@ -697,28 +728,37 @@ export const useCompanyControllerUploadLogo = <
 
   return useMutation(mutationOptions, queryClient);
 };
-export const companyControllerUploadDocument = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+export const companyControllerUploadDocument = (
+  companyControllerUploadDocumentBody: CompanyControllerUploadDocumentBody,
+  signal?: AbortSignal,
+) => {
+  const formData = new FormData();
+  formData.append(`file`, companyControllerUploadDocumentBody.file);
+  formData.append(`type`, companyControllerUploadDocumentBody.type);
+
+  return preconfiguredAxiosFunction<CompanyUploadDocumentResponse>({
     url: `/api/company/documents`,
     method: "POST",
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
     signal,
   });
 };
 
 export const getCompanyControllerUploadDocumentMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof companyControllerUploadDocument>>,
     TError,
-    void,
+    { data: CompanyControllerUploadDocumentBody },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof companyControllerUploadDocument>>,
   TError,
-  void,
+  { data: CompanyControllerUploadDocumentBody },
   TContext
 > => {
   const mutationKey = ["companyControllerUploadDocument"];
@@ -732,9 +772,11 @@ export const getCompanyControllerUploadDocumentMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof companyControllerUploadDocument>>,
-    void
-  > = () => {
-    return companyControllerUploadDocument();
+    { data: CompanyControllerUploadDocumentBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return companyControllerUploadDocument(data);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -743,18 +785,19 @@ export const getCompanyControllerUploadDocumentMutationOptions = <
 export type CompanyControllerUploadDocumentMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerUploadDocument>>
 >;
-
-export type CompanyControllerUploadDocumentMutationError = unknown;
+export type CompanyControllerUploadDocumentMutationBody =
+  CompanyControllerUploadDocumentBody;
+export type CompanyControllerUploadDocumentMutationError = ErrorResponse;
 
 export const useCompanyControllerUploadDocument = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof companyControllerUploadDocument>>,
       TError,
-      void,
+      { data: CompanyControllerUploadDocumentBody },
       TContext
     >;
   },
@@ -762,7 +805,7 @@ export const useCompanyControllerUploadDocument = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof companyControllerUploadDocument>>,
   TError,
-  void,
+  { data: CompanyControllerUploadDocumentBody },
   TContext
 > => {
   const mutationOptions =
@@ -771,7 +814,7 @@ export const useCompanyControllerUploadDocument = <
   return useMutation(mutationOptions, queryClient);
 };
 export const companyControllerGetDocuments = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyDocumentsResponse>({
     url: `/api/company/documents`,
     method: "GET",
     signal,
@@ -784,7 +827,7 @@ export const getCompanyControllerGetDocumentsQueryKey = () => {
 
 export const getCompanyControllerGetDocumentsQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerGetDocuments>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -813,11 +856,11 @@ export const getCompanyControllerGetDocumentsQueryOptions = <
 export type CompanyControllerGetDocumentsQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerGetDocuments>>
 >;
-export type CompanyControllerGetDocumentsQueryError = unknown;
+export type CompanyControllerGetDocumentsQueryError = ErrorResponse;
 
 export function useCompanyControllerGetDocuments<
   TData = Awaited<ReturnType<typeof companyControllerGetDocuments>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -842,7 +885,7 @@ export function useCompanyControllerGetDocuments<
 };
 export function useCompanyControllerGetDocuments<
   TData = Awaited<ReturnType<typeof companyControllerGetDocuments>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -867,7 +910,7 @@ export function useCompanyControllerGetDocuments<
 };
 export function useCompanyControllerGetDocuments<
   TData = Awaited<ReturnType<typeof companyControllerGetDocuments>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -885,7 +928,7 @@ export function useCompanyControllerGetDocuments<
 
 export function useCompanyControllerGetDocuments<
   TData = Awaited<ReturnType<typeof companyControllerGetDocuments>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -914,7 +957,7 @@ export function useCompanyControllerGetDocuments<
 
 export const getCompanyControllerGetDocumentsSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerGetDocuments>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -943,11 +986,11 @@ export const getCompanyControllerGetDocumentsSuspenseQueryOptions = <
 export type CompanyControllerGetDocumentsSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerGetDocuments>>
 >;
-export type CompanyControllerGetDocumentsSuspenseQueryError = unknown;
+export type CompanyControllerGetDocumentsSuspenseQueryError = ErrorResponse;
 
 export function useCompanyControllerGetDocumentsSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetDocuments>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -964,7 +1007,7 @@ export function useCompanyControllerGetDocumentsSuspense<
 };
 export function useCompanyControllerGetDocumentsSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetDocuments>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -981,7 +1024,7 @@ export function useCompanyControllerGetDocumentsSuspense<
 };
 export function useCompanyControllerGetDocumentsSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetDocuments>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -999,7 +1042,7 @@ export function useCompanyControllerGetDocumentsSuspense<
 
 export function useCompanyControllerGetDocumentsSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetDocuments>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1030,7 +1073,7 @@ export function useCompanyControllerGetDocumentsSuspense<
 }
 
 export const companyControllerListUniversities = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyUniversitiesResponse>({
     url: `/api/company/universities`,
     method: "GET",
     signal,
@@ -1043,7 +1086,7 @@ export const getCompanyControllerListUniversitiesQueryKey = () => {
 
 export const getCompanyControllerListUniversitiesQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -1072,11 +1115,11 @@ export const getCompanyControllerListUniversitiesQueryOptions = <
 export type CompanyControllerListUniversitiesQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerListUniversities>>
 >;
-export type CompanyControllerListUniversitiesQueryError = unknown;
+export type CompanyControllerListUniversitiesQueryError = ErrorResponse;
 
 export function useCompanyControllerListUniversities<
   TData = Awaited<ReturnType<typeof companyControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -1101,7 +1144,7 @@ export function useCompanyControllerListUniversities<
 };
 export function useCompanyControllerListUniversities<
   TData = Awaited<ReturnType<typeof companyControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1126,7 +1169,7 @@ export function useCompanyControllerListUniversities<
 };
 export function useCompanyControllerListUniversities<
   TData = Awaited<ReturnType<typeof companyControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1144,7 +1187,7 @@ export function useCompanyControllerListUniversities<
 
 export function useCompanyControllerListUniversities<
   TData = Awaited<ReturnType<typeof companyControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1174,7 +1217,7 @@ export function useCompanyControllerListUniversities<
 
 export const getCompanyControllerListUniversitiesSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -1203,11 +1246,11 @@ export const getCompanyControllerListUniversitiesSuspenseQueryOptions = <
 export type CompanyControllerListUniversitiesSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerListUniversities>>
 >;
-export type CompanyControllerListUniversitiesSuspenseQueryError = unknown;
+export type CompanyControllerListUniversitiesSuspenseQueryError = ErrorResponse;
 
 export function useCompanyControllerListUniversitiesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -1224,7 +1267,7 @@ export function useCompanyControllerListUniversitiesSuspense<
 };
 export function useCompanyControllerListUniversitiesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1241,7 +1284,7 @@ export function useCompanyControllerListUniversitiesSuspense<
 };
 export function useCompanyControllerListUniversitiesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1259,7 +1302,7 @@ export function useCompanyControllerListUniversitiesSuspense<
 
 export function useCompanyControllerListUniversitiesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1293,7 +1336,7 @@ export const companyControllerGetRequestableTemplates = (
   universityId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyRequestableTemplatesResponse>({
     url: `/api/company/universities/${universityId}/templates`,
     method: "GET",
     signal,
@@ -1308,7 +1351,7 @@ export const getCompanyControllerGetRequestableTemplatesQueryKey = (
 
 export const getCompanyControllerGetRequestableTemplatesQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1347,11 +1390,11 @@ export const getCompanyControllerGetRequestableTemplatesQueryOptions = <
 export type CompanyControllerGetRequestableTemplatesQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>
 >;
-export type CompanyControllerGetRequestableTemplatesQueryError = unknown;
+export type CompanyControllerGetRequestableTemplatesQueryError = ErrorResponse;
 
 export function useCompanyControllerGetRequestableTemplates<
   TData = Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options: {
@@ -1377,7 +1420,7 @@ export function useCompanyControllerGetRequestableTemplates<
 };
 export function useCompanyControllerGetRequestableTemplates<
   TData = Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1403,7 +1446,7 @@ export function useCompanyControllerGetRequestableTemplates<
 };
 export function useCompanyControllerGetRequestableTemplates<
   TData = Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1422,7 +1465,7 @@ export function useCompanyControllerGetRequestableTemplates<
 
 export function useCompanyControllerGetRequestableTemplates<
   TData = Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1455,7 +1498,7 @@ export function useCompanyControllerGetRequestableTemplates<
 
 export const getCompanyControllerGetRequestableTemplatesSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1491,11 +1534,11 @@ export type CompanyControllerGetRequestableTemplatesSuspenseQueryResult =
     Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>
   >;
 export type CompanyControllerGetRequestableTemplatesSuspenseQueryError =
-  unknown;
+  ErrorResponse;
 
 export function useCompanyControllerGetRequestableTemplatesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options: {
@@ -1513,7 +1556,7 @@ export function useCompanyControllerGetRequestableTemplatesSuspense<
 };
 export function useCompanyControllerGetRequestableTemplatesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1531,7 +1574,7 @@ export function useCompanyControllerGetRequestableTemplatesSuspense<
 };
 export function useCompanyControllerGetRequestableTemplatesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1550,7 +1593,7 @@ export function useCompanyControllerGetRequestableTemplatesSuspense<
 
 export function useCompanyControllerGetRequestableTemplatesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetRequestableTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1585,22 +1628,28 @@ export function useCompanyControllerGetRequestableTemplatesSuspense<
 }
 
 export const companyControllerRequestMoa = (
-  requestMoaDto: RequestMoaDto,
+  companyControllerRequestMoaBody: CompanyControllerRequestMoaBody,
   signal?: AbortSignal,
 ) => {
   const formData = new FormData();
-  formData.append(`universityId`, requestMoaDto.universityId);
-  formData.append(`templateId`, requestMoaDto.templateId);
-  formData.append(`repName`, requestMoaDto.repName);
-  formData.append(`repTitle`, requestMoaDto.repTitle);
-  if (requestMoaDto.repSignatureText !== undefined) {
-    formData.append(`repSignatureText`, requestMoaDto.repSignatureText);
+  formData.append(`universityId`, companyControllerRequestMoaBody.universityId);
+  formData.append(`templateId`, companyControllerRequestMoaBody.templateId);
+  formData.append(`repName`, companyControllerRequestMoaBody.repName);
+  formData.append(`repTitle`, companyControllerRequestMoaBody.repTitle);
+  if (companyControllerRequestMoaBody.repSignatureText !== undefined) {
+    formData.append(
+      `repSignatureText`,
+      companyControllerRequestMoaBody.repSignatureText,
+    );
   }
-  if (requestMoaDto.invite_id !== undefined) {
-    formData.append(`invite_id`, requestMoaDto.invite_id);
+  if (companyControllerRequestMoaBody.invite_id !== undefined) {
+    formData.append(`invite_id`, companyControllerRequestMoaBody.invite_id);
+  }
+  if (companyControllerRequestMoaBody.signature !== undefined) {
+    formData.append(`signature`, companyControllerRequestMoaBody.signature);
   }
 
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyRequestMoaResponse>({
     url: `/api/company/moas`,
     method: "POST",
     headers: { "Content-Type": "multipart/form-data" },
@@ -1610,19 +1659,19 @@ export const companyControllerRequestMoa = (
 };
 
 export const getCompanyControllerRequestMoaMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof companyControllerRequestMoa>>,
     TError,
-    { data: RequestMoaDto },
+    { data: CompanyControllerRequestMoaBody },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof companyControllerRequestMoa>>,
   TError,
-  { data: RequestMoaDto },
+  { data: CompanyControllerRequestMoaBody },
   TContext
 > => {
   const mutationKey = ["companyControllerRequestMoa"];
@@ -1636,7 +1685,7 @@ export const getCompanyControllerRequestMoaMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof companyControllerRequestMoa>>,
-    { data: RequestMoaDto }
+    { data: CompanyControllerRequestMoaBody }
   > = (props) => {
     const { data } = props ?? {};
 
@@ -1649,18 +1698,19 @@ export const getCompanyControllerRequestMoaMutationOptions = <
 export type CompanyControllerRequestMoaMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerRequestMoa>>
 >;
-export type CompanyControllerRequestMoaMutationBody = RequestMoaDto;
-export type CompanyControllerRequestMoaMutationError = unknown;
+export type CompanyControllerRequestMoaMutationBody =
+  CompanyControllerRequestMoaBody;
+export type CompanyControllerRequestMoaMutationError = ErrorResponse;
 
 export const useCompanyControllerRequestMoa = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof companyControllerRequestMoa>>,
       TError,
-      { data: RequestMoaDto },
+      { data: CompanyControllerRequestMoaBody },
       TContext
     >;
   },
@@ -1668,7 +1718,7 @@ export const useCompanyControllerRequestMoa = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof companyControllerRequestMoa>>,
   TError,
-  { data: RequestMoaDto },
+  { data: CompanyControllerRequestMoaBody },
   TContext
 > => {
   const mutationOptions =
@@ -1676,38 +1726,47 @@ export const useCompanyControllerRequestMoa = <
 
   return useMutation(mutationOptions, queryClient);
 };
-export const companyControllerListMoas = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+export const companyControllerListMoas = (
+  params?: CompanyControllerListMoasParams,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<CompanyMoasResponse>({
     url: `/api/company/moas`,
     method: "GET",
+    params,
     signal,
   });
 };
 
-export const getCompanyControllerListMoasQueryKey = () => {
-  return [`/api/company/moas`] as const;
+export const getCompanyControllerListMoasQueryKey = (
+  params?: CompanyControllerListMoasParams,
+) => {
+  return [`/api/company/moas`, ...(params ? [params] : [])] as const;
 };
 
 export const getCompanyControllerListMoasQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerListMoas>>,
-  TError = unknown,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<
-      Awaited<ReturnType<typeof companyControllerListMoas>>,
-      TError,
-      TData
-    >
-  >;
-}) => {
+  TError = ErrorResponse,
+>(
+  params?: CompanyControllerListMoasParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getCompanyControllerListMoasQueryKey();
+    queryOptions?.queryKey ?? getCompanyControllerListMoasQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof companyControllerListMoas>>
-  > = ({ signal }) => companyControllerListMoas(signal);
+  > = ({ signal }) => companyControllerListMoas(params, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof companyControllerListMoas>>,
@@ -1719,12 +1778,13 @@ export const getCompanyControllerListMoasQueryOptions = <
 export type CompanyControllerListMoasQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerListMoas>>
 >;
-export type CompanyControllerListMoasQueryError = unknown;
+export type CompanyControllerListMoasQueryError = ErrorResponse;
 
 export function useCompanyControllerListMoas<
   TData = Awaited<ReturnType<typeof companyControllerListMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
+  params: undefined | CompanyControllerListMoasParams,
   options: {
     query: Partial<
       UseQueryOptions<
@@ -1748,8 +1808,9 @@ export function useCompanyControllerListMoas<
 };
 export function useCompanyControllerListMoas<
   TData = Awaited<ReturnType<typeof companyControllerListMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
+  params?: CompanyControllerListMoasParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -1773,8 +1834,9 @@ export function useCompanyControllerListMoas<
 };
 export function useCompanyControllerListMoas<
   TData = Awaited<ReturnType<typeof companyControllerListMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
+  params?: CompanyControllerListMoasParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -1791,8 +1853,9 @@ export function useCompanyControllerListMoas<
 
 export function useCompanyControllerListMoas<
   TData = Awaited<ReturnType<typeof companyControllerListMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
+  params?: CompanyControllerListMoasParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
@@ -1806,7 +1869,10 @@ export function useCompanyControllerListMoas<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getCompanyControllerListMoasQueryOptions(options);
+  const queryOptions = getCompanyControllerListMoasQueryOptions(
+    params,
+    options,
+  );
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,
@@ -1820,24 +1886,27 @@ export function useCompanyControllerListMoas<
 
 export const getCompanyControllerListMoasSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerListMoas>>,
-  TError = unknown,
->(options?: {
-  query?: Partial<
-    UseSuspenseQueryOptions<
-      Awaited<ReturnType<typeof companyControllerListMoas>>,
-      TError,
-      TData
-    >
-  >;
-}) => {
+  TError = ErrorResponse,
+>(
+  params?: CompanyControllerListMoasParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListMoas>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getCompanyControllerListMoasQueryKey();
+    queryOptions?.queryKey ?? getCompanyControllerListMoasQueryKey(params);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof companyControllerListMoas>>
-  > = ({ signal }) => companyControllerListMoas(signal);
+  > = ({ signal }) => companyControllerListMoas(params, signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
     Awaited<ReturnType<typeof companyControllerListMoas>>,
@@ -1849,12 +1918,13 @@ export const getCompanyControllerListMoasSuspenseQueryOptions = <
 export type CompanyControllerListMoasSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerListMoas>>
 >;
-export type CompanyControllerListMoasSuspenseQueryError = unknown;
+export type CompanyControllerListMoasSuspenseQueryError = ErrorResponse;
 
 export function useCompanyControllerListMoasSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
+  params: undefined | CompanyControllerListMoasParams,
   options: {
     query: Partial<
       UseSuspenseQueryOptions<
@@ -1870,8 +1940,9 @@ export function useCompanyControllerListMoasSuspense<
 };
 export function useCompanyControllerListMoasSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
+  params?: CompanyControllerListMoasParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -1887,8 +1958,9 @@ export function useCompanyControllerListMoasSuspense<
 };
 export function useCompanyControllerListMoasSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
+  params?: CompanyControllerListMoasParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -1905,8 +1977,9 @@ export function useCompanyControllerListMoasSuspense<
 
 export function useCompanyControllerListMoasSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
+  params?: CompanyControllerListMoasParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
@@ -1920,8 +1993,10 @@ export function useCompanyControllerListMoasSuspense<
 ): UseSuspenseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions =
-    getCompanyControllerListMoasSuspenseQueryOptions(options);
+  const queryOptions = getCompanyControllerListMoasSuspenseQueryOptions(
+    params,
+    options,
+  );
 
   const query = useSuspenseQuery(
     queryOptions,
@@ -1939,7 +2014,7 @@ export const companyControllerGetMoa = (
   moaId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyMoaDetailResponse>({
     url: `/api/company/moas/${moaId}`,
     method: "GET",
     signal,
@@ -1954,7 +2029,7 @@ export const getCompanyControllerGetMoaQueryKey = (
 
 export const getCompanyControllerGetMoaQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerGetMoa>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   moaId: string | undefined | null,
   options?: {
@@ -1991,11 +2066,11 @@ export const getCompanyControllerGetMoaQueryOptions = <
 export type CompanyControllerGetMoaQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerGetMoa>>
 >;
-export type CompanyControllerGetMoaQueryError = unknown;
+export type CompanyControllerGetMoaQueryError = ErrorResponse;
 
 export function useCompanyControllerGetMoa<
   TData = Awaited<ReturnType<typeof companyControllerGetMoa>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   moaId: string | undefined | null,
   options: {
@@ -2021,7 +2096,7 @@ export function useCompanyControllerGetMoa<
 };
 export function useCompanyControllerGetMoa<
   TData = Awaited<ReturnType<typeof companyControllerGetMoa>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   moaId: string | undefined | null,
   options?: {
@@ -2047,7 +2122,7 @@ export function useCompanyControllerGetMoa<
 };
 export function useCompanyControllerGetMoa<
   TData = Awaited<ReturnType<typeof companyControllerGetMoa>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   moaId: string | undefined | null,
   options?: {
@@ -2066,7 +2141,7 @@ export function useCompanyControllerGetMoa<
 
 export function useCompanyControllerGetMoa<
   TData = Awaited<ReturnType<typeof companyControllerGetMoa>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   moaId: string | undefined | null,
   options?: {
@@ -2096,7 +2171,7 @@ export function useCompanyControllerGetMoa<
 
 export const getCompanyControllerGetMoaSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerGetMoa>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   moaId: string | undefined | null,
   options?: {
@@ -2128,11 +2203,11 @@ export const getCompanyControllerGetMoaSuspenseQueryOptions = <
 export type CompanyControllerGetMoaSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerGetMoa>>
 >;
-export type CompanyControllerGetMoaSuspenseQueryError = unknown;
+export type CompanyControllerGetMoaSuspenseQueryError = ErrorResponse;
 
 export function useCompanyControllerGetMoaSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetMoa>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   moaId: string | undefined | null,
   options: {
@@ -2150,7 +2225,7 @@ export function useCompanyControllerGetMoaSuspense<
 };
 export function useCompanyControllerGetMoaSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetMoa>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   moaId: string | undefined | null,
   options?: {
@@ -2168,7 +2243,7 @@ export function useCompanyControllerGetMoaSuspense<
 };
 export function useCompanyControllerGetMoaSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetMoa>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   moaId: string | undefined | null,
   options?: {
@@ -2187,7 +2262,7 @@ export function useCompanyControllerGetMoaSuspense<
 
 export function useCompanyControllerGetMoaSuspense<
   TData = Awaited<ReturnType<typeof companyControllerGetMoa>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   moaId: string | undefined | null,
   options?: {
@@ -2224,7 +2299,7 @@ export const companyControllerClaimInvite = (
   claimInviteDto: ClaimInviteDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyClaimInviteResponse>({
     url: `/api/company/invites/claim`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -2234,7 +2309,7 @@ export const companyControllerClaimInvite = (
 };
 
 export const getCompanyControllerClaimInviteMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2274,10 +2349,10 @@ export type CompanyControllerClaimInviteMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerClaimInvite>>
 >;
 export type CompanyControllerClaimInviteMutationBody = ClaimInviteDto;
-export type CompanyControllerClaimInviteMutationError = unknown;
+export type CompanyControllerClaimInviteMutationError = ErrorResponse;
 
 export const useCompanyControllerClaimInvite = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -2301,7 +2376,7 @@ export const useCompanyControllerClaimInvite = <
   return useMutation(mutationOptions, queryClient);
 };
 export const companyControllerListPendingInvites = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyPendingInvitesResponse>({
     url: `/api/company/invites/pending`,
     method: "GET",
     signal,
@@ -2314,7 +2389,7 @@ export const getCompanyControllerListPendingInvitesQueryKey = () => {
 
 export const getCompanyControllerListPendingInvitesQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -2343,11 +2418,11 @@ export const getCompanyControllerListPendingInvitesQueryOptions = <
 export type CompanyControllerListPendingInvitesQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerListPendingInvites>>
 >;
-export type CompanyControllerListPendingInvitesQueryError = unknown;
+export type CompanyControllerListPendingInvitesQueryError = ErrorResponse;
 
 export function useCompanyControllerListPendingInvites<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -2372,7 +2447,7 @@ export function useCompanyControllerListPendingInvites<
 };
 export function useCompanyControllerListPendingInvites<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2397,7 +2472,7 @@ export function useCompanyControllerListPendingInvites<
 };
 export function useCompanyControllerListPendingInvites<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2415,7 +2490,7 @@ export function useCompanyControllerListPendingInvites<
 
 export function useCompanyControllerListPendingInvites<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2445,7 +2520,7 @@ export function useCompanyControllerListPendingInvites<
 
 export const getCompanyControllerListPendingInvitesSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -2473,11 +2548,12 @@ export const getCompanyControllerListPendingInvitesSuspenseQueryOptions = <
 
 export type CompanyControllerListPendingInvitesSuspenseQueryResult =
   NonNullable<Awaited<ReturnType<typeof companyControllerListPendingInvites>>>;
-export type CompanyControllerListPendingInvitesSuspenseQueryError = unknown;
+export type CompanyControllerListPendingInvitesSuspenseQueryError =
+  ErrorResponse;
 
 export function useCompanyControllerListPendingInvitesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -2494,7 +2570,7 @@ export function useCompanyControllerListPendingInvitesSuspense<
 };
 export function useCompanyControllerListPendingInvitesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2511,7 +2587,7 @@ export function useCompanyControllerListPendingInvitesSuspense<
 };
 export function useCompanyControllerListPendingInvitesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2529,7 +2605,7 @@ export function useCompanyControllerListPendingInvitesSuspense<
 
 export function useCompanyControllerListPendingInvitesSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListPendingInvites>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2560,22 +2636,40 @@ export function useCompanyControllerListPendingInvitesSuspense<
 }
 
 export const companyControllerCreateQueuedMoa = (
-  requestMoaDto: RequestMoaDto,
+  companyControllerCreateQueuedMoaBody: CompanyControllerCreateQueuedMoaBody,
   signal?: AbortSignal,
 ) => {
   const formData = new FormData();
-  formData.append(`universityId`, requestMoaDto.universityId);
-  formData.append(`templateId`, requestMoaDto.templateId);
-  formData.append(`repName`, requestMoaDto.repName);
-  formData.append(`repTitle`, requestMoaDto.repTitle);
-  if (requestMoaDto.repSignatureText !== undefined) {
-    formData.append(`repSignatureText`, requestMoaDto.repSignatureText);
+  formData.append(
+    `universityId`,
+    companyControllerCreateQueuedMoaBody.universityId,
+  );
+  formData.append(
+    `templateId`,
+    companyControllerCreateQueuedMoaBody.templateId,
+  );
+  formData.append(`repName`, companyControllerCreateQueuedMoaBody.repName);
+  formData.append(`repTitle`, companyControllerCreateQueuedMoaBody.repTitle);
+  if (companyControllerCreateQueuedMoaBody.repSignatureText !== undefined) {
+    formData.append(
+      `repSignatureText`,
+      companyControllerCreateQueuedMoaBody.repSignatureText,
+    );
   }
-  if (requestMoaDto.invite_id !== undefined) {
-    formData.append(`invite_id`, requestMoaDto.invite_id);
+  if (companyControllerCreateQueuedMoaBody.invite_id !== undefined) {
+    formData.append(
+      `invite_id`,
+      companyControllerCreateQueuedMoaBody.invite_id,
+    );
+  }
+  if (companyControllerCreateQueuedMoaBody.signature !== undefined) {
+    formData.append(
+      `signature`,
+      companyControllerCreateQueuedMoaBody.signature,
+    );
   }
 
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyCreateQueuedMoaResponse>({
     url: `/api/company/queued-moas`,
     method: "POST",
     headers: { "Content-Type": "multipart/form-data" },
@@ -2585,19 +2679,19 @@ export const companyControllerCreateQueuedMoa = (
 };
 
 export const getCompanyControllerCreateQueuedMoaMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
     TError,
-    { data: RequestMoaDto },
+    { data: CompanyControllerCreateQueuedMoaBody },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
   TError,
-  { data: RequestMoaDto },
+  { data: CompanyControllerCreateQueuedMoaBody },
   TContext
 > => {
   const mutationKey = ["companyControllerCreateQueuedMoa"];
@@ -2611,7 +2705,7 @@ export const getCompanyControllerCreateQueuedMoaMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
-    { data: RequestMoaDto }
+    { data: CompanyControllerCreateQueuedMoaBody }
   > = (props) => {
     const { data } = props ?? {};
 
@@ -2624,18 +2718,19 @@ export const getCompanyControllerCreateQueuedMoaMutationOptions = <
 export type CompanyControllerCreateQueuedMoaMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>
 >;
-export type CompanyControllerCreateQueuedMoaMutationBody = RequestMoaDto;
-export type CompanyControllerCreateQueuedMoaMutationError = unknown;
+export type CompanyControllerCreateQueuedMoaMutationBody =
+  CompanyControllerCreateQueuedMoaBody;
+export type CompanyControllerCreateQueuedMoaMutationError = ErrorResponse;
 
 export const useCompanyControllerCreateQueuedMoa = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
       TError,
-      { data: RequestMoaDto },
+      { data: CompanyControllerCreateQueuedMoaBody },
       TContext
     >;
   },
@@ -2643,7 +2738,7 @@ export const useCompanyControllerCreateQueuedMoa = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
   TError,
-  { data: RequestMoaDto },
+  { data: CompanyControllerCreateQueuedMoaBody },
   TContext
 > => {
   const mutationOptions =
@@ -2652,7 +2747,7 @@ export const useCompanyControllerCreateQueuedMoa = <
   return useMutation(mutationOptions, queryClient);
 };
 export const companyControllerListQueuedMoas = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<CompanyQueuedMoasResponse>({
     url: `/api/company/queued-moas`,
     method: "GET",
     signal,
@@ -2665,7 +2760,7 @@ export const getCompanyControllerListQueuedMoasQueryKey = () => {
 
 export const getCompanyControllerListQueuedMoasQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -2694,11 +2789,11 @@ export const getCompanyControllerListQueuedMoasQueryOptions = <
 export type CompanyControllerListQueuedMoasQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
 >;
-export type CompanyControllerListQueuedMoasQueryError = unknown;
+export type CompanyControllerListQueuedMoasQueryError = ErrorResponse;
 
 export function useCompanyControllerListQueuedMoas<
   TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -2723,7 +2818,7 @@ export function useCompanyControllerListQueuedMoas<
 };
 export function useCompanyControllerListQueuedMoas<
   TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2748,7 +2843,7 @@ export function useCompanyControllerListQueuedMoas<
 };
 export function useCompanyControllerListQueuedMoas<
   TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2766,7 +2861,7 @@ export function useCompanyControllerListQueuedMoas<
 
 export function useCompanyControllerListQueuedMoas<
   TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2795,7 +2890,7 @@ export function useCompanyControllerListQueuedMoas<
 
 export const getCompanyControllerListQueuedMoasSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -2824,11 +2919,11 @@ export const getCompanyControllerListQueuedMoasSuspenseQueryOptions = <
 export type CompanyControllerListQueuedMoasSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
 >;
-export type CompanyControllerListQueuedMoasSuspenseQueryError = unknown;
+export type CompanyControllerListQueuedMoasSuspenseQueryError = ErrorResponse;
 
 export function useCompanyControllerListQueuedMoasSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -2845,7 +2940,7 @@ export function useCompanyControllerListQueuedMoasSuspense<
 };
 export function useCompanyControllerListQueuedMoasSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2862,7 +2957,7 @@ export function useCompanyControllerListQueuedMoasSuspense<
 };
 export function useCompanyControllerListQueuedMoasSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -2880,7 +2975,7 @@ export function useCompanyControllerListQueuedMoasSuspense<
 
 export function useCompanyControllerListQueuedMoasSuspense<
   TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<

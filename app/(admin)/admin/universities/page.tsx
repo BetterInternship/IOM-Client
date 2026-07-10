@@ -223,7 +223,6 @@ export default function AdminUniversitiesPage() {
           searchPlaceholder="Search universities..."
           rowLabelSingular="university"
           rowLabelPlural="universities"
-          pageSizes={[10, 25, 50]}
           onRowClick={(uni) => router.push(`/admin/universities/${uni.id}`)}
         />
       )}

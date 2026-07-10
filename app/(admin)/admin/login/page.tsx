@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useQueryClient } from "@tanstack/react-query";
+import { getAdminControllerOverviewQueryKey, useAdminAuthControllerLogin } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,14 +16,14 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const login = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post("/api/auth/admin/login", { email, password }),
+  const login = useAdminAuthControllerLogin({
+    mutation: {
     onSuccess: () => {
-      queryClient.resetQueries({ queryKey: ["admin-me"] });
+      queryClient.resetQueries({ queryKey: getAdminControllerOverviewQueryKey() });
       router.replace("/admin/universities");
     },
     onError: (e: Error) => setError(e.message),
+    },
   });
 
   return (
@@ -36,7 +36,7 @@ export default function AdminLoginPage() {
         onSubmit={(e) => {
           e.preventDefault();
           setError("");
-          login.mutate();
+          login.mutate({ data: { email, password } });
         }}
         className="space-y-4"
       >

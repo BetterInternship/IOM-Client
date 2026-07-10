@@ -24,23 +24,51 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
-  AppendLegacyMoasDto,
+  AdminBulkCreateCompaniesResponse,
+  AdminCompaniesResponse,
+  AdminCompanyDetailResponse,
+  AdminCompanyReviewDetailResponse,
+  AdminCompanyReviewQueueResponse,
+  AdminControllerAppendUniversityLegacyCompanyDocumentsBody,
+  AdminControllerBulkCreateCompaniesBody,
+  AdminControllerBulkCreateLegacyCompaniesFromCsvBody,
+  AdminControllerBulkCreateLegacyCompaniesFromZipBody,
+  AdminControllerCreateTemplateBody,
+  AdminControllerCreateUniversityLegacyCompanyBody,
+  AdminCreateCompanyResponse,
+  AdminCreateTemplateResponse,
+  AdminCreateUniversityResponse,
+  AdminOverviewResponse,
+  AdminPatchCompanyResponse,
+  AdminPatchTemplateResponse,
+  AdminSuperadminReassignResponse,
+  AdminTemplatesResponse,
+  AdminUniversitiesResponse,
+  AdminUniversityDetailResponse,
+  AdminUniversityPartnersResponse,
+  AdminVerifyTinResponse,
   ApproveCompanyReviewDto,
+  BaseResponse,
   CreateCompanyAdminDto,
-  CreateLegacyMoaDto,
-  CreateTemplateDto,
   CreateUniversityDto,
+  ErrorResponse,
   PatchCompanyAdminDto,
   PatchTemplateDto,
   RejectCompanyReviewDto,
   SeedSuperadminDto,
+  UniversityBulkResultResponse,
+  UniversityLegacyCompaniesResponse,
+  UniversityLegacyCompanyDetailResponse,
+  UniversityMoaDetailResponse,
+  UniversityPartnerLegacyCompanyResponse,
+  UniversityPartnerMoasResponse,
   VerifyTinDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
 
 export const adminControllerOverview = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminOverviewResponse>({
     url: `/api/admin/overview`,
     method: "GET",
     signal,
@@ -53,7 +81,7 @@ export const getAdminControllerOverviewQueryKey = () => {
 
 export const getAdminControllerOverviewQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerOverview>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -82,11 +110,11 @@ export const getAdminControllerOverviewQueryOptions = <
 export type AdminControllerOverviewQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerOverview>>
 >;
-export type AdminControllerOverviewQueryError = unknown;
+export type AdminControllerOverviewQueryError = ErrorResponse;
 
 export function useAdminControllerOverview<
   TData = Awaited<ReturnType<typeof adminControllerOverview>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -111,7 +139,7 @@ export function useAdminControllerOverview<
 };
 export function useAdminControllerOverview<
   TData = Awaited<ReturnType<typeof adminControllerOverview>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -136,7 +164,7 @@ export function useAdminControllerOverview<
 };
 export function useAdminControllerOverview<
   TData = Awaited<ReturnType<typeof adminControllerOverview>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -154,7 +182,7 @@ export function useAdminControllerOverview<
 
 export function useAdminControllerOverview<
   TData = Awaited<ReturnType<typeof adminControllerOverview>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -183,7 +211,7 @@ export function useAdminControllerOverview<
 
 export const getAdminControllerOverviewSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerOverview>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -212,11 +240,11 @@ export const getAdminControllerOverviewSuspenseQueryOptions = <
 export type AdminControllerOverviewSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerOverview>>
 >;
-export type AdminControllerOverviewSuspenseQueryError = unknown;
+export type AdminControllerOverviewSuspenseQueryError = ErrorResponse;
 
 export function useAdminControllerOverviewSuspense<
   TData = Awaited<ReturnType<typeof adminControllerOverview>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -233,7 +261,7 @@ export function useAdminControllerOverviewSuspense<
 };
 export function useAdminControllerOverviewSuspense<
   TData = Awaited<ReturnType<typeof adminControllerOverview>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -250,7 +278,7 @@ export function useAdminControllerOverviewSuspense<
 };
 export function useAdminControllerOverviewSuspense<
   TData = Awaited<ReturnType<typeof adminControllerOverview>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -268,7 +296,7 @@ export function useAdminControllerOverviewSuspense<
 
 export function useAdminControllerOverviewSuspense<
   TData = Awaited<ReturnType<typeof adminControllerOverview>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -298,7 +326,7 @@ export function useAdminControllerOverviewSuspense<
 }
 
 export const adminControllerCompanyReviewQueue = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminCompanyReviewQueueResponse>({
     url: `/api/admin/company-reviews`,
     method: "GET",
     signal,
@@ -311,7 +339,7 @@ export const getAdminControllerCompanyReviewQueueQueryKey = () => {
 
 export const getAdminControllerCompanyReviewQueueQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -340,11 +368,11 @@ export const getAdminControllerCompanyReviewQueueQueryOptions = <
 export type AdminControllerCompanyReviewQueueQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>
 >;
-export type AdminControllerCompanyReviewQueueQueryError = unknown;
+export type AdminControllerCompanyReviewQueueQueryError = ErrorResponse;
 
 export function useAdminControllerCompanyReviewQueue<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -369,7 +397,7 @@ export function useAdminControllerCompanyReviewQueue<
 };
 export function useAdminControllerCompanyReviewQueue<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -394,7 +422,7 @@ export function useAdminControllerCompanyReviewQueue<
 };
 export function useAdminControllerCompanyReviewQueue<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -412,7 +440,7 @@ export function useAdminControllerCompanyReviewQueue<
 
 export function useAdminControllerCompanyReviewQueue<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -442,7 +470,7 @@ export function useAdminControllerCompanyReviewQueue<
 
 export const getAdminControllerCompanyReviewQueueSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -471,11 +499,11 @@ export const getAdminControllerCompanyReviewQueueSuspenseQueryOptions = <
 export type AdminControllerCompanyReviewQueueSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>
 >;
-export type AdminControllerCompanyReviewQueueSuspenseQueryError = unknown;
+export type AdminControllerCompanyReviewQueueSuspenseQueryError = ErrorResponse;
 
 export function useAdminControllerCompanyReviewQueueSuspense<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -492,7 +520,7 @@ export function useAdminControllerCompanyReviewQueueSuspense<
 };
 export function useAdminControllerCompanyReviewQueueSuspense<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -509,7 +537,7 @@ export function useAdminControllerCompanyReviewQueueSuspense<
 };
 export function useAdminControllerCompanyReviewQueueSuspense<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -527,7 +555,7 @@ export function useAdminControllerCompanyReviewQueueSuspense<
 
 export function useAdminControllerCompanyReviewQueueSuspense<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewQueue>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -561,7 +589,7 @@ export const adminControllerCompanyReviewDetail = (
   companyId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminCompanyReviewDetailResponse>({
     url: `/api/admin/companies/${companyId}/review`,
     method: "GET",
     signal,
@@ -576,7 +604,7 @@ export const getAdminControllerCompanyReviewDetailQueryKey = (
 
 export const getAdminControllerCompanyReviewDetailQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -614,11 +642,11 @@ export const getAdminControllerCompanyReviewDetailQueryOptions = <
 export type AdminControllerCompanyReviewDetailQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>
 >;
-export type AdminControllerCompanyReviewDetailQueryError = unknown;
+export type AdminControllerCompanyReviewDetailQueryError = ErrorResponse;
 
 export function useAdminControllerCompanyReviewDetail<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options: {
@@ -644,7 +672,7 @@ export function useAdminControllerCompanyReviewDetail<
 };
 export function useAdminControllerCompanyReviewDetail<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -670,7 +698,7 @@ export function useAdminControllerCompanyReviewDetail<
 };
 export function useAdminControllerCompanyReviewDetail<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -689,7 +717,7 @@ export function useAdminControllerCompanyReviewDetail<
 
 export function useAdminControllerCompanyReviewDetail<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -722,7 +750,7 @@ export function useAdminControllerCompanyReviewDetail<
 
 export const getAdminControllerCompanyReviewDetailSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -755,11 +783,12 @@ export const getAdminControllerCompanyReviewDetailSuspenseQueryOptions = <
 export type AdminControllerCompanyReviewDetailSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>
 >;
-export type AdminControllerCompanyReviewDetailSuspenseQueryError = unknown;
+export type AdminControllerCompanyReviewDetailSuspenseQueryError =
+  ErrorResponse;
 
 export function useAdminControllerCompanyReviewDetailSuspense<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options: {
@@ -777,7 +806,7 @@ export function useAdminControllerCompanyReviewDetailSuspense<
 };
 export function useAdminControllerCompanyReviewDetailSuspense<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -795,7 +824,7 @@ export function useAdminControllerCompanyReviewDetailSuspense<
 };
 export function useAdminControllerCompanyReviewDetailSuspense<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -814,7 +843,7 @@ export function useAdminControllerCompanyReviewDetailSuspense<
 
 export function useAdminControllerCompanyReviewDetailSuspense<
   TData = Awaited<ReturnType<typeof adminControllerCompanyReviewDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -853,7 +882,7 @@ export const adminControllerApproveCompany = (
   approveCompanyReviewDto: ApproveCompanyReviewDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/admin/companies/${companyId}/approve`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -863,7 +892,7 @@ export const adminControllerApproveCompany = (
 };
 
 export const getAdminControllerApproveCompanyMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -903,10 +932,10 @@ export type AdminControllerApproveCompanyMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerApproveCompany>>
 >;
 export type AdminControllerApproveCompanyMutationBody = ApproveCompanyReviewDto;
-export type AdminControllerApproveCompanyMutationError = unknown;
+export type AdminControllerApproveCompanyMutationError = ErrorResponse;
 
 export const useAdminControllerApproveCompany = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -934,7 +963,7 @@ export const adminControllerRejectCompany = (
   rejectCompanyReviewDto: RejectCompanyReviewDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/admin/companies/${companyId}/reject`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -944,7 +973,7 @@ export const adminControllerRejectCompany = (
 };
 
 export const getAdminControllerRejectCompanyMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -984,10 +1013,10 @@ export type AdminControllerRejectCompanyMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerRejectCompany>>
 >;
 export type AdminControllerRejectCompanyMutationBody = RejectCompanyReviewDto;
-export type AdminControllerRejectCompanyMutationError = unknown;
+export type AdminControllerRejectCompanyMutationError = ErrorResponse;
 
 export const useAdminControllerRejectCompany = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -1011,7 +1040,7 @@ export const useAdminControllerRejectCompany = <
   return useMutation(mutationOptions, queryClient);
 };
 export const adminControllerListUniversities = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminUniversitiesResponse>({
     url: `/api/admin/universities`,
     method: "GET",
     signal,
@@ -1024,7 +1053,7 @@ export const getAdminControllerListUniversitiesQueryKey = () => {
 
 export const getAdminControllerListUniversitiesQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -1053,11 +1082,11 @@ export const getAdminControllerListUniversitiesQueryOptions = <
 export type AdminControllerListUniversitiesQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerListUniversities>>
 >;
-export type AdminControllerListUniversitiesQueryError = unknown;
+export type AdminControllerListUniversitiesQueryError = ErrorResponse;
 
 export function useAdminControllerListUniversities<
   TData = Awaited<ReturnType<typeof adminControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -1082,7 +1111,7 @@ export function useAdminControllerListUniversities<
 };
 export function useAdminControllerListUniversities<
   TData = Awaited<ReturnType<typeof adminControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1107,7 +1136,7 @@ export function useAdminControllerListUniversities<
 };
 export function useAdminControllerListUniversities<
   TData = Awaited<ReturnType<typeof adminControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1125,7 +1154,7 @@ export function useAdminControllerListUniversities<
 
 export function useAdminControllerListUniversities<
   TData = Awaited<ReturnType<typeof adminControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1154,7 +1183,7 @@ export function useAdminControllerListUniversities<
 
 export const getAdminControllerListUniversitiesSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -1183,11 +1212,11 @@ export const getAdminControllerListUniversitiesSuspenseQueryOptions = <
 export type AdminControllerListUniversitiesSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerListUniversities>>
 >;
-export type AdminControllerListUniversitiesSuspenseQueryError = unknown;
+export type AdminControllerListUniversitiesSuspenseQueryError = ErrorResponse;
 
 export function useAdminControllerListUniversitiesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -1204,7 +1233,7 @@ export function useAdminControllerListUniversitiesSuspense<
 };
 export function useAdminControllerListUniversitiesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1221,7 +1250,7 @@ export function useAdminControllerListUniversitiesSuspense<
 };
 export function useAdminControllerListUniversitiesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1239,7 +1268,7 @@ export function useAdminControllerListUniversitiesSuspense<
 
 export function useAdminControllerListUniversitiesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListUniversities>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -1273,7 +1302,7 @@ export const adminControllerCreateUniversity = (
   createUniversityDto: CreateUniversityDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminCreateUniversityResponse>({
     url: `/api/admin/universities`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -1283,7 +1312,7 @@ export const adminControllerCreateUniversity = (
 };
 
 export const getAdminControllerCreateUniversityMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1323,10 +1352,10 @@ export type AdminControllerCreateUniversityMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerCreateUniversity>>
 >;
 export type AdminControllerCreateUniversityMutationBody = CreateUniversityDto;
-export type AdminControllerCreateUniversityMutationError = unknown;
+export type AdminControllerCreateUniversityMutationError = ErrorResponse;
 
 export const useAdminControllerCreateUniversity = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -1352,14 +1381,14 @@ export const useAdminControllerCreateUniversity = <
 export const adminControllerDeactivateUniversity = (
   universityId: string | undefined | null,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/admin/universities/${universityId}/deactivate`,
     method: "PATCH",
   });
 };
 
 export const getAdminControllerDeactivateUniversityMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1399,10 +1428,10 @@ export type AdminControllerDeactivateUniversityMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerDeactivateUniversity>>
 >;
 
-export type AdminControllerDeactivateUniversityMutationError = unknown;
+export type AdminControllerDeactivateUniversityMutationError = ErrorResponse;
 
 export const useAdminControllerDeactivateUniversity = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -1428,14 +1457,14 @@ export const useAdminControllerDeactivateUniversity = <
 export const adminControllerReactivateUniversity = (
   universityId: string | undefined | null,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/admin/universities/${universityId}/reactivate`,
     method: "PATCH",
   });
 };
 
 export const getAdminControllerReactivateUniversityMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1475,10 +1504,10 @@ export type AdminControllerReactivateUniversityMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerReactivateUniversity>>
 >;
 
-export type AdminControllerReactivateUniversityMutationError = unknown;
+export type AdminControllerReactivateUniversityMutationError = ErrorResponse;
 
 export const useAdminControllerReactivateUniversity = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -1505,7 +1534,7 @@ export const adminControllerSeedOrReassignSuperadmin = (
   universityId: string | undefined | null,
   seedSuperadminDto: SeedSuperadminDto,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminSuperadminReassignResponse>({
     url: `/api/admin/universities/${universityId}/superadmin`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -1514,7 +1543,7 @@ export const adminControllerSeedOrReassignSuperadmin = (
 };
 
 export const getAdminControllerSeedOrReassignSuperadminMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1555,10 +1584,11 @@ export type AdminControllerSeedOrReassignSuperadminMutationResult = NonNullable<
 >;
 export type AdminControllerSeedOrReassignSuperadminMutationBody =
   SeedSuperadminDto;
-export type AdminControllerSeedOrReassignSuperadminMutationError = unknown;
+export type AdminControllerSeedOrReassignSuperadminMutationError =
+  ErrorResponse;
 
 export const useAdminControllerSeedOrReassignSuperadmin = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -1585,7 +1615,7 @@ export const adminControllerGetUniversity = (
   universityId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminUniversityDetailResponse>({
     url: `/api/admin/universities/${universityId}`,
     method: "GET",
     signal,
@@ -1600,7 +1630,7 @@ export const getAdminControllerGetUniversityQueryKey = (
 
 export const getAdminControllerGetUniversityQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetUniversity>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1638,11 +1668,11 @@ export const getAdminControllerGetUniversityQueryOptions = <
 export type AdminControllerGetUniversityQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerGetUniversity>>
 >;
-export type AdminControllerGetUniversityQueryError = unknown;
+export type AdminControllerGetUniversityQueryError = ErrorResponse;
 
 export function useAdminControllerGetUniversity<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversity>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options: {
@@ -1668,7 +1698,7 @@ export function useAdminControllerGetUniversity<
 };
 export function useAdminControllerGetUniversity<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversity>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1694,7 +1724,7 @@ export function useAdminControllerGetUniversity<
 };
 export function useAdminControllerGetUniversity<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversity>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1713,7 +1743,7 @@ export function useAdminControllerGetUniversity<
 
 export function useAdminControllerGetUniversity<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversity>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1746,7 +1776,7 @@ export function useAdminControllerGetUniversity<
 
 export const getAdminControllerGetUniversitySuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetUniversity>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1779,11 +1809,11 @@ export const getAdminControllerGetUniversitySuspenseQueryOptions = <
 export type AdminControllerGetUniversitySuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerGetUniversity>>
 >;
-export type AdminControllerGetUniversitySuspenseQueryError = unknown;
+export type AdminControllerGetUniversitySuspenseQueryError = ErrorResponse;
 
 export function useAdminControllerGetUniversitySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversity>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options: {
@@ -1801,7 +1831,7 @@ export function useAdminControllerGetUniversitySuspense<
 };
 export function useAdminControllerGetUniversitySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversity>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1819,7 +1849,7 @@ export function useAdminControllerGetUniversitySuspense<
 };
 export function useAdminControllerGetUniversitySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversity>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1838,7 +1868,7 @@ export function useAdminControllerGetUniversitySuspense<
 
 export function useAdminControllerGetUniversitySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversity>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1875,7 +1905,7 @@ export const adminControllerGetUniversityPartners = (
   universityId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminUniversityPartnersResponse>({
     url: `/api/admin/universities/${universityId}/partners`,
     method: "GET",
     signal,
@@ -1890,7 +1920,7 @@ export const getAdminControllerGetUniversityPartnersQueryKey = (
 
 export const getAdminControllerGetUniversityPartnersQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1929,11 +1959,11 @@ export const getAdminControllerGetUniversityPartnersQueryOptions = <
 export type AdminControllerGetUniversityPartnersQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>
 >;
-export type AdminControllerGetUniversityPartnersQueryError = unknown;
+export type AdminControllerGetUniversityPartnersQueryError = ErrorResponse;
 
 export function useAdminControllerGetUniversityPartners<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options: {
@@ -1959,7 +1989,7 @@ export function useAdminControllerGetUniversityPartners<
 };
 export function useAdminControllerGetUniversityPartners<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -1985,7 +2015,7 @@ export function useAdminControllerGetUniversityPartners<
 };
 export function useAdminControllerGetUniversityPartners<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -2004,7 +2034,7 @@ export function useAdminControllerGetUniversityPartners<
 
 export function useAdminControllerGetUniversityPartners<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -2037,7 +2067,7 @@ export function useAdminControllerGetUniversityPartners<
 
 export const getAdminControllerGetUniversityPartnersSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -2070,11 +2100,12 @@ export const getAdminControllerGetUniversityPartnersSuspenseQueryOptions = <
 
 export type AdminControllerGetUniversityPartnersSuspenseQueryResult =
   NonNullable<Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>>;
-export type AdminControllerGetUniversityPartnersSuspenseQueryError = unknown;
+export type AdminControllerGetUniversityPartnersSuspenseQueryError =
+  ErrorResponse;
 
 export function useAdminControllerGetUniversityPartnersSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options: {
@@ -2092,7 +2123,7 @@ export function useAdminControllerGetUniversityPartnersSuspense<
 };
 export function useAdminControllerGetUniversityPartnersSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -2110,7 +2141,7 @@ export function useAdminControllerGetUniversityPartnersSuspense<
 };
 export function useAdminControllerGetUniversityPartnersSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -2129,7 +2160,7 @@ export function useAdminControllerGetUniversityPartnersSuspense<
 
 export function useAdminControllerGetUniversityPartnersSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartners>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -2168,7 +2199,7 @@ export const adminControllerGetUniversityPartnerMoas = (
   companyId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityPartnerMoasResponse>({
     url: `/api/admin/universities/${universityId}/partners/${companyId}/moas`,
     method: "GET",
     signal,
@@ -2186,7 +2217,7 @@ export const getAdminControllerGetUniversityPartnerMoasQueryKey = (
 
 export const getAdminControllerGetUniversityPartnerMoasQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -2226,11 +2257,11 @@ export const getAdminControllerGetUniversityPartnerMoasQueryOptions = <
 export type AdminControllerGetUniversityPartnerMoasQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>
 >;
-export type AdminControllerGetUniversityPartnerMoasQueryError = unknown;
+export type AdminControllerGetUniversityPartnerMoasQueryError = ErrorResponse;
 
 export function useAdminControllerGetUniversityPartnerMoas<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -2257,7 +2288,7 @@ export function useAdminControllerGetUniversityPartnerMoas<
 };
 export function useAdminControllerGetUniversityPartnerMoas<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -2284,7 +2315,7 @@ export function useAdminControllerGetUniversityPartnerMoas<
 };
 export function useAdminControllerGetUniversityPartnerMoas<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -2304,7 +2335,7 @@ export function useAdminControllerGetUniversityPartnerMoas<
 
 export function useAdminControllerGetUniversityPartnerMoas<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -2339,7 +2370,7 @@ export function useAdminControllerGetUniversityPartnerMoas<
 
 export const getAdminControllerGetUniversityPartnerMoasSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -2375,11 +2406,12 @@ export type AdminControllerGetUniversityPartnerMoasSuspenseQueryResult =
   NonNullable<
     Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>
   >;
-export type AdminControllerGetUniversityPartnerMoasSuspenseQueryError = unknown;
+export type AdminControllerGetUniversityPartnerMoasSuspenseQueryError =
+  ErrorResponse;
 
 export function useAdminControllerGetUniversityPartnerMoasSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -2398,7 +2430,7 @@ export function useAdminControllerGetUniversityPartnerMoasSuspense<
 };
 export function useAdminControllerGetUniversityPartnerMoasSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -2417,7 +2449,7 @@ export function useAdminControllerGetUniversityPartnerMoasSuspense<
 };
 export function useAdminControllerGetUniversityPartnerMoasSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -2437,7 +2469,7 @@ export function useAdminControllerGetUniversityPartnerMoasSuspense<
 
 export function useAdminControllerGetUniversityPartnerMoasSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityPartnerMoas>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -2478,7 +2510,7 @@ export const adminControllerGetUniversityMoaDetail = (
   moaId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityMoaDetailResponse>({
     url: `/api/admin/universities/${universityId}/moas/${moaId}`,
     method: "GET",
     signal,
@@ -2494,7 +2526,7 @@ export const getAdminControllerGetUniversityMoaDetailQueryKey = (
 
 export const getAdminControllerGetUniversityMoaDetailQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   moaId: string | undefined | null,
@@ -2534,11 +2566,11 @@ export const getAdminControllerGetUniversityMoaDetailQueryOptions = <
 export type AdminControllerGetUniversityMoaDetailQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>
 >;
-export type AdminControllerGetUniversityMoaDetailQueryError = unknown;
+export type AdminControllerGetUniversityMoaDetailQueryError = ErrorResponse;
 
 export function useAdminControllerGetUniversityMoaDetail<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   moaId: string | undefined | null,
@@ -2565,7 +2597,7 @@ export function useAdminControllerGetUniversityMoaDetail<
 };
 export function useAdminControllerGetUniversityMoaDetail<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   moaId: string | undefined | null,
@@ -2592,7 +2624,7 @@ export function useAdminControllerGetUniversityMoaDetail<
 };
 export function useAdminControllerGetUniversityMoaDetail<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   moaId: string | undefined | null,
@@ -2612,7 +2644,7 @@ export function useAdminControllerGetUniversityMoaDetail<
 
 export function useAdminControllerGetUniversityMoaDetail<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   moaId: string | undefined | null,
@@ -2647,7 +2679,7 @@ export function useAdminControllerGetUniversityMoaDetail<
 
 export const getAdminControllerGetUniversityMoaDetailSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   moaId: string | undefined | null,
@@ -2683,11 +2715,12 @@ export type AdminControllerGetUniversityMoaDetailSuspenseQueryResult =
   NonNullable<
     Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>
   >;
-export type AdminControllerGetUniversityMoaDetailSuspenseQueryError = unknown;
+export type AdminControllerGetUniversityMoaDetailSuspenseQueryError =
+  ErrorResponse;
 
 export function useAdminControllerGetUniversityMoaDetailSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   moaId: string | undefined | null,
@@ -2706,7 +2739,7 @@ export function useAdminControllerGetUniversityMoaDetailSuspense<
 };
 export function useAdminControllerGetUniversityMoaDetailSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   moaId: string | undefined | null,
@@ -2725,7 +2758,7 @@ export function useAdminControllerGetUniversityMoaDetailSuspense<
 };
 export function useAdminControllerGetUniversityMoaDetailSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   moaId: string | undefined | null,
@@ -2745,7 +2778,7 @@ export function useAdminControllerGetUniversityMoaDetailSuspense<
 
 export function useAdminControllerGetUniversityMoaDetailSuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityMoaDetail>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   moaId: string | undefined | null,
@@ -2785,7 +2818,7 @@ export const adminControllerListUniversityLegacyCompanies = (
   universityId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityLegacyCompaniesResponse>({
     url: `/api/admin/universities/${universityId}/legacy-companies`,
     method: "GET",
     signal,
@@ -2802,7 +2835,7 @@ export const getAdminControllerListUniversityLegacyCompaniesQueryOptions = <
   TData = Awaited<
     ReturnType<typeof adminControllerListUniversityLegacyCompanies>
   >,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -2844,13 +2877,14 @@ export type AdminControllerListUniversityLegacyCompaniesQueryResult =
   NonNullable<
     Awaited<ReturnType<typeof adminControllerListUniversityLegacyCompanies>>
   >;
-export type AdminControllerListUniversityLegacyCompaniesQueryError = unknown;
+export type AdminControllerListUniversityLegacyCompaniesQueryError =
+  ErrorResponse;
 
 export function useAdminControllerListUniversityLegacyCompanies<
   TData = Awaited<
     ReturnType<typeof adminControllerListUniversityLegacyCompanies>
   >,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options: {
@@ -2884,7 +2918,7 @@ export function useAdminControllerListUniversityLegacyCompanies<
   TData = Awaited<
     ReturnType<typeof adminControllerListUniversityLegacyCompanies>
   >,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -2918,7 +2952,7 @@ export function useAdminControllerListUniversityLegacyCompanies<
   TData = Awaited<
     ReturnType<typeof adminControllerListUniversityLegacyCompanies>
   >,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -2941,7 +2975,7 @@ export function useAdminControllerListUniversityLegacyCompanies<
   TData = Awaited<
     ReturnType<typeof adminControllerListUniversityLegacyCompanies>
   >,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -2980,7 +3014,7 @@ export const getAdminControllerListUniversityLegacyCompaniesSuspenseQueryOptions
     TData = Awaited<
       ReturnType<typeof adminControllerListUniversityLegacyCompanies>
     >,
-    TError = unknown,
+    TError = ErrorResponse,
   >(
     universityId: string | undefined | null,
     options?: {
@@ -3018,13 +3052,13 @@ export type AdminControllerListUniversityLegacyCompaniesSuspenseQueryResult =
     Awaited<ReturnType<typeof adminControllerListUniversityLegacyCompanies>>
   >;
 export type AdminControllerListUniversityLegacyCompaniesSuspenseQueryError =
-  unknown;
+  ErrorResponse;
 
 export function useAdminControllerListUniversityLegacyCompaniesSuspense<
   TData = Awaited<
     ReturnType<typeof adminControllerListUniversityLegacyCompanies>
   >,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options: {
@@ -3046,7 +3080,7 @@ export function useAdminControllerListUniversityLegacyCompaniesSuspense<
   TData = Awaited<
     ReturnType<typeof adminControllerListUniversityLegacyCompanies>
   >,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -3068,7 +3102,7 @@ export function useAdminControllerListUniversityLegacyCompaniesSuspense<
   TData = Awaited<
     ReturnType<typeof adminControllerListUniversityLegacyCompanies>
   >,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -3091,7 +3125,7 @@ export function useAdminControllerListUniversityLegacyCompaniesSuspense<
   TData = Awaited<
     ReturnType<typeof adminControllerListUniversityLegacyCompanies>
   >,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   options?: {
@@ -3129,49 +3163,108 @@ export function useAdminControllerListUniversityLegacyCompaniesSuspense<
 
 export const adminControllerCreateUniversityLegacyCompany = (
   universityId: string | undefined | null,
-  createLegacyMoaDto: CreateLegacyMoaDto,
+  adminControllerCreateUniversityLegacyCompanyBody: AdminControllerCreateUniversityLegacyCompanyBody,
   signal?: AbortSignal,
 ) => {
   const formData = new FormData();
-  formData.append(`company_name`, createLegacyMoaDto.company_name);
-  if (createLegacyMoaDto.moas !== undefined) {
-    formData.append(`moas`, createLegacyMoaDto.moas);
+  formData.append(
+    `company_name`,
+    adminControllerCreateUniversityLegacyCompanyBody.company_name,
+  );
+  formData.append(
+    `moas`,
+    adminControllerCreateUniversityLegacyCompanyBody.moas,
+  );
+  if (adminControllerCreateUniversityLegacyCompanyBody.tin !== undefined) {
+    formData.append(
+      `tin`,
+      adminControllerCreateUniversityLegacyCompanyBody.tin,
+    );
   }
-  if (createLegacyMoaDto.tin !== undefined) {
-    formData.append(`tin`, createLegacyMoaDto.tin);
+  if (
+    adminControllerCreateUniversityLegacyCompanyBody.company_type !== undefined
+  ) {
+    formData.append(
+      `company_type`,
+      adminControllerCreateUniversityLegacyCompanyBody.company_type,
+    );
   }
-  if (createLegacyMoaDto.company_type !== undefined) {
-    formData.append(`company_type`, createLegacyMoaDto.company_type);
-  }
-  if (createLegacyMoaDto.registered_address !== undefined) {
+  if (
+    adminControllerCreateUniversityLegacyCompanyBody.registered_address !==
+    undefined
+  ) {
     formData.append(
       `registered_address`,
-      createLegacyMoaDto.registered_address,
+      adminControllerCreateUniversityLegacyCompanyBody.registered_address,
     );
   }
-  if (createLegacyMoaDto.contact_person !== undefined) {
-    formData.append(`contact_person`, createLegacyMoaDto.contact_person);
+  if (
+    adminControllerCreateUniversityLegacyCompanyBody.contact_person !==
+    undefined
+  ) {
+    formData.append(
+      `contact_person`,
+      adminControllerCreateUniversityLegacyCompanyBody.contact_person,
+    );
   }
-  if (createLegacyMoaDto.contact_email !== undefined) {
-    formData.append(`contact_email`, createLegacyMoaDto.contact_email);
+  if (
+    adminControllerCreateUniversityLegacyCompanyBody.contact_email !== undefined
+  ) {
+    formData.append(
+      `contact_email`,
+      adminControllerCreateUniversityLegacyCompanyBody.contact_email,
+    );
   }
-  if (createLegacyMoaDto.contact_phone !== undefined) {
-    formData.append(`contact_phone`, createLegacyMoaDto.contact_phone);
+  if (
+    adminControllerCreateUniversityLegacyCompanyBody.contact_phone !== undefined
+  ) {
+    formData.append(
+      `contact_phone`,
+      adminControllerCreateUniversityLegacyCompanyBody.contact_phone,
+    );
   }
-  if (createLegacyMoaDto.documentNames !== undefined) {
-    formData.append(`documentNames`, createLegacyMoaDto.documentNames);
+  if (
+    adminControllerCreateUniversityLegacyCompanyBody.documentNames !== undefined
+  ) {
+    formData.append(
+      `documentNames`,
+      adminControllerCreateUniversityLegacyCompanyBody.documentNames,
+    );
   }
-  if (createLegacyMoaDto.documentExpiryDates !== undefined) {
+  if (
+    adminControllerCreateUniversityLegacyCompanyBody.documentExpiryDates !==
+    undefined
+  ) {
     formData.append(
       `documentExpiryDates`,
-      createLegacyMoaDto.documentExpiryDates,
+      adminControllerCreateUniversityLegacyCompanyBody.documentExpiryDates,
     );
   }
-  if (createLegacyMoaDto.documentTypes !== undefined) {
-    formData.append(`documentTypes`, createLegacyMoaDto.documentTypes);
+  if (
+    adminControllerCreateUniversityLegacyCompanyBody.documentTypes !== undefined
+  ) {
+    formData.append(
+      `documentTypes`,
+      adminControllerCreateUniversityLegacyCompanyBody.documentTypes,
+    );
+  }
+  if (
+    adminControllerCreateUniversityLegacyCompanyBody.moaDocuments !== undefined
+  ) {
+    adminControllerCreateUniversityLegacyCompanyBody.moaDocuments.forEach(
+      (value) => formData.append(`moaDocuments`, value),
+    );
+  }
+  if (
+    adminControllerCreateUniversityLegacyCompanyBody.companyDocuments !==
+    undefined
+  ) {
+    adminControllerCreateUniversityLegacyCompanyBody.companyDocuments.forEach(
+      (value) => formData.append(`companyDocuments`, value),
+    );
   }
 
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityLegacyCompanyDetailResponse>({
     url: `/api/admin/universities/${universityId}/legacy-companies`,
     method: "POST",
     headers: { "Content-Type": "multipart/form-data" },
@@ -3181,19 +3274,25 @@ export const adminControllerCreateUniversityLegacyCompany = (
 };
 
 export const getAdminControllerCreateUniversityLegacyCompanyMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminControllerCreateUniversityLegacyCompany>>,
     TError,
-    { universityId: string | undefined | null; data: CreateLegacyMoaDto },
+    {
+      universityId: string | undefined | null;
+      data: AdminControllerCreateUniversityLegacyCompanyBody;
+    },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof adminControllerCreateUniversityLegacyCompany>>,
   TError,
-  { universityId: string | undefined | null; data: CreateLegacyMoaDto },
+  {
+    universityId: string | undefined | null;
+    data: AdminControllerCreateUniversityLegacyCompanyBody;
+  },
   TContext
 > => {
   const mutationKey = ["adminControllerCreateUniversityLegacyCompany"];
@@ -3207,7 +3306,10 @@ export const getAdminControllerCreateUniversityLegacyCompanyMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminControllerCreateUniversityLegacyCompany>>,
-    { universityId: string | undefined | null; data: CreateLegacyMoaDto }
+    {
+      universityId: string | undefined | null;
+      data: AdminControllerCreateUniversityLegacyCompanyBody;
+    }
   > = (props) => {
     const { universityId, data } = props ?? {};
 
@@ -3222,18 +3324,22 @@ export type AdminControllerCreateUniversityLegacyCompanyMutationResult =
     Awaited<ReturnType<typeof adminControllerCreateUniversityLegacyCompany>>
   >;
 export type AdminControllerCreateUniversityLegacyCompanyMutationBody =
-  CreateLegacyMoaDto;
-export type AdminControllerCreateUniversityLegacyCompanyMutationError = unknown;
+  AdminControllerCreateUniversityLegacyCompanyBody;
+export type AdminControllerCreateUniversityLegacyCompanyMutationError =
+  ErrorResponse;
 
 export const useAdminControllerCreateUniversityLegacyCompany = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof adminControllerCreateUniversityLegacyCompany>>,
       TError,
-      { universityId: string | undefined | null; data: CreateLegacyMoaDto },
+      {
+        universityId: string | undefined | null;
+        data: AdminControllerCreateUniversityLegacyCompanyBody;
+      },
       TContext
     >;
   },
@@ -3241,7 +3347,10 @@ export const useAdminControllerCreateUniversityLegacyCompany = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof adminControllerCreateUniversityLegacyCompany>>,
   TError,
-  { universityId: string | undefined | null; data: CreateLegacyMoaDto },
+  {
+    universityId: string | undefined | null;
+    data: AdminControllerCreateUniversityLegacyCompanyBody;
+  },
   TContext
 > => {
   const mutationOptions =
@@ -3254,7 +3363,7 @@ export const adminControllerGetUniversityLegacyCompany = (
   legacyCompanyId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityLegacyCompanyDetailResponse>({
     url: `/api/admin/universities/${universityId}/legacy-companies/${legacyCompanyId}`,
     method: "GET",
     signal,
@@ -3272,7 +3381,7 @@ export const getAdminControllerGetUniversityLegacyCompanyQueryKey = (
 
 export const getAdminControllerGetUniversityLegacyCompanyQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   legacyCompanyId: string | undefined | null,
@@ -3319,11 +3428,11 @@ export const getAdminControllerGetUniversityLegacyCompanyQueryOptions = <
 export type AdminControllerGetUniversityLegacyCompanyQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>
 >;
-export type AdminControllerGetUniversityLegacyCompanyQueryError = unknown;
+export type AdminControllerGetUniversityLegacyCompanyQueryError = ErrorResponse;
 
 export function useAdminControllerGetUniversityLegacyCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   legacyCompanyId: string | undefined | null,
@@ -3350,7 +3459,7 @@ export function useAdminControllerGetUniversityLegacyCompany<
 };
 export function useAdminControllerGetUniversityLegacyCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   legacyCompanyId: string | undefined | null,
@@ -3377,7 +3486,7 @@ export function useAdminControllerGetUniversityLegacyCompany<
 };
 export function useAdminControllerGetUniversityLegacyCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   legacyCompanyId: string | undefined | null,
@@ -3397,7 +3506,7 @@ export function useAdminControllerGetUniversityLegacyCompany<
 
 export function useAdminControllerGetUniversityLegacyCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   legacyCompanyId: string | undefined | null,
@@ -3435,7 +3544,7 @@ export const getAdminControllerGetUniversityLegacyCompanySuspenseQueryOptions =
     TData = Awaited<
       ReturnType<typeof adminControllerGetUniversityLegacyCompany>
     >,
-    TError = unknown,
+    TError = ErrorResponse,
   >(
     universityId: string | undefined | null,
     legacyCompanyId: string | undefined | null,
@@ -3479,11 +3588,11 @@ export type AdminControllerGetUniversityLegacyCompanySuspenseQueryResult =
     Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>
   >;
 export type AdminControllerGetUniversityLegacyCompanySuspenseQueryError =
-  unknown;
+  ErrorResponse;
 
 export function useAdminControllerGetUniversityLegacyCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   legacyCompanyId: string | undefined | null,
@@ -3502,7 +3611,7 @@ export function useAdminControllerGetUniversityLegacyCompanySuspense<
 };
 export function useAdminControllerGetUniversityLegacyCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   legacyCompanyId: string | undefined | null,
@@ -3521,7 +3630,7 @@ export function useAdminControllerGetUniversityLegacyCompanySuspense<
 };
 export function useAdminControllerGetUniversityLegacyCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   legacyCompanyId: string | undefined | null,
@@ -3541,7 +3650,7 @@ export function useAdminControllerGetUniversityLegacyCompanySuspense<
 
 export function useAdminControllerGetUniversityLegacyCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetUniversityLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   legacyCompanyId: string | undefined | null,
@@ -3580,17 +3689,52 @@ export function useAdminControllerGetUniversityLegacyCompanySuspense<
 export const adminControllerAppendUniversityLegacyCompanyDocuments = (
   universityId: string | undefined | null,
   legacyCompanyId: string | undefined | null,
+  adminControllerAppendUniversityLegacyCompanyDocumentsBody: AdminControllerAppendUniversityLegacyCompanyDocumentsBody,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  const formData = new FormData();
+  adminControllerAppendUniversityLegacyCompanyDocumentsBody.companyDocuments.forEach(
+    (value) => formData.append(`companyDocuments`, value),
+  );
+  if (
+    adminControllerAppendUniversityLegacyCompanyDocumentsBody.documentNames !==
+    undefined
+  ) {
+    formData.append(
+      `documentNames`,
+      adminControllerAppendUniversityLegacyCompanyDocumentsBody.documentNames,
+    );
+  }
+  if (
+    adminControllerAppendUniversityLegacyCompanyDocumentsBody.documentExpiryDates !==
+    undefined
+  ) {
+    formData.append(
+      `documentExpiryDates`,
+      adminControllerAppendUniversityLegacyCompanyDocumentsBody.documentExpiryDates,
+    );
+  }
+  if (
+    adminControllerAppendUniversityLegacyCompanyDocumentsBody.documentTypes !==
+    undefined
+  ) {
+    formData.append(
+      `documentTypes`,
+      adminControllerAppendUniversityLegacyCompanyDocumentsBody.documentTypes,
+    );
+  }
+
+  return preconfiguredAxiosFunction<UniversityLegacyCompanyDetailResponse>({
     url: `/api/admin/universities/${universityId}/legacy-companies/${legacyCompanyId}/documents`,
     method: "POST",
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
     signal,
   });
 };
 
 export const getAdminControllerAppendUniversityLegacyCompanyDocumentsMutationOptions =
-  <TError = unknown, TContext = unknown>(options?: {
+  <TError = ErrorResponse, TContext = unknown>(options?: {
     mutation?: UseMutationOptions<
       Awaited<
         ReturnType<typeof adminControllerAppendUniversityLegacyCompanyDocuments>
@@ -3599,6 +3743,7 @@ export const getAdminControllerAppendUniversityLegacyCompanyDocumentsMutationOpt
       {
         universityId: string | undefined | null;
         legacyCompanyId: string | undefined | null;
+        data: AdminControllerAppendUniversityLegacyCompanyDocumentsBody;
       },
       TContext
     >;
@@ -3610,6 +3755,7 @@ export const getAdminControllerAppendUniversityLegacyCompanyDocumentsMutationOpt
     {
       universityId: string | undefined | null;
       legacyCompanyId: string | undefined | null;
+      data: AdminControllerAppendUniversityLegacyCompanyDocumentsBody;
     },
     TContext
   > => {
@@ -3631,13 +3777,15 @@ export const getAdminControllerAppendUniversityLegacyCompanyDocumentsMutationOpt
       {
         universityId: string | undefined | null;
         legacyCompanyId: string | undefined | null;
+        data: AdminControllerAppendUniversityLegacyCompanyDocumentsBody;
       }
     > = (props) => {
-      const { universityId, legacyCompanyId } = props ?? {};
+      const { universityId, legacyCompanyId, data } = props ?? {};
 
       return adminControllerAppendUniversityLegacyCompanyDocuments(
         universityId,
         legacyCompanyId,
+        data,
       );
     };
 
@@ -3650,12 +3798,13 @@ export type AdminControllerAppendUniversityLegacyCompanyDocumentsMutationResult 
       ReturnType<typeof adminControllerAppendUniversityLegacyCompanyDocuments>
     >
   >;
-
+export type AdminControllerAppendUniversityLegacyCompanyDocumentsMutationBody =
+  AdminControllerAppendUniversityLegacyCompanyDocumentsBody;
 export type AdminControllerAppendUniversityLegacyCompanyDocumentsMutationError =
-  unknown;
+  ErrorResponse;
 
 export const useAdminControllerAppendUniversityLegacyCompanyDocuments = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -3667,6 +3816,7 @@ export const useAdminControllerAppendUniversityLegacyCompanyDocuments = <
       {
         universityId: string | undefined | null;
         legacyCompanyId: string | undefined | null;
+        data: AdminControllerAppendUniversityLegacyCompanyDocumentsBody;
       },
       TContext
     >;
@@ -3680,6 +3830,7 @@ export const useAdminControllerAppendUniversityLegacyCompanyDocuments = <
   {
     universityId: string | undefined | null;
     legacyCompanyId: string | undefined | null;
+    data: AdminControllerAppendUniversityLegacyCompanyDocumentsBody;
   },
   TContext
 > => {
@@ -3690,17 +3841,19 @@ export const useAdminControllerAppendUniversityLegacyCompanyDocuments = <
 
   return useMutation(mutationOptions, queryClient);
 };
-export const adminControllerAppendUniversityLegacyCompanyMoas = (
+export const adminControllerBulkCreateLegacyCompaniesFromCsv = (
   universityId: string | undefined | null,
-  legacyCompanyId: string | undefined | null,
-  appendLegacyMoasDto: AppendLegacyMoasDto,
+  adminControllerBulkCreateLegacyCompaniesFromCsvBody: AdminControllerBulkCreateLegacyCompaniesFromCsvBody,
   signal?: AbortSignal,
 ) => {
   const formData = new FormData();
-  formData.append(`moas`, appendLegacyMoasDto.moas);
+  formData.append(
+    `file`,
+    adminControllerBulkCreateLegacyCompaniesFromCsvBody.file,
+  );
 
-  return preconfiguredAxiosFunction<void>({
-    url: `/api/admin/universities/${universityId}/legacy-companies/${legacyCompanyId}/moas`,
+  return preconfiguredAxiosFunction<UniversityBulkResultResponse>({
+    url: `/api/admin/universities/${universityId}/legacy-companies/bulk/csv`,
     method: "POST",
     headers: { "Content-Type": "multipart/form-data" },
     data: formData,
@@ -3708,131 +3861,26 @@ export const adminControllerAppendUniversityLegacyCompanyMoas = (
   });
 };
 
-export const getAdminControllerAppendUniversityLegacyCompanyMoasMutationOptions =
-  <TError = unknown, TContext = unknown>(options?: {
-    mutation?: UseMutationOptions<
-      Awaited<
-        ReturnType<typeof adminControllerAppendUniversityLegacyCompanyMoas>
-      >,
-      TError,
-      {
-        universityId: string | undefined | null;
-        legacyCompanyId: string | undefined | null;
-        data: AppendLegacyMoasDto;
-      },
-      TContext
-    >;
-  }): UseMutationOptions<
-    Awaited<
-      ReturnType<typeof adminControllerAppendUniversityLegacyCompanyMoas>
-    >,
-    TError,
-    {
-      universityId: string | undefined | null;
-      legacyCompanyId: string | undefined | null;
-      data: AppendLegacyMoasDto;
-    },
-    TContext
-  > => {
-    const mutationKey = ["adminControllerAppendUniversityLegacyCompanyMoas"];
-    const { mutation: mutationOptions } = options
-      ? options.mutation &&
-        "mutationKey" in options.mutation &&
-        options.mutation.mutationKey
-        ? options
-        : { ...options, mutation: { ...options.mutation, mutationKey } }
-      : { mutation: { mutationKey } };
-
-    const mutationFn: MutationFunction<
-      Awaited<
-        ReturnType<typeof adminControllerAppendUniversityLegacyCompanyMoas>
-      >,
-      {
-        universityId: string | undefined | null;
-        legacyCompanyId: string | undefined | null;
-        data: AppendLegacyMoasDto;
-      }
-    > = (props) => {
-      const { universityId, legacyCompanyId, data } = props ?? {};
-
-      return adminControllerAppendUniversityLegacyCompanyMoas(
-        universityId,
-        legacyCompanyId,
-        data,
-      );
-    };
-
-    return { mutationFn, ...mutationOptions };
-  };
-
-export type AdminControllerAppendUniversityLegacyCompanyMoasMutationResult =
-  NonNullable<
-    Awaited<ReturnType<typeof adminControllerAppendUniversityLegacyCompanyMoas>>
-  >;
-export type AdminControllerAppendUniversityLegacyCompanyMoasMutationBody =
-  AppendLegacyMoasDto;
-export type AdminControllerAppendUniversityLegacyCompanyMoasMutationError =
-  unknown;
-
-export const useAdminControllerAppendUniversityLegacyCompanyMoas = <
-  TError = unknown,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<
-        ReturnType<typeof adminControllerAppendUniversityLegacyCompanyMoas>
-      >,
-      TError,
-      {
-        universityId: string | undefined | null;
-        legacyCompanyId: string | undefined | null;
-        data: AppendLegacyMoasDto;
-      },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof adminControllerAppendUniversityLegacyCompanyMoas>>,
-  TError,
-  {
-    universityId: string | undefined | null;
-    legacyCompanyId: string | undefined | null;
-    data: AppendLegacyMoasDto;
-  },
-  TContext
-> => {
-  const mutationOptions =
-    getAdminControllerAppendUniversityLegacyCompanyMoasMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
-export const adminControllerBulkCreateLegacyCompaniesFromCsv = (
-  universityId: string | undefined | null,
-  signal?: AbortSignal,
-) => {
-  return preconfiguredAxiosFunction<void>({
-    url: `/api/admin/universities/${universityId}/legacy-companies/bulk/csv`,
-    method: "POST",
-    signal,
-  });
-};
-
 export const getAdminControllerBulkCreateLegacyCompaniesFromCsvMutationOptions =
-  <TError = unknown, TContext = unknown>(options?: {
+  <TError = ErrorResponse, TContext = unknown>(options?: {
     mutation?: UseMutationOptions<
       Awaited<
         ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromCsv>
       >,
       TError,
-      { universityId: string | undefined | null },
+      {
+        universityId: string | undefined | null;
+        data: AdminControllerBulkCreateLegacyCompaniesFromCsvBody;
+      },
       TContext
     >;
   }): UseMutationOptions<
     Awaited<ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromCsv>>,
     TError,
-    { universityId: string | undefined | null },
+    {
+      universityId: string | undefined | null;
+      data: AdminControllerBulkCreateLegacyCompaniesFromCsvBody;
+    },
     TContext
   > => {
     const mutationKey = ["adminControllerBulkCreateLegacyCompaniesFromCsv"];
@@ -3848,11 +3896,17 @@ export const getAdminControllerBulkCreateLegacyCompaniesFromCsvMutationOptions =
       Awaited<
         ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromCsv>
       >,
-      { universityId: string | undefined | null }
+      {
+        universityId: string | undefined | null;
+        data: AdminControllerBulkCreateLegacyCompaniesFromCsvBody;
+      }
     > = (props) => {
-      const { universityId } = props ?? {};
+      const { universityId, data } = props ?? {};
 
-      return adminControllerBulkCreateLegacyCompaniesFromCsv(universityId);
+      return adminControllerBulkCreateLegacyCompaniesFromCsv(
+        universityId,
+        data,
+      );
     };
 
     return { mutationFn, ...mutationOptions };
@@ -3862,12 +3916,13 @@ export type AdminControllerBulkCreateLegacyCompaniesFromCsvMutationResult =
   NonNullable<
     Awaited<ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromCsv>>
   >;
-
+export type AdminControllerBulkCreateLegacyCompaniesFromCsvMutationBody =
+  AdminControllerBulkCreateLegacyCompaniesFromCsvBody;
 export type AdminControllerBulkCreateLegacyCompaniesFromCsvMutationError =
-  unknown;
+  ErrorResponse;
 
 export const useAdminControllerBulkCreateLegacyCompaniesFromCsv = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -3876,7 +3931,10 @@ export const useAdminControllerBulkCreateLegacyCompaniesFromCsv = <
         ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromCsv>
       >,
       TError,
-      { universityId: string | undefined | null },
+      {
+        universityId: string | undefined | null;
+        data: AdminControllerBulkCreateLegacyCompaniesFromCsvBody;
+      },
       TContext
     >;
   },
@@ -3884,7 +3942,10 @@ export const useAdminControllerBulkCreateLegacyCompaniesFromCsv = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromCsv>>,
   TError,
-  { universityId: string | undefined | null },
+  {
+    universityId: string | undefined | null;
+    data: AdminControllerBulkCreateLegacyCompaniesFromCsvBody;
+  },
   TContext
 > => {
   const mutationOptions =
@@ -3894,29 +3955,44 @@ export const useAdminControllerBulkCreateLegacyCompaniesFromCsv = <
 };
 export const adminControllerBulkCreateLegacyCompaniesFromZip = (
   universityId: string | undefined | null,
+  adminControllerBulkCreateLegacyCompaniesFromZipBody: AdminControllerBulkCreateLegacyCompaniesFromZipBody,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  const formData = new FormData();
+  formData.append(
+    `file`,
+    adminControllerBulkCreateLegacyCompaniesFromZipBody.file,
+  );
+
+  return preconfiguredAxiosFunction<UniversityBulkResultResponse>({
     url: `/api/admin/universities/${universityId}/legacy-companies/bulk/zip`,
     method: "POST",
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
     signal,
   });
 };
 
 export const getAdminControllerBulkCreateLegacyCompaniesFromZipMutationOptions =
-  <TError = unknown, TContext = unknown>(options?: {
+  <TError = ErrorResponse, TContext = unknown>(options?: {
     mutation?: UseMutationOptions<
       Awaited<
         ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromZip>
       >,
       TError,
-      { universityId: string | undefined | null },
+      {
+        universityId: string | undefined | null;
+        data: AdminControllerBulkCreateLegacyCompaniesFromZipBody;
+      },
       TContext
     >;
   }): UseMutationOptions<
     Awaited<ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromZip>>,
     TError,
-    { universityId: string | undefined | null },
+    {
+      universityId: string | undefined | null;
+      data: AdminControllerBulkCreateLegacyCompaniesFromZipBody;
+    },
     TContext
   > => {
     const mutationKey = ["adminControllerBulkCreateLegacyCompaniesFromZip"];
@@ -3932,11 +4008,17 @@ export const getAdminControllerBulkCreateLegacyCompaniesFromZipMutationOptions =
       Awaited<
         ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromZip>
       >,
-      { universityId: string | undefined | null }
+      {
+        universityId: string | undefined | null;
+        data: AdminControllerBulkCreateLegacyCompaniesFromZipBody;
+      }
     > = (props) => {
-      const { universityId } = props ?? {};
+      const { universityId, data } = props ?? {};
 
-      return adminControllerBulkCreateLegacyCompaniesFromZip(universityId);
+      return adminControllerBulkCreateLegacyCompaniesFromZip(
+        universityId,
+        data,
+      );
     };
 
     return { mutationFn, ...mutationOptions };
@@ -3946,12 +4028,13 @@ export type AdminControllerBulkCreateLegacyCompaniesFromZipMutationResult =
   NonNullable<
     Awaited<ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromZip>>
   >;
-
+export type AdminControllerBulkCreateLegacyCompaniesFromZipMutationBody =
+  AdminControllerBulkCreateLegacyCompaniesFromZipBody;
 export type AdminControllerBulkCreateLegacyCompaniesFromZipMutationError =
-  unknown;
+  ErrorResponse;
 
 export const useAdminControllerBulkCreateLegacyCompaniesFromZip = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -3960,7 +4043,10 @@ export const useAdminControllerBulkCreateLegacyCompaniesFromZip = <
         ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromZip>
       >,
       TError,
-      { universityId: string | undefined | null },
+      {
+        universityId: string | undefined | null;
+        data: AdminControllerBulkCreateLegacyCompaniesFromZipBody;
+      },
       TContext
     >;
   },
@@ -3968,7 +4054,10 @@ export const useAdminControllerBulkCreateLegacyCompaniesFromZip = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof adminControllerBulkCreateLegacyCompaniesFromZip>>,
   TError,
-  { universityId: string | undefined | null },
+  {
+    universityId: string | undefined | null;
+    data: AdminControllerBulkCreateLegacyCompaniesFromZipBody;
+  },
   TContext
 > => {
   const mutationOptions =
@@ -3981,7 +4070,7 @@ export const adminControllerGetPartnerLegacyCompany = (
   companyId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityPartnerLegacyCompanyResponse>({
     url: `/api/admin/universities/${universityId}/partners/${companyId}/legacy-companies`,
     method: "GET",
     signal,
@@ -3999,7 +4088,7 @@ export const getAdminControllerGetPartnerLegacyCompanyQueryKey = (
 
 export const getAdminControllerGetPartnerLegacyCompanyQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -4039,11 +4128,11 @@ export const getAdminControllerGetPartnerLegacyCompanyQueryOptions = <
 export type AdminControllerGetPartnerLegacyCompanyQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>
 >;
-export type AdminControllerGetPartnerLegacyCompanyQueryError = unknown;
+export type AdminControllerGetPartnerLegacyCompanyQueryError = ErrorResponse;
 
 export function useAdminControllerGetPartnerLegacyCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -4070,7 +4159,7 @@ export function useAdminControllerGetPartnerLegacyCompany<
 };
 export function useAdminControllerGetPartnerLegacyCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -4097,7 +4186,7 @@ export function useAdminControllerGetPartnerLegacyCompany<
 };
 export function useAdminControllerGetPartnerLegacyCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -4117,7 +4206,7 @@ export function useAdminControllerGetPartnerLegacyCompany<
 
 export function useAdminControllerGetPartnerLegacyCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -4152,7 +4241,7 @@ export function useAdminControllerGetPartnerLegacyCompany<
 
 export const getAdminControllerGetPartnerLegacyCompanySuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -4188,11 +4277,12 @@ export type AdminControllerGetPartnerLegacyCompanySuspenseQueryResult =
   NonNullable<
     Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>
   >;
-export type AdminControllerGetPartnerLegacyCompanySuspenseQueryError = unknown;
+export type AdminControllerGetPartnerLegacyCompanySuspenseQueryError =
+  ErrorResponse;
 
 export function useAdminControllerGetPartnerLegacyCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -4211,7 +4301,7 @@ export function useAdminControllerGetPartnerLegacyCompanySuspense<
 };
 export function useAdminControllerGetPartnerLegacyCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -4230,7 +4320,7 @@ export function useAdminControllerGetPartnerLegacyCompanySuspense<
 };
 export function useAdminControllerGetPartnerLegacyCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -4250,7 +4340,7 @@ export function useAdminControllerGetPartnerLegacyCompanySuspense<
 
 export function useAdminControllerGetPartnerLegacyCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetPartnerLegacyCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   universityId: string | undefined | null,
   companyId: string | undefined | null,
@@ -4290,7 +4380,7 @@ export const adminControllerVerifyTin = (
   verifyTinDto: VerifyTinDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminVerifyTinResponse>({
     url: `/api/admin/companies/verify-tin`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -4300,7 +4390,7 @@ export const adminControllerVerifyTin = (
 };
 
 export const getAdminControllerVerifyTinMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -4340,10 +4430,10 @@ export type AdminControllerVerifyTinMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerVerifyTin>>
 >;
 export type AdminControllerVerifyTinMutationBody = VerifyTinDto;
-export type AdminControllerVerifyTinMutationError = unknown;
+export type AdminControllerVerifyTinMutationError = ErrorResponse;
 
 export const useAdminControllerVerifyTin = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -4369,7 +4459,7 @@ export const adminControllerCreateCompany = (
   createCompanyAdminDto: CreateCompanyAdminDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminCreateCompanyResponse>({
     url: `/api/admin/companies`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -4379,7 +4469,7 @@ export const adminControllerCreateCompany = (
 };
 
 export const getAdminControllerCreateCompanyMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -4419,10 +4509,10 @@ export type AdminControllerCreateCompanyMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerCreateCompany>>
 >;
 export type AdminControllerCreateCompanyMutationBody = CreateCompanyAdminDto;
-export type AdminControllerCreateCompanyMutationError = unknown;
+export type AdminControllerCreateCompanyMutationError = ErrorResponse;
 
 export const useAdminControllerCreateCompany = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -4446,7 +4536,7 @@ export const useAdminControllerCreateCompany = <
   return useMutation(mutationOptions, queryClient);
 };
 export const adminControllerListCompanies = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminCompaniesResponse>({
     url: `/api/admin/companies`,
     method: "GET",
     signal,
@@ -4459,7 +4549,7 @@ export const getAdminControllerListCompaniesQueryKey = () => {
 
 export const getAdminControllerListCompaniesQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerListCompanies>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -4488,11 +4578,11 @@ export const getAdminControllerListCompaniesQueryOptions = <
 export type AdminControllerListCompaniesQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerListCompanies>>
 >;
-export type AdminControllerListCompaniesQueryError = unknown;
+export type AdminControllerListCompaniesQueryError = ErrorResponse;
 
 export function useAdminControllerListCompanies<
   TData = Awaited<ReturnType<typeof adminControllerListCompanies>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -4517,7 +4607,7 @@ export function useAdminControllerListCompanies<
 };
 export function useAdminControllerListCompanies<
   TData = Awaited<ReturnType<typeof adminControllerListCompanies>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -4542,7 +4632,7 @@ export function useAdminControllerListCompanies<
 };
 export function useAdminControllerListCompanies<
   TData = Awaited<ReturnType<typeof adminControllerListCompanies>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -4560,7 +4650,7 @@ export function useAdminControllerListCompanies<
 
 export function useAdminControllerListCompanies<
   TData = Awaited<ReturnType<typeof adminControllerListCompanies>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -4589,7 +4679,7 @@ export function useAdminControllerListCompanies<
 
 export const getAdminControllerListCompaniesSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerListCompanies>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -4618,11 +4708,11 @@ export const getAdminControllerListCompaniesSuspenseQueryOptions = <
 export type AdminControllerListCompaniesSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerListCompanies>>
 >;
-export type AdminControllerListCompaniesSuspenseQueryError = unknown;
+export type AdminControllerListCompaniesSuspenseQueryError = ErrorResponse;
 
 export function useAdminControllerListCompaniesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListCompanies>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -4639,7 +4729,7 @@ export function useAdminControllerListCompaniesSuspense<
 };
 export function useAdminControllerListCompaniesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListCompanies>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -4656,7 +4746,7 @@ export function useAdminControllerListCompaniesSuspense<
 };
 export function useAdminControllerListCompaniesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListCompanies>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -4674,7 +4764,7 @@ export function useAdminControllerListCompaniesSuspense<
 
 export function useAdminControllerListCompaniesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListCompanies>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -4704,28 +4794,36 @@ export function useAdminControllerListCompaniesSuspense<
   return query;
 }
 
-export const adminControllerBulkCreateCompanies = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+export const adminControllerBulkCreateCompanies = (
+  adminControllerBulkCreateCompaniesBody: AdminControllerBulkCreateCompaniesBody,
+  signal?: AbortSignal,
+) => {
+  const formData = new FormData();
+  formData.append(`file`, adminControllerBulkCreateCompaniesBody.file);
+
+  return preconfiguredAxiosFunction<AdminBulkCreateCompaniesResponse>({
     url: `/api/admin/companies/bulk`,
     method: "POST",
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
     signal,
   });
 };
 
 export const getAdminControllerBulkCreateCompaniesMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>,
     TError,
-    void,
+    { data: AdminControllerBulkCreateCompaniesBody },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>,
   TError,
-  void,
+  { data: AdminControllerBulkCreateCompaniesBody },
   TContext
 > => {
   const mutationKey = ["adminControllerBulkCreateCompanies"];
@@ -4739,9 +4837,11 @@ export const getAdminControllerBulkCreateCompaniesMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>,
-    void
-  > = () => {
-    return adminControllerBulkCreateCompanies();
+    { data: AdminControllerBulkCreateCompaniesBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminControllerBulkCreateCompanies(data);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -4750,18 +4850,19 @@ export const getAdminControllerBulkCreateCompaniesMutationOptions = <
 export type AdminControllerBulkCreateCompaniesMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>
 >;
-
-export type AdminControllerBulkCreateCompaniesMutationError = unknown;
+export type AdminControllerBulkCreateCompaniesMutationBody =
+  AdminControllerBulkCreateCompaniesBody;
+export type AdminControllerBulkCreateCompaniesMutationError = ErrorResponse;
 
 export const useAdminControllerBulkCreateCompanies = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>,
       TError,
-      void,
+      { data: AdminControllerBulkCreateCompaniesBody },
       TContext
     >;
   },
@@ -4769,7 +4870,7 @@ export const useAdminControllerBulkCreateCompanies = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof adminControllerBulkCreateCompanies>>,
   TError,
-  void,
+  { data: AdminControllerBulkCreateCompaniesBody },
   TContext
 > => {
   const mutationOptions =
@@ -4781,7 +4882,7 @@ export const adminControllerGetCompany = (
   companyId: string | undefined | null,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminCompanyDetailResponse>({
     url: `/api/admin/companies/${companyId}`,
     method: "GET",
     signal,
@@ -4796,7 +4897,7 @@ export const getAdminControllerGetCompanyQueryKey = (
 
 export const getAdminControllerGetCompanyQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -4833,11 +4934,11 @@ export const getAdminControllerGetCompanyQueryOptions = <
 export type AdminControllerGetCompanyQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerGetCompany>>
 >;
-export type AdminControllerGetCompanyQueryError = unknown;
+export type AdminControllerGetCompanyQueryError = ErrorResponse;
 
 export function useAdminControllerGetCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options: {
@@ -4863,7 +4964,7 @@ export function useAdminControllerGetCompany<
 };
 export function useAdminControllerGetCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -4889,7 +4990,7 @@ export function useAdminControllerGetCompany<
 };
 export function useAdminControllerGetCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -4908,7 +5009,7 @@ export function useAdminControllerGetCompany<
 
 export function useAdminControllerGetCompany<
   TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -4941,7 +5042,7 @@ export function useAdminControllerGetCompany<
 
 export const getAdminControllerGetCompanySuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -4973,11 +5074,11 @@ export const getAdminControllerGetCompanySuspenseQueryOptions = <
 export type AdminControllerGetCompanySuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerGetCompany>>
 >;
-export type AdminControllerGetCompanySuspenseQueryError = unknown;
+export type AdminControllerGetCompanySuspenseQueryError = ErrorResponse;
 
 export function useAdminControllerGetCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options: {
@@ -4995,7 +5096,7 @@ export function useAdminControllerGetCompanySuspense<
 };
 export function useAdminControllerGetCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -5013,7 +5114,7 @@ export function useAdminControllerGetCompanySuspense<
 };
 export function useAdminControllerGetCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -5032,7 +5133,7 @@ export function useAdminControllerGetCompanySuspense<
 
 export function useAdminControllerGetCompanySuspense<
   TData = Awaited<ReturnType<typeof adminControllerGetCompany>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   companyId: string | undefined | null,
   options?: {
@@ -5069,7 +5170,7 @@ export const adminControllerPatchCompanyAdmin = (
   companyId: string | undefined | null,
   patchCompanyAdminDto: PatchCompanyAdminDto,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminPatchCompanyResponse>({
     url: `/api/admin/companies/${companyId}`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -5078,7 +5179,7 @@ export const adminControllerPatchCompanyAdmin = (
 };
 
 export const getAdminControllerPatchCompanyAdminMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -5118,10 +5219,10 @@ export type AdminControllerPatchCompanyAdminMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerPatchCompanyAdmin>>
 >;
 export type AdminControllerPatchCompanyAdminMutationBody = PatchCompanyAdminDto;
-export type AdminControllerPatchCompanyAdminMutationError = unknown;
+export type AdminControllerPatchCompanyAdminMutationError = ErrorResponse;
 
 export const useAdminControllerPatchCompanyAdmin = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -5147,14 +5248,14 @@ export const useAdminControllerPatchCompanyAdmin = <
 export const adminControllerDeactivateCompany = (
   companyId: string | undefined | null,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/admin/companies/${companyId}/deactivate`,
     method: "PATCH",
   });
 };
 
 export const getAdminControllerDeactivateCompanyMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -5194,10 +5295,10 @@ export type AdminControllerDeactivateCompanyMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerDeactivateCompany>>
 >;
 
-export type AdminControllerDeactivateCompanyMutationError = unknown;
+export type AdminControllerDeactivateCompanyMutationError = ErrorResponse;
 
 export const useAdminControllerDeactivateCompany = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -5221,7 +5322,7 @@ export const useAdminControllerDeactivateCompany = <
   return useMutation(mutationOptions, queryClient);
 };
 export const adminControllerListTemplates = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminTemplatesResponse>({
     url: `/api/admin/templates`,
     method: "GET",
     signal,
@@ -5234,7 +5335,7 @@ export const getAdminControllerListTemplatesQueryKey = () => {
 
 export const getAdminControllerListTemplatesQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerListTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseQueryOptions<
@@ -5263,11 +5364,11 @@ export const getAdminControllerListTemplatesQueryOptions = <
 export type AdminControllerListTemplatesQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerListTemplates>>
 >;
-export type AdminControllerListTemplatesQueryError = unknown;
+export type AdminControllerListTemplatesQueryError = ErrorResponse;
 
 export function useAdminControllerListTemplates<
   TData = Awaited<ReturnType<typeof adminControllerListTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -5292,7 +5393,7 @@ export function useAdminControllerListTemplates<
 };
 export function useAdminControllerListTemplates<
   TData = Awaited<ReturnType<typeof adminControllerListTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -5317,7 +5418,7 @@ export function useAdminControllerListTemplates<
 };
 export function useAdminControllerListTemplates<
   TData = Awaited<ReturnType<typeof adminControllerListTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -5335,7 +5436,7 @@ export function useAdminControllerListTemplates<
 
 export function useAdminControllerListTemplates<
   TData = Awaited<ReturnType<typeof adminControllerListTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -5364,7 +5465,7 @@ export function useAdminControllerListTemplates<
 
 export const getAdminControllerListTemplatesSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof adminControllerListTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(options?: {
   query?: Partial<
     UseSuspenseQueryOptions<
@@ -5393,11 +5494,11 @@ export const getAdminControllerListTemplatesSuspenseQueryOptions = <
 export type AdminControllerListTemplatesSuspenseQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerListTemplates>>
 >;
-export type AdminControllerListTemplatesSuspenseQueryError = unknown;
+export type AdminControllerListTemplatesSuspenseQueryError = ErrorResponse;
 
 export function useAdminControllerListTemplatesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options: {
     query: Partial<
@@ -5414,7 +5515,7 @@ export function useAdminControllerListTemplatesSuspense<
 };
 export function useAdminControllerListTemplatesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -5431,7 +5532,7 @@ export function useAdminControllerListTemplatesSuspense<
 };
 export function useAdminControllerListTemplatesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -5449,7 +5550,7 @@ export function useAdminControllerListTemplatesSuspense<
 
 export function useAdminControllerListTemplatesSuspense<
   TData = Awaited<ReturnType<typeof adminControllerListTemplates>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   options?: {
     query?: Partial<
@@ -5480,23 +5581,42 @@ export function useAdminControllerListTemplatesSuspense<
 }
 
 export const adminControllerCreateTemplate = (
-  createTemplateDto: CreateTemplateDto,
+  adminControllerCreateTemplateBody: AdminControllerCreateTemplateBody,
   signal?: AbortSignal,
 ) => {
   const formData = new FormData();
-  formData.append(`name`, createTemplateDto.name);
-  if (createTemplateDto.description !== undefined) {
-    formData.append(`description`, createTemplateDto.description);
+  formData.append(`pdf`, adminControllerCreateTemplateBody.pdf);
+  formData.append(`name`, adminControllerCreateTemplateBody.name);
+  if (adminControllerCreateTemplateBody.description !== undefined) {
+    formData.append(
+      `description`,
+      adminControllerCreateTemplateBody.description,
+    );
   }
-  if (createTemplateDto.field_schema !== undefined) {
-    formData.append(`field_schema`, createTemplateDto.field_schema);
+  if (adminControllerCreateTemplateBody.field_schema !== undefined) {
+    formData.append(
+      `field_schema`,
+      adminControllerCreateTemplateBody.field_schema,
+    );
   }
-  formData.append(`term_months`, createTemplateDto.term_months.toString());
-  formData.append(`page_count`, createTemplateDto.page_count.toString());
-  formData.append(`page_w`, createTemplateDto.page_w.toString());
-  formData.append(`page_h`, createTemplateDto.page_h.toString());
+  formData.append(
+    `term_months`,
+    adminControllerCreateTemplateBody.term_months.toString(),
+  );
+  formData.append(
+    `page_count`,
+    adminControllerCreateTemplateBody.page_count.toString(),
+  );
+  formData.append(
+    `page_w`,
+    adminControllerCreateTemplateBody.page_w.toString(),
+  );
+  formData.append(
+    `page_h`,
+    adminControllerCreateTemplateBody.page_h.toString(),
+  );
 
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminCreateTemplateResponse>({
     url: `/api/admin/templates`,
     method: "POST",
     headers: { "Content-Type": "multipart/form-data" },
@@ -5506,19 +5626,19 @@ export const adminControllerCreateTemplate = (
 };
 
 export const getAdminControllerCreateTemplateMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof adminControllerCreateTemplate>>,
     TError,
-    { data: CreateTemplateDto },
+    { data: AdminControllerCreateTemplateBody },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof adminControllerCreateTemplate>>,
   TError,
-  { data: CreateTemplateDto },
+  { data: AdminControllerCreateTemplateBody },
   TContext
 > => {
   const mutationKey = ["adminControllerCreateTemplate"];
@@ -5532,7 +5652,7 @@ export const getAdminControllerCreateTemplateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminControllerCreateTemplate>>,
-    { data: CreateTemplateDto }
+    { data: AdminControllerCreateTemplateBody }
   > = (props) => {
     const { data } = props ?? {};
 
@@ -5545,18 +5665,19 @@ export const getAdminControllerCreateTemplateMutationOptions = <
 export type AdminControllerCreateTemplateMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerCreateTemplate>>
 >;
-export type AdminControllerCreateTemplateMutationBody = CreateTemplateDto;
-export type AdminControllerCreateTemplateMutationError = unknown;
+export type AdminControllerCreateTemplateMutationBody =
+  AdminControllerCreateTemplateBody;
+export type AdminControllerCreateTemplateMutationError = ErrorResponse;
 
 export const useAdminControllerCreateTemplate = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof adminControllerCreateTemplate>>,
       TError,
-      { data: CreateTemplateDto },
+      { data: AdminControllerCreateTemplateBody },
       TContext
     >;
   },
@@ -5564,7 +5685,7 @@ export const useAdminControllerCreateTemplate = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof adminControllerCreateTemplate>>,
   TError,
-  { data: CreateTemplateDto },
+  { data: AdminControllerCreateTemplateBody },
   TContext
 > => {
   const mutationOptions =
@@ -5576,7 +5697,7 @@ export const adminControllerPatchTemplate = (
   templateId: string | undefined | null,
   patchTemplateDto: PatchTemplateDto,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<AdminPatchTemplateResponse>({
     url: `/api/admin/templates/${templateId}`,
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -5585,7 +5706,7 @@ export const adminControllerPatchTemplate = (
 };
 
 export const getAdminControllerPatchTemplateMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -5625,10 +5746,10 @@ export type AdminControllerPatchTemplateMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerPatchTemplate>>
 >;
 export type AdminControllerPatchTemplateMutationBody = PatchTemplateDto;
-export type AdminControllerPatchTemplateMutationError = unknown;
+export type AdminControllerPatchTemplateMutationError = ErrorResponse;
 
 export const useAdminControllerPatchTemplate = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -5654,14 +5775,14 @@ export const useAdminControllerPatchTemplate = <
 export const adminControllerDeleteTemplate = (
   templateId: string | undefined | null,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/admin/templates/${templateId}`,
     method: "DELETE",
   });
 };
 
 export const getAdminControllerDeleteTemplateMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -5701,10 +5822,10 @@ export type AdminControllerDeleteTemplateMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminControllerDeleteTemplate>>
 >;
 
-export type AdminControllerDeleteTemplateMutationError = unknown;
+export type AdminControllerDeleteTemplateMutationError = ErrorResponse;
 
 export const useAdminControllerDeleteTemplate = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {

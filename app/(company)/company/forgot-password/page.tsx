@@ -1,8 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useCompanyAuthControllerList, useCompanyAuthControllerForgot } from "@/app/api";
 import { AuthShell, FormError, FormSuccess } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -21,29 +20,21 @@ export default function CompanyForgotPasswordPage() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
-  const { data: companyList = [] } = useQuery({
-    queryKey: ["company-list"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/auth/company/list")
-        .then((r) => r.data.companies as CompanyListItem[]),
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: companyListResponse } = useCompanyAuthControllerList();
+  const companyList = (companyListResponse?.companies ?? []) as CompanyListItem[];
 
   const options = companyList.map((c) => ({ id: c.id, name: c.registered_name }));
   const selectedCompany = companyList.find((c) => c.id === selectedId) ?? null;
 
-  const forgot = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios
-        .post("/api/auth/company/forgot", { companyId: selectedId })
-        .then((r) => r.data as { censoredEmail: string | null }),
+  const forgot = useCompanyAuthControllerForgot({
+    mutation: {
     onSuccess: (data) => {
       setCensoredEmail(data.censoredEmail);
       setSent(true);
       setError("");
     },
     onError: (e: Error) => setError(e.message),
+    },
   });
 
   return (
@@ -68,7 +59,7 @@ export default function CompanyForgotPasswordPage() {
           onSubmit={(e) => {
             e.preventDefault();
             setError("");
-            forgot.mutate();
+            forgot.mutate({ data: { companyId: selectedId! } });
           }}
           className="space-y-4"
         >

@@ -1,8 +1,7 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useMutation } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useUniversityAuthControllerForgot } from "@/app/api";
 import { AuthShell, FormError, FormSuccess } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,14 +13,14 @@ export default function UniversityForgotPasswordPage() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
-  const forgot = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post("/api/auth/university/forgot", { email }),
+  const forgot = useUniversityAuthControllerForgot({
+    mutation: {
     onSuccess: () => {
       setSent(true);
       setError("");
     },
     onError: (e: Error) => setError(e.message),
+    },
   });
 
   return (
@@ -44,7 +43,7 @@ export default function UniversityForgotPasswordPage() {
           onSubmit={(e) => {
             e.preventDefault();
             setError("");
-            forgot.mutate();
+            forgot.mutate({ data: { email } });
           }}
           className="space-y-4"
         >

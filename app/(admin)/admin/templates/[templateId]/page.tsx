@@ -1,7 +1,6 @@
 "use client";
 import { use } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useAdminControllerListTemplates } from "@/app/api";
 import { useResolvedFile } from "@/app/lib/resolve-file";
 import { TemplateEditor } from "@/components/templates/template-editor";
 import { PageContainer } from "@/components/page-header";
@@ -26,14 +25,9 @@ export default function EditTemplatePage({
   const { templateId } = use(params);
   const router = useRouter();
 
-  const { data: templates, isLoading } = useQuery({
-    queryKey: ["admin-templates"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/admin/templates")
-        .then((r) => r.data.templates as Template[]),
-  });
+  const { data, isLoading } = useAdminControllerListTemplates();
 
+  const templates = (data?.templates ?? []) as unknown as Template[];
   const tmpl = templates?.find((t) => t.id === templateId);
 
   const { url: pdfUrl, loading: urlLoading } = useResolvedFile(

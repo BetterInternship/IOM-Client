@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { AppHeader, type NavItem } from "@/components/app-header";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
+import { universityAuthControllerLogout } from "@/app/api";
 
 const AUTH_SUFFIXES = [
   "/login",
@@ -36,7 +37,7 @@ export function UniversityHeader() {
       nav={nav}
       userPrimary={account?.university.registered_name}
       userSecondary={account?.email}
-      logoutPath="/api/auth/university/logout"
+      logout={universityAuthControllerLogout}
       postLogoutPath="/login"
       profileHref="/profile"
       userAvatarUrl={account?.university.logo_url}

@@ -1,9 +1,17 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
-import { preconfiguredAxios, type ApiError } from "@/app/api/preconfig.axios";
+import { type ApiError } from "@/app/api/preconfig.axios";
+import {
+  getCompanyControllerMeQueryKey,
+  useCompanyAuthControllerRegister,
+  useCompanyAuthControllerRegisterInvited,
+  useCompanyAuthControllerOtpRequest,
+  useCompanyAuthControllerOtpVerify,
+  useInviteControllerResolveCompanyInvite,
+} from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,15 +48,11 @@ function RegisterPageContent() {
   const [tinTakenEmail, setTinTakenEmail] = useState("");
   const [resendIn, setResendIn] = useState(0);
 
-  const { data: invitePeek, isLoading: inviteLoading } = useQuery<InvitePeek>({
-    queryKey: ["invite-peek", inviteToken],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(`/api/invite/company?token=${encodeURIComponent(inviteToken)}`)
-        .then((r) => r.data as InvitePeek),
-    enabled: !!inviteToken,
-    retry: false,
-  });
+  const { data: invitePeekRaw, isLoading: inviteLoading } = useInviteControllerResolveCompanyInvite(
+    { token: inviteToken },
+    { query: { enabled: !!inviteToken, retry: false } },
+  );
+  const invitePeek = invitePeekRaw as InvitePeek | undefined;
 
   useEffect(() => {
     if (resendIn <= 0) return;
@@ -79,10 +83,10 @@ function RegisterPageContent() {
   };
 
   // Standard registration
-  const register = useMutation({
-    mutationFn: () => preconfiguredAxios.post("/api/auth/company/register", form),
-    onSuccess: (res) => {
-      setResendIn(res.data?.resendIn ?? 60);
+  const register = useCompanyAuthControllerRegister({
+    mutation: {
+    onSuccess: (data) => {
+      setResendIn(data.resendIn ?? 60);
       setStep("otp");
       setError("");
       setTinTakenEmail("");
@@ -98,21 +102,14 @@ function RegisterPageContent() {
         setTinTakenEmail("");
       }
     },
+    },
   });
 
   // Invite registration — no OTP, email locked to invite address
-  const registerInvited = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios
-        .post("/api/auth/company/register-invited", {
-          token: inviteToken,
-          tin: form.tin,
-          legalIdentifier: form.legalIdentifier,
-          password: form.password,
-        })
-        .then((r) => r.data as { university_id: string; template_id: string | null }),
+  const registerInvited = useCompanyAuthControllerRegisterInvited({
+    mutation: {
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["company-me"] });
+      queryClient.invalidateQueries({ queryKey: getCompanyControllerMeQueryKey() });
       if (data.university_id) {
         const params = new URLSearchParams({ invite_uni: data.university_id });
         if (data.template_id) params.set("invite_template", data.template_id);
@@ -133,29 +130,27 @@ function RegisterPageContent() {
         setTinTakenEmail("");
       }
     },
+    },
   });
 
-  const verify = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post("/api/auth/company/otp/verify", {
-        repEmail: form.repEmail,
-        code,
-      }),
+  const verify = useCompanyAuthControllerOtpVerify({
+    mutation: {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["company-me"] });
+      queryClient.invalidateQueries({ queryKey: getCompanyControllerMeQueryKey() });
       router.replace("/company/dashboard");
     },
     onError: (e: Error) => setError(e.message),
+    },
   });
 
-  const resend = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post("/api/auth/company/otp/request", { repEmail: form.repEmail }),
-    onSuccess: (res) => {
-      setResendIn(res.data?.resendIn ?? 60);
+  const resend = useCompanyAuthControllerOtpRequest({
+    mutation: {
+    onSuccess: (data) => {
+      setResendIn(data.resendIn ?? 60);
       setError("");
     },
     onError: (e: Error) => setError(e.message),
+    },
   });
 
   const field = (k: keyof typeof form) => ({
@@ -222,7 +217,7 @@ function RegisterPageContent() {
             e.preventDefault();
             setError("");
             setTinTakenEmail("");
-            registerInvited.mutate();
+            registerInvited.mutate({ data: { token: inviteToken, tin: form.tin, legalIdentifier: form.legalIdentifier, password: form.password } });
           }}
           className="space-y-4"
         >
@@ -329,7 +324,7 @@ function RegisterPageContent() {
           onSubmit={(e) => {
             e.preventDefault();
             setError("");
-            verify.mutate();
+            verify.mutate({ data: { repEmail: form.repEmail, code } });
           }}
           className="space-y-5"
         >
@@ -342,7 +337,7 @@ function RegisterPageContent() {
             disabled={verify.isPending}
             onComplete={() => {
               setError("");
-              verify.mutate();
+              verify.mutate({ data: { repEmail: form.repEmail, code } });
             }}
           />
 
@@ -359,7 +354,7 @@ function RegisterPageContent() {
           <div className="text-center">
             <button
               type="button"
-              onClick={() => resend.mutate()}
+              onClick={() => resend.mutate({ data: { repEmail: form.repEmail } })}
               disabled={resendIn > 0 || resend.isPending}
               className="text-muted-foreground hover:text-primary text-sm disabled:opacity-50 disabled:hover:text-current"
             >
@@ -393,7 +388,7 @@ function RegisterPageContent() {
           e.preventDefault();
           setError("");
           setTinTakenEmail("");
-          register.mutate();
+          register.mutate({ data: form });
         }}
         className="space-y-4"
       >

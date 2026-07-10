@@ -13,7 +13,11 @@ import type {
   UseMutationResult,
 } from "@tanstack/react-query";
 
-import type { ResolveFileDto } from "../../models";
+import type {
+  ErrorResponse,
+  ResolveFileDto,
+  ResolveFileResponse,
+} from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
 
@@ -21,7 +25,7 @@ export const filesControllerResolve = (
   resolveFileDto: ResolveFileDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<ResolveFileResponse>({
     url: `/api/files/resolve`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -31,7 +35,7 @@ export const filesControllerResolve = (
 };
 
 export const getFilesControllerResolveMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -71,9 +75,12 @@ export type FilesControllerResolveMutationResult = NonNullable<
   Awaited<ReturnType<typeof filesControllerResolve>>
 >;
 export type FilesControllerResolveMutationBody = ResolveFileDto;
-export type FilesControllerResolveMutationError = unknown;
+export type FilesControllerResolveMutationError = ErrorResponse;
 
-export const useFilesControllerResolve = <TError = unknown, TContext = unknown>(
+export const useFilesControllerResolve = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
   options?: {
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof filesControllerResolve>>,

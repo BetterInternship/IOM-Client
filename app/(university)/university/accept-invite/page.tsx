@@ -1,8 +1,7 @@
 "use client";
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useUniversityAuthControllerAcceptInvite } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,14 +16,11 @@ function AcceptInviteForm() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
 
-  const accept = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post("/api/auth/university/accept-invite", {
-        token,
-        password,
-      }),
+  const accept = useUniversityAuthControllerAcceptInvite({
+    mutation: {
     onSuccess: () => router.replace("/partners"),
     onError: (e: Error) => setError(e.message),
+    },
   });
 
   if (!token) {
@@ -51,7 +47,7 @@ function AcceptInviteForm() {
       return;
     }
     setError("");
-    accept.mutate();
+    accept.mutate({ data: { token, password } });
   };
 
   return (

@@ -9,7 +9,7 @@
 export interface CreateLegacyMoaDto {
   company_name: string;
   /** JSON array of MOA records: [{ effective_date, expiry_date, notes?, document_file_index? }] */
-  moas?: string;
+  moas: string;
   tin?: string;
   company_type?: string;
   registered_address?: string;

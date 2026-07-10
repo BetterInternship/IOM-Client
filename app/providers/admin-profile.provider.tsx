@@ -1,8 +1,7 @@
 "use client";
 import { createContext, useContext } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { useRouter, usePathname } from "next/navigation";
-import { preconfiguredAxios } from "@/preconfig.axios";
+import { useAdminControllerOverview } from "@/app/api";
 
 interface AdminProfileCtx {
   isAuthenticated: boolean;
@@ -19,14 +18,8 @@ export function AdminProfileProvider({ children }: { children: React.ReactNode }
   const router = useRouter();
   const pathname = usePathname();
 
-  const { isLoading, isError, isSuccess } = useQuery({
-    queryKey: ["admin-me"],
-    queryFn: async () => {
-      const res = await preconfiguredAxios.get("/api/admin/overview");
-      return res.data;
-    },
-    retry: false,
-    staleTime: Infinity,
+  const { isLoading, isError, isSuccess } = useAdminControllerOverview({
+    query: { retry: false, staleTime: Infinity },
   });
 
   // pathname is the browser URL path — on subdomain routing it won't carry the /admin prefix.

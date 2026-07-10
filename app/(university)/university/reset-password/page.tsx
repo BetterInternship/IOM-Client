@@ -1,8 +1,7 @@
 "use client";
 import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useUniversityAuthControllerReset } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,14 +17,14 @@ function UniversityResetPasswordForm() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
-  const reset = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post("/api/auth/university/reset", { token, password }),
+  const reset = useUniversityAuthControllerReset({
+    mutation: {
     onSuccess: () => {
       setDone(true);
       setError("");
     },
     onError: (e: Error) => setError(e.message),
+    },
   });
 
   if (!token) {
@@ -76,7 +75,7 @@ function UniversityResetPasswordForm() {
           onSubmit={(e) => {
             e.preventDefault();
             setError("");
-            reset.mutate();
+            reset.mutate({ data: { token, password } });
           }}
           className="space-y-4"
         >

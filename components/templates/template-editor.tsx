@@ -8,7 +8,11 @@ import {
   usePdfDocumentFromFile,
   usePdfDocumentFromUrl,
 } from "@betterinternship/core/pdf-viewer";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import {
+  getAdminControllerListTemplatesQueryKey,
+  useAdminControllerCreateTemplate,
+  useAdminControllerPatchTemplate,
+} from "@/app/api/app/api/endpoints/admin/admin";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +71,8 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, hi
 export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const createTemplate = useAdminControllerCreateTemplate();
+  const patchTemplate = useAdminControllerPatchTemplate();
 
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState(initial?.name ?? "");
@@ -185,26 +191,31 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
       const fieldSchema = JSON.stringify(toFieldSchema(placements));
       if (mode === "new") {
         if (!file || !dims) throw new Error("Upload a template PDF first");
-        const fd = new FormData();
-        fd.append("pdf", file);
-        fd.append("name", name.trim());
-        if (description.trim()) fd.append("description", description.trim());
-        fd.append("term_months", String(termMonths));
-        fd.append("page_count", String(pageCount));
-        fd.append("page_w", String(Math.round(dims.w)));
-        fd.append("page_h", String(Math.round(dims.h)));
-        fd.append("field_schema", fieldSchema);
-        return preconfiguredAxios.post("/api/admin/templates", fd);
+        return createTemplate.mutateAsync({
+          data: {
+            pdf: file,
+            name: name.trim(),
+            ...(description.trim() ? { description: description.trim() } : {}),
+            term_months: termMonths,
+            page_count: pageCount,
+            page_w: Math.round(dims.w),
+            page_h: Math.round(dims.h),
+            field_schema: fieldSchema,
+          },
+        });
       }
-      return preconfiguredAxios.patch(`/api/admin/templates/${templateId}`, {
-        name: name.trim(),
-        description: description.trim(),
-        term_months: termMonths,
-        field_schema: fieldSchema,
+      return patchTemplate.mutateAsync({
+        templateId,
+        data: {
+          name: name.trim(),
+          description: description.trim(),
+          term_months: termMonths,
+          field_schema: fieldSchema,
+        },
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-templates"] });
+      queryClient.invalidateQueries({ queryKey: getAdminControllerListTemplatesQueryKey() });
       toast.success(mode === "new" ? "Template created" : "Template saved");
       router.push("/templates");
     },
@@ -213,7 +224,13 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
 
   const ready = !!pdfDoc && !!dims;
   const canSave =
-    ready && !!name.trim() && Number.isFinite(termMonths) && termMonths >= 1 && !save.isPending;
+    ready &&
+    !!name.trim() &&
+    Number.isFinite(termMonths) &&
+    termMonths >= 1 &&
+    !save.isPending &&
+    !createTemplate.isPending &&
+    !patchTemplate.isPending;
 
   return (
     <div className="flex flex-col gap-4 p-4 lg:flex-row">

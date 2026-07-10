@@ -13,7 +13,7 @@ import type {
   UseMutationResult,
 } from "@tanstack/react-query";
 
-import type { AdminLoginDto } from "../../models";
+import type { AdminLoginDto, BaseResponse, ErrorResponse } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
 
@@ -21,7 +21,7 @@ export const adminAuthControllerLogin = (
   adminLoginDto: AdminLoginDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/admin/login`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -31,7 +31,7 @@ export const adminAuthControllerLogin = (
 };
 
 export const getAdminAuthControllerLoginMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -71,10 +71,10 @@ export type AdminAuthControllerLoginMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminAuthControllerLogin>>
 >;
 export type AdminAuthControllerLoginMutationBody = AdminLoginDto;
-export type AdminAuthControllerLoginMutationError = unknown;
+export type AdminAuthControllerLoginMutationError = ErrorResponse;
 
 export const useAdminAuthControllerLogin = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -97,7 +97,7 @@ export const useAdminAuthControllerLogin = <
   return useMutation(mutationOptions, queryClient);
 };
 export const adminAuthControllerLogout = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/admin/logout`,
     method: "POST",
     signal,
@@ -105,7 +105,7 @@ export const adminAuthControllerLogout = (signal?: AbortSignal) => {
 };
 
 export const getAdminAuthControllerLogoutMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -143,10 +143,10 @@ export type AdminAuthControllerLogoutMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminAuthControllerLogout>>
 >;
 
-export type AdminAuthControllerLogoutMutationError = unknown;
+export type AdminAuthControllerLogoutMutationError = ErrorResponse;
 
 export const useAdminAuthControllerLogout = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {

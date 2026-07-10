@@ -20,7 +20,11 @@ import type {
   UseSuspenseQueryResult,
 } from "@tanstack/react-query";
 
-import type { InviteControllerResolveCompanyInviteParams } from "../../models";
+import type {
+  ErrorResponse,
+  InviteControllerResolveCompanyInviteParams,
+  ResolveCompanyInviteResponse,
+} from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
 
@@ -28,7 +32,7 @@ export const inviteControllerResolveCompanyInvite = (
   params?: InviteControllerResolveCompanyInviteParams,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<ResolveCompanyInviteResponse>({
     url: `/api/invite/company`,
     method: "GET",
     params,
@@ -44,7 +48,7 @@ export const getInviteControllerResolveCompanyInviteQueryKey = (
 
 export const getInviteControllerResolveCompanyInviteQueryOptions = <
   TData = Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   params?: InviteControllerResolveCompanyInviteParams,
   options?: {
@@ -77,11 +81,11 @@ export const getInviteControllerResolveCompanyInviteQueryOptions = <
 export type InviteControllerResolveCompanyInviteQueryResult = NonNullable<
   Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>
 >;
-export type InviteControllerResolveCompanyInviteQueryError = unknown;
+export type InviteControllerResolveCompanyInviteQueryError = ErrorResponse;
 
 export function useInviteControllerResolveCompanyInvite<
   TData = Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   params: undefined | InviteControllerResolveCompanyInviteParams,
   options: {
@@ -107,7 +111,7 @@ export function useInviteControllerResolveCompanyInvite<
 };
 export function useInviteControllerResolveCompanyInvite<
   TData = Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   params?: InviteControllerResolveCompanyInviteParams,
   options?: {
@@ -133,7 +137,7 @@ export function useInviteControllerResolveCompanyInvite<
 };
 export function useInviteControllerResolveCompanyInvite<
   TData = Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   params?: InviteControllerResolveCompanyInviteParams,
   options?: {
@@ -152,7 +156,7 @@ export function useInviteControllerResolveCompanyInvite<
 
 export function useInviteControllerResolveCompanyInvite<
   TData = Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   params?: InviteControllerResolveCompanyInviteParams,
   options?: {
@@ -185,7 +189,7 @@ export function useInviteControllerResolveCompanyInvite<
 
 export const getInviteControllerResolveCompanyInviteSuspenseQueryOptions = <
   TData = Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   params?: InviteControllerResolveCompanyInviteParams,
   options?: {
@@ -217,11 +221,12 @@ export const getInviteControllerResolveCompanyInviteSuspenseQueryOptions = <
 
 export type InviteControllerResolveCompanyInviteSuspenseQueryResult =
   NonNullable<Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>>;
-export type InviteControllerResolveCompanyInviteSuspenseQueryError = unknown;
+export type InviteControllerResolveCompanyInviteSuspenseQueryError =
+  ErrorResponse;
 
 export function useInviteControllerResolveCompanyInviteSuspense<
   TData = Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   params: undefined | InviteControllerResolveCompanyInviteParams,
   options: {
@@ -239,7 +244,7 @@ export function useInviteControllerResolveCompanyInviteSuspense<
 };
 export function useInviteControllerResolveCompanyInviteSuspense<
   TData = Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   params?: InviteControllerResolveCompanyInviteParams,
   options?: {
@@ -257,7 +262,7 @@ export function useInviteControllerResolveCompanyInviteSuspense<
 };
 export function useInviteControllerResolveCompanyInviteSuspense<
   TData = Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   params?: InviteControllerResolveCompanyInviteParams,
   options?: {
@@ -276,7 +281,7 @@ export function useInviteControllerResolveCompanyInviteSuspense<
 
 export function useInviteControllerResolveCompanyInviteSuspense<
   TData = Awaited<ReturnType<typeof inviteControllerResolveCompanyInvite>>,
-  TError = unknown,
+  TError = ErrorResponse,
 >(
   params?: InviteControllerResolveCompanyInviteParams,
   options?: {

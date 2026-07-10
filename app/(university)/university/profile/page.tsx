@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
+import { getUniversityControllerMeQueryKey } from "@/app/api";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { PageContainer } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,11 @@ import { cn } from "@/lib/utils";
 import { universityProfileSchema, type UniversityProfileDraft } from "@/lib/profile-validation";
 
 type SectionKey = "university" | "representative";
+
+const SECTION_FIELDS: Record<SectionKey, (keyof UniversityProfileDraft)[]> = {
+  university: ["registered_name", "address"],
+  representative: ["rep_name", "rep_title"],
+};
 
 interface UniversityProfile {
   registered_name: string | null;
@@ -72,10 +78,17 @@ export default function UniversityProfilePage() {
   const displaySigUrl = sigPreviewUrl ?? uni?.rep_signature_url ?? null;
 
   const save = useMutation({
-    mutationFn: () => preconfiguredAxios.patch("/api/university/profile", form.getValues()),
+    mutationFn: () => {
+      if (!editing) return preconfiguredAxios.patch("/api/university/profile", {});
+      const values = form.getValues();
+      const payload = Object.fromEntries(
+        SECTION_FIELDS[editing].map((key) => [key, values[key]]),
+      );
+      return preconfiguredAxios.patch("/api/university/profile", payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["university-profile"] });
-      queryClient.invalidateQueries({ queryKey: ["university-me"] });
+      queryClient.invalidateQueries({ queryKey: getUniversityControllerMeQueryKey() });
       toast.success("Profile saved");
       cancelEdit();
     },
@@ -131,7 +144,7 @@ export default function UniversityProfilePage() {
     (Object.keys(universityProfileSchema.shape) as string[]).forEach((k) => (seed[k] = persisted(k)));
     setDraft(seed);
     form.reset(seed as UniversityProfileDraft);
-    void form.trigger();
+    void form.trigger(keys as (keyof UniversityProfileDraft)[]);
     setEditing(section);
   }
   function cancelEdit() {
@@ -144,6 +157,13 @@ export default function UniversityProfilePage() {
 
   function fieldError(field: string) {
     return form.formState.errors[field as keyof UniversityProfileDraft]?.message;
+  }
+
+  function isSectionValid(sectionKey: SectionKey) {
+    return SECTION_FIELDS[sectionKey].every((key) => {
+      const value = form.getValues(key).trim();
+      return value && !form.formState.errors[key];
+    });
   }
 
   const textField = (sectionKey: SectionKey, field: string, label: string) => {
@@ -184,7 +204,14 @@ export default function UniversityProfilePage() {
         <Button variant="ghost" size="sm" onClick={cancelEdit} disabled={save.isPending}>
           Cancel
         </Button>
-        <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending || !form.formState.isValid}>
+        <Button
+          size="sm"
+          onClick={async () => {
+            const valid = await form.trigger(keys as (keyof UniversityProfileDraft)[]);
+            if (valid) save.mutate();
+          }}
+          disabled={save.isPending || !isSectionValid(sectionKey)}
+        >
           {save.isPending && <Loader2 className="animate-spin" />}
           Save
         </Button>

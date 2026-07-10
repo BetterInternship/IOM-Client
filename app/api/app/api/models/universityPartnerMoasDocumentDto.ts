@@ -6,6 +6,9 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface RejectMoaDto {
-  reason?: string;
+export interface UniversityPartnerMoasDocumentDto {
+  type: string;
+  filename: string;
+  /** @nullable */
+  url: string | null;
 }

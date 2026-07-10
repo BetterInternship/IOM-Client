@@ -14,6 +14,8 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  BaseResponse,
+  ErrorResponse,
   UniversityAcceptInviteDto,
   UniversityForgotDto,
   UniversityLoginDto,
@@ -26,7 +28,7 @@ export const universityAuthControllerLogin = (
   universityLoginDto: UniversityLoginDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/university/login`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -36,7 +38,7 @@ export const universityAuthControllerLogin = (
 };
 
 export const getUniversityAuthControllerLoginMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -76,10 +78,10 @@ export type UniversityAuthControllerLoginMutationResult = NonNullable<
   Awaited<ReturnType<typeof universityAuthControllerLogin>>
 >;
 export type UniversityAuthControllerLoginMutationBody = UniversityLoginDto;
-export type UniversityAuthControllerLoginMutationError = unknown;
+export type UniversityAuthControllerLoginMutationError = ErrorResponse;
 
 export const useUniversityAuthControllerLogin = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -103,7 +105,7 @@ export const useUniversityAuthControllerLogin = <
   return useMutation(mutationOptions, queryClient);
 };
 export const universityAuthControllerLogout = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/university/logout`,
     method: "POST",
     signal,
@@ -111,7 +113,7 @@ export const universityAuthControllerLogout = (signal?: AbortSignal) => {
 };
 
 export const getUniversityAuthControllerLogoutMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -149,10 +151,10 @@ export type UniversityAuthControllerLogoutMutationResult = NonNullable<
   Awaited<ReturnType<typeof universityAuthControllerLogout>>
 >;
 
-export type UniversityAuthControllerLogoutMutationError = unknown;
+export type UniversityAuthControllerLogoutMutationError = ErrorResponse;
 
 export const useUniversityAuthControllerLogout = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -179,7 +181,7 @@ export const universityAuthControllerAcceptInvite = (
   universityAcceptInviteDto: UniversityAcceptInviteDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/university/accept-invite`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -189,7 +191,7 @@ export const universityAuthControllerAcceptInvite = (
 };
 
 export const getUniversityAuthControllerAcceptInviteMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -230,10 +232,10 @@ export type UniversityAuthControllerAcceptInviteMutationResult = NonNullable<
 >;
 export type UniversityAuthControllerAcceptInviteMutationBody =
   UniversityAcceptInviteDto;
-export type UniversityAuthControllerAcceptInviteMutationError = unknown;
+export type UniversityAuthControllerAcceptInviteMutationError = ErrorResponse;
 
 export const useUniversityAuthControllerAcceptInvite = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -260,7 +262,7 @@ export const universityAuthControllerForgot = (
   universityForgotDto: UniversityForgotDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/university/forgot`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -270,7 +272,7 @@ export const universityAuthControllerForgot = (
 };
 
 export const getUniversityAuthControllerForgotMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -310,10 +312,10 @@ export type UniversityAuthControllerForgotMutationResult = NonNullable<
   Awaited<ReturnType<typeof universityAuthControllerForgot>>
 >;
 export type UniversityAuthControllerForgotMutationBody = UniversityForgotDto;
-export type UniversityAuthControllerForgotMutationError = unknown;
+export type UniversityAuthControllerForgotMutationError = ErrorResponse;
 
 export const useUniversityAuthControllerForgot = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -340,7 +342,7 @@ export const universityAuthControllerReset = (
   universityResetDto: UniversityResetDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/auth/university/reset`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -350,7 +352,7 @@ export const universityAuthControllerReset = (
 };
 
 export const getUniversityAuthControllerResetMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -390,10 +392,10 @@ export type UniversityAuthControllerResetMutationResult = NonNullable<
   Awaited<ReturnType<typeof universityAuthControllerReset>>
 >;
 export type UniversityAuthControllerResetMutationBody = UniversityResetDto;
-export type UniversityAuthControllerResetMutationError = unknown;
+export type UniversityAuthControllerResetMutationError = ErrorResponse;
 
 export const useUniversityAuthControllerReset = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {

@@ -1,8 +1,7 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useCompanyControllerGetMoa } from "@/app/api";
 import { PageContainer } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,15 +25,11 @@ interface CompanyMoaDetail {
 export default function CompanyMoaDetailPage() {
   const { moaId } = useParams<{ moaId: string }>();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["company-moa", moaId],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(`/api/company/moas/${moaId}`)
-        .then((r) => r.data as CompanyMoaDetail),
-    enabled: !!moaId,
-    refetchInterval: 25 * 60 * 1000,
+  const { data, isLoading } = useCompanyControllerGetMoa(moaId, {
+    query: { refetchInterval: 25 * 60 * 1000 },
   });
+
+  const detail = data as unknown as CompanyMoaDetail | undefined;
 
   if (isLoading) {
     return (
@@ -45,7 +40,7 @@ export default function CompanyMoaDetailPage() {
       </PageContainer>
     );
   }
-  if (!data?.moa) {
+  if (!data) {
     return (
       <PageContainer className="max-w-3xl">
         <Card>
@@ -57,7 +52,7 @@ export default function CompanyMoaDetailPage() {
     );
   }
 
-  const { moa, pdfUrl } = data;
+  const { moa, pdfUrl } = detail!;
   const isActive = moa.status === "active" && !moa.is_expired;
 
   return (

@@ -1,8 +1,7 @@
 "use client";
-import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useUniversityControllerGetAuditLog } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -89,14 +88,12 @@ const columns: ColumnDef<AuditEvent>[] = [
 export default function ActivityLogPage() {
   const { account } = useUniversityProfile();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["university-audit"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/audit?limit=100")
-        .then((r) => r.data as { logs: AuditEvent[] }),
-    enabled: !!account,
-  });
+  const { data, isLoading } = useUniversityControllerGetAuditLog(
+    { limit: 100 },
+    { query: { enabled: !!account } },
+  );
+
+  const logs = (data?.logs ?? []) as unknown as AuditEvent[];
 
   return (
     <PageContainer className="space-y-6">
@@ -114,12 +111,11 @@ export default function ActivityLogPage() {
         <DataTable
           id="activity-log"
           columns={columns}
-          data={data?.logs ?? []}
+          data={logs}
           searchKey="event"
           searchPlaceholder="Search events..."
           rowLabelSingular="event"
           rowLabelPlural="events"
-          pageSizes={[25, 50, 100]}
         />
       )}
     </PageContainer>

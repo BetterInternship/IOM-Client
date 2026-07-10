@@ -1,8 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useAdminControllerCompanyReviewQueue } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
@@ -51,14 +50,11 @@ const columns: ColumnDef<ReviewRow>[] = [
 export default function AdminReviewsPage() {
   const router = useRouter();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-company-reviews"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/admin/company-reviews")
-        .then((r) => r.data.reviews as ReviewRow[]),
-    refetchInterval: 30_000,
+  const { data, isLoading } = useAdminControllerCompanyReviewQueue({
+    query: { refetchInterval: 30_000 },
   });
+
+  const reviews = (data?.reviews ?? []) as unknown as ReviewRow[];
 
   return (
     <PageContainer className="space-y-6">
@@ -76,11 +72,10 @@ export default function AdminReviewsPage() {
         <DataTable
           id="admin-reviews"
           columns={columns}
-          data={data ?? []}
+          data={reviews}
           searchPlaceholder="Search companies..."
           rowLabelSingular="review"
           rowLabelPlural="reviews"
-          pageSizes={[10, 25, 50]}
           onRowClick={(r) => router.push(`/companies/${r.company_id}/review`)}
         />
       )}

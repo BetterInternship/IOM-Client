@@ -1,13 +1,17 @@
 import type { NextConfig } from "next";
 
-const iomServerUrl = process.env.NEXT_PUBLIC_IOM_SERVER_URL || "http://localhost:5600";
+const iomServerUrl =
+  process.env.NEXT_PUBLIC_IOM_SERVER_URL || "http://localhost:5600";
 
 const connectOrigins = (() => {
   try {
     const origin = new URL(iomServerUrl).origin;
-    if (origin.startsWith("https://")) return `${origin} ${origin.replace("https://", "wss://")}`;
+    if (origin.startsWith("https://"))
+      return `${origin} ${origin.replace("https://", "wss://")}`;
     return origin;
-  } catch { return ""; }
+  } catch {
+    return "";
+  }
 })();
 
 const cspHeader = `
@@ -34,15 +38,27 @@ const nextConfig: NextConfig = {
   async rewrites() {
     const routes = [
       {
-        hosts: ["moa.betterinternship.com", "dev.moa.betterinternship.com", "moa.localhost"],
+        hosts: [
+          "moa.betterinternship.com",
+          "dev.moa.betterinternship.com",
+          "moa.localhost",
+        ],
         destination: "company",
       },
       {
-        hosts: ["uni.betterinternship.com", "dev.uni.betterinternship.com", "uni.localhost"],
+        hosts: [
+          "uni.betterinternship.com",
+          "dev.uni.betterinternship.com",
+          "uni.localhost",
+        ],
         destination: "university",
       },
       {
-        hosts: ["admin.iom.betterinternship.com", "dev.admin.iom.betterinternship.com", "admin.iom.localhost"],
+        hosts: [
+          "admin.iom.betterinternship.com",
+          "dev.admin.iom.betterinternship.com",
+          "admin.iom.localhost",
+        ],
         destination: "admin",
       },
     ];
@@ -56,7 +72,8 @@ const nextConfig: NextConfig = {
     routes.forEach(({ hosts, destination }) => {
       hosts.forEach((host) => {
         rewrites.push({
-          source: "/:path((?!_next|betterinternship-logo|BetterInternshipLogo|company(?:/|$)|university(?:/|$)|admin(?:/|$)|gcs-proxy(?:/|$)|invite(?:/|$)).*)*",
+          source:
+            "/:path((?!_next|betterinternship-logo|BetterInternshipLogo|company(?:/|$)|university(?:/|$)|admin(?:/|$)|gcs-proxy(?:/|$)|invite(?:/|$)).*)*",
           has: [{ type: "host", value: host }],
           destination: `/${destination}/:path*`,
         });
@@ -72,11 +89,17 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           { key: "Content-Security-Policy", value: cspHeader },
-          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
         ],
       },
     ];

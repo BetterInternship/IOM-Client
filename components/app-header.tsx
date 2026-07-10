@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -50,7 +49,7 @@ interface AppHeaderProps {
   nav: NavItem[];
   userPrimary?: string;
   userSecondary?: string;
-  logoutPath: string;
+  logout: () => Promise<unknown>;
   postLogoutPath: string;
   profileHref?: string;
   userAvatarUrl?: string | null;
@@ -78,7 +77,7 @@ export function AppHeader({
   homeHref,
   nav,
   userPrimary,
-  logoutPath,
+  logout: logoutFn,
   postLogoutPath,
   profileHref,
   userAvatarUrl,
@@ -100,7 +99,7 @@ export function AppHeader({
   }, [isDrawerOpen]);
 
   const logout = useMutation({
-    mutationFn: () => preconfiguredAxios.post(logoutPath),
+    mutationFn: logoutFn,
     onSettled: () => {
       queryClient.clear();
       router.replace(postLogoutPath);
