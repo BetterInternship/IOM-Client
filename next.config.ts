@@ -73,7 +73,7 @@ const nextConfig: NextConfig = {
       hosts.forEach((host) => {
         rewrites.push({
           source:
-            "/:path((?!_next|betterinternship-logo|BetterInternshipLogo|company(?:/|$)|university(?:/|$)|admin(?:/|$)|gcs-proxy(?:/|$)|invite(?:/|$)).*)*",
+            "/:path((?!_next|betterinternship-logo|BetterInternshipLogo|bg2(?:\\.png)?(?:/|$)|company(?:/|$)|university(?:/|$)|admin(?:/|$)|gcs-proxy(?:/|$)|invite(?:/|$)).*)*",
           has: [{ type: "host", value: host }],
           destination: `/${destination}/:path*`,
         });
