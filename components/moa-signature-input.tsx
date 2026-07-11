@@ -5,6 +5,7 @@ import { ImageUp, PenLine, Trash2, Type, UploadCloud } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { removeSignatureImageBackground } from "@/lib/signature-image-cleanup";
 
 export type MoaSignatureMode = "type" | "upload" | "draw";
 
@@ -78,7 +79,7 @@ export function MoaSignatureInput({
     clearSignatureImage();
   };
 
-  const handleUpload = (nextFile: File | undefined) => {
+  const handleUpload = async (nextFile: File | undefined) => {
     if (!nextFile) return;
 
     if (nextFile.type !== "image/png" && nextFile.type !== "image/jpeg") {
@@ -91,9 +92,21 @@ export function MoaSignatureInput({
       return;
     }
 
-    setUploadError("");
-    onFileChange(nextFile);
-    onModeChange("upload");
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () =>
+          typeof reader.result === "string" ? resolve(reader.result) : reject(new Error());
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(nextFile);
+      });
+      const cleaned = await removeSignatureImageBackground(dataUrl);
+      setUploadError("");
+      onFileChange(dataUrlToFile(cleaned, "signature.png"));
+      onModeChange("upload");
+    } catch {
+      setUploadError("Unable to process signature image.");
+    }
   };
 
   const exportCanvasSignature = () => {
