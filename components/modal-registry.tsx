@@ -8,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
+const PREVIEW_MODAL_PANEL_CLASS = "!w-full sm:!max-w-4xl";
+const PREVIEW_MODAL_CONTENT_CLASS = "h-[75dvh] overflow-hidden p-0 sm:h-[75vh] sm:min-h-[32rem]";
+
 export function useIomModalRegistry() {
   const { openModal, closeModal } = useModal();
 
@@ -19,9 +22,9 @@ export function useIomModalRegistry() {
           <iframe src={url} className="h-full w-full border-none" title={title} />,
           {
             title,
-            panelClassName: "!w-full sm:!max-w-4xl",
-            contentClassName: "min-h-0 flex-1 overflow-hidden p-0 sm:p-0",
-            showHeaderDivider: true,
+            panelClassName: PREVIEW_MODAL_PANEL_CLASS,
+            contentClassName: PREVIEW_MODAL_CONTENT_CLASS,
+            showHeaderDivider: false,
           }
         ),
       close: () => closeModal("preview-document"),
@@ -37,9 +40,9 @@ export function useIomModalRegistry() {
           />,
           {
             title: template.name,
-            panelClassName: "!w-full sm:!max-w-4xl",
-            contentClassName: "min-h-0 flex-1 overflow-hidden p-0 sm:p-0",
-            showHeaderDivider: true,
+            panelClassName: PREVIEW_MODAL_PANEL_CLASS,
+            contentClassName: PREVIEW_MODAL_CONTENT_CLASS,
+            showHeaderDivider: false,
           },
         ),
       close: () => closeModal("preview-template"),

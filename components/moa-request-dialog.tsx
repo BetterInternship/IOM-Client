@@ -123,7 +123,7 @@ const requestSteps = [
   { title: "Sign request", icon: PenLine },
 ];
 
-function TemplatePdfViewer({ url, title }: { url: string; title: string }) {
+function TemplatePdfViewer({ url }: { url: string }) {
   const { pdfDoc, pageCount, isLoading, error } = usePdfDocumentFromUrl(url);
   const [scale, setScale] = useState(1);
   const [visiblePage, setVisiblePage] = useState(1);
@@ -155,11 +155,6 @@ function TemplatePdfViewer({ url, title }: { url: string; title: string }) {
       onScaleChange={setScale}
       visiblePage={visiblePage}
       onVisiblePageChange={setVisiblePage}
-      headerLeft={
-        <span className="truncate text-xs font-medium text-slate-700">
-          {title}
-        </span>
-      }
       renderPage={(pageNumber) => (
         <TemplatePdfPage
           key={pageNumber}
@@ -208,7 +203,6 @@ export function TemplatePreviewContent({
       ) : pdfUrl ? (
         <TemplatePdfViewer
           url={`/gcs-proxy?url=${encodeURIComponent(pdfUrl)}`}
-          title={templateName}
         />
       ) : (
         <div className="flex h-full items-center justify-center">
