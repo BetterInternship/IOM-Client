@@ -171,22 +171,27 @@ export function AppHeader({
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="group h-auto min-w-24 flex-col items-stretch justify-center gap-0 rounded-[0.33em] p-0 hover:bg-gray-100"
+                className={cn(
+                  "group h-auto w-20 flex-col items-center justify-center gap-1 rounded-[0.33em] px-2 py-1",
+                  profileHref && isActive(profileHref)
+                    ? "text-primary"
+                    : "opacity-80 hover:bg-gray-100 hover:opacity-100",
+                )}
               >
-                <div className="flex items-center justify-center gap-2 rounded-[0.33em] border border-gray-300 p-2 px-3 text-xs">
+                <div className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-gray-100">
                   {userAvatarUrl ? (
                     <img
                       src={userAvatarUrl}
                       alt=""
-                      className="h-5 w-5 flex-shrink-0 rounded-full border border-gray-200 object-contain"
+                      className="h-full w-full object-contain"
                     />
                   ) : (
-                    <UserRound className="h-4 w-4 shrink-0 text-gray-500" />
+                    <UserRound className="h-5 w-5 text-gray-500" />
                   )}
-                  <span className="max-w-[120px] truncate font-medium">
-                    {userPrimary ?? "Account"}
-                  </span>
-                  <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400 transition-transform group-data-[state=open]:rotate-180" />
+                </div>
+                <div className="flex items-center gap-0.5">
+                  <span className="text-xs">Account</span>
+                  <ChevronDown className="!h-3 !w-3 transition-transform group-data-[state=open]:rotate-180" />
                 </div>
               </Button>
             </DropdownMenuTrigger>
