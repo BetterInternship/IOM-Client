@@ -9,6 +9,8 @@ import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from "axios";
 export interface ApiError extends Error {
   code?: string;
   censoredEmail?: string;
+  email?: string;
+  autoLinkToken?: string;
   response?: { data?: { code?: string; data?: { limit?: number | string } } };
 }
 

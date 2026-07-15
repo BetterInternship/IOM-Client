@@ -25,9 +25,18 @@ function getCareerHireUrl(): string {
  * by the caller when the company's verification status is 'verified'.
  * Handles both account-creation and returning-user cases identically: the
  * user never sees which one happened, they just land on a magic link.
+ *
+ * EMAIL_MANAGES_OTHER_EMPLOYER doesn't dead-end into "go link it yourself":
+ * it sends the user to the career site's login, prefilled with the email and
+ * carrying a signed auto-link token that the Client redeems right after
+ * sign-in (see Client's app/hire/login/page.tsx). Manual TIN-linking from
+ * the career hire dashboard still exists as a fallback for anyone who lands
+ * there some other way — it's just no longer the primary path out of this
+ * conflict.
  */
 export function CareerListingCta() {
   const [conflictCode, setConflictCode] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
   const linkMutation = useCompanyControllerCareerListingLink({
     mutation: {
       onSuccess: (data) => {
@@ -35,7 +44,15 @@ export function CareerListingCta() {
       },
       onError: (e: Error) => {
         const error = e as ApiError;
-        if (error.code === "EMAIL_MANAGES_OTHER_EMPLOYER" || error.code === "NO_EMAIL") {
+        if (error.code === "EMAIL_MANAGES_OTHER_EMPLOYER" && error.email && error.autoLinkToken) {
+          setRedirecting(true);
+          const url = new URL("/login", getCareerHireUrl());
+          url.searchParams.set("email", error.email);
+          url.searchParams.set("auto_link", error.autoLinkToken);
+          window.location.href = url.toString();
+          return;
+        }
+        if (error.code === "NO_EMAIL") {
           setConflictCode(error.code);
         } else {
           toast.error(error.message || "Could not start BetterInternship listing setup.");
@@ -49,6 +66,8 @@ export function CareerListingCta() {
     linkMutation.mutate();
   };
 
+  const isBusy = linkMutation.isPending || redirecting;
+
   return (
     <Card className="flex-row items-start gap-3 border-primary/30 bg-primary/5 px-5 py-4">
       <ArrowUpRight className="text-primary mt-0.5 h-5 w-5 flex-shrink-0" />
@@ -61,20 +80,6 @@ export function CareerListingCta() {
           BetterInternship&apos;s career site. No separate signup needed.
         </p>
 
-        {conflictCode === "EMAIL_MANAGES_OTHER_EMPLOYER" && (
-          <p className="text-destructive text-sm">
-            Your email already manages a BetterInternship employer —{" "}
-            <a
-              href={`${getCareerHireUrl()}/company-profile`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline"
-            >
-              link it from the BetterInternship dashboard
-            </a>{" "}
-            instead.
-          </p>
-        )}
         {conflictCode === "NO_EMAIL" && (
           <p className="text-destructive text-sm">
             Set an account email on your{" "}
@@ -86,8 +91,8 @@ export function CareerListingCta() {
         )}
 
         <div className="pt-1">
-          <Button size="sm" onClick={handleClick} disabled={linkMutation.isPending}>
-            {linkMutation.isPending ? "Setting up…" : "Post a listing"}
+          <Button size="sm" onClick={handleClick} disabled={isBusy}>
+            {redirecting ? "Redirecting…" : linkMutation.isPending ? "Setting up…" : "Post a listing"}
           </Button>
         </div>
       </div>
