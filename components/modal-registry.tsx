@@ -2,6 +2,7 @@
 
 import { useModal } from "@/app/providers/modal-provider";
 import { CompanyInviteForm } from "@/components/invites/company-invite-form";
+import { TemplatePreviewContent } from "@/components/moa-request-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
@@ -24,6 +25,24 @@ export function useIomModalRegistry() {
           }
         ),
       close: () => closeModal("preview-document"),
+    },
+    previewTemplate: {
+      open: (template: { id: string; name: string; description: string | null }) =>
+        openModal(
+          "preview-template",
+          <TemplatePreviewContent
+            templateId={template.id}
+            templateName={template.name}
+            templateDescription={template.description}
+          />,
+          {
+            title: template.name,
+            panelClassName: "!w-full sm:!max-w-4xl",
+            contentClassName: "min-h-0 flex-1 overflow-hidden p-0 sm:p-0",
+            showHeaderDivider: true,
+          },
+        ),
+      close: () => closeModal("preview-template"),
     },
     inviteCompany: {
       open: (opts: {
