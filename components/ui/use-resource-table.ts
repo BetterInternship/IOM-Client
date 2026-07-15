@@ -96,6 +96,7 @@ export function useResourceTable<TData>({
   pagination: {
     initialPage?: number;
     pageSize: number;
+    pageSizeOptions?: number[];
     onPageChange?: (page: number) => void;
   };
 }) {
@@ -121,6 +122,14 @@ export function useResourceTable<TData>({
   const [page, setPageState] = useState(
     Math.max(pagination.initialPage ?? 1, 1),
   );
+  const [pageSize, setPageSizeState] = useState(
+    Math.max(Math.floor(pagination.pageSize), 1),
+  );
+  const pageSizeOptions = Array.from(
+    new Set([...(pagination.pageSizeOptions ?? [10, 15, 20, 50]), pageSize]),
+  )
+    .filter((option) => option > 0)
+    .sort((left, right) => left - right);
 
   const normalizedQuery = searchValue.trim().toLowerCase();
 
@@ -159,19 +168,23 @@ export function useResourceTable<TData>({
     });
   }, [filteredRows, sortColumns, sortColumn, sortDirection]);
 
-  const pageCount = Math.max(
-    1,
-    Math.ceil(sortedRows.length / pagination.pageSize),
-  );
+  const pageCount = Math.max(1, Math.ceil(sortedRows.length / pageSize));
   const currentPage = Math.min(Math.max(page, 1), pageCount);
-  const pageStart = (currentPage - 1) * pagination.pageSize;
-  const pageEnd = Math.min(pageStart + pagination.pageSize, sortedRows.length);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageEnd = Math.min(pageStart + pageSize, sortedRows.length);
   const pagedRows = sortedRows.slice(pageStart, pageEnd);
 
   const setPage = (nextPage: number) => {
     const clamped = Math.min(Math.max(nextPage, 1), pageCount);
     setPageState(clamped);
     pagination.onPageChange?.(clamped);
+  };
+
+  const setPageSize = (nextPageSize: number) => {
+    const normalizedPageSize = Math.max(Math.floor(nextPageSize), 1);
+    setPageSizeState(normalizedPageSize);
+    setPageState(1);
+    pagination.onPageChange?.(1);
   };
 
   const setSearch = (value: string) => {
@@ -251,6 +264,7 @@ export function useResourceTable<TData>({
 
   return {
     columns,
+    dataCount: data.length,
     rows: sortedRows,
     pagedRows,
     totalCount: sortedRows.length,
@@ -295,8 +309,10 @@ export function useResourceTable<TData>({
       : undefined,
     pagination: {
       page: currentPage,
-      pageSize: pagination.pageSize,
+      pageSize,
+      pageSizeOptions,
       setPage,
+      setPageSize,
     },
   };
 }

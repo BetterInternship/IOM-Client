@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, ChevronRight, FileText } from "lucide-react";
+import { ArrowRight, ChevronRight, FileText } from "lucide-react";
 
 import {
   ResourceTable,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/use-resource-table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 
 export interface CompanyPartnerUniversity {
   university: {
@@ -89,15 +90,11 @@ function PartnerStatusBadge({
 }) {
   const isActive = partner.activeCount > 0;
 
-  return isActive ? (
-    <span className="bg-supportive text-supportive-foreground inline-flex items-center gap-2 rounded-full px-3 py-2">
-      <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-      <span className="text-sm font-semibold">Active Partner</span>
-    </span>
-  ) : (
-    <span className="inline-flex rounded-[0.33em] bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-600">
-      Inactive Partnership
-    </span>
+  return (
+    <PartnershipStatusBadge
+      status={isActive ? "active" : "inactive"}
+      label={isActive ? "Active Partner" : "Inactive Partnership"}
+    />
   );
 }
 

@@ -18,6 +18,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type {
   ResourceFilterGroup,
@@ -141,6 +148,7 @@ export function ResourceTable<TData>({
   paginationClassName,
   toolbarLeading,
   onRowClick,
+  getRowClassName,
 }: {
   table: ResourceTableState<TData>;
   columns?: Array<ResourceTableColumn<TData>>;
@@ -155,10 +163,11 @@ export function ResourceTable<TData>({
   paginationClassName?: string;
   toolbarLeading?: ReactNode;
   onRowClick?: (row: TData) => void;
+  getRowClassName?: (row: TData) => string | undefined;
 }) {
   const hasToolbar = !!toolbarLeading || !!table.search || !!table.filters;
   const hasRows = table.pagedRows.length > 0;
-  const hasAnyData = table.rows.length > 0 || table.totalCount > 0;
+  const hasAnyData = table.dataCount > 0;
   const hasDesktopTable = !!columns?.length;
   const resolvedEmptyState = hasAnyData
     ? (noResultsState ?? emptyState)
@@ -215,7 +224,7 @@ export function ResourceTable<TData>({
   return (
     <div className={cn("space-y-5", className)}>
       {hasToolbar && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {table.filters && (
             <Popover
               open={table.filters.open}
@@ -299,6 +308,7 @@ export function ResourceTable<TData>({
                       className={cn(
                         "group border-b border-gray-200 transition-colors last:border-b-0 hover:bg-primary/[0.035] focus-within:bg-primary/[0.035]",
                         onRowClick && "cursor-pointer",
+                        getRowClassName?.(row),
                       )}
                       onClick={onRowClick ? () => onRowClick(row) : undefined}
                     >
@@ -344,56 +354,86 @@ export function ResourceTable<TData>({
               {table.totalCount}{" "}
               {table.totalCount === 1 ? rowLabelSingular : rowLabelPlural}
             </p>
-            {table.pageCount > 1 && (
-              <div className="flex items-center gap-1" aria-label="Pagination">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={table.page === 1}
-                  onClick={() => table.pagination.setPage(table.page - 1)}
-                  aria-label="Previous page"
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <label className="text-muted-foreground flex items-center gap-2 text-sm whitespace-nowrap">
+                Rows per page
+                <Select
+                  value={String(table.pagination.pageSize)}
+                  onValueChange={(value) =>
+                    table.pagination.setPageSize(Number(value))
+                  }
                 >
-                  <ChevronLeft />
-                </Button>
-                {Array.from(
-                  { length: table.pageCount },
-                  (_, index) => index + 1,
-                )
-                  .filter(
-                    (page) =>
-                      page === 1 ||
-                      page === table.pageCount ||
-                      Math.abs(page - table.page) <= 1,
+                  <SelectTrigger className="w-20" aria-label="Rows per page">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {table.pagination.pageSizeOptions.map((pageSize) => (
+                      <SelectItem key={pageSize} value={String(pageSize)}>
+                        {pageSize}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+
+              {table.pageCount > 1 && (
+                <div
+                  className="flex items-center gap-1"
+                  aria-label="Pagination"
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={table.page === 1}
+                    onClick={() => table.pagination.setPage(table.page - 1)}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft />
+                  </Button>
+                  {Array.from(
+                    { length: table.pageCount },
+                    (_, index) => index + 1,
                   )
-                  .map((page, index, pages) => (
-                    <span key={page} className="flex items-center gap-1">
-                      {index > 0 && page - pages[index - 1] > 1 && (
-                        <span className="text-muted-foreground px-1">...</span>
-                      )}
-                      <Button
-                        variant={page === table.page ? "outline" : "ghost"}
-                        scheme={page === table.page ? "primary" : undefined}
-                        size="icon"
-                        className="h-9 w-9"
-                        onClick={() => table.pagination.setPage(page)}
-                        aria-label={`Page ${page}`}
-                        aria-current={page === table.page ? "page" : undefined}
-                      >
-                        {page}
-                      </Button>
-                    </span>
-                  ))}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  disabled={table.page === table.pageCount}
-                  onClick={() => table.pagination.setPage(table.page + 1)}
-                  aria-label="Next page"
-                >
-                  <ChevronRight />
-                </Button>
-              </div>
-            )}
+                    .filter(
+                      (page) =>
+                        page === 1 ||
+                        page === table.pageCount ||
+                        Math.abs(page - table.page) <= 1,
+                    )
+                    .map((page, index, pages) => (
+                      <span key={page} className="flex items-center gap-1">
+                        {index > 0 && page - pages[index - 1] > 1 && (
+                          <span className="text-muted-foreground px-1">
+                            ...
+                          </span>
+                        )}
+                        <Button
+                          variant={page === table.page ? "outline" : "ghost"}
+                          scheme={page === table.page ? "primary" : undefined}
+                          size="icon"
+                          className="h-9 w-9"
+                          onClick={() => table.pagination.setPage(page)}
+                          aria-label={`Page ${page}`}
+                          aria-current={
+                            page === table.page ? "page" : undefined
+                          }
+                        >
+                          {page}
+                        </Button>
+                      </span>
+                    ))}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    disabled={table.page === table.pageCount}
+                    onClick={() => table.pagination.setPage(table.page + 1)}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       ) : (
