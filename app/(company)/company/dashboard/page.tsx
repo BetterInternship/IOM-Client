@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -12,29 +12,29 @@ import {
   useCompanyControllerListQueuedMoas,
   useCompanyControllerListPendingInvites,
 } from "@/app/api";
-import {
-  PageContainer,
-  PageHeader,
-  EmptyState,
-} from "@/components/page-header";
+import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DataTable } from "@/components/ui/data-table";
+import {
+  CompanyPartnersTable,
+  parseActiveMoaRanges,
+  parsePartnerStatuses,
+  type ActiveMoaRange,
+  type CompanyPartnerUniversity,
+  type PartnerStatus,
+} from "@/components/company/company-partners-table";
 import { MoaStatusBadge } from "@/components/status-badge";
 import { useModal } from "@/app/providers/modal-provider";
 import { formatDateWithoutTime, cn } from "@/lib/utils";
 import {
   AlertCircle,
   ArrowLeft,
-  ArrowRight,
   ArrowUpRight,
-  CheckCircle2,
   ClipboardList,
   Clock,
-  FileText,
   Plus,
-  Search,
 } from "lucide-react";
 import { RequestDialog } from "@/components/moa-request-dialog";
 import { CareerListingCta } from "@/components/career-listing-cta";
@@ -43,24 +43,6 @@ import { CareerListingCta } from "@/components/career-listing-cta";
 type Phase = "list" | "to-detail" | "detail" | "to-list";
 
 const ANIM_DURATION = 200;
-
-interface QueuedMoa {
-  id: string;
-  status: "pending" | "fulfilled" | "failed";
-  failure_reason: string | null;
-  university: {
-    id: string;
-    registered_name: string;
-    logo_url: string | null;
-  } | null;
-  template: { id: string; name: string; description: string | null } | null;
-}
-
-interface PendingInvite {
-  id: string;
-  university: { id: string; registered_name: string } | null;
-  template: { id: string; name: string } | null;
-}
 
 interface Moa {
   id: string;
@@ -78,25 +60,8 @@ interface Moa {
   };
 }
 
-interface PartnerUniversity {
-  university: {
-    id: string;
-    registered_name: string;
-    logo_url: string | null;
-    address: string | null;
-  };
+interface PartnerUniversity extends CompanyPartnerUniversity {
   moas: Moa[];
-  activeCount: number;
-}
-
-function universityInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
 }
 
 const moaHistoryColumns: ColumnDef<Moa>[] = [
@@ -235,14 +200,47 @@ function VerificationBanner({
 }
 
 function CompanyDashboardContent() {
-  const [partnerSearch, setPartnerSearch] = useState("");
+  const searchParams = useSearchParams();
+  const initialPartnerSearch = searchParams.get("search") ?? "";
+  const initialPartnerStatuses = parsePartnerStatuses(
+    searchParams.get("status"),
+  );
+  const initialActiveMoaRanges = parseActiveMoaRanges(
+    searchParams.get("moa_ranges"),
+  );
+  const initialPartnerPage = Math.max(Number(searchParams.get("page")) || 1, 1);
   const { company, isLoading } = useCompanyProfile();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { openModal, closeModal } = useModal();
   const openUniversityId = searchParams.get("open_university_id");
   const inviteTemplateId = searchParams.get("template_id");
   const inviteId = searchParams.get("invite_id");
+
+  const updatePartnerQuery = (
+    search: string,
+    statuses: PartnerStatus[],
+    ranges: ActiveMoaRange[],
+    page: number,
+  ) => {
+    const params = new URLSearchParams(window.location.search);
+    const setOrDelete = (key: string, value: string) => {
+      if (value) params.set(key, value);
+      else params.delete(key);
+    };
+
+    setOrDelete("search", search.trim());
+    setOrDelete("status", statuses.join(","));
+    setOrDelete("moa_ranges", ranges.join(","));
+    if (page > 1) params.set("page", String(page));
+    else params.delete("page");
+
+    const query = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${query ? `?${query}` : ""}`,
+    );
+  };
 
   const [phase, setPhase] = useState<Phase>("list");
   const [currentUniId, setCurrentUniId] = useState<string | null>(null);
@@ -317,29 +315,30 @@ function CompanyDashboardContent() {
   // Clean up timer on unmount.
   useEffect(() => () => clearTimeout(timerRef.current), []);
 
-  // Capture hash on first render, then navigate once MOA data is available.
-  const [hashId, setHashId] = useState<string | null>(null);
-  useEffect(() => {
-    const h = window.location.hash.slice(1);
-    if (h) setHashId(h);
+  // Read hashes before paint so deep links do not briefly show the list panel.
+  useLayoutEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    setCurrentUniId(hash);
+    setPhase("detail");
   }, []);
+
+  // Invalid hashes fall back to list once MOA data is available.
   useEffect(() => {
-    if (!hashId || moasLoading || !moasData) return;
+    if (!currentUniId || moasLoading || !moasData) return;
     const exists = (moasData?.moas ?? []).some(
-      (m) => m.university?.id === hashId,
+      (m) => m.university?.id === currentUniId,
     );
-    if (exists) {
-      setCurrentUniId(hashId);
-      setPhase("detail");
-    } else {
+    if (!exists) {
       window.history.replaceState(
         null,
         "",
         window.location.pathname + window.location.search,
       );
+      setCurrentUniId(null);
+      setPhase("list");
     }
-    setHashId(null);
-  }, [hashId, moasLoading, moasData]);
+  }, [currentUniId, moasLoading, moasData]);
 
   if (isLoading) {
     return (
@@ -424,151 +423,6 @@ function CompanyDashboardContent() {
   const showList = phase !== "detail";
   const showDetail = phase !== "list";
 
-  const PartnersTable = () => {
-    if (moasLoading) {
-      return (
-        <div className="space-y-1">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-12 w-full" />
-          ))}
-        </div>
-      );
-    }
-
-    if (partners.length === 0) {
-      return (
-        <EmptyState
-          title="No partner universities yet"
-          description={
-            canRequest
-              ? "Browse partner universities and request your first memorandum of agreement."
-              : "Once your company is verified, you can request MOAs from partner universities."
-          }
-        >
-          {canRequest && (
-            <Button asChild variant="outline" scheme="primary">
-              <Link href="/universities">Browse universities</Link>
-            </Button>
-          )}
-        </EmptyState>
-      );
-    }
-
-    const query = partnerSearch.trim().toLowerCase();
-    const visiblePartners = query
-      ? partners.filter((partner) =>
-          partner.university.registered_name.toLowerCase().includes(query),
-        )
-      : partners;
-
-    return (
-      <div className="space-y-6">
-        <div className="relative w-full max-w-xl">
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 z-20 h-4 w-4 -translate-y-1/2" />
-          <input
-            type="search"
-            value={partnerSearch}
-            onChange={(event) => setPartnerSearch(event.target.value)}
-            placeholder="Search universities..."
-            aria-label="Search partner universities"
-            className="placeholder:text-muted-foreground/60 focus:border-primary h-11 w-full rounded-[0.33em] border border-gray-200 bg-white pr-4 pl-11 text-sm outline-none transition-colors"
-          />
-        </div>
-
-        {visiblePartners.length > 0 ? (
-          <div className="space-y-4">
-            {visiblePartners.map((partner) => (
-              <article
-                key={partner.university.id}
-                className="group grid cursor-pointer gap-6 rounded-[0.33em] border border-gray-200 bg-white p-6 transition-colors hover:border-gray-300 hover:bg-gray-50/40 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/15 focus-visible:outline-none lg:grid-cols-[minmax(0,1.5fr)_minmax(10rem,0.65fr)_minmax(8rem,0.45fr)_minmax(10rem,0.55fr)] lg:items-center"
-                onClick={() => navigateToDetail(partner.university.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    navigateToDetail(partner.university.id);
-                  }
-                }}
-              >
-                <div className="flex min-w-0 items-center gap-5">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[0.33em] border border-gray-200 bg-gray-50 text-lg font-semibold text-gray-600 sm:h-20 sm:w-20">
-                    {partner.university.logo_url ? (
-                      // University logos are user-uploaded external assets.
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={partner.university.logo_url}
-                        alt={`${partner.university.registered_name} logo`}
-                        className="h-full w-full object-contain p-2"
-                      />
-                    ) : (
-                      <span aria-hidden="true">
-                        {universityInitials(partner.university.registered_name)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-base font-semibold text-gray-900 sm:text-lg">
-                      {partner.university.registered_name}
-                    </h2>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                      {partner.university.address || "Address not provided"}
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  {partner.activeCount > 0 ? (
-                    <div className="bg-supportive text-supportive-foreground inline-flex items-center gap-2 rounded-full px-4 py-2">
-                      <CheckCircle2 className="h-4 w-4 shrink-0" />
-                      <p className="text-sm font-semibold">Active Partner</p>
-                    </div>
-                  ) : (
-                    <div className="rounded-[0.33em] bg-gray-50 px-4 py-5">
-                      <p className="text-base font-semibold text-gray-600">
-                        Inactive Partnership
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3 lg:min-w-32">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-500">
-                    <FileText className="h-4 w-4" aria-hidden="true" />
-                  </span>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {partner.activeCount}
-                    </p>
-                    <p className="text-muted-foreground text-xs whitespace-nowrap">
-                      Active MOA{partner.activeCount === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center lg:justify-end">
-                  <span className="text-primary group-hover:text-primary/80 inline-flex items-center gap-2 px-3 text-sm font-medium whitespace-nowrap transition-colors">
-                    View Partnership
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  </span>
-                </div>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-[0.33em] border border-dashed border-gray-300 px-6 py-12 text-center">
-            <p className="text-sm font-medium text-gray-700">
-              No partner universities found
-            </p>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Try searching with a different university name.
-            </p>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <>
       <PageContainer>
@@ -578,11 +432,11 @@ function CompanyDashboardContent() {
           {showList && (
             <div
               className={cn(
-                "space-y-8",
+                "space-y-8 bg-background",
                 phase === "to-detail" &&
                   `animate-out slide-out-to-left fade-out duration-${ANIM_DURATION}`,
                 phase === "to-list" &&
-                  `absolute inset-x-0 top-0 animate-in slide-in-from-left fade-in duration-${ANIM_DURATION}`,
+                  `absolute inset-x-0 top-0 z-10 animate-in slide-in-from-left fade-in duration-${ANIM_DURATION}`,
               )}
             >
               <PageHeader
@@ -717,10 +571,36 @@ function CompanyDashboardContent() {
                     status={status}
                     rejectionReason={verification?.rejectionReason ?? null}
                   />
-                  {partners.length > 0 && <PartnersTable />}
+                  {partners.length > 0 && (
+                    <CompanyPartnersTable
+                      partners={partners}
+                      isLoading={moasLoading}
+                      canRequest={canRequest}
+                      initialSearch={initialPartnerSearch}
+                      initialStatuses={initialPartnerStatuses}
+                      initialRanges={initialActiveMoaRanges}
+                      initialPage={initialPartnerPage}
+                      onPartnerClick={(partner) =>
+                        navigateToDetail(partner.university.id)
+                      }
+                      onQueryChange={updatePartnerQuery}
+                    />
+                  )}
                 </>
               ) : (
-                <PartnersTable />
+                <CompanyPartnersTable
+                  partners={partners}
+                  isLoading={moasLoading}
+                  canRequest={canRequest}
+                  initialSearch={initialPartnerSearch}
+                  initialStatuses={initialPartnerStatuses}
+                  initialRanges={initialActiveMoaRanges}
+                  initialPage={initialPartnerPage}
+                  onPartnerClick={(partner) =>
+                    navigateToDetail(partner.university.id)
+                  }
+                  onQueryChange={updatePartnerQuery}
+                />
               )}
             </div>
           )}
@@ -729,9 +609,9 @@ function CompanyDashboardContent() {
           {showDetail && (
             <div
               className={cn(
-                "space-y-4",
+                "space-y-4 bg-background",
                 phase === "to-detail" &&
-                  `absolute inset-x-0 top-0 animate-in slide-in-from-right fade-in duration-${ANIM_DURATION}`,
+                  `absolute inset-x-0 top-0 z-10 animate-in slide-in-from-right fade-in duration-${ANIM_DURATION}`,
                 phase === "to-list" &&
                   `animate-out slide-out-to-right fade-out duration-${ANIM_DURATION}`,
               )}
