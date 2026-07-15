@@ -73,6 +73,7 @@ export * from "./blacklistCompanyDto";
 export * from "./claimInviteDto";
 export * from "./companyAuthListItemDto";
 export * from "./companyAuthListResponse";
+export * from "./companyCareerLinkStatusResponse";
 export * from "./companyCareerListingLinkResponse";
 export * from "./companyClaimInviteResponse";
 export * from "./companyControllerCreateQueuedMoaBody";

@@ -25,6 +25,7 @@ import type {
 
 import type {
   ClaimInviteDto,
+  CompanyCareerLinkStatusResponse,
   CompanyCareerListingLinkResponse,
   CompanyClaimInviteResponse,
   CompanyControllerCreateQueuedMoaBody,
@@ -632,6 +633,266 @@ export function useCompanyControllerGetVerificationSuspense<
 } {
   const queryOptions =
     getCompanyControllerGetVerificationSuspenseQueryOptions(options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const companyControllerCareerLinkStatus = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<CompanyCareerLinkStatusResponse>({
+    url: `/api/company/career-link-status`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getCompanyControllerCareerLinkStatusQueryKey = () => {
+  return [`/api/company/career-link-status`] as const;
+};
+
+export const getCompanyControllerCareerLinkStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerCareerLinkStatusQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>
+  > = ({ signal }) => companyControllerCareerLinkStatus(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerCareerLinkStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>
+>;
+export type CompanyControllerCareerLinkStatusQueryError = ErrorResponse;
+
+export function useCompanyControllerCareerLinkStatus<
+  TData = Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+  TError = ErrorResponse,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerCareerLinkStatus<
+  TData = Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerCareerLinkStatus<
+  TData = Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerCareerLinkStatus<
+  TData = Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getCompanyControllerCareerLinkStatusQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getCompanyControllerCareerLinkStatusSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerCareerLinkStatusQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>
+  > = ({ signal }) => companyControllerCareerLinkStatus(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerCareerLinkStatusSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>
+>;
+export type CompanyControllerCareerLinkStatusSuspenseQueryError = ErrorResponse;
+
+export function useCompanyControllerCareerLinkStatusSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+  TError = ErrorResponse,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerCareerLinkStatusSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerCareerLinkStatusSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerCareerLinkStatusSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerCareerLinkStatus>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getCompanyControllerCareerLinkStatusSuspenseQueryOptions(options);
 
   const query = useSuspenseQuery(
     queryOptions,
