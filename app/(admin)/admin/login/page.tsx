@@ -2,7 +2,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { getAdminControllerOverviewQueryKey, useAdminAuthControllerLogin } from "@/app/api";
+import {
+  getAdminControllerOverviewQueryKey,
+  useAdminAuthControllerLogin,
+} from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,16 +21,20 @@ export default function AdminLoginPage() {
 
   const login = useAdminAuthControllerLogin({
     mutation: {
-    onSuccess: () => {
-      queryClient.resetQueries({ queryKey: getAdminControllerOverviewQueryKey() });
-      router.replace("/admin/universities");
-    },
-    onError: (e: Error) => setError(e.message),
+      onSuccess: () => {
+        queryClient.resetQueries({
+          queryKey: getAdminControllerOverviewQueryKey(),
+        });
+        router.replace("/admin/universities");
+      },
+      onError: (e: Error) => setError(e.message),
     },
   });
 
   return (
     <AuthShell
+      variant="split"
+      splitFlush
       portal="Platform Admin"
       title="Admin sign in"
       description="Restricted access for platform administrators."

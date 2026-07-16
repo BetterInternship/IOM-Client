@@ -28,6 +28,8 @@ import type {
   CompanyAuthListResponse,
   CompanyForgotDto,
   CompanyForgotResponse,
+  CompanyIdentityCheckDto,
+  CompanyIdentityCheckResponse,
   CompanyLoginDto,
   CompanyLoginInviteResponse,
   CompanyOtpRequestDto,
@@ -380,6 +382,87 @@ export const useCompanyAuthControllerRegister = <
 > => {
   const mutationOptions =
     getCompanyAuthControllerRegisterMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const companyAuthControllerCheckIdentity = (
+  companyIdentityCheckDto: CompanyIdentityCheckDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<CompanyIdentityCheckResponse>({
+    url: `/api/auth/company/register/check-identity`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: companyIdentityCheckDto,
+    signal,
+  });
+};
+
+export const getCompanyAuthControllerCheckIdentityMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyAuthControllerCheckIdentity>>,
+    TError,
+    { data: CompanyIdentityCheckDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyAuthControllerCheckIdentity>>,
+  TError,
+  { data: CompanyIdentityCheckDto },
+  TContext
+> => {
+  const mutationKey = ["companyAuthControllerCheckIdentity"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyAuthControllerCheckIdentity>>,
+    { data: CompanyIdentityCheckDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return companyAuthControllerCheckIdentity(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyAuthControllerCheckIdentityMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyAuthControllerCheckIdentity>>
+>;
+export type CompanyAuthControllerCheckIdentityMutationBody =
+  CompanyIdentityCheckDto;
+export type CompanyAuthControllerCheckIdentityMutationError = ErrorResponse;
+
+export const useCompanyAuthControllerCheckIdentity = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyAuthControllerCheckIdentity>>,
+      TError,
+      { data: CompanyIdentityCheckDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyAuthControllerCheckIdentity>>,
+  TError,
+  { data: CompanyIdentityCheckDto },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyAuthControllerCheckIdentityMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

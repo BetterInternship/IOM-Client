@@ -3,7 +3,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { getUniversityControllerMeQueryKey, useUniversityAuthControllerLogin } from "@/app/api";
+import {
+  getUniversityControllerMeQueryKey,
+  useUniversityAuthControllerLogin,
+} from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,16 +22,20 @@ export default function UniversityLoginPage() {
 
   const login = useUniversityAuthControllerLogin({
     mutation: {
-    onSuccess: () => {
-      queryClient.resetQueries({ queryKey: getUniversityControllerMeQueryKey() });
-      router.replace("/university/partners");
-    },
-    onError: (e: Error) => setError(e.message),
+      onSuccess: () => {
+        queryClient.resetQueries({
+          queryKey: getUniversityControllerMeQueryKey(),
+        });
+        router.replace("/university/partners");
+      },
+      onError: (e: Error) => setError(e.message),
     },
   });
 
   return (
     <AuthShell
+      variant="split"
+      splitFlush
       portal="University"
       title="Sign in"
       description="Sign in to manage your MOAs, partners, and staff accounts."
