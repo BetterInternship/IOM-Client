@@ -30,6 +30,7 @@ import {
   ClipboardList,
   Clock,
   Plus,
+  ShieldCheck,
 } from "lucide-react";
 import { RequestDialog } from "@/components/moa-request-dialog";
 import { CareerListingCta } from "@/components/career-listing-cta";
@@ -160,6 +161,7 @@ function CompanyDashboardContent() {
   const openUniversityId = searchParams.get("open_university_id");
   const inviteTemplateId = searchParams.get("template_id");
   const inviteId = searchParams.get("invite_id");
+  const showApprovalPending = searchParams.get("approval_pending") === "1";
 
   const updatePartnerQuery = (
     search: string,
@@ -209,6 +211,64 @@ function CompanyDashboardContent() {
       (inviteId && invite.id === inviteId) ||
       invite.university?.id === openUniversityId,
   )?.university?.registered_name;
+
+  useEffect(() => {
+    if (!showApprovalPending) return;
+    openModal(
+      "approval-pending",
+      <div className="space-y-6">
+        <div className="rounded-[0.33em] border border-warning/20 bg-warning/10 p-4">
+          <div className="flex items-start gap-3">
+            <span className="bg-background text-warning flex h-11 w-11 shrink-0 items-center justify-center rounded-full shadow-sm">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <div className="space-y-1">
+              <p className="text-base font-semibold text-gray-900">
+                Your profile is in review
+              </p>
+              <p className="text-muted-foreground text-sm leading-6">
+                Your company profile is complete and has been submitted to the
+                BetterInternship team for approval. We’ll email you once your
+                company is approved.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-[0.33em] border border-gray-200 p-4">
+          <p className="text-sm font-medium text-gray-900">What happens next</p>
+          <div className="space-y-3 text-sm">
+            <div className="flex gap-3">
+              <Clock className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+              <p className="text-muted-foreground">
+                You can browse your dashboard while approval is pending.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <ShieldCheck className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+              <p className="text-muted-foreground">
+                MOA requests unlock after the platform team verifies your
+                company.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          size="lg"
+          className="w-full"
+          onClick={() => closeModal("approval-pending")}
+        >
+          View dashboard
+        </Button>
+      </div>,
+      {
+        title: "Waiting for approval",
+        panelClassName: "sm:!max-w-lg",
+        onClose: () => router.replace("/company/dashboard"),
+      },
+    );
+  }, [closeModal, openModal, router, showApprovalPending]);
 
   useEffect(() => {
     if (!openUniversityId) {

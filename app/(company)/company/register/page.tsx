@@ -575,9 +575,11 @@ function RegisterPageContent() {
             onChange={setCode}
             autoFocus
             disabled={verify.isPending}
-            onComplete={() => {
+            onComplete={(completedCode) => {
               setError("");
-              verify.mutate({ data: { repEmail: form.repEmail, code } });
+              verify.mutate({
+                data: { repEmail: form.repEmail, code: completedCode },
+              });
             }}
           />
 

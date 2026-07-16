@@ -109,6 +109,8 @@ function ProfileContent() {
   });
 
   const [uploadingType, setUploadingType] = useState<string | null>(null);
+  const [awaitingCompletionReview, setAwaitingCompletionReview] =
+    useState(false);
   const documentInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const { data: docsData } = useCompanyControllerGetDocuments({
@@ -155,6 +157,28 @@ function ProfileContent() {
     router,
   ]);
 
+  useEffect(() => {
+    if (
+      !awaitingCompletionReview ||
+      vLoading ||
+      verification?.status !== "pending"
+    )
+      return;
+    const params = new URLSearchParams({ approval_pending: "1" });
+    if (inviteUniId) params.set("open_university_id", inviteUniId);
+    if (inviteTemplateId) params.set("template_id", inviteTemplateId);
+    if (inviteId) params.set("invite_id", inviteId);
+    router.replace(`/company/dashboard?${params}`);
+  }, [
+    awaitingCompletionReview,
+    inviteId,
+    inviteTemplateId,
+    inviteUniId,
+    router,
+    verification?.status,
+    vLoading,
+  ]);
+
   const save = useCompanyControllerPatchProfile({
     mutation: {
       onSuccess: (_data, variables) => {
@@ -166,6 +190,7 @@ function ProfileContent() {
         queryClient.invalidateQueries({
           queryKey: getCompanyControllerGetVerificationQueryKey(),
         });
+        setAwaitingCompletionReview(true);
         toast("Profile saved", toastPresets.success);
       },
       onError: (e: Error) => toast.error(e.message),
@@ -182,6 +207,7 @@ function ProfileContent() {
         queryClient.invalidateQueries({
           queryKey: getCompanyControllerGetVerificationQueryKey(),
         });
+        setAwaitingCompletionReview(true);
         toast("Document uploaded", toastPresets.success);
       },
       onError: (e: Error) => {
