@@ -520,13 +520,25 @@ export function RequestDialog({
           disabled={!step2Ready || isRequestPending}
         >
           {isRequestPending && <Loader2 className="animate-spin" />}
-          {isRequestPending ? "Requesting…" : "Request MOA"}
+          {isRequestPending
+            ? verified
+              ? "Requesting…"
+              : "Queueing…"
+            : verified
+              ? "Request MOA"
+              : "Queue MOA"}
         </Button>
       </div>
     );
 
   return (
     <div className="space-y-4 sm:w-[min(92vw,64rem)]">
+      {!verified && (
+        <div className="border-primary/20 bg-primary/5 rounded-[0.33em] border px-4 py-3 text-sm text-gray-700">
+          Your company is still pending approval. This request will be queued
+          and issued automatically once the platform team approves your company.
+        </div>
+      )}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
         {requestSteps.map((requestStep, index) => {
           const Icon = requestStep.icon;

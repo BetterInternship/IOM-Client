@@ -380,8 +380,8 @@ export function CompanyPartnersTable({
       emptyState={{
         title: "No partner universities yet",
         description: canRequest
-          ? "Browse partner universities and request your first memorandum of agreement."
-          : "Once your company is verified, you can request MOAs from partner universities.",
+          ? "Browse partner universities and request your first memorandum of agreement. Pending companies can queue requests for automatic issuance after approval."
+          : "Complete your company verification requirements to request MOAs from partner universities.",
         action: canRequest ? (
           <Button asChild variant="outline" scheme="primary">
             <Link href="/universities">Browse universities</Link>

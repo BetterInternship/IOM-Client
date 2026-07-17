@@ -21,10 +21,12 @@ export default function UniversityDirectoryPage() {
   const { data: verification, isLoading: vLoading } =
     useCompanyVerification(!!company);
   const verified = verification?.status === "verified";
+  const status = verification?.status;
+  const canRequestMoa = verified || status === "pending";
   const { openModal, closeModal } = useModal();
 
   const { data, isLoading: uniLoading } = useCompanyControllerListUniversities({
-    query: { enabled: !!company && verified },
+    query: { enabled: !!company && canRequestMoa },
   });
 
   const requestableUniversities = useMemo(
@@ -65,8 +67,7 @@ export default function UniversityDirectoryPage() {
   }
   if (!company) return null;
 
-  if (!verified) {
-    const status = verification?.status;
+  if (!canRequestMoa) {
     return (
       <PageContainer className="space-y-6">
         <PageHeader
@@ -81,7 +82,7 @@ export default function UniversityDirectoryPage() {
               ? "Complete your profile and upload all required documents so the platform team can verify your company."
               : status === "expired"
                 ? "Your company verification has expired. Please re-upload your documents to request re-review."
-                : "Your company is pending verification by the platform team. You can request MOAs once it's approved."}{" "}
+                : "Your company is pending verification by the platform team. You can queue MOA requests once your profile is complete."}{" "}
           <Link href="/profile" className="text-primary underline">
             Go to your profile
           </Link>
@@ -95,8 +96,19 @@ export default function UniversityDirectoryPage() {
     <PageContainer className="space-y-8 pb-12">
       <PageHeader
         title="Request MOA"
-        description="This is a list of universities you can request a MOA with."
+        description={
+          verified
+            ? "This is a list of universities you can request a MOA with."
+            : "Your MOA requests will be queued and issued automatically after approval."
+        }
       />
+
+      {!verified && (
+        <div className="border-primary/20 bg-primary/5 rounded-[0.33em] border p-4 text-sm text-gray-700">
+          Your company is pending platform approval. You can still submit MOA
+          requests now; they will stay queued until your company is approved.
+        </div>
+      )}
 
       <RequestableUniversitiesTable
         universities={requestableUniversities}

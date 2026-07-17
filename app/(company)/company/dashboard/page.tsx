@@ -94,8 +94,8 @@ function VerificationBanner({
         <div className="space-y-0.5">
           <p className="text-sm font-medium text-gray-900">Pending approval</p>
           <p className="text-muted-foreground text-sm">
-            You can request MOAs once the platform team verifies your company.
-            We&apos;ll email you when it&apos;s done.
+            You can submit MOA requests now. They&apos;ll be queued and issued
+            automatically once the platform team verifies your company.
           </p>
         </div>
       </Card>
@@ -161,7 +161,10 @@ function CompanyDashboardContent() {
   const openUniversityId = searchParams.get("open_university_id");
   const inviteTemplateId = searchParams.get("template_id");
   const inviteId = searchParams.get("invite_id");
-  const showApprovalPending = searchParams.get("approval_pending") === "1";
+  const showApprovalPending =
+    searchParams.get("approval_pending") === "1" ||
+    (process.env.NODE_ENV !== "production" &&
+      searchParams.get("debug_approval_pending") === "1");
 
   const updatePartnerQuery = (
     search: string,
@@ -228,8 +231,8 @@ function CompanyDashboardContent() {
               </p>
               <p className="text-muted-foreground text-sm leading-6">
                 Your company profile is complete and has been submitted to the
-                BetterInternship team for approval. We’ll email you once your
-                company is approved.
+                BetterInternship team for approval. We&apos;ll email you once
+                your company is approved.
               </p>
             </div>
           </div>
@@ -247,8 +250,8 @@ function CompanyDashboardContent() {
             <div className="flex gap-3">
               <ShieldCheck className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
               <p className="text-muted-foreground">
-                MOA requests unlock after the platform team verifies your
-                company.
+                MOA requests submitted while pending stay queued and issue
+                automatically after approval.
               </p>
             </div>
           </div>
@@ -257,9 +260,12 @@ function CompanyDashboardContent() {
         <Button
           size="lg"
           className="w-full"
-          onClick={() => closeModal("approval-pending")}
+          onClick={() => {
+            closeModal("approval-pending", { skipOnClose: true });
+            router.replace("/company/universities");
+          }}
         >
-          View dashboard
+          Queue MOA
         </Button>
       </div>,
       {
@@ -358,7 +364,7 @@ function CompanyDashboardContent() {
   );
 
   const status = verification?.status;
-  const canRequest = status === "verified";
+  const canRequest = verified || status === "pending";
   const pendingInvites = (invitesData?.invites ?? []).filter(
     (inv) => inv.university !== null,
   );
@@ -381,7 +387,7 @@ function CompanyDashboardContent() {
         )}
       </PageHeader>
 
-      {canRequest && <CareerListingCta />}
+      {verified && <CareerListingCta />}
 
       {pendingInvites.length > 0 &&
         (() => {

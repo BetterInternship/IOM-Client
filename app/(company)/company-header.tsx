@@ -6,7 +6,10 @@ import {
   useCompanyProfile,
   useCompanyVerification,
 } from "@/app/providers/company-profile.provider";
-import { companyAuthControllerLogout, useCompanyControllerListPendingInvites } from "@/app/api";
+import {
+  companyAuthControllerLogout,
+  useCompanyControllerListPendingInvites,
+} from "@/app/api";
 
 const AUTH_SUFFIXES = [
   "/login",
@@ -21,6 +24,7 @@ export function CompanyHeader() {
   const { data: verification } = useCompanyVerification(!!company);
   const status = verification?.status;
   const verified = status === "verified";
+  const canRequestMoa = verified || status === "pending";
   const incomplete = status === "incomplete";
 
   const { data: invitesData } = useCompanyControllerListPendingInvites({
@@ -29,7 +33,9 @@ export function CompanyHeader() {
       staleTime: 30_000,
     },
   });
-  const pendingInviteCount = (invitesData?.invites ?? []).filter((inv) => inv.university !== null).length;
+  const pendingInviteCount = (invitesData?.invites ?? []).filter(
+    (inv) => inv.university !== null,
+  ).length;
 
   // Hide the app chrome on the unauthenticated pages.
   if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
@@ -37,8 +43,10 @@ export function CompanyHeader() {
   // Partners and the request surface are hidden until the company has a complete profile.
   const nav: NavItem[] = [
     ...(!incomplete ? [{ href: "/dashboard", label: "Partners" }] : []),
-    ...(verified ? [{ href: "/universities", label: "Request MOA" }] : []),
-    ...(pendingInviteCount > 0 ? [{ href: "/invites", label: "Invitations", badge: pendingInviteCount }] : []),
+    ...(canRequestMoa ? [{ href: "/universities", label: "Request MOA" }] : []),
+    ...(pendingInviteCount > 0
+      ? [{ href: "/invites", label: "Invitations", badge: pendingInviteCount }]
+      : []),
   ];
 
   return (
