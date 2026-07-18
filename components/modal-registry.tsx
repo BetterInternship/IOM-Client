@@ -76,7 +76,12 @@ export function useIomModalRegistry() {
             initialCompanyName={opts.initialCompanyName}
             initialEmail={opts.initialEmail}
           />,
-          { title: "Invite a company", panelClassName: "!w-full sm:!max-w-md" },
+          {
+            title: "Invite a company",
+            panelClassName: "!w-full sm:!max-w-xl sm:!overflow-visible",
+            contentClassName:
+              "max-h-[calc(100dvh-4rem)] overflow-auto px-4 pb-4 sm:max-h-none sm:overflow-visible",
+          },
         ),
       close: () => closeModal("invite-company"),
     },

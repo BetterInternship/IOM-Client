@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { ChevronDown, Loader2 } from "lucide-react";
+import { Building2, CheckCircle2, Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
@@ -12,7 +12,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 interface AvailableTemplate {
   id: string;
@@ -25,6 +33,11 @@ interface RegisteredCompany {
   registered_name: string;
   email: string;
 }
+
+const inviteSteps = [
+  { title: "Choose company", icon: Building2 },
+  { title: "Invitation details", icon: Mail },
+];
 
 function MorphHeight({ children }: { children: React.ReactNode }) {
   const outerRef = useRef<HTMLDivElement>(null);
@@ -92,9 +105,12 @@ export function CompanyInviteForm({
 }) {
   const [step, setStep] = useState<1 | 2>(initialStep);
   const [mode, setMode] = useState<"registered" | "new">(initialMode);
-  const [transitioningFrom, setTransitioningFrom] = useState<"registered" | "new" | null>(null);
+  const [transitioningFrom, setTransitioningFrom] = useState<
+    "registered" | "new" | null
+  >(null);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [selectedCompany, setSelectedCompany] = useState<RegisteredCompany | null>(null);
+  const [selectedCompany, setSelectedCompany] =
+    useState<RegisteredCompany | null>(null);
   const [companyName, setCompanyName] = useState(initialCompanyName);
   const [email, setEmail] = useState(initialEmail);
   const [templateId, setTemplateId] = useState("");
@@ -118,7 +134,9 @@ export function CompanyInviteForm({
 
   useEffect(() => {
     if (!initialCompanyId || selectedCompany) return;
-    const company = (companiesData?.companies ?? []).find((c) => c.id === initialCompanyId);
+    const company = (companiesData?.companies ?? []).find(
+      (c) => c.id === initialCompanyId,
+    );
     if (company) setSelectedCompany(company);
   }, [companiesData, initialCompanyId, selectedCompany]);
 
@@ -130,16 +148,25 @@ export function CompanyInviteForm({
         .then((r) => r.data as { templates: AvailableTemplate[] }),
   });
 
-  const availableTemplates = (templatesData?.templates ?? []).filter((t) => t.is_available);
+  const availableTemplates = (templatesData?.templates ?? []).filter(
+    (t) => t.is_available,
+  );
 
   const companyOptions = useMemo(
-    () => (companiesData?.companies ?? []).map((c) => ({ id: c.id, name: c.registered_name })),
+    () =>
+      (companiesData?.companies ?? []).map((c) => ({
+        id: c.id,
+        name: c.registered_name,
+      })),
     [companiesData],
   );
 
-  const invitedEmail = mode === "registered" ? (selectedCompany?.email ?? "") : email.trim();
+  const invitedEmail =
+    mode === "registered" ? (selectedCompany?.email ?? "") : email.trim();
   const invitedName =
-    mode === "registered" ? selectedCompany?.registered_name : companyName.trim() || undefined;
+    mode === "registered"
+      ? selectedCompany?.registered_name
+      : companyName.trim() || undefined;
 
   const send = useMutation({
     mutationFn: () =>
@@ -165,16 +192,63 @@ export function CompanyInviteForm({
   });
 
   const step1CanNext =
-    mode === "registered" ? !!selectedCompany : !!companyName.trim() && !!email.trim();
+    mode === "registered"
+      ? !!selectedCompany
+      : !!companyName.trim() && !!email.trim();
   const canSend = !!invitedEmail && (mode === "new" || !!selectedCompany);
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">Step {step} of 2</p>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
+        {inviteSteps.map((inviteStep, index) => {
+          const Icon = inviteStep.icon;
+          const active = index === step - 1;
+          const done = index < step - 1;
+
+          return (
+            <div
+              key={inviteStep.title}
+              className={cn(
+                "flex min-w-0 items-center gap-2 rounded-[0.33em] border p-3",
+                active
+                  ? "border-primary/60 bg-primary/5"
+                  : done
+                    ? "border-supportive/40 bg-supportive/5"
+                    : "border-border/60",
+              )}
+              aria-current={active ? "step" : undefined}
+            >
+              <div
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                  active ? "bg-primary/10" : "bg-gray-100",
+                )}
+              >
+                {done ? (
+                  <CheckCircle2 className="text-supportive h-5 w-5" />
+                ) : (
+                  <Icon
+                    className={cn(
+                      "h-5 w-5",
+                      active ? "text-primary" : "text-muted-foreground",
+                    )}
+                  />
+                )}
+              </div>
+              <div className="min-w-0 text-sm leading-tight font-medium">
+                <div className="text-xs text-gray-400">Step {index + 1}</div>
+                <div className="truncate">{inviteStep.title}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       <MorphHeight>
         {step === 1 && (
-          <div className={`relative ${transitioningFrom !== null ? "overflow-hidden" : ""}`}>
+          <div
+            className={`relative ${transitioningFrom !== null ? "overflow-hidden" : ""}`}
+          >
             {transitioningFrom !== null && (
               <div className="animate-out fade-out-0 slide-out-to-bottom-2 fill-mode-forwards pointer-events-none absolute inset-x-0 top-0 space-y-3 duration-200">
                 {transitioningFrom === "registered" ? (
@@ -197,11 +271,19 @@ export function CompanyInviteForm({
                   <>
                     <div className="space-y-1.5">
                       <Label>Company name</Label>
-                      <Input value={companyName} readOnly placeholder="Acme Corporation" />
+                      <Input
+                        value={companyName}
+                        readOnly
+                        placeholder="Acme Corporation"
+                      />
                     </div>
                     <div className="space-y-1.5">
                       <Label>Company email</Label>
-                      <Input value={email} readOnly placeholder="rep@company.com" />
+                      <Input
+                        value={email}
+                        readOnly
+                        placeholder="rep@company.com"
+                      />
                     </div>
                     <button type="button" className="text-primary text-sm">
                       ← Search registered companies
@@ -211,7 +293,13 @@ export function CompanyInviteForm({
               </div>
             )}
 
-            <div className={transitioningFrom !== null ? "animate-in fade-in-0 slide-in-from-top-2 duration-200 space-y-3" : "space-y-3"}>
+            <div
+              className={
+                transitioningFrom !== null
+                  ? "animate-in fade-in-0 slide-in-from-top-2 duration-200 space-y-3"
+                  : "space-y-3"
+              }
+            >
               {mode === "registered" ? (
                 <>
                   {companiesLoading ? (
@@ -222,7 +310,9 @@ export function CompanyInviteForm({
                       value={selectedCompany?.id ?? null}
                       onChange={(id) => {
                         const company = id
-                          ? (companiesData?.companies ?? []).find((c) => c.id === id) ?? null
+                          ? ((companiesData?.companies ?? []).find(
+                              (c) => c.id === id,
+                            ) ?? null)
                           : null;
                         setSelectedCompany(company);
                       }}
@@ -282,57 +372,71 @@ export function CompanyInviteForm({
         )}
 
         {step === 2 && (
-          <div className="space-y-4">
-            <div className="rounded-[0.33em] border border-gray-200 bg-gray-50 px-3 py-2.5">
-              <p className="text-muted-foreground text-xs">Inviting</p>
-              {mode === "registered" && selectedCompany ? (
-                <>
-                  <p className="text-sm font-medium text-gray-900">
-                    {selectedCompany.registered_name}
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label>Recipient</Label>
+              <div className="flex items-center gap-3 rounded-[0.33em] border border-gray-200 bg-gray-50 px-3 py-3">
+                <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-[0.33em]">
+                  <Building2 className="size-5" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-gray-900">
+                    {mode === "registered" && selectedCompany
+                      ? selectedCompany.registered_name
+                      : companyName}
                   </p>
-                  <p className="text-muted-foreground text-xs">{selectedCompany.email}</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm font-medium text-gray-900">{companyName}</p>
-                  <p className="text-muted-foreground text-xs">{email}</p>
-                </>
-              )}
-            </div>
-
-            {availableTemplates.length > 0 && (
-              <div className="space-y-1.5">
-                <Label htmlFor="invite-template">MOA template to send (optional)</Label>
-                <div className="relative">
-                  <select
-                    id="invite-template"
-                    value={templateId}
-                    onChange={(e) => setTemplateId(e.target.value)}
-                    className="border-input bg-background focus:ring-ring w-full appearance-none rounded-[0.33em] border py-2 pl-3 pr-8 text-sm focus:outline-none focus:ring-1"
-                  >
-                    <option value="">No specific template</option>
-                    {availableTemplates.map((t) => (
-                      <option key={t.template.id} value={t.template.id}>
-                        {t.template.name}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <p className="text-muted-foreground truncate text-xs">
+                    {mode === "registered" && selectedCompany
+                      ? selectedCompany.email
+                      : email}
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="invite-message">Personal message (optional)</Label>
+            <div className="space-y-2">
+              <Label htmlFor="invite-template">
+                Preferred MOA template (optional)
+              </Label>
+              <Select
+                value={templateId || "company-decides"}
+                onValueChange={(value) =>
+                  setTemplateId(value === "company-decides" ? "" : value)
+                }
+              >
+                <SelectTrigger id="invite-template" className="h-10 max-h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="company-decides">
+                    Company decides
+                  </SelectItem>
+                  {availableTemplates.map((t) => (
+                    <SelectItem key={t.template.id} value={t.template.id}>
+                      {t.template.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-xs">
+                They can choose their preferred template during setup.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="invite-message">Welcome message (optional)</Label>
               <Textarea
                 id="invite-message"
-                rows={3}
+                rows={4}
+                className="min-h-28 resize-none"
                 placeholder="Add a note to the company..."
                 maxLength={500}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
               />
-              <p className="text-muted-foreground text-right text-xs">{message.length}/500</p>
+              <p className="text-muted-foreground text-right text-xs">
+                {message.length}/500
+              </p>
             </div>
 
             {error && (
@@ -347,15 +451,33 @@ export function CompanyInviteForm({
       <div className="flex justify-end gap-2 pt-2">
         {step === 1 ? (
           <>
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button onClick={() => setStep(2)} disabled={!step1CanNext}>Next</Button>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button onClick={() => setStep(2)} disabled={!step1CanNext}>
+              Next
+            </Button>
           </>
         ) : (
           <>
-            <Button variant="outline" onClick={() => { setStep(1); setError(""); }}>Back</Button>
-            <Button onClick={() => { setError(""); send.mutate(); }} disabled={!canSend || send.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setStep(1);
+                setError("");
+              }}
+            >
+              Back
+            </Button>
+            <Button
+              onClick={() => {
+                setError("");
+                send.mutate();
+              }}
+              disabled={!canSend || send.isPending}
+            >
               {send.isPending && <Loader2 className="animate-spin" />}
-              {send.isPending ? "Sending..." : "Send invite"}
+              {send.isPending ? "Sending..." : "Send invitation"}
             </Button>
           </>
         )}
