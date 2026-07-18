@@ -10,6 +10,7 @@ import {
   type ResourceFilterValue,
 } from "@/components/ui/use-resource-table";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
+import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
 import { formatDateWithoutTime } from "@/lib/utils";
 
 export interface CompanyInvite {
@@ -31,10 +32,9 @@ function InviteStatusBadge({ status }: { status: CompanyInvite["status"] }) {
   }
   if (status === "used_waiting") {
     return (
-      <PartnershipStatusBadge
-        status="used_waiting"
-        label="Registered — awaiting MOA"
-      />
+      <span className="bg-primary/10 text-primary inline-flex max-w-full items-center rounded-full px-2.5 py-1.5 text-sm leading-tight font-semibold whitespace-normal">
+        Registered · awaiting MOA
+      </span>
     );
   }
   if (status === "expired") {
@@ -93,21 +93,23 @@ export function UniversityInvitesTable({
     {
       id: "status",
       header: "Status",
-      width: "w-[12%]",
+      width: "w-[22%]",
       getSortValue: (invite) => invite.status,
       render: (invite) => <InviteStatusBadge status={invite.status} />,
     },
     {
       id: "company",
       header: "Company",
-      width: "w-[30%]",
+      width: "w-[24%]",
       getSortValue: resolveDisplayName,
       render: (invite) => {
         const name = resolveDisplayName(invite);
         const showEmail = name !== invite.invited_email;
         return (
           <div className="min-w-0">
-            <p className="truncate font-medium text-gray-900">{name}</p>
+            <TruncatedTooltip className="font-medium text-gray-900">
+              {name}
+            </TruncatedTooltip>
             {showEmail && (
               <p className="text-muted-foreground truncate text-xs">
                 {invite.invited_email}
@@ -120,7 +122,7 @@ export function UniversityInvitesTable({
     {
       id: "template",
       header: "Template",
-      width: "w-[25%]",
+      width: "w-[23%]",
       getSortValue: (invite) => invite.template_name ?? "",
       render: (invite) => (
         <span className="text-muted-foreground">
@@ -143,7 +145,7 @@ export function UniversityInvitesTable({
     {
       id: "expires",
       header: "Expires",
-      width: "w-[18%]",
+      width: "w-[16%]",
       getSortValue: (invite) => invite.expires_at,
       render: (invite) => (
         <span className="text-muted-foreground">
@@ -196,9 +198,9 @@ export function UniversityInvitesTable({
           <article className="px-4 py-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="truncate text-sm font-semibold text-gray-900">
+                <TruncatedTooltip className="text-sm font-semibold text-gray-900">
                   {name}
-                </h2>
+                </TruncatedTooltip>
                 {showEmail && (
                   <p className="text-muted-foreground mt-0.5 truncate text-xs">
                     {invite.invited_email}
