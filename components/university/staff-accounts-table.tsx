@@ -7,7 +7,7 @@ import {
   type ResourceTableColumn,
 } from "@/components/ui/resource-table";
 import { useResourceTable } from "@/components/ui/use-resource-table";
-import { Badge } from "@/components/ui/badge";
+import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -22,13 +22,9 @@ export interface StaffAccount {
 
 function AccountStatus({ account }: { account: StaffAccount }) {
   return account.is_deactivated ? (
-    <Badge type="destructive" strength="medium">
-      Deactivated
-    </Badge>
+    <PartnershipStatusBadge status="rejected" label="Deactivated" />
   ) : (
-    <Badge type="supportive" strength="medium">
-      Active
-    </Badge>
+    <PartnershipStatusBadge status="active" label="Active" />
   );
 }
 
