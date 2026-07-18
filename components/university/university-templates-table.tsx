@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 import { useIomModalRegistry } from "@/components/modal-registry";
 import {
@@ -10,7 +10,6 @@ import {
 import { useResourceTable } from "@/components/ui/use-resource-table";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Switch } from "@/components/ui/switch";
 
 export interface TemplateOffer {
   id: string;
@@ -36,22 +35,20 @@ function TemplateAvailability({
   return (
     <button
       type="button"
-      className="flex cursor-pointer items-center gap-2 disabled:opacity-50"
+      className={`inline-flex h-9 min-w-24 cursor-pointer items-center justify-center gap-2 rounded-[0.33em] border px-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+        offer.is_available
+          ? "border-supportive bg-supportive text-supportive-foreground hover:bg-supportive/90"
+          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+      }`}
       onClick={() => onToggle(offer)}
       disabled={isPending}
     >
-      <span
-        className={`text-xs font-medium ${
-          offer.is_available ? "text-supportive" : "text-muted-foreground"
-        }`}
-      >
-        {offer.is_available ? "Offered" : "Hidden"}
-      </span>
-      <Switch
-        checked={offer.is_available}
-        className="data-[state=checked]:bg-supportive pointer-events-none"
-        tabIndex={-1}
-      />
+      {offer.is_available ? (
+        <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+      ) : (
+        <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
+      )}
+      {offer.is_available ? "Offered" : "Hidden"}
     </button>
   );
 }
@@ -80,12 +77,34 @@ export function UniversityTemplatesTable({
   const { confirmAction, previewTemplate } = useIomModalRegistry();
 
   const handleToggle = (offer: TemplateOffer) => {
+    const isHidingLastOfferedTemplate =
+      offer.is_available &&
+      offers.filter((currentOffer) => currentOffer.is_available).length === 1;
+
     confirmAction.open({
-      title: `${offer.is_available ? "Hide" : "Offer"} this template?`,
-      description: offer.is_available
-        ? `Companies will no longer be able to request new MOAs using "${offer.template.name}". Existing active MOAs are unaffected.`
-        : `Companies will be able to request MOAs using "${offer.template.name}".`,
-      confirmLabel: offer.is_available ? "Hide" : "Offer",
+      title: isHidingLastOfferedTemplate
+        ? "Hide your last offered template?"
+        : `${offer.is_available ? "Hide" : "Offer"} this template?`,
+      description: isHidingLastOfferedTemplate ? (
+        <>
+          <strong>This is your last available MOA template.</strong>
+          <br />
+          <br />
+          If you hide it, companies will no longer be able to start new MOA
+          requests with your university until you make another template
+          available.
+        </>
+      ) : offer.is_available ? (
+        `Companies will no longer be able to request new MOAs using "${offer.template.name}". Existing active MOAs are unaffected.`
+      ) : (
+        `Companies will be able to request MOAs using "${offer.template.name}".`
+      ),
+      confirmLabel: isHidingLastOfferedTemplate
+        ? "Hide anyway"
+        : offer.is_available
+          ? "Hide"
+          : "Offer",
+      tone: isHidingLastOfferedTemplate ? "warning" : "default",
       onConfirm: async () => {
         await onToggle(offer.template.id, !offer.is_available);
       },

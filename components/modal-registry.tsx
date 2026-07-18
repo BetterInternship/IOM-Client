@@ -5,8 +5,15 @@ import { CompanyInviteForm } from "@/components/invites/company-invite-form";
 import { TemplatePreviewContent } from "@/components/moa-request-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, FilePlus2, Hourglass, Loader2, Mail } from "lucide-react";
-import { useState } from "react";
+import {
+  AlertTriangle,
+  Clock,
+  FilePlus2,
+  Hourglass,
+  Loader2,
+  Mail,
+} from "lucide-react";
+import { useState, type ReactNode } from "react";
 
 const PREVIEW_MODAL_PANEL_CLASS = "!w-full sm:!max-w-4xl";
 const PREVIEW_MODAL_CONTENT_CLASS =
@@ -126,10 +133,11 @@ export function useIomModalRegistry() {
     confirmAction: {
       open: (opts: {
         title: string;
-        description: string;
+        description: ReactNode;
         confirmLabel: string;
         onConfirm: () => void | Promise<void>;
         isPending?: boolean;
+        tone?: "default" | "warning";
       }) =>
         openModal(
           "confirm-action",
@@ -139,6 +147,7 @@ export function useIomModalRegistry() {
             confirmLabel={opts.confirmLabel}
             onConfirm={opts.onConfirm}
             isPending={opts.isPending}
+            tone={opts.tone}
             close={() => closeModal("confirm-action")}
           />,
           { title: null, hasClose: false, contentClassName: "px-4 pb-4 pt-2" },
@@ -263,13 +272,15 @@ function ConfirmForm({
   confirmLabel,
   onConfirm,
   isPending,
+  tone = "default",
   close,
 }: {
   title: string;
-  description: string;
+  description: ReactNode;
   confirmLabel: string;
   onConfirm: () => void | Promise<void>;
   isPending?: boolean;
+  tone?: "default" | "warning";
   close: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -286,8 +297,24 @@ function ConfirmForm({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="text-sm text-muted-foreground">{description}</p>
+      {tone === "warning" ? (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <span className="text-destructive flex shrink-0 items-center justify-center">
+              <AlertTriangle className="h-6 w-6" aria-hidden="true" />
+            </span>
+            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+          </div>
+          <div className="border-destructive/30 bg-destructive/5 rounded-[0.33em] border px-4 py-3 text-left">
+            <p className="text-destructive text-sm leading-6">{description}</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          <h2 className="text-lg font-semibold">{title}</h2>
+          <p className="text-sm text-muted-foreground">{description}</p>
+        </>
+      )}
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={close}>
           Cancel
