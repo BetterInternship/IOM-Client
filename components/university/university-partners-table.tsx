@@ -2,7 +2,7 @@
 
 import type { KeyboardEvent, ReactNode } from "react";
 import Link from "next/link";
-import { ChevronRight, UserPlus } from "lucide-react";
+import { ChevronRight, Upload, UserPlus } from "lucide-react";
 
 import {
   ResourceTable,
@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
+import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
 import { formatDateWithoutTime } from "@/lib/utils";
 
 export interface UniversityBlacklistEntry {
@@ -173,6 +174,18 @@ function CompanyLogo({ row }: { row: UniversityPartnerTableRow }) {
   );
 }
 
+function ImportedMarker() {
+  return (
+    <span
+      className="text-primary inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/20 px-1 py-1 text-xs font-semibold"
+      title="Imported legacy partner"
+      aria-label="Imported legacy partner"
+    >
+      <Upload className="h-3 w-3" aria-hidden="true" />
+    </span>
+  );
+}
+
 function PartnersTableSkeleton() {
   return (
     <div className="space-y-4">
@@ -245,9 +258,10 @@ export function UniversityPartnersTable({
         >
           <CompanyLogo row={row} />
           <div className="flex min-w-0 items-center gap-2">
-            <p className="truncate font-medium text-gray-900">
+            <TruncatedTooltip className="font-medium text-gray-900">
               {row.displayName}
-            </p>
+            </TruncatedTooltip>
+            {row.isImported && <ImportedMarker />}
             {row.isBlacklisted && (
               <span className="inline-flex shrink-0 items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                 Blacklisted
@@ -398,9 +412,12 @@ export function UniversityPartnersTable({
             <div className="flex min-w-0 items-center gap-3">
               <CompanyLogo row={row} />
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-gray-900">
-                  {row.displayName}
-                </p>
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <TruncatedTooltip className="text-sm font-semibold text-gray-900">
+                    {row.displayName}
+                  </TruncatedTooltip>
+                  {row.isImported && <ImportedMarker />}
+                </div>
                 <div className="mt-1.5">
                   <PartnerStatus row={row} />
                 </div>
