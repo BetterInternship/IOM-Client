@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,
+  CheckCircle2,
   Clock,
   FilePlus2,
   Hourglass,
@@ -130,6 +131,28 @@ export function useIomModalRegistry() {
         ),
       close: () => closeModal("approval-pending"),
     },
+    universityProfileComplete: {
+      open: (opts: { onContinue: () => void; onClose: () => void }) =>
+        openModal(
+          "university-profile-complete",
+          <UniversityProfileCompleteContent
+            onContinue={() => {
+              closeModal("university-profile-complete", {
+                skipOnClose: true,
+              });
+              opts.onContinue();
+            }}
+          />,
+          {
+            panelClassName: "!w-full sm:!max-w-xl",
+            headerClassName: "pb-0",
+            contentClassName: "px-6 pb-6 sm:px-8 sm:pb-7",
+            backdropClassName: "bg-black/35 backdrop-blur-[1px]",
+            onClose: opts.onClose,
+          },
+        ),
+      close: () => closeModal("university-profile-complete"),
+    },
     confirmAction: {
       open: (opts: {
         title: string;
@@ -155,6 +178,32 @@ export function useIomModalRegistry() {
       close: () => closeModal("confirm-action"),
     },
   };
+}
+
+function UniversityProfileCompleteContent({
+  onContinue,
+}: {
+  onContinue: () => void;
+}) {
+  return (
+    <div>
+      <div className="text-center">
+        <span className="bg-supportive/10 text-supportive mx-auto flex size-20 items-center justify-center rounded-full">
+          <CheckCircle2 className="size-10" aria-hidden="true" />
+        </span>
+        <h2 className="mt-5 text-xl font-semibold tracking-tight text-gray-950">
+          Profile complete!
+        </h2>
+        <p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-6">
+          You can now offer MOAs to companies.
+        </p>
+      </div>
+
+      <Button size="lg" className="mt-6 w-full" onClick={onContinue}>
+        Choose templates
+      </Button>
+    </div>
+  );
 }
 
 function ApprovalPendingContent({ onQueueMoa }: { onQueueMoa: () => void }) {

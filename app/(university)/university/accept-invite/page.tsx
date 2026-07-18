@@ -1,7 +1,11 @@
 "use client";
 import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useUniversityAuthControllerAcceptInvite } from "@/app/api";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  getUniversityControllerMeQueryOptions,
+  useUniversityAuthControllerAcceptInvite,
+} from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +14,9 @@ import { Loader2 } from "lucide-react";
 
 function AcceptInviteForm() {
   const router = useRouter();
+  const pathname = usePathname();
   const params = useSearchParams();
+  const queryClient = useQueryClient();
   const token = params.get("token") ?? "";
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -18,14 +24,30 @@ function AcceptInviteForm() {
 
   const accept = useUniversityAuthControllerAcceptInvite({
     mutation: {
-    onSuccess: () => router.replace("/partners"),
-    onError: (e: Error) => setError(e.message),
+      onSuccess: async () => {
+        const profile = await queryClient.fetchQuery({
+          ...getUniversityControllerMeQueryOptions(),
+          staleTime: 0,
+        });
+        const prefix = pathname.startsWith("/university/") ? "/university" : "";
+        router.replace(
+          profile.account.role === "superadmin"
+            ? `${prefix}/profile`
+            : `${prefix}/partners`,
+        );
+      },
+      onError: (e: Error) => setError(e.message),
     },
   });
 
   if (!token) {
     return (
-      <AuthShell portal="University" title="Invalid invitation">
+      <AuthShell
+        variant="split"
+        splitFlush
+        portal="University"
+        title="Invalid invitation"
+      >
         <FormError>
           This invitation link is invalid or has expired. Please ask your
           administrator to resend it.
@@ -52,6 +74,8 @@ function AcceptInviteForm() {
 
   return (
     <AuthShell
+      variant="split"
+      splitFlush
       portal="University"
       title="Activate your account"
       description="Choose a password to finish setting up your university account."

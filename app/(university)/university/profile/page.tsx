@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,10 +64,9 @@ interface UniversityProfile {
 export default function UniversityProfilePage() {
   const { account, isLoading, isSuperadmin } = useUniversityProfile();
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   const logoRef = useRef<HTMLInputElement>(null);
-  const setupInitiallyIncompleteRef = useRef(false);
-  const setupStateInitializedRef = useRef(false);
 
   const [openSections, setOpenSections] = useState<string[]>([
     "university",
@@ -106,8 +105,22 @@ export default function UniversityProfilePage() {
   const save = useMutation({
     mutationFn: async () => {
       if (!editing)
-        return preconfiguredAxios.patch("/api/university/profile", {});
+        return {
+          response: await preconfiguredAxios.patch(
+            "/api/university/profile",
+            {},
+          ),
+          completedSetup: false,
+        };
       const values = form.getValues();
+      const completedSetup = Boolean(
+        setupMode &&
+          values.registered_name.trim() &&
+          values.address.trim() &&
+          values.rep_name.trim() &&
+          values.rep_title.trim() &&
+          (uni?.rep_signature_url || signatureFile),
+      );
       const keys = setupMode
         ? (Object.keys(
             universityProfileSchema.shape,
@@ -132,9 +145,9 @@ export default function UniversityProfilePage() {
         );
       }
 
-      return response;
+      return { response, completedSetup };
     },
-    onSuccess: async () => {
+    onSuccess: async ({ completedSetup }) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["university-profile"] }),
         queryClient.invalidateQueries({
@@ -142,8 +155,13 @@ export default function UniversityProfilePage() {
         }),
       ]);
       setSignatureFile(null);
-      toast("Profile saved", toastPresets.success);
       cancelEdit();
+      if (completedSetup) {
+        const prefix = pathname.startsWith("/university/") ? "/university" : "";
+        router.replace(`${prefix}/templates?setup_complete=1`);
+        return;
+      }
+      toast("Profile saved", toastPresets.success);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -210,18 +228,6 @@ export default function UniversityProfilePage() {
     setupMode,
     uni,
   ]);
-
-  useEffect(() => {
-    if (profileLoading || !isSuperadmin) return;
-    if (!setupStateInitializedRef.current) {
-      setupStateInitializedRef.current = true;
-      setupInitiallyIncompleteRef.current = !setupComplete;
-      return;
-    }
-    if (setupInitiallyIncompleteRef.current && setupComplete) {
-      router.replace("/university/partners");
-    }
-  }, [isSuperadmin, profileLoading, router, setupComplete]);
 
   if (isLoading || profileLoading || !account) return null;
 

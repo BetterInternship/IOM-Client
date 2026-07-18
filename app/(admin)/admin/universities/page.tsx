@@ -15,6 +15,7 @@ import { DataTable } from "@/components/ui/data-table";
 import { FormError } from "@/components/auth-shell";
 import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { toastPresets } from "@/components/sonner-toaster";
 import { Loader2, Plus } from "lucide-react";
 
 interface University {
@@ -39,7 +40,7 @@ function CreateUniversityForm({ onClose }: { onClose: () => void }) {
     mutationFn: () => preconfiguredAxios.post("/api/admin/universities", form),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-universities"] });
-      toast.success("University created");
+      toast("University created", toastPresets.success);
       onClose();
     },
     onError: (e: Error) => setError(e.message),

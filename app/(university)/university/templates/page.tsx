@@ -18,7 +18,20 @@ export default function UniversityTemplatesPage() {
   const { account, isLoading, isSuperadmin } = useUniversityProfile();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { confirmAction } = useIomModalRegistry();
+  const { confirmAction, universityProfileComplete } = useIomModalRegistry();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("setup_complete") !== "1") return;
+
+    const cleanUrl = () => router.replace("/university/templates");
+    universityProfileComplete.open({
+      onContinue: cleanUrl,
+      onClose: cleanUrl,
+    });
+    // This is a one-time handoff from profile setup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !isSuperadmin) router.replace("/university/partners");
