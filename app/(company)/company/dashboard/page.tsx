@@ -30,6 +30,7 @@ import {
   ArrowUpRight,
   ClipboardList,
   Clock,
+  Mail,
   Plus,
 } from "lucide-react";
 import { RequestDialog } from "@/components/moa-request-dialog";
@@ -347,14 +348,26 @@ function CompanyDashboardContent() {
           if (invite.template) params.set("template_id", invite.template.id);
           const href = `/company/dashboard?${params}`;
           return (
-            <Card
-              key={invite.id}
-              className="gap-2 border-primary/30 bg-primary/5 px-5 py-4"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-sm font-medium text-gray-900">
-                  MOA invitation from {invite.university!.registered_name}
-                </p>
+            <Card className="flex-row items-start gap-3 border-primary/30 bg-primary/5 px-5 py-4" key={invite.id}>
+              <Mail className="text-primary h-5 w-5" aria-hidden="true" />
+              <div className="w-full flex items-start justify-between gap-3">
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm font-medium text-gray-900">
+                    MOA invitation from {invite.university!.registered_name}
+                  </p>
+                  <p className="text-muted-foreground text-sm">
+                    You were invited to sign a MOA
+                    {invite.template
+                      ? ` using the "${invite.template.name}" template`
+                      : ""}
+                    .
+                  </p>
+                  <div className="pt-1">
+                    <Button asChild size="sm">
+                      <Link href={href}>Sign MOA</Link>
+                    </Button>
+                  </div>
+                </div>
                 <Link
                   href="/invites"
                   className="text-muted-foreground hover:text-foreground flex flex-shrink-0 items-center gap-1 text-xs transition-colors"
@@ -367,18 +380,6 @@ function CompanyDashboardContent() {
                   View all
                   <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
-              </div>
-              <p className="text-muted-foreground text-sm">
-                You were invited to sign a MOA
-                {invite.template
-                  ? ` using the "${invite.template.name}" template`
-                  : ""}
-                .
-              </p>
-              <div className="pt-1">
-                <Button asChild size="sm">
-                  <Link href={href}>Sign MOA</Link>
-                </Button>
               </div>
             </Card>
           );
@@ -395,7 +396,7 @@ function CompanyDashboardContent() {
               key={q.id}
               className="flex-row items-center gap-3 border-primary/20 bg-primary/5 px-5 py-3.5"
             >
-              <Clock className="text-primary h-4 w-4 flex-shrink-0" />
+              <Clock className="text-primary h-5 w-5 flex-shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-gray-900">
                   {q.university?.registered_name ?? "Unknown university"}

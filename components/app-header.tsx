@@ -160,8 +160,8 @@ export function AppHeader({
                 <Icon className="!h-6 !w-6" strokeWidth={1.7} />
                 <span className="text-xs">{item.label}</span>
                 {!!item.badge && (
-                  <span className="absolute -top-0.5 -right-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold leading-none text-amber-900">
-                    !
+                  <span className="absolute -top-0.5 right-5.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold leading-none text-amber-900">
+                    {item.badge}
                   </span>
                 )}
               </Button>
