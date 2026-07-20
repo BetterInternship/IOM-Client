@@ -72,6 +72,10 @@ export function useIomModalRegistry() {
         initialCompanyId?: string;
         initialCompanyName?: string;
         initialEmail?: string;
+        initialKind?: "moa" | "listing";
+        initialLegacyCompanyId?: string;
+        allowSearch?: boolean;
+        allowListingKind?: boolean;
       }) =>
         openModal(
           "invite-company",
@@ -83,9 +87,17 @@ export function useIomModalRegistry() {
             initialCompanyId={opts.initialCompanyId}
             initialCompanyName={opts.initialCompanyName}
             initialEmail={opts.initialEmail}
+            initialKind={opts.initialKind}
+            initialLegacyCompanyId={opts.initialLegacyCompanyId}
+            allowSearch={opts.allowSearch}
+            allowListingKind={opts.allowListingKind}
           />,
           {
-            title: "Invite a company",
+            // No header title/close here — CompanyInviteForm renders its
+            // own header row (title + close) so the title can react to the
+            // invite kind (moa vs listing) as the university toggles it,
+            // which the shell's open-time-only title can't.
+            hasClose: false,
             panelClassName: "!w-full sm:!max-w-xl sm:!overflow-visible",
             contentClassName:
               "max-h-[calc(100dvh-4rem)] overflow-auto px-4 pb-4 sm:max-h-none sm:overflow-visible",

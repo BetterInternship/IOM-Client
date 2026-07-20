@@ -336,7 +336,7 @@ function CompanyDashboardContent() {
         )}
       </PageHeader>
 
-      {verified && <CareerListingCta />}
+      {(verified || verification?.canPostListing) && <CareerListingCta />}
 
       {pendingInvites.length > 0 &&
         (() => {

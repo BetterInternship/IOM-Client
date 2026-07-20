@@ -1,9 +1,11 @@
 "use client";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import {
@@ -23,6 +25,7 @@ export default function InvitesPage() {
   const { account } = useUniversityProfile();
   const { openModal, closeModal } = useModal();
   const modal = useIomModalRegistry();
+  const [activeTab, setActiveTab] = useState<"listing" | "moa">("moa");
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["university-invites"],
@@ -45,6 +48,9 @@ export default function InvitesPage() {
     (t) => t.is_available,
   );
 
+  // Blank invites (no specific company row context) are moa-only — listing
+  // invites only ever originate from a Partners-page row — so this button
+  // still needs an active template to have anything to invite with.
   const handleInviteClick = () => {
     if (availableTemplates.length === 0) {
       openModal(
@@ -77,6 +83,8 @@ export default function InvitesPage() {
   };
 
   const invites = data?.invites ?? [];
+  const listingInvites = invites.filter((invite) => invite.kind === "listing");
+  const moaInvites = invites.filter((invite) => invite.kind === "moa");
 
   if (!account) return null;
 
@@ -91,7 +99,27 @@ export default function InvitesPage() {
         </Button>
       </PageHeader>
 
-      <UniversityInvitesTable invites={invites} isLoading={isLoading} />
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => setActiveTab(value as "listing" | "moa")}
+      >
+        <TabsList>
+          <TabsTrigger value="moa">
+            <span className="hidden sm:inline">invites to sign MOA</span>
+            <span className="sm:hidden">MOA invites</span>
+          </TabsTrigger>
+          <TabsTrigger value="listing">
+            <span className="hidden sm:inline">invites to post internship</span>
+            <span className="sm:hidden">Listing invites</span>
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="moa">
+          <UniversityInvitesTable invites={moaInvites} isLoading={isLoading} />
+        </TabsContent>
+        <TabsContent value="listing">
+          <UniversityInvitesTable invites={listingInvites} isLoading={isLoading} />
+        </TabsContent>
+      </Tabs>
     </PageContainer>
   );
 }

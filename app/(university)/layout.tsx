@@ -14,7 +14,9 @@ export default function UniversityLayout({
         <PortalDocumentTitle portal="University" />
         <div className="flex h-screen flex-col overflow-hidden">
           <UniversityHeader />
-          <div className="flex-1 overflow-y-auto">{children}</div>
+          <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable]">
+            {children}
+          </div>
         </div>
       </UniversityProfileProvider>
     </QueryProvider>

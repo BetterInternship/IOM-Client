@@ -7,6 +7,7 @@
  */
 import type { ResolveCompanyInviteResponseUniversity } from "./resolveCompanyInviteResponseUniversity";
 import type { ResolveCompanyInviteResponseTemplate } from "./resolveCompanyInviteResponseTemplate";
+import type { ResolveCompanyInviteResponseKind } from "./resolveCompanyInviteResponseKind";
 import type { InviteDetailDto } from "./inviteDetailDto";
 
 export interface ResolveCompanyInviteResponse {
@@ -20,5 +21,8 @@ export interface ResolveCompanyInviteResponse {
   company_name: string | null;
   invite_id: string;
   email_status: string;
+  kind: ResolveCompanyInviteResponseKind;
+  /** @nullable */
+  tin_hint: string | null;
   invite: InviteDetailDto;
 }

@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import {
   ArrowRight,
   CalendarDays,
@@ -14,11 +15,18 @@ import {
 
 import {
   useCompanyAuthControllerLoginViaInvite,
+  useCompanyControllerCareerListingLink,
   useInviteControllerResolveCompanyInvite,
 } from "@/app/api";
+import type { ApiError } from "@/app/api/preconfig.axios";
+import { getCareerHireUrl } from "@/components/career-listing-cta";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
 import { formatDateWithoutTime } from "@/lib/utils";
+
+const CAREER_UNREACHABLE_MESSAGE =
+  "Your account is ready, but we couldn't reach BetterInternship just now — use the \"Post a listing\" button on your dashboard to continue.";
 
 interface InviteData {
   email: string;
@@ -40,6 +48,8 @@ interface InviteData {
     term_months: number | null;
   } | null;
   invite: { personal_message: string | null; expires_at: string };
+  kind: "moa" | "listing";
+  tin_hint: string | null;
 }
 
 function InvitePageContent() {
@@ -49,9 +59,44 @@ function InvitePageContent() {
   const token = searchParams.get("token") ?? "";
   const [loginError, setLoginError] = useState("");
 
+  // Listing-invite handoff after sign-in — no MOA modal, straight to
+  // create-listing (mirrors career-listing-cta.tsx's conflict handling).
+  const careerListingLink = useCompanyControllerCareerListingLink({
+    mutation: {
+      onSuccess: (data) => {
+        if (data.magicLink) {
+          window.location.href = data.magicLink;
+        } else {
+          toast(CAREER_UNREACHABLE_MESSAGE, toastPresets.destructive);
+          router.replace("/company/dashboard");
+        }
+      },
+      onError: (e: Error) => {
+        const error = e as ApiError;
+        if (
+          error.code === "EMAIL_MANAGES_OTHER_EMPLOYER" &&
+          error.email &&
+          error.autoLinkToken
+        ) {
+          const url = new URL("/login", getCareerHireUrl());
+          url.searchParams.set("email", error.email);
+          url.searchParams.set("auto_link", error.autoLinkToken);
+          window.location.href = url.toString();
+          return;
+        }
+        toast(CAREER_UNREACHABLE_MESSAGE, toastPresets.destructive);
+        router.replace("/company/dashboard");
+      },
+    },
+  });
+
   const loginViaInvite = useCompanyAuthControllerLoginViaInvite({
     mutation: {
       onSuccess: (response) => {
+        if (response.kind === "listing") {
+          careerListingLink.mutate();
+          return;
+        }
         const params = new URLSearchParams();
         params.set("open_university_id", response.university_id);
         if (response.template_id)
@@ -94,10 +139,11 @@ function InvitePageContent() {
     );
   }
 
-  const { company_name, email_status, university, template, invite } =
+  const { company_name, email_status, university, template, invite, kind } =
     inviteData!;
   const registerHref = `/company/register?invite_token=${encodeURIComponent(token)}`;
   const companyLabel = company_name || "Your company";
+  const isListing = kind === "listing";
 
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
@@ -121,7 +167,9 @@ function InvitePageContent() {
             <strong className="font-semibold text-primary">
               {companyLabel}
             </strong>{" "}
-            to establish an internship partnership.
+            {isListing
+              ? "to post internship listings on BetterInternship."
+              : "to establish an internship partnership."}
           </p>
         </section>
 
@@ -202,10 +250,12 @@ function InvitePageContent() {
               size="lg"
               className="w-full"
               onClick={() => loginViaInvite.mutate({ data: { token } })}
-              disabled={loginViaInvite.isPending}
+              disabled={loginViaInvite.isPending || careerListingLink.isPending}
             >
-              {loginViaInvite.isPending ? "Signing in…" : "Accept invitation"}
-              {loginViaInvite.isPending ? (
+              {loginViaInvite.isPending || careerListingLink.isPending
+                ? "Signing in…"
+                : "Accept invitation"}
+              {loginViaInvite.isPending || careerListingLink.isPending ? (
                 <Loader2 className="animate-spin" />
               ) : (
                 <ArrowRight aria-hidden="true" />
@@ -213,7 +263,9 @@ function InvitePageContent() {
             </Button>
           )}
           <p className="text-muted-foreground mt-3 text-center text-sm">
-            You&apos;ll be able to review the agreement before signing.
+            {isListing
+              ? "You'll set up your account and can start posting right away."
+              : "You'll be able to review the agreement before signing."}
           </p>
         </div>
       </div>

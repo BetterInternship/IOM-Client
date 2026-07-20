@@ -14,8 +14,10 @@ import {
 import type { ApiError } from "@/app/api/preconfig.axios";
 
 // Mirrors preconfig.axios.ts's getAPIBase() — hostname-based, no env var,
-// so dev/prod resolve without extra config per environment.
-function getCareerHireUrl(): string {
+// so dev/prod resolve without extra config per environment. Exported so the
+// listing-invite accept flow (app/invite, company/register) can mirror the
+// same EMAIL_MANAGES_OTHER_EMPLOYER conflict redirect.
+export function getCareerHireUrl(): string {
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
     if (host.startsWith("dev.")) return "https://dev.hire.betterinternship.com";
@@ -26,11 +28,12 @@ function getCareerHireUrl(): string {
 
 /**
  * "Post listings on BetterInternship" CTA (plan §4.2) — only ever rendered
- * by the caller when the company's verification status is 'verified' (that
- * much is already implied by the card being visible, so it isn't repeated
- * in the copy — the Linked/Not Linked tag is the more useful signal here).
- * Handles both account-creation and returning-user cases identically: the
- * user never sees which one happened, they just land on a magic link.
+ * by the caller when the company is verified OR has an accepted listing
+ * invite (LISTING_INVITE_IMPLEMENTATION_PLAN.md D9; that much is already
+ * implied by the card being visible, so it isn't repeated in the copy — the
+ * Linked/Not Linked tag is the more useful signal here). Handles both
+ * account-creation and returning-user cases identically: the user never
+ * sees which one happened, they just land on a magic link.
  *
  * EMAIL_MANAGES_OTHER_EMPLOYER doesn't dead-end into "go link it yourself":
  * it sends the user to the career site's login, prefilled with the email and

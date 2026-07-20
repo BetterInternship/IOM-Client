@@ -88,12 +88,6 @@ interface Partner {
   hasActiveMoa: boolean;
 }
 
-interface AvailableTemplate {
-  id: string;
-  template: { id: string; name: string };
-  is_available: boolean;
-}
-
 type DocReviewDetails = Record<
   string,
   { type?: string; document?: string; value: string }
@@ -690,19 +684,6 @@ function PartnersContent({
     },
   );
 
-  const { data: templatesData } = useQuery({
-    queryKey: ["university-templates-for-invite"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/templates")
-        .then((r) => r.data as { templates: AvailableTemplate[] }),
-    enabled: !!account,
-  });
-
-  const availableTemplates = (templatesData?.templates ?? []).filter(
-    (t) => t.is_available,
-  );
-
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["university-partners"] });
     queryClient.invalidateQueries({ queryKey: ["university-blacklist"] });
@@ -739,41 +720,28 @@ function PartnersContent({
 
   const openInviteModal = useCallback(
     (row: PartnerTableRow) => {
-      if (availableTemplates.length === 0) {
-        openModal(
-          "no-templates",
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              You need at least one active MOA template before you can invite
-              companies. Go to your templates page to activate one.
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => closeModal("no-templates")}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  closeModal("no-templates");
-                  router.push("/templates");
-                }}
-              >
-                Go to Templates
-              </Button>
-            </div>
-          </div>,
-          {
-            title: "No active templates",
-            panelClassName: "!w-full sm:!max-w-sm",
-          },
-        );
-        return;
-      }
-
+      // D1/D3: row context decides the invite-kind default — a template
+      // gate here would wrongly block inviting an active-MOA partner to
+      // post a listing (which needs no template at all). The "no active
+      // templates" case is now handled inline inside the modal, and only
+      // when the university is actually on the moa kind.
       const contactEmail = row.isImported ? (row.contactEmail ?? "") : "";
       const initialStep: 1 | 2 = row.isImported && !contactEmail ? 1 : 2;
+
+      const nowIso = new Date().toISOString();
+      const legacyOutstanding = !!(
+        row.legacyEntry?.hasMoa &&
+        (row.legacyEntry.hasPerpetualMoa ||
+          !row.legacyEntry.valid_until ||
+          row.legacyEntry.valid_until >= nowIso)
+      );
+      const initialKind: "moa" | "listing" = row.isImported
+        ? legacyOutstanding
+          ? "listing"
+          : "moa"
+        : row.hasActiveMoa
+          ? "listing"
+          : "moa";
 
       modal.inviteCompany.open({
         onSent: refresh,
@@ -782,16 +750,16 @@ function PartnersContent({
         initialCompanyId: row.partnerCompany?.id,
         initialCompanyName: row.displayName,
         initialEmail: contactEmail,
+        initialKind,
+        initialLegacyCompanyId: row.isImported ? row.legacyEntry?.id : undefined,
+        // The row already identifies a specific company — no reason to let
+        // the university search for/switch to a different one.
+        allowSearch: false,
+        // Listing invites only ever originate from a Partners-page row.
+        allowListingKind: true,
       });
     },
-    [
-      availableTemplates.length,
-      closeModal,
-      modal.inviteCompany,
-      openModal,
-      refresh,
-      router,
-    ],
+    [modal.inviteCompany, refresh],
   );
 
   const rows = useMemo<PartnerTableRow[]>(() => {

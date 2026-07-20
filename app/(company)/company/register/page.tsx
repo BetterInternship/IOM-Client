@@ -14,11 +14,14 @@ import {
   useInviteControllerResolveCompanyInvite,
 } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
+import { getCareerHireUrl } from "@/components/career-listing-cta";
+import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OtpInput } from "@/components/ui/otp-input";
 import { AlertCircle, ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
 
 type Step = "identity" | "account" | "otp";
 
@@ -27,7 +30,12 @@ interface InvitePeek {
   invite_id: string;
   university: { id: string; registered_name: string };
   template: { id: string } | null;
+  kind: "moa" | "listing";
+  tin_hint: string | null;
 }
+
+const CAREER_UNREACHABLE_MESSAGE =
+  "Your account is ready, but we couldn't reach BetterInternship just now — use the \"Post a listing\" button below to continue.";
 
 function RegistrationLoader({ step, active }: { step: Step; active: boolean }) {
   const progress = step === "identity" ? "w-1/2" : "w-full";
@@ -110,6 +118,14 @@ function RegisterPageContent() {
     );
   const invitePeek = invitePeekRaw as InvitePeek | undefined;
 
+  // Register-form prefill for legacy-linked listing invites (§4.2's tin_hint)
+  // — editable, never clobbers what the user has already typed.
+  useEffect(() => {
+    if (!invitePeek?.tin_hint) return;
+    setForm((prev) => ({ ...prev, tin: prev.tin || invitePeek.tin_hint! }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invitePeek?.tin_hint]);
+
   useEffect(() => {
     if (resendIn <= 0) return;
     const t = setInterval(() => setResendIn((s) => Math.max(0, s - 1)), 1000);
@@ -170,6 +186,26 @@ function RegisterPageContent() {
         queryClient.invalidateQueries({
           queryKey: getCompanyControllerMeQueryKey(),
         });
+
+        // Listing invites skip the MOA template-card flow entirely — career
+        // provisioning already ran server-side (D6/D7); just follow its
+        // outcome. Never blocks on failure: IOM registration already
+        // succeeded regardless.
+        if (data.kind === "listing") {
+          if (data.magicLink) {
+            window.location.href = data.magicLink;
+          } else if (data.conflictEmail && data.autoLinkToken) {
+            const url = new URL("/login", getCareerHireUrl());
+            url.searchParams.set("email", data.conflictEmail);
+            url.searchParams.set("auto_link", data.autoLinkToken);
+            window.location.href = url.toString();
+          } else {
+            toast(CAREER_UNREACHABLE_MESSAGE, toastPresets.destructive);
+            router.replace("/company/dashboard");
+          }
+          return;
+        }
+
         if (data.university_id) {
           const params = new URLSearchParams({
             invite_uni: data.university_id,
@@ -385,9 +421,13 @@ function RegisterPageContent() {
       );
     }
 
+    const isListingInvite = invitePeek.kind === "listing";
+
     if (step === "identity") {
       return renderIdentityStep(
-        `Confirm the legal identity of the company invited by ${invitePeek.university.registered_name}.`,
+        isListingInvite
+          ? `Confirm the legal identity of the company invited by ${invitePeek.university.registered_name} to post internship listings on BetterInternship.`
+          : `Confirm the legal identity of the company invited by ${invitePeek.university.registered_name}.`,
         <>
           Already registered?{" "}
           <Link
@@ -421,6 +461,8 @@ function RegisterPageContent() {
               {invitePeek.university.registered_name}
             </span>
             . Your account email is pre-verified — no OTP needed.
+            {isListingInvite &&
+              " You'll be able to post a listing on BetterInternship right after this."}
           </>
         }
         footer={

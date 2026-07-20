@@ -5,6 +5,7 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
+import type { UniversityInviteListItemDtoKind } from "./universityInviteListItemDtoKind";
 import type { UniversityInviteListItemDtoRegisteredCompany } from "./universityInviteListItemDtoRegisteredCompany";
 
 export interface UniversityInviteListItemDto {
@@ -19,6 +20,7 @@ export interface UniversityInviteListItemDto {
   /** @nullable */
   personal_message: string | null;
   status: string;
+  kind: UniversityInviteListItemDtoKind;
   created_at: string;
   expires_at: string;
   /** @nullable */

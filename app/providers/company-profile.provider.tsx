@@ -30,6 +30,7 @@ export type VerificationStatus = "incomplete" | "pending" | "verified" | "expire
 export interface CompanyVerification {
   status: VerificationStatus;
   rejectionReason: string | null;
+  canPostListing: boolean;
 }
 
 /** Shared platform-verification state for the company (banner + request gate). */

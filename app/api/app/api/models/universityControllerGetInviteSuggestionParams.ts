@@ -6,11 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface CompanyVerificationResponse {
-  success: boolean;
-  message?: string;
-  status: string;
-  /** @nullable */
-  rejectionReason: string | null;
-  canPostListing: boolean;
-}
+export type UniversityControllerGetInviteSuggestionParams = {
+  email: string;
+  name?: string;
+};

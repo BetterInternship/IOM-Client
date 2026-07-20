@@ -21,6 +21,7 @@ export interface CompanyInvite {
   template_name: string | null;
   personal_message: string | null;
   status: "pending" | "accepted" | "expired" | "used_waiting";
+  kind: "moa" | "listing";
   created_at: string;
   expires_at: string;
   registered_company: { registered_name: string } | null;
