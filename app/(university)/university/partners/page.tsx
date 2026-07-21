@@ -25,7 +25,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
+import { isOutstandingMoa } from "@/lib/partner-predicates";
 import {
   LegacyCompanyDetail,
   AddDocumentsForm,
@@ -64,6 +66,7 @@ import {
   type UniversityBlacklistEntry as BlacklistEntry,
   type UniversityLegacyCompanySummary as LegacyCompanySummary,
   type UniversityPartnerTableRow as PartnerTableRow,
+  type BulkInviteAction,
 } from "@/components/university/university-partners-table";
 import {
   LegacyPartnerMoasTable,
@@ -86,6 +89,7 @@ interface Partner {
   expiry_date: string | null;
   is_expired: boolean | null;
   hasActiveMoa: boolean;
+  lastRenewalRequestedAt: string | null;
 }
 
 type DocReviewDetails = Record<
@@ -634,7 +638,7 @@ function PartnersContent({
     queryFn: () =>
       preconfiguredAxios
         .get("/api/university/partners")
-        .then((r) => r.data as { partners: Partner[] }),
+        .then((r) => r.data as { partners: Partner[]; expiringSoonDays: number }),
     enabled: !!account,
   });
 
@@ -691,6 +695,8 @@ function PartnersContent({
       queryKey: ["university-legacy-companies"],
     });
     queryClient.invalidateQueries({ queryKey: ["university-audit"] });
+    queryClient.invalidateQueries({ queryKey: ["university-invites"] });
+    queryClient.invalidateQueries({ queryKey: ["university-renewals"] });
   };
 
   const blacklistMutation = useMutation({
@@ -719,29 +725,11 @@ function PartnersContent({
   });
 
   const openInviteModal = useCallback(
-    (row: PartnerTableRow) => {
-      // D1/D3: row context decides the invite-kind default — a template
-      // gate here would wrongly block inviting an active-MOA partner to
-      // post a listing (which needs no template at all). The "no active
-      // templates" case is now handled inline inside the modal, and only
-      // when the university is actually on the moa kind.
+    (row: PartnerTableRow, kind: "moa" | "listing") => {
+      // D9: kind is no longer derived per-row — it's inherited from
+      // whichever tab this row's Invite button was clicked from.
       const contactEmail = row.isImported ? (row.contactEmail ?? "") : "";
       const initialStep: 1 | 2 = row.isImported && !contactEmail ? 1 : 2;
-
-      const nowIso = new Date().toISOString();
-      const legacyOutstanding = !!(
-        row.legacyEntry?.hasMoa &&
-        (row.legacyEntry.hasPerpetualMoa ||
-          !row.legacyEntry.valid_until ||
-          row.legacyEntry.valid_until >= nowIso)
-      );
-      const initialKind: "moa" | "listing" = row.isImported
-        ? legacyOutstanding
-          ? "listing"
-          : "moa"
-        : row.hasActiveMoa
-          ? "listing"
-          : "moa";
 
       modal.inviteCompany.open({
         onSent: refresh,
@@ -750,16 +738,29 @@ function PartnersContent({
         initialCompanyId: row.partnerCompany?.id,
         initialCompanyName: row.displayName,
         initialEmail: contactEmail,
-        initialKind,
+        initialKind: kind,
         initialLegacyCompanyId: row.isImported ? row.legacyEntry?.id : undefined,
         // The row already identifies a specific company — no reason to let
         // the university search for/switch to a different one.
         allowSearch: false,
-        // Listing invites only ever originate from a Partners-page row.
-        allowListingKind: true,
       });
     },
     [modal.inviteCompany, refresh],
+  );
+
+  const openBulkInviteSheet = useCallback(
+    (action: BulkInviteAction, selectedRows: PartnerTableRow[]) => {
+      modal.bulkInviteCompanies.open({
+        action,
+        targets: selectedRows.map((row) =>
+          row.isImported
+            ? { type: "legacy" as const, legacyCompanyId: row.legacyEntry!.id, displayName: row.displayName }
+            : { type: "registered" as const, companyId: row.partnerCompany!.id, displayName: row.displayName },
+        ),
+        onSent: refresh,
+      });
+    },
+    [modal.bulkInviteCompanies, refresh],
   );
 
   const rows = useMemo<PartnerTableRow[]>(() => {
@@ -786,6 +787,7 @@ function PartnersContent({
         legacyEntry: null,
         isImported: false,
         contactEmail: null,
+        lastRenewalRequestedAt: p.lastRenewalRequestedAt,
       });
     }
 
@@ -812,6 +814,7 @@ function PartnersContent({
           legacyEntry: null,
           isImported: false,
           contactEmail: null,
+          lastRenewalRequestedAt: null,
         });
       }
     }
@@ -839,6 +842,7 @@ function PartnersContent({
         legacyEntry: l,
         isImported: true,
         contactEmail,
+        lastRenewalRequestedAt: null,
       });
     }
 
@@ -904,6 +908,18 @@ function PartnersContent({
     { label: "Active partners", value: activePartnerCount },
     { label: "Expired partners", value: expiredPartnerCount },
   ];
+
+  // D1/D2/D3 — the tab boundary is the invite-kind boundary; blacklisted
+  // rows get their own tab so select-all is safe by construction.
+  const expiringSoonDays = partnersData?.expiringSoonDays ?? 30;
+  const outstandingRows = rows.filter(
+    (row) => !row.isBlacklisted && isOutstandingMoa(row, nowIso),
+  );
+  const expiredOrNoneRows = rows.filter(
+    (row) => !row.isBlacklisted && !isOutstandingMoa(row, nowIso),
+  );
+  const blacklistedRows = rows.filter((row) => row.isBlacklisted);
+
   const partnerEntry =
     detailType === "partner" && detailId
       ? rows.find((r) => r.id === `registered:${detailId}`)
@@ -959,113 +975,152 @@ function PartnersContent({
       <div className={cn("relative", showList && "mt-6")}>
         {/* ── List panel ───────────────────────────────────────────────────── */}
         {showList && (
-          <div className="space-y-6">
-            <UniversityPartnersTable
-              rows={rows}
-              isLoading={isLoading}
-              onPartnerClick={navigateToDetail}
-              onInvite={openInviteModal}
-              toolbarActions={
-                <div className="flex">
-                  <Button
-                    onClick={() =>
-                      openModal(
-                        "legacy-upload",
-                        <UploadDialog
-                          uploadEndpoint="/api/university/legacy-companies"
-                          queryKeyPrefix="university-legacy-companies"
-                          onClose={() => {
-                            closeModal("legacy-upload");
-                            queryClient.invalidateQueries({
-                              queryKey: ["university-partners"],
-                            });
-                            queryClient.invalidateQueries({
-                              queryKey: ["university-legacy-companies"],
-                            });
-                          }}
-                        />,
-                        {
-                          title: "Add Legacy Company",
-                          description:
-                            "Create a legacy company record. You can add MOAs now or later from the company detail view.",
-                          panelClassName: "!w-full sm:!max-w-2xl",
-                        },
-                      )
-                    }
-                    className="rounded-r-none"
-                  >
-                    <Plus /> Import Partner
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button className="rounded-l-none border-l-0 px-2">
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onSelect={() =>
-                          openModal(
-                            "csv-upload",
-                            <CsvUploadDialog
-                              csvEndpoint="/api/university/legacy-companies/bulk/csv"
-                              queryKeyPrefix="university-legacy-companies"
-                              onClose={() => {
-                                closeModal("csv-upload");
-                                queryClient.invalidateQueries({
-                                  queryKey: ["university-partners"],
-                                });
-                                queryClient.invalidateQueries({
-                                  queryKey: ["university-legacy-companies"],
-                                });
-                              }}
-                            />,
-                            {
-                              title: "Bulk Upload Legacy MOAs",
-                              description:
-                                "Upload a CSV file to create or append multiple legacy MOAs at once. Each row represents one legacy MOA. Rows with the same company name append MOAs to the same legacy partner.",
-                              panelClassName: "!w-full sm:!max-w-5xl",
-                            },
-                          )
-                        }
-                      >
-                        <Upload className="h-4 w-4" />
-                        Bulk upload via CSV
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={() =>
-                          openModal(
-                            "zip-upload",
-                            <ZipUploadDialog
-                              zipEndpoint="/api/university/legacy-companies/bulk/zip"
-                              queryKeyPrefix="university-legacy-companies"
-                              onClose={() => {
-                                closeModal("zip-upload");
-                                queryClient.invalidateQueries({
-                                  queryKey: ["university-partners"],
-                                });
-                                queryClient.invalidateQueries({
-                                  queryKey: ["university-legacy-companies"],
-                                });
-                              }}
-                            />,
-                            {
-                              title: "Bulk Upload Legacy MOAs via ZIP",
-                              description:
-                                "Upload a ZIP file containing a legacy-import.csv manifest and referenced PDF files. Each CSV row creates or updates one legacy company, and can also add an MOA.",
-                              panelClassName: "!w-full sm:!max-w-5xl",
-                            },
-                          )
-                        }
-                      >
-                        <Upload className="h-4 w-4" />
-                        Bulk upload via ZIP
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              }
-            />
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <div className="flex">
+                <Button
+                  onClick={() =>
+                    openModal(
+                      "legacy-upload",
+                      <UploadDialog
+                        uploadEndpoint="/api/university/legacy-companies"
+                        queryKeyPrefix="university-legacy-companies"
+                        onClose={() => {
+                          closeModal("legacy-upload");
+                          queryClient.invalidateQueries({
+                            queryKey: ["university-partners"],
+                          });
+                          queryClient.invalidateQueries({
+                            queryKey: ["university-legacy-companies"],
+                          });
+                        }}
+                      />,
+                      {
+                        title: "Add Legacy Company",
+                        description:
+                          "Create a legacy company record. You can add MOAs now or later from the company detail view.",
+                        panelClassName: "!w-full sm:!max-w-2xl",
+                      },
+                    )
+                  }
+                  className="rounded-r-none"
+                >
+                  <Plus /> Import Partner
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button className="rounded-l-none border-l-0 px-2">
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        openModal(
+                          "csv-upload",
+                          <CsvUploadDialog
+                            csvEndpoint="/api/university/legacy-companies/bulk/csv"
+                            queryKeyPrefix="university-legacy-companies"
+                            onClose={() => {
+                              closeModal("csv-upload");
+                              queryClient.invalidateQueries({
+                                queryKey: ["university-partners"],
+                              });
+                              queryClient.invalidateQueries({
+                                queryKey: ["university-legacy-companies"],
+                              });
+                            }}
+                          />,
+                          {
+                            title: "Bulk Upload Legacy MOAs",
+                            description:
+                              "Upload a CSV file to create or append multiple legacy MOAs at once. Each row represents one legacy MOA. Rows with the same company name append MOAs to the same legacy partner.",
+                            panelClassName: "!w-full sm:!max-w-5xl",
+                          },
+                        )
+                      }
+                    >
+                      <Upload className="h-4 w-4" />
+                      Bulk upload via CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onSelect={() =>
+                        openModal(
+                          "zip-upload",
+                          <ZipUploadDialog
+                            zipEndpoint="/api/university/legacy-companies/bulk/zip"
+                            queryKeyPrefix="university-legacy-companies"
+                            onClose={() => {
+                              closeModal("zip-upload");
+                              queryClient.invalidateQueries({
+                                queryKey: ["university-partners"],
+                              });
+                              queryClient.invalidateQueries({
+                                queryKey: ["university-legacy-companies"],
+                              });
+                            }}
+                          />,
+                          {
+                            title: "Bulk Upload Legacy MOAs via ZIP",
+                            description:
+                              "Upload a ZIP file containing a legacy-import.csv manifest and referenced PDF files. Each CSV row creates or updates one legacy company, and can also add an MOA.",
+                            panelClassName: "!w-full sm:!max-w-5xl",
+                          },
+                        )
+                      }
+                    >
+                      <Upload className="h-4 w-4" />
+                      Bulk upload via ZIP
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+
+            <Tabs defaultValue="outstanding">
+              <TabsList>
+                <TabsTrigger value="outstanding">
+                  <span className="hidden sm:inline">Outstanding MOA</span>
+                  <span className="sm:hidden">Outstanding</span>
+                </TabsTrigger>
+                <TabsTrigger value="expired">
+                  <span className="hidden sm:inline">Expired or none</span>
+                  <span className="sm:hidden">Expired</span>
+                </TabsTrigger>
+                <TabsTrigger value="blacklisted">Blacklisted</TabsTrigger>
+              </TabsList>
+              <TabsContent value="outstanding">
+                <UniversityPartnersTable
+                  rows={outstandingRows}
+                  isLoading={isLoading}
+                  tab="outstanding"
+                  expiringSoonDays={expiringSoonDays}
+                  onPartnerClick={navigateToDetail}
+                  onInvite={(row) => openInviteModal(row, "listing")}
+                  onBulkAction={openBulkInviteSheet}
+                />
+              </TabsContent>
+              <TabsContent value="expired">
+                <UniversityPartnersTable
+                  rows={expiredOrNoneRows}
+                  isLoading={isLoading}
+                  tab="expired"
+                  expiringSoonDays={expiringSoonDays}
+                  onPartnerClick={navigateToDetail}
+                  onInvite={(row) => openInviteModal(row, "moa")}
+                  onBulkAction={openBulkInviteSheet}
+                />
+              </TabsContent>
+              <TabsContent value="blacklisted">
+                <UniversityPartnersTable
+                  rows={blacklistedRows}
+                  isLoading={isLoading}
+                  tab="blacklisted"
+                  expiringSoonDays={expiringSoonDays}
+                  onPartnerClick={navigateToDetail}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 

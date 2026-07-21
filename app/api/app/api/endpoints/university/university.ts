@@ -27,6 +27,7 @@ import type {
   AppendLegacyMoasDto,
   BaseResponse,
   BlacklistCompanyDto,
+  BulkInviteDto,
   CreateCompanyInviteDto,
   CreateStaffAccountDto,
   ErrorResponse,
@@ -35,18 +36,17 @@ import type {
   UniversityAccountsResponse,
   UniversityAuditLogResponse,
   UniversityBlacklistResponse,
+  UniversityBulkInviteResponse,
   UniversityBulkResultResponse,
   UniversityControllerAppendLegacyCompanyDocumentsBody,
   UniversityControllerBulkCreateLegacyCompaniesFromCsvBody,
   UniversityControllerBulkCreateLegacyCompaniesFromZipBody,
   UniversityControllerCreateLegacyCompanyBody,
   UniversityControllerGetAuditLogParams,
-  UniversityControllerGetInviteSuggestionParams,
   UniversityControllerUploadLogoBody,
   UniversityControllerUploadSignatureBody,
   UniversityCreateStaffResponse,
   UniversityGetProfileResponse,
-  UniversityInviteSuggestionResponse,
   UniversityInvitesResponse,
   UniversityLegacyCompaniesResponse,
   UniversityLegacyCompanyDetailResponse,
@@ -57,6 +57,7 @@ import type {
   UniversityPartnersResponse,
   UniversityPatchProfileResponse,
   UniversityRegisteredCompaniesResponse,
+  UniversityRenewalsResponse,
   UniversitySendInviteResponse,
   UniversityTemplatesResponse,
   UniversityToggleOfferResponse,
@@ -4282,82 +4283,148 @@ export function useUniversityControllerListInvitesSuspense<
   return query;
 }
 
-export const universityControllerGetInviteSuggestion = (
-  params?: UniversityControllerGetInviteSuggestionParams,
+export const universityControllerBulkInvite = (
+  bulkInviteDto: BulkInviteDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<UniversityInviteSuggestionResponse>({
-    url: `/api/university/invite-suggestion`,
-    method: "GET",
-    params,
+  return preconfiguredAxiosFunction<UniversityBulkInviteResponse>({
+    url: `/api/university/invites/bulk`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: bulkInviteDto,
     signal,
   });
 };
 
-export const getUniversityControllerGetInviteSuggestionQueryKey = (
-  params?: UniversityControllerGetInviteSuggestionParams,
-) => {
-  return [
-    `/api/university/invite-suggestion`,
-    ...(params ? [params] : []),
-  ] as const;
+export const getUniversityControllerBulkInviteMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerBulkInvite>>,
+    TError,
+    { data: BulkInviteDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerBulkInvite>>,
+  TError,
+  { data: BulkInviteDto },
+  TContext
+> => {
+  const mutationKey = ["universityControllerBulkInvite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerBulkInvite>>,
+    { data: BulkInviteDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return universityControllerBulkInvite(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
 };
 
-export const getUniversityControllerGetInviteSuggestionQueryOptions = <
-  TData = Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+export type UniversityControllerBulkInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerBulkInvite>>
+>;
+export type UniversityControllerBulkInviteMutationBody = BulkInviteDto;
+export type UniversityControllerBulkInviteMutationError = ErrorResponse;
+
+export const useUniversityControllerBulkInvite = <
   TError = ErrorResponse,
+  TContext = unknown,
 >(
-  params?: UniversityControllerGetInviteSuggestionParams,
   options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
-        TError,
-        TData
-      >
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerBulkInvite>>,
+      TError,
+      { data: BulkInviteDto },
+      TContext
     >;
   },
-) => {
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerBulkInvite>>,
+  TError,
+  { data: BulkInviteDto },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerBulkInviteMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerListRenewals = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<UniversityRenewalsResponse>({
+    url: `/api/university/renewals`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getUniversityControllerListRenewalsQueryKey = () => {
+  return [`/api/university/renewals`] as const;
+};
+
+export const getUniversityControllerListRenewalsQueryOptions = <
+  TData = Awaited<ReturnType<typeof universityControllerListRenewals>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof universityControllerListRenewals>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ??
-    getUniversityControllerGetInviteSuggestionQueryKey(params);
+    queryOptions?.queryKey ?? getUniversityControllerListRenewalsQueryKey();
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>
-  > = ({ signal }) => universityControllerGetInviteSuggestion(params, signal);
+    Awaited<ReturnType<typeof universityControllerListRenewals>>
+  > = ({ signal }) => universityControllerListRenewals(signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+    Awaited<ReturnType<typeof universityControllerListRenewals>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type UniversityControllerGetInviteSuggestionQueryResult = NonNullable<
-  Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>
+export type UniversityControllerListRenewalsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerListRenewals>>
 >;
-export type UniversityControllerGetInviteSuggestionQueryError = ErrorResponse;
+export type UniversityControllerListRenewalsQueryError = ErrorResponse;
 
-export function useUniversityControllerGetInviteSuggestion<
-  TData = Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+export function useUniversityControllerListRenewals<
+  TData = Awaited<ReturnType<typeof universityControllerListRenewals>>,
   TError = ErrorResponse,
 >(
-  params: undefined | UniversityControllerGetInviteSuggestionParams,
   options: {
     query: Partial<
       UseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+        Awaited<ReturnType<typeof universityControllerListRenewals>>,
         TError,
         TData
       >
     > &
       Pick<
         DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+          Awaited<ReturnType<typeof universityControllerListRenewals>>,
           TError,
-          Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>
+          Awaited<ReturnType<typeof universityControllerListRenewals>>
         >,
         "initialData"
       >;
@@ -4366,24 +4433,23 @@ export function useUniversityControllerGetInviteSuggestion<
 ): DefinedUseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useUniversityControllerGetInviteSuggestion<
-  TData = Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+export function useUniversityControllerListRenewals<
+  TData = Awaited<ReturnType<typeof universityControllerListRenewals>>,
   TError = ErrorResponse,
 >(
-  params?: UniversityControllerGetInviteSuggestionParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+        Awaited<ReturnType<typeof universityControllerListRenewals>>,
         TError,
         TData
       >
     > &
       Pick<
         UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+          Awaited<ReturnType<typeof universityControllerListRenewals>>,
           TError,
-          Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>
+          Awaited<ReturnType<typeof universityControllerListRenewals>>
         >,
         "initialData"
       >;
@@ -4392,15 +4458,14 @@ export function useUniversityControllerGetInviteSuggestion<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useUniversityControllerGetInviteSuggestion<
-  TData = Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+export function useUniversityControllerListRenewals<
+  TData = Awaited<ReturnType<typeof universityControllerListRenewals>>,
   TError = ErrorResponse,
 >(
-  params?: UniversityControllerGetInviteSuggestionParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+        Awaited<ReturnType<typeof universityControllerListRenewals>>,
         TError,
         TData
       >
@@ -4411,15 +4476,14 @@ export function useUniversityControllerGetInviteSuggestion<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 
-export function useUniversityControllerGetInviteSuggestion<
-  TData = Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+export function useUniversityControllerListRenewals<
+  TData = Awaited<ReturnType<typeof universityControllerListRenewals>>,
   TError = ErrorResponse,
 >(
-  params?: UniversityControllerGetInviteSuggestionParams,
   options?: {
     query?: Partial<
       UseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+        Awaited<ReturnType<typeof universityControllerListRenewals>>,
         TError,
         TData
       >
@@ -4429,10 +4493,7 @@ export function useUniversityControllerGetInviteSuggestion<
 ): UseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
-  const queryOptions = getUniversityControllerGetInviteSuggestionQueryOptions(
-    params,
-    options,
-  );
+  const queryOptions = getUniversityControllerListRenewalsQueryOptions(options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,
@@ -4444,54 +4505,47 @@ export function useUniversityControllerGetInviteSuggestion<
   return query;
 }
 
-export const getUniversityControllerGetInviteSuggestionSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+export const getUniversityControllerListRenewalsSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof universityControllerListRenewals>>,
   TError = ErrorResponse,
->(
-  params?: UniversityControllerGetInviteSuggestionParams,
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
-        TError,
-        TData
-      >
-    >;
-  },
-) => {
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof universityControllerListRenewals>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ??
-    getUniversityControllerGetInviteSuggestionQueryKey(params);
+    queryOptions?.queryKey ?? getUniversityControllerListRenewalsQueryKey();
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>
-  > = ({ signal }) => universityControllerGetInviteSuggestion(params, signal);
+    Awaited<ReturnType<typeof universityControllerListRenewals>>
+  > = ({ signal }) => universityControllerListRenewals(signal);
 
   return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+    Awaited<ReturnType<typeof universityControllerListRenewals>>,
     TError,
     TData
   > & { queryKey: DataTag<QueryKey, TData, TError> };
 };
 
-export type UniversityControllerGetInviteSuggestionSuspenseQueryResult =
-  NonNullable<
-    Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>
-  >;
-export type UniversityControllerGetInviteSuggestionSuspenseQueryError =
-  ErrorResponse;
+export type UniversityControllerListRenewalsSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerListRenewals>>
+>;
+export type UniversityControllerListRenewalsSuspenseQueryError = ErrorResponse;
 
-export function useUniversityControllerGetInviteSuggestionSuspense<
-  TData = Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+export function useUniversityControllerListRenewalsSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerListRenewals>>,
   TError = ErrorResponse,
 >(
-  params: undefined | UniversityControllerGetInviteSuggestionParams,
   options: {
     query: Partial<
       UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+        Awaited<ReturnType<typeof universityControllerListRenewals>>,
         TError,
         TData
       >
@@ -4501,15 +4555,14 @@ export function useUniversityControllerGetInviteSuggestionSuspense<
 ): UseSuspenseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useUniversityControllerGetInviteSuggestionSuspense<
-  TData = Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+export function useUniversityControllerListRenewalsSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerListRenewals>>,
   TError = ErrorResponse,
 >(
-  params?: UniversityControllerGetInviteSuggestionParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+        Awaited<ReturnType<typeof universityControllerListRenewals>>,
         TError,
         TData
       >
@@ -4519,15 +4572,14 @@ export function useUniversityControllerGetInviteSuggestionSuspense<
 ): UseSuspenseQueryResult<TData, TError> & {
   queryKey: DataTag<QueryKey, TData, TError>;
 };
-export function useUniversityControllerGetInviteSuggestionSuspense<
-  TData = Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+export function useUniversityControllerListRenewalsSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerListRenewals>>,
   TError = ErrorResponse,
 >(
-  params?: UniversityControllerGetInviteSuggestionParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+        Awaited<ReturnType<typeof universityControllerListRenewals>>,
         TError,
         TData
       >
@@ -4538,15 +4590,14 @@ export function useUniversityControllerGetInviteSuggestionSuspense<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 
-export function useUniversityControllerGetInviteSuggestionSuspense<
-  TData = Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+export function useUniversityControllerListRenewalsSuspense<
+  TData = Awaited<ReturnType<typeof universityControllerListRenewals>>,
   TError = ErrorResponse,
 >(
-  params?: UniversityControllerGetInviteSuggestionParams,
   options?: {
     query?: Partial<
       UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof universityControllerGetInviteSuggestion>>,
+        Awaited<ReturnType<typeof universityControllerListRenewals>>,
         TError,
         TData
       >
@@ -4557,10 +4608,7 @@ export function useUniversityControllerGetInviteSuggestionSuspense<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions =
-    getUniversityControllerGetInviteSuggestionSuspenseQueryOptions(
-      params,
-      options,
-    );
+    getUniversityControllerListRenewalsSuspenseQueryOptions(options);
 
   const query = useSuspenseQuery(
     queryOptions,

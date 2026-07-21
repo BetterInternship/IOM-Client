@@ -2,6 +2,11 @@
 
 import { useModal } from "@/app/providers/modal-provider";
 import { CompanyInviteForm } from "@/components/invites/company-invite-form";
+import {
+  BulkInviteSheet,
+  type BulkInviteTargetInput,
+} from "@/components/university/bulk-invite-sheet";
+import type { BulkInviteAction } from "@/components/university/university-partners-table";
 import { TemplatePreviewContent } from "@/components/moa-request-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,7 +80,6 @@ export function useIomModalRegistry() {
         initialKind?: "moa" | "listing";
         initialLegacyCompanyId?: string;
         allowSearch?: boolean;
-        allowListingKind?: boolean;
       }) =>
         openModal(
           "invite-company",
@@ -90,7 +94,6 @@ export function useIomModalRegistry() {
             initialKind={opts.initialKind}
             initialLegacyCompanyId={opts.initialLegacyCompanyId}
             allowSearch={opts.allowSearch}
-            allowListingKind={opts.allowListingKind}
           />,
           {
             // No header title/close here — CompanyInviteForm renders its
@@ -104,6 +107,33 @@ export function useIomModalRegistry() {
           },
         ),
       close: () => closeModal("invite-company"),
+    },
+    bulkInviteCompanies: {
+      open: (opts: {
+        action: BulkInviteAction;
+        targets: BulkInviteTargetInput[];
+        onSent: () => void;
+      }) =>
+        openModal(
+          "bulk-invite-companies",
+          <BulkInviteSheet
+            action={opts.action}
+            targets={opts.targets}
+            onSent={opts.onSent}
+            onClose={() => closeModal("bulk-invite-companies")}
+          />,
+          {
+            title:
+              opts.action === "listing"
+                ? "Invite to post a listing"
+                : opts.action === "moa"
+                  ? "Invite to sign an MOA"
+                  : "Invite to renew their MOA",
+            panelClassName: "!w-full sm:!max-w-lg",
+            contentClassName: "max-h-[calc(100dvh-8rem)] overflow-auto px-4 pb-4",
+          },
+        ),
+      close: () => closeModal("bulk-invite-companies"),
     },
     blacklistPartner: {
       open: (opts: {

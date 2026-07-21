@@ -12,6 +12,10 @@ import {
   UniversityInvitesTable,
   type CompanyInvite,
 } from "@/components/university/university-invites-table";
+import {
+  UniversityRenewalsTable,
+  type UniversityRenewal,
+} from "@/components/university/university-renewals-table";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
@@ -25,7 +29,7 @@ export default function InvitesPage() {
   const { account } = useUniversityProfile();
   const { openModal, closeModal } = useModal();
   const modal = useIomModalRegistry();
-  const [activeTab, setActiveTab] = useState<"listing" | "moa">("moa");
+  const [activeTab, setActiveTab] = useState<"listing" | "moa" | "renewals">("moa");
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["university-invites"],
@@ -33,6 +37,15 @@ export default function InvitesPage() {
       preconfiguredAxios
         .get("/api/university/invites")
         .then((r) => r.data as { invites: CompanyInvite[] }),
+    enabled: !!account,
+  });
+
+  const { data: renewalsData, isLoading: isRenewalsLoading } = useQuery({
+    queryKey: ["university-renewals"],
+    queryFn: () =>
+      preconfiguredAxios
+        .get("/api/university/renewals")
+        .then((r) => r.data as { renewals: UniversityRenewal[] }),
     enabled: !!account,
   });
 
@@ -101,7 +114,7 @@ export default function InvitesPage() {
 
       <Tabs
         value={activeTab}
-        onValueChange={(value) => setActiveTab(value as "listing" | "moa")}
+        onValueChange={(value) => setActiveTab(value as "listing" | "moa" | "renewals")}
       >
         <TabsList>
           <TabsTrigger value="moa">
@@ -112,12 +125,19 @@ export default function InvitesPage() {
             <span className="hidden sm:inline">invites to post internship</span>
             <span className="sm:hidden">Listing invites</span>
           </TabsTrigger>
+          <TabsTrigger value="renewals">Renewals</TabsTrigger>
         </TabsList>
         <TabsContent value="moa">
           <UniversityInvitesTable invites={moaInvites} isLoading={isLoading} />
         </TabsContent>
         <TabsContent value="listing">
           <UniversityInvitesTable invites={listingInvites} isLoading={isLoading} />
+        </TabsContent>
+        <TabsContent value="renewals">
+          <UniversityRenewalsTable
+            renewals={renewalsData?.renewals ?? []}
+            isLoading={isRenewalsLoading}
+          />
         </TabsContent>
       </Tabs>
     </PageContainer>

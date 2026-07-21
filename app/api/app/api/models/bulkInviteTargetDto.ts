@@ -5,8 +5,10 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
+import type { BulkInviteTargetDtoType } from "./bulkInviteTargetDtoType";
 
-export type UniversityControllerGetInviteSuggestionParams = {
-  email: string;
-  name?: string;
-};
+export interface BulkInviteTargetDto {
+  type: BulkInviteTargetDtoType;
+  companyId?: string;
+  legacyCompanyId?: string;
+}

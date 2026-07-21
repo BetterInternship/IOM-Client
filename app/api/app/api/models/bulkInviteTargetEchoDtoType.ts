@@ -6,11 +6,11 @@
  * OpenAPI spec version: 1.0
  */
 
-export type UniversityInviteSuggestionResponseSuggestedKind =
-  (typeof UniversityInviteSuggestionResponseSuggestedKind)[keyof typeof UniversityInviteSuggestionResponseSuggestedKind];
+export type BulkInviteTargetEchoDtoType =
+  (typeof BulkInviteTargetEchoDtoType)[keyof typeof BulkInviteTargetEchoDtoType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const UniversityInviteSuggestionResponseSuggestedKind = {
-  moa: "moa",
-  listing: "listing",
+export const BulkInviteTargetEchoDtoType = {
+  registered: "registered",
+  legacy: "legacy",
 } as const;

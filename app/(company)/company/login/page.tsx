@@ -27,6 +27,9 @@ function LoginPageContent() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("invite_token") ?? "";
+  const nextParam = searchParams.get("next") ?? "";
+  // Only ever a same-origin relative path (avoids an open redirect).
+  const next = nextParam.startsWith("/") ? nextParam : "";
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [password, setPassword] = useState("");
@@ -69,7 +72,7 @@ function LoginPageContent() {
           }
         }
 
-        router.replace("/company/dashboard");
+        router.replace(next || "/company/dashboard");
       },
       onError: (e: Error) => setError(e.message),
     },

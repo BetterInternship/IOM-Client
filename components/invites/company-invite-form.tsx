@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { MorphHeight } from "@/components/ui/morph-height";
 import { cn } from "@/lib/utils";
 
 export type CompanyInviteKind = "moa" | "listing";
@@ -42,53 +43,6 @@ const inviteSteps = [
   { title: "Invitation details", icon: Mail },
 ];
 
-function MorphHeight({ children }: { children: React.ReactNode }) {
-  const outerRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const prevHeightRef = useRef(0);
-
-  useEffect(() => {
-    const outer = outerRef.current;
-    const inner = innerRef.current;
-    if (!outer || !inner) return;
-
-    prevHeightRef.current = inner.offsetHeight;
-
-    const onTransitionEnd = (e: TransitionEvent) => {
-      if (e.propertyName !== "height") return;
-      outer.style.height = "";
-      outer.style.overflow = "";
-      outer.style.transition = "";
-    };
-    outer.addEventListener("transitionend", onTransitionEnd);
-
-    const ro = new ResizeObserver(() => {
-      const newHeight = inner.offsetHeight;
-      const prevHeight = prevHeightRef.current;
-      if (newHeight === prevHeight) return;
-      prevHeightRef.current = newHeight;
-      outer.style.overflow = "hidden";
-      outer.style.transition = "none";
-      outer.style.height = `${prevHeight}px`;
-      outer.offsetHeight;
-      outer.style.transition = "height 200ms ease";
-      outer.style.height = `${newHeight}px`;
-    });
-    ro.observe(inner);
-
-    return () => {
-      ro.disconnect();
-      outer.removeEventListener("transitionend", onTransitionEnd);
-    };
-  }, []);
-
-  return (
-    <div ref={outerRef}>
-      <div ref={innerRef}>{children}</div>
-    </div>
-  );
-}
-
 export function CompanyInviteForm({
   onClose,
   onSent,
@@ -100,7 +54,6 @@ export function CompanyInviteForm({
   initialKind,
   initialLegacyCompanyId,
   allowSearch = true,
-  allowListingKind = false,
 }: {
   onClose: () => void;
   onSent: () => void;
@@ -109,13 +62,13 @@ export function CompanyInviteForm({
   initialCompanyId?: string;
   initialCompanyName?: string;
   initialEmail?: string;
+  // D9 — kind is fixed for the form's lifetime: it's inherited from the
+  // Partners-page tab a row invite was opened from, or defaults to 'moa'
+  // for the Invites page's blank dialog. Never toggled in-form.
   initialKind?: CompanyInviteKind;
   initialLegacyCompanyId?: string;
-  // Invites page (blank open): company search stays available, but every
-  // invite from there is moa-only — listing invites only ever originate
-  // from a specific Partners-page row, which already knows the company.
+  // Invites page (blank open): company search stays available.
   allowSearch?: boolean;
-  allowListingKind?: boolean;
 }) {
   const [step, setStep] = useState<1 | 2>(initialStep);
   const [mode, setMode] = useState<"registered" | "new">(initialMode);
@@ -131,18 +84,9 @@ export function CompanyInviteForm({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  // Invite kind (D1/D3): only ever selectable when allowListingKind (the
-  // Partners-page row context) — defaults from row data (initialKind);
-  // otherwise 'moa' until a debounced server lookup below suggests
-  // otherwise. A manual toggle click always wins over any later suggestion.
-  // The Invites page's blank dialog stays moa-only regardless.
-  const [kind, setKind] = useState<CompanyInviteKind>(
-    allowListingKind ? (initialKind ?? "moa") : "moa",
-  );
-  const [legacyCompanyId, setLegacyCompanyId] = useState<string | undefined>(
-    initialLegacyCompanyId,
-  );
-  const [kindManuallySet, setKindManuallySet] = useState(!!initialKind);
+  // D9 — kind is fixed for the form's lifetime (see prop doc above).
+  const kind: CompanyInviteKind = initialKind ?? "moa";
+  const legacyCompanyId = initialLegacyCompanyId;
 
   function switchMode(next: "registered" | "new") {
     if (transitionTimer.current) clearTimeout(transitionTimer.current);
@@ -194,52 +138,6 @@ export function CompanyInviteForm({
     mode === "registered"
       ? selectedCompany?.registered_name
       : companyName.trim() || undefined;
-
-  // D3: blank-dialog default — debounce the email (+ name) against a
-  // server-side match, but only when no row context already decided the
-  // kind (initialKind) and the user hasn't manually toggled it.
-  const [debouncedEmail, setDebouncedEmail] = useState("");
-  const [debouncedName, setDebouncedName] = useState("");
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedEmail(invitedEmail);
-      setDebouncedName(invitedName ?? "");
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [invitedEmail, invitedName]);
-
-  const { data: suggestionData } = useQuery({
-    queryKey: ["university-invite-suggestion", debouncedEmail, debouncedName],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/invite-suggestion", {
-          params: { email: debouncedEmail, name: debouncedName || undefined },
-        })
-        .then(
-          (r) =>
-            r.data as {
-              suggestedKind: CompanyInviteKind;
-              legacyCompanyId?: string;
-              matchedCompanyName?: string;
-            },
-        ),
-    enabled:
-      allowListingKind &&
-      !initialKind &&
-      !kindManuallySet &&
-      debouncedEmail.includes("@"),
-  });
-
-  useEffect(() => {
-    if (!suggestionData || kindManuallySet) return;
-    setKind(suggestionData.suggestedKind);
-    setLegacyCompanyId(suggestionData.legacyCompanyId);
-  }, [suggestionData, kindManuallySet]);
-
-  const toggleKind = () => {
-    setKind((current) => (current === "moa" ? "listing" : "moa"));
-    setKindManuallySet(true);
-  };
 
   const send = useMutation({
     mutationFn: () =>
@@ -514,15 +412,6 @@ export function CompanyInviteForm({
                       </Link>
                       .
                     </p>
-                    {allowListingKind && (
-                      <button
-                        type="button"
-                        onClick={toggleKind}
-                        className="text-primary cursor-pointer font-medium underline"
-                      >
-                        Invite them to post a listing instead
-                      </button>
-                    )}
                   </div>
                 ) : (
                   <>
@@ -578,18 +467,6 @@ export function CompanyInviteForm({
           </div>
         )}
       </MorphHeight>
-
-      {allowListingKind && (
-        <button
-          type="button"
-          onClick={toggleKind}
-          className="text-primary cursor-pointer text-sm hover:underline"
-        >
-          {kind === "moa"
-            ? "Already have an MOA? Invite them to post a listing instead"
-            : "Invite them to sign an MOA instead"}
-        </button>
-      )}
 
       <div className="flex justify-end gap-2 pt-2">
         {step === 1 ? (

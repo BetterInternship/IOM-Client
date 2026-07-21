@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type ResourceSortDirection = "asc" | "desc";
 export type ResourceSortValue = string | number | Date | null | undefined;
@@ -37,6 +37,23 @@ export type ResourceTableState<TData> = ReturnType<
   typeof useResourceTable<TData>
 >;
 
+export type ResourceSelectionState<TData> = {
+  selectedIds: Set<string>;
+  selectedRows: TData[];
+  isSelected: (row: TData) => boolean;
+  isRowSelectable: (row: TData) => boolean;
+  toggle: (row: TData) => void;
+  selectPage: () => void;
+  deselectPage: () => void;
+  selectAllMatching: () => void;
+  clear: () => void;
+  selectedCount: number;
+  selectablePageCount: number;
+  selectableMatchingCount: number;
+  isAllPageSelected: boolean;
+  isAllMatchingSelected: boolean;
+};
+
 function countActiveFilters(value: ResourceFilterValue) {
   return Object.values(value).reduce(
     (total, values) => total + values.length,
@@ -71,6 +88,7 @@ export function useResourceTable<TData>({
   filters,
   sort,
   pagination,
+  selection,
 }: {
   data: TData[];
   getRowId: (row: TData) => string;
@@ -98,6 +116,10 @@ export function useResourceTable<TData>({
     pageSize: number;
     pageSizeOptions?: number[];
     onPageChange?: (page: number) => void;
+  };
+  selection?: {
+    enabled: boolean;
+    isSelectable?: (row: TData) => boolean;
   };
 }) {
   const sortColumns = sort?.columns ?? getColumnSorts(columns);
@@ -130,6 +152,22 @@ export function useResourceTable<TData>({
   )
     .filter((option) => option > 0)
     .sort((left, right) => left - right);
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Prune stale ids when the underlying data identity changes (a row was
+  // removed, or the caller swapped in an entirely different dataset — e.g.
+  // a tab switch that reuses the same hook instance).
+  useEffect(() => {
+    if (!selection?.enabled) return;
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const validIds = new Set(data.map(getRowId));
+      const next = new Set([...prev].filter((id) => validIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const normalizedQuery = searchValue.trim().toLowerCase();
 
@@ -173,6 +211,49 @@ export function useResourceTable<TData>({
   const pageStart = (currentPage - 1) * pageSize;
   const pageEnd = Math.min(pageStart + pageSize, sortedRows.length);
   const pagedRows = sortedRows.slice(pageStart, pageEnd);
+
+  const isRowSelectable = (row: TData) => !selection?.isSelectable || selection.isSelectable(row);
+  const selectablePageRows = pagedRows.filter(isRowSelectable);
+  const selectableMatchingRows = sortedRows.filter(isRowSelectable);
+  const isAllPageSelected =
+    selectablePageRows.length > 0 &&
+    selectablePageRows.every((row) => selectedIds.has(getRowId(row)));
+  const isAllMatchingSelected =
+    selectableMatchingRows.length > 0 &&
+    selectableMatchingRows.every((row) => selectedIds.has(getRowId(row)));
+
+  const toggleSelected = (row: TData) => {
+    if (!isRowSelectable(row)) return;
+    const id = getRowId(row);
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const row of selectablePageRows) next.add(getRowId(row));
+      return next;
+    });
+  };
+
+  const deselectPage = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const row of pagedRows) next.delete(getRowId(row));
+      return next;
+    });
+  };
+
+  const selectAllMatching = () => {
+    setSelectedIds(new Set(selectableMatchingRows.map(getRowId)));
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
 
   const setPage = (nextPage: number) => {
     const clamped = Math.min(Math.max(nextPage, 1), pageCount);
@@ -314,5 +395,23 @@ export function useResourceTable<TData>({
       setPage,
       setPageSize,
     },
+    selection: selection?.enabled
+      ? ({
+          selectedIds,
+          selectedRows: data.filter((row) => selectedIds.has(getRowId(row))),
+          isSelected: (row: TData) => selectedIds.has(getRowId(row)),
+          isRowSelectable,
+          toggle: toggleSelected,
+          selectPage,
+          deselectPage,
+          selectAllMatching,
+          clear: clearSelection,
+          selectedCount: selectedIds.size,
+          selectablePageCount: selectablePageRows.length,
+          selectableMatchingCount: selectableMatchingRows.length,
+          isAllPageSelected,
+          isAllMatchingSelected,
+        } satisfies ResourceSelectionState<TData>)
+      : undefined,
   };
 }

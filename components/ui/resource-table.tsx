@@ -9,6 +9,7 @@ import {
   ChevronsUpDown,
   Filter,
   Search,
+  X,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,32 @@ type ResourceEmptyState = {
   description?: ReactNode;
   action?: ReactNode;
 };
+
+// Sized up from the Checkbox default (size-4) and given a visible hover cue
+// — these sit in a dense, easy-to-miss leading column. UnselectableMark
+// matches the same size so a column of checkboxes stays aligned.
+const SELECTION_CHECKBOX_CLASS =
+  "size-5 border-gray-400 hover:border-primary hover:ring-2 hover:ring-primary/15";
+
+/**
+ * Stands in for the selection checkbox on rows the caller marked
+ * unselectable. A disabled Radix checkbox only fades — with no indicator
+ * shown, it reads as barely-there. This is always visibly crossed out
+ * instead, so "you can't pick this row" doesn't depend on noticing a
+ * subtle opacity change.
+ */
+function UnselectableMark() {
+  return (
+    <div
+      className="flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-gray-300 bg-gray-100"
+      role="img"
+      aria-label="Not selectable"
+      title="Not selectable"
+    >
+      <X className="size-3.5 text-gray-400" strokeWidth={3} aria-hidden="true" />
+    </div>
+  );
+}
 
 function ResourceFilterPanel({
   groups,
@@ -173,6 +200,28 @@ export function ResourceTable<TData>({
     ? (noResultsState ?? emptyState)
     : emptyState;
 
+  const selection = table.selection;
+  const selectablePageRows = selection
+    ? table.pagedRows.filter(selection.isRowSelectable)
+    : [];
+  const headerCheckedState = selection
+    ? selection.isAllPageSelected
+      ? true
+      : selectablePageRows.some((row) => selection.isSelected(row))
+        ? "indeterminate"
+        : false
+    : false;
+  const showSelectAllMatchingBanner =
+    !!selection &&
+    hasRows &&
+    selection.isAllPageSelected &&
+    selection.selectableMatchingCount > selection.selectablePageCount;
+  const showAllMatchingSelectedBanner =
+    !!selection &&
+    hasRows &&
+    selection.isAllMatchingSelected &&
+    selection.selectableMatchingCount > selection.selectablePageCount;
+
   const renderHeaderCell = (column: ResourceTableColumn<TData>) => {
     const sortColumn = table.sort?.columns.find(
       (item) => item.id === column.id,
@@ -293,39 +342,110 @@ export function ResourceTable<TData>({
             contentClassName,
           )}
         >
+          {(showSelectAllMatchingBanner || showAllMatchingSelectedBanner) && (
+            <div className="bg-primary/5 flex items-center justify-center gap-2 border-b border-gray-200 px-4 py-2 text-sm text-gray-700">
+              {showAllMatchingSelectedBanner ? (
+                <>
+                  <span>
+                    All {selection!.selectableMatchingCount} matching rows are selected.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={selection!.clear}
+                    className="text-primary cursor-pointer font-medium hover:underline"
+                  >
+                    Clear selection
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>All {selection!.selectablePageCount} on this page are selected.</span>
+                  <button
+                    type="button"
+                    onClick={selection!.selectAllMatching}
+                    className="text-primary cursor-pointer font-medium hover:underline"
+                  >
+                    Select all {selection!.selectableMatchingCount} matching rows
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
           {hasDesktopTable && (
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full table-fixed border-collapse text-left">
                 <thead className="bg-gray-50 text-sm font-medium text-gray-700">
                   <tr className="border-b border-gray-200">
+                    {selection && (
+                      <th className="w-16 px-3 py-3">
+                        <div className="flex flex-col items-start gap-0.5">
+                          <Checkbox
+                            checked={headerCheckedState}
+                            onCheckedChange={() =>
+                              selection.isAllPageSelected
+                                ? selection.deselectPage()
+                                : selection.selectPage()
+                            }
+                            className={SELECTION_CHECKBOX_CLASS}
+                            aria-label="Select all rows on this page"
+                          />
+                          {selection.selectablePageCount < table.pagedRows.length && (
+                            <span className="text-muted-foreground text-[10px] leading-tight font-normal">
+                              {selection.selectablePageCount}/{table.pagedRows.length}
+                            </span>
+                          )}
+                        </div>
+                      </th>
+                    )}
                     {columns.map(renderHeaderCell)}
                   </tr>
                 </thead>
                 <tbody>
-                  {table.pagedRows.map((row) => (
-                    <tr
-                      key={table.getRowId(row)}
-                      className={cn(
-                        "group border-b border-gray-200 transition-colors last:border-b-0 hover:bg-primary/[0.035] focus-within:bg-primary/[0.035]",
-                        onRowClick && "cursor-pointer",
-                        getRowClassName?.(row),
-                      )}
-                      onClick={onRowClick ? () => onRowClick(row) : undefined}
-                    >
-                      {columns.map((column) => (
-                        <td
-                          key={column.id}
-                          className={cn(
-                            "px-5 py-4",
-                            column.align === "center" && "text-center",
-                            column.align === "right" && "text-right",
-                          )}
-                        >
-                          {column.render(row)}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
+                  {table.pagedRows.map((row) => {
+                    const rowSelectable = selection?.isRowSelectable(row) ?? true;
+                    return (
+                      <tr
+                        key={table.getRowId(row)}
+                        className={cn(
+                          "group border-b border-gray-200 transition-colors last:border-b-0 hover:bg-primary/[0.035] focus-within:bg-primary/[0.035]",
+                          onRowClick && "cursor-pointer",
+                          getRowClassName?.(row),
+                        )}
+                        onClick={onRowClick ? () => onRowClick(row) : undefined}
+                      >
+                        {selection && (
+                          <td
+                            className="px-3 py-4"
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {rowSelectable ? (
+                              <Checkbox
+                                checked={selection.isSelected(row)}
+                                onCheckedChange={() => selection.toggle(row)}
+                                className={SELECTION_CHECKBOX_CLASS}
+                                aria-label="Select row"
+                              />
+                            ) : (
+                              <UnselectableMark />
+                            )}
+                          </td>
+                        )}
+                        {columns.map((column) => (
+                          <td
+                            key={column.id}
+                            className={cn(
+                              "px-5 py-4",
+                              column.align === "center" && "text-center",
+                              column.align === "right" && "text-right",
+                            )}
+                          >
+                            {column.render(row)}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -338,9 +458,31 @@ export function ResourceTable<TData>({
               listClassName,
             )}
           >
-            {table.pagedRows.map((row) => (
-              <div key={table.getRowId(row)}>{renderMobileRow(row)}</div>
-            ))}
+            {table.pagedRows.map((row) => {
+              const rowSelectable = selection?.isRowSelectable(row) ?? true;
+              return (
+                <div key={table.getRowId(row)} className="flex items-start">
+                  {selection && (
+                    <div
+                      className="flex shrink-0 items-center self-stretch pl-4"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {rowSelectable ? (
+                        <Checkbox
+                          checked={selection.isSelected(row)}
+                          onCheckedChange={() => selection.toggle(row)}
+                          className={SELECTION_CHECKBOX_CLASS}
+                          aria-label="Select row"
+                        />
+                      ) : (
+                        <UnselectableMark />
+                      )}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">{renderMobileRow(row)}</div>
+                </div>
+              );
+            })}
           </div>
 
           <div

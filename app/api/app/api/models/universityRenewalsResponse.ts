@@ -5,11 +5,10 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
-import type { UniversityPartnerListItemDto } from "./universityPartnerListItemDto";
+import type { UniversityRenewalListItemDto } from "./universityRenewalListItemDto";
 
-export interface UniversityPartnersResponse {
+export interface UniversityRenewalsResponse {
   success: boolean;
   message?: string;
-  partners: UniversityPartnerListItemDto[];
-  expiringSoonDays: number;
+  renewals: UniversityRenewalListItemDto[];
 }

@@ -11,4 +11,14 @@ export interface UniversityPartnerListItemDto {
   /** @nullable */
   company: UniversityPartnerListItemDtoCompany;
   latestMoaId: string;
+  latestMoaStatus: string;
+  /** @nullable */
+  effective_date: string | null;
+  /** @nullable */
+  expiry_date: string | null;
+  /** @nullable */
+  is_expired: boolean | null;
+  hasActiveMoa: boolean;
+  /** @nullable */
+  lastRenewalRequestedAt: string | null;
 }
