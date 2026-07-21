@@ -20,7 +20,7 @@ import type { ApiError } from "@/app/api/preconfig.axios";
 export function getCareerHireUrl(): string {
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
-    if (host.startsWith("dev.")) return "https://dev.hire.betterinternship.com";
+    if (host.startsWith("dev.")) return "https://hire.dev.betterinternship.com";
     if (host.endsWith(".betterinternship.com")) return "https://hire.betterinternship.com";
   }
   return "http://hire.localhost:3000";
