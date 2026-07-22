@@ -26,7 +26,11 @@ interface University {
   registered_name: string;
   logo_url: string | null;
   is_deactivated: boolean | null;
-  university_accounts: { email: string; display_name: string }[];
+  university_accounts: {
+    email: string;
+    display_name: string;
+    is_pending: boolean;
+  }[];
 }
 
 function UniversityIdentity({ university }: { university: University }) {
@@ -63,8 +67,11 @@ function UniversityIdentity({ university }: { university: University }) {
 function UniversityStatus({ university }: { university: University }) {
   return university.is_deactivated ? (
     <PartnershipStatusBadge status="rejected" label="Deactivated" />
+  ) : !university.university_accounts[0] ||
+    university.university_accounts[0].is_pending ? (
+    <PartnershipStatusBadge status="pending" label="Pending" />
   ) : (
-    <PartnershipStatusBadge status="active" />
+    <PartnershipStatusBadge status="active" label="Active" />
   );
 }
 
@@ -85,8 +92,11 @@ function CreateUniversityForm({ onClose }: { onClose: () => void }) {
         ...form,
         superadmin_display_name: "Super Admin",
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-universities"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["admin-universities"],
+        refetchType: "active",
+      });
       toast("University created", toastPresets.success);
       onClose();
     },

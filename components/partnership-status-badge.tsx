@@ -1,4 +1,4 @@
-import { AlertCircle, Ban, CheckCircle2, Minus } from "lucide-react";
+import { AlertCircle, Ban, CheckCircle2, Clock, Minus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -11,11 +11,14 @@ export function PartnershipStatusBadge({
 }) {
   const normalizedStatus = status.toLowerCase();
   const isActive = normalizedStatus === "active";
+  const isPending = normalizedStatus === "pending";
   const isBlocked = ["blacklisted", "revoked"].includes(normalizedStatus);
   const isDestructive = ["expired", "rejected"].includes(normalizedStatus);
   const isInactive = ["inactive", "none"].includes(normalizedStatus);
   const Icon = isActive
     ? CheckCircle2
+    : isPending
+      ? Clock
     : isBlocked
       ? Ban
       : isDestructive
