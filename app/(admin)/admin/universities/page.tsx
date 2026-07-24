@@ -81,8 +81,13 @@ const EMPTY_FORM = {
   superadmin_display_name: "",
 };
 
-function CreateUniversityForm({ onClose }: { onClose: () => void }) {
-  const queryClient = useQueryClient();
+function CreateUniversityForm({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => Promise<unknown>;
+}) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
 
@@ -93,10 +98,7 @@ function CreateUniversityForm({ onClose }: { onClose: () => void }) {
         superadmin_display_name: "Super Admin",
       }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: ["admin-universities"],
-        refetchType: "active",
-      });
+      await onCreated();
       toast("University created", toastPresets.success);
       onClose();
     },
@@ -235,7 +237,7 @@ const columns: Array<ResourceTableColumn<University>> = [
 export default function AdminUniversitiesPage() {
   const router = useRouter();
   const { openModal, closeModal } = useModal();
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-universities"],
     queryFn: async () => {
       const res = await preconfiguredAxios.get("/api/admin/universities");
@@ -276,11 +278,10 @@ export default function AdminUniversitiesPage() {
               "create-university",
               <CreateUniversityForm
                 onClose={() => closeModal("create-university")}
+                onCreated={refetch}
               />,
               {
                 title: "Create university",
-                description:
-                  "The superadmin is emailed an invitation to set their password.",
                 panelClassName: "!w-full sm:!max-w-md",
               },
             )
