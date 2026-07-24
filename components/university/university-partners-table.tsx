@@ -162,16 +162,6 @@ function PartnerEndDate({
   return <span className="text-muted-foreground text-sm">{label}</span>;
 }
 
-function companyInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
-}
-
 function partnerHref(row: UniversityPartnerTableRow) {
   if (row.isImported && row.legacyEntry) {
     return `/partners/legacy/${row.legacyEntry.id}`;
@@ -199,24 +189,6 @@ function PartnerLink({
   );
 }
 
-function CompanyLogo({ row }: { row: UniversityPartnerTableRow }) {
-  return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[0.33em] border border-gray-200 bg-gray-50 text-xs font-semibold text-gray-600">
-      {row.logoUrl ? (
-        // Company logos are user-uploaded external assets.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={row.logoUrl}
-          alt={`${row.displayName} logo`}
-          className="h-full w-full object-contain p-1"
-        />
-      ) : (
-        <span aria-hidden="true">{companyInitials(row.displayName)}</span>
-      )}
-    </div>
-  );
-}
-
 function relativeDays(iso: string): string {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
   if (days <= 0) return "today";
@@ -226,7 +198,10 @@ function relativeDays(iso: string): string {
 
 const SECOND_LINE_TRANSITION = { duration: 0.15 } satisfies Transition;
 // Matches the easing modal-provider.tsx uses for its fade-exit panels.
-const BULK_BAR_TRANSITION = { duration: 0.22, ease: [0.16, 1, 0.3, 1] } satisfies Transition;
+const BULK_BAR_TRANSITION = {
+  duration: 0.22,
+  ease: [0.16, 1, 0.3, 1],
+} satisfies Transition;
 
 /**
  * D15/D7/D11 — the name cell's second line: at most one of these applies.
@@ -239,10 +214,8 @@ const BULK_BAR_TRANSITION = { duration: 0.22, ease: [0.16, 1, 0.3, 1] } satisfie
  * play yet. Gone entirely on the blacklisted tab, where there's no
  * bulk-select to begin with (D3).
  *
- * The wrapper below always reserves one line's worth of height, whether or
- * not it has content — row height stays constant across every state
- * (selecting/deselecting, with/without a renewal) instead of reflowing;
- * only the text's opacity animates.
+ * The optional second line only takes space when it has content, keeping a
+ * standalone company name vertically centered in the row.
  */
 function CompanySecondLine({
   row,
@@ -251,8 +224,13 @@ function CompanySecondLine({
   row: UniversityPartnerTableRow;
   isBulkSelecting: boolean;
 }) {
-  const showCannotInvite = isBulkSelecting && row.isImported && !row.contactEmail;
-  const renewalRequestedAt = showCannotInvite ? null : row.lastRenewalRequestedAt;
+  const showCannotInvite =
+    isBulkSelecting && row.isImported && !row.contactEmail;
+  const renewalRequestedAt = showCannotInvite
+    ? null
+    : row.lastRenewalRequestedAt;
+
+  if (!showCannotInvite && !renewalRequestedAt) return null;
 
   return (
     <div className="mt-0.5 h-4">
@@ -286,12 +264,15 @@ function CompanySecondLine({
   );
 }
 
-function PartnersTableSkeleton() {
+function PartnersTableSkeleton({ toolbarStart }: { toolbarStart?: ReactNode }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-11 w-full max-w-xl" />
-        <Skeleton className="h-10 w-40" />
+      <div className="flex flex-wrap items-center gap-2">
+        {toolbarStart}
+        <div className="flex min-w-0 flex-1 justify-end gap-2">
+          <Skeleton className="h-11 w-full max-w-xl" />
+          <Skeleton className="h-11 w-11 shrink-0" />
+        </div>
       </div>
       <div className="overflow-hidden rounded-[0.33em] border border-gray-200 bg-white">
         <Skeleton className="h-11 w-full rounded-none" />
@@ -314,7 +295,10 @@ function PartnersTableSkeleton() {
 const TAB_LABELS: Record<PartnerTab, { singular: string; plural: string }> = {
   outstanding: { singular: "partner", plural: "partners" },
   expired: { singular: "partner", plural: "partners" },
-  blacklisted: { singular: "blacklisted company", plural: "blacklisted companies" },
+  blacklisted: {
+    singular: "blacklisted company",
+    plural: "blacklisted companies",
+  },
 };
 
 export function UniversityPartnersTable({
@@ -322,6 +306,7 @@ export function UniversityPartnersTable({
   isLoading,
   tab,
   expiringSoonDays,
+  toolbarStart,
   toolbarActions,
   onPartnerClick,
   onInvite,
@@ -331,11 +316,15 @@ export function UniversityPartnersTable({
   isLoading: boolean;
   tab: PartnerTab;
   expiringSoonDays: number;
+  toolbarStart?: ReactNode;
   toolbarActions?: ReactNode;
   onPartnerClick: (row: UniversityPartnerTableRow) => void;
   // Unused for tab="blacklisted" — no invite affordance renders there (D3).
   onInvite?: (row: UniversityPartnerTableRow) => void;
-  onBulkAction?: (action: BulkInviteAction, rows: UniversityPartnerTableRow[]) => void;
+  onBulkAction?: (
+    action: BulkInviteAction,
+    rows: UniversityPartnerTableRow[],
+  ) => void;
 }) {
   const showStatusColumn = tab === "expired";
   const showSelection = tab !== "blacklisted";
@@ -369,14 +358,13 @@ export function UniversityPartnersTable({
   columns.push({
     id: "company",
     header: "Company",
-    width: showStatusColumn ? "w-[38%]" : "w-[46%]",
+    width: showStatusColumn ? "w-[38%]" : "w-[50%]",
     getSortValue: (row) => row.displayName,
     render: (row) => (
       <PartnerLink
         row={row}
-        className="flex min-w-0 items-center gap-3 text-inherit"
+        className="flex min-w-0 items-center text-inherit"
       >
-        <CompanyLogo row={row} />
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <TruncatedTooltip className="font-medium text-gray-900">
@@ -385,14 +373,16 @@ export function UniversityPartnersTable({
             {tab !== "blacklisted" &&
               row.isImported &&
               !row.legacyEntry?.registered_company_id && (
-                <span className="text-muted-foreground shrink-0 rounded-full border border-gray-300 px-2 py-0.5 text-xs">
+                <span className="text-muted-foreground shrink-0 rounded-full border border-gray-300 px-2 py-0.5 text-xs mt-0.5">
                   No account yet
                 </span>
               )}
           </div>
           <CompanySecondLine
             row={row}
-            isBulkSelecting={!!table.selection && table.selection.selectedCount > 0}
+            isBulkSelecting={
+              !!table.selection && table.selection.selectedCount > 0
+            }
           />
         </div>
       </PartnerLink>
@@ -450,7 +440,11 @@ export function UniversityPartnersTable({
       getSortValue: (row) => getPartnerEndDateIso(row) ?? "",
       render: (row) => (
         <PartnerLink row={row} className="block text-inherit">
-          <PartnerEndDate row={row} tab={tab} expiringSoonDays={expiringSoonDays} />
+          <PartnerEndDate
+            row={row}
+            tab={tab}
+            expiringSoonDays={expiringSoonDays}
+          />
         </PartnerLink>
       ),
     });
@@ -539,7 +533,7 @@ export function UniversityPartnersTable({
       : undefined,
   });
 
-  if (isLoading) return <PartnersTableSkeleton />;
+  if (isLoading) return <PartnersTableSkeleton toolbarStart={toolbarStart} />;
 
   const hasFilters = (table.filters?.activeCount ?? 0) > 0;
   const selection = table.selection;
@@ -560,8 +554,25 @@ export function UniversityPartnersTable({
       <ResourceTable
         table={table}
         className="[&_td]:py-2.5"
+        toolbarStart={toolbarStart}
+        showSelectionRatio={false}
+        selectionColumnClassName="w-12 px-3"
+        rowSelectionCheckboxClassName={
+          selection?.selectedCount
+            ? undefined
+            : "border-transparent shadow-none hover:border-primary group-hover:border-gray-400"
+        }
+        rowSelectionUnavailableClassName={
+          selection?.selectedCount
+            ? "translate-y-0"
+            : "translate-y-0 opacity-0 group-hover:opacity-100"
+        }
+        selectionIndicatorClassName="translate-y-0.5"
+        headerSelectionCheckboxClassName="translate-y-0"
         toolbarLeading={
-          toolbarActions ? <div className="ml-auto flex">{toolbarActions}</div> : undefined
+          toolbarActions ? (
+            <div className="ml-auto flex">{toolbarActions}</div>
+          ) : undefined
         }
         onRowClick={onPartnerClick}
         renderMobileRow={(row) => (
@@ -573,8 +584,7 @@ export function UniversityPartnersTable({
             className="cursor-pointer px-4 py-3 transition-colors hover:bg-primary/[0.035] focus-visible:bg-primary/[0.035] focus-visible:outline-none"
           >
             <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <CompanyLogo row={row} />
+              <div className="flex min-w-0 items-center">
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-1.5">
                     <TruncatedTooltip className="text-sm font-semibold text-gray-900">
@@ -590,7 +600,9 @@ export function UniversityPartnersTable({
                   </div>
                   <CompanySecondLine
                     row={row}
-                    isBulkSelecting={!!table.selection && table.selection.selectedCount > 0}
+                    isBulkSelecting={
+                      !!table.selection && table.selection.selectedCount > 0
+                    }
                   />
                   {showStatusColumn && (
                     <div className="mt-1.5">
@@ -615,7 +627,9 @@ export function UniversityPartnersTable({
                 </p>
                 <p className="text-muted-foreground">
                   <span className="font-medium text-gray-700">Date: </span>
-                  {row.blacklistEntry ? formatDateWithoutTime(row.blacklistEntry.created_at) : "—"}
+                  {row.blacklistEntry
+                    ? formatDateWithoutTime(row.blacklistEntry.created_at)
+                    : "—"}
                 </p>
               </div>
             ) : (
@@ -627,7 +641,11 @@ export function UniversityPartnersTable({
                   </p>
                   <p className="text-muted-foreground">
                     <span className="font-medium text-gray-700">End: </span>
-                    <PartnerEndDate row={row} tab={tab} expiringSoonDays={expiringSoonDays} />
+                    <PartnerEndDate
+                      row={row}
+                      tab={tab}
+                      expiringSoonDays={expiringSoonDays}
+                    />
                   </p>
                 </div>
                 <Button
@@ -646,7 +664,10 @@ export function UniversityPartnersTable({
           </article>
         )}
         emptyState={{
-          title: tab === "blacklisted" ? "No blacklisted companies" : "No partners found",
+          title:
+            tab === "blacklisted"
+              ? "No blacklisted companies"
+              : "No partners found",
           description:
             tab === "blacklisted"
               ? "Companies you blacklist will appear here."
@@ -688,19 +709,29 @@ export function UniversityPartnersTable({
               </Button>
               {tab === "outstanding" ? (
                 <>
-                  <Button size="sm" onClick={() => onBulkAction?.("listing", selection.selectedRows)}>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      onBulkAction?.("listing", selection.selectedRows)
+                    }
+                  >
                     Invite to post a listing
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onBulkAction?.("renew", selection.selectedRows)}
+                    onClick={() =>
+                      onBulkAction?.("renew", selection.selectedRows)
+                    }
                   >
                     Invite to renew their MOA
                   </Button>
                 </>
               ) : (
-                <Button size="sm" onClick={() => onBulkAction?.("moa", selection.selectedRows)}>
+                <Button
+                  size="sm"
+                  onClick={() => onBulkAction?.("moa", selection.selectedRows)}
+                >
                   Invite to sign an MOA
                 </Button>
               )}

@@ -112,6 +112,48 @@ const DOC_LABELS: Record<string, string> = {
 const DOC_TYPES_LIST = Object.entries(DOC_LABELS);
 const PREVIEW_WIDTH_STORAGE_KEY = "iom-partner-preview-width";
 
+function PartnerTabs({
+  outstandingCount,
+  expiredCount,
+  blacklistedCount,
+}: {
+  outstandingCount: number;
+  expiredCount: number;
+  blacklistedCount: number;
+}) {
+  return (
+    <TabsList className="h-auto max-w-full justify-start overflow-x-auto rounded-none border-0 border-b border-gray-200 bg-transparent">
+      <TabsTrigger
+        value="outstanding"
+        className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
+      >
+        Active
+        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-primary/10 group-data-[state=active]:text-primary">
+          {outstandingCount}
+        </span>
+      </TabsTrigger>
+      <TabsTrigger
+        value="expired"
+        className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
+      >
+        Expired/None
+        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-primary/10 group-data-[state=active]:text-primary">
+          {expiredCount}
+        </span>
+      </TabsTrigger>
+      <TabsTrigger
+        value="blacklisted"
+        className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
+      >
+        Blacklisted
+        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-primary/10 group-data-[state=active]:text-primary">
+          {blacklistedCount}
+        </span>
+      </TabsTrigger>
+    </TabsList>
+  );
+}
+
 function CollapsibleCard({
   id,
   title,
@@ -638,7 +680,9 @@ function PartnersContent({
     queryFn: () =>
       preconfiguredAxios
         .get("/api/university/partners")
-        .then((r) => r.data as { partners: Partner[]; expiringSoonDays: number }),
+        .then(
+          (r) => r.data as { partners: Partner[]; expiringSoonDays: number },
+        ),
     enabled: !!account,
   });
 
@@ -756,8 +800,16 @@ function PartnersContent({
         action,
         targets: selectedRows.map((row) =>
           row.isImported
-            ? { type: "legacy" as const, legacyCompanyId: row.legacyEntry!.id, displayName: row.displayName }
-            : { type: "registered" as const, companyId: row.partnerCompany!.id, displayName: row.displayName },
+            ? {
+                type: "legacy" as const,
+                legacyCompanyId: row.legacyEntry!.id,
+                displayName: row.displayName,
+              }
+            : {
+                type: "registered" as const,
+                companyId: row.partnerCompany!.id,
+                displayName: row.displayName,
+              },
         ),
         onSent: refresh,
       });
@@ -885,32 +937,6 @@ function PartnersContent({
 
   const isLoading = isPartnersLoading || isBlacklistLoading || isLegacyLoading;
   const nowIso = new Date().toISOString();
-  const activePartnerCount = rows.filter((row) => {
-    if (row.isBlacklisted) return false;
-    if (row.hasActiveMoa) return true;
-    if (!row.isImported || !row.legacyEntry?.hasMoa) return false;
-    return (
-      row.legacyEntry.hasPerpetualMoa ||
-      !row.legacyEntry.valid_until ||
-      row.legacyEntry.valid_until >= nowIso
-    );
-  }).length;
-  const expiredPartnerCount = rows.filter((row) => {
-    if (row.isBlacklisted) return false;
-    if (!row.isImported) return !!row.isPartnerExpired;
-    return (
-      !!row.legacyEntry?.hasMoa &&
-      !row.legacyEntry.hasPerpetualMoa &&
-      !!row.legacyEntry.valid_until &&
-      row.legacyEntry.valid_until < nowIso
-    );
-  }).length;
-  const partnerStats = [
-    { label: "Total partners", value: rows.length },
-    { label: "Active partners", value: activePartnerCount },
-    { label: "Expired partners", value: expiredPartnerCount },
-  ];
-
   // D1/D2/D3 — the tab boundary is the invite-kind boundary; blacklisted
   // rows get their own tab so select-all is safe by construction.
   const expiringSoonDays = partnersData?.expiringSoonDays ?? 30;
@@ -953,32 +979,11 @@ function PartnersContent({
           : "max-w-7xl",
       )}
     >
-      {showList && (
-        <PageHeader title="Partners" description="Manage your partners.">
-          {isLoading
-            ? [0, 1, 2].map((index) => (
-                <Skeleton key={index} className="h-[58px] w-28" />
-              ))
-            : partnerStats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="min-w-28 rounded-[0.33em] border border-gray-200 bg-white px-3 py-2"
-                >
-                  <p className="text-lg font-semibold leading-none text-gray-900">
-                    {stat.value}
-                  </p>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
-        </PageHeader>
-      )}
-      <div className={cn("relative", showList && "mt-6")}>
+      <div className="relative">
         {/* ── List panel ───────────────────────────────────────────────────── */}
         {showList && (
           <div className="space-y-4">
-            <div className="flex justify-end">
+            <PageHeader title="Partners">
               <div className="flex">
                 <Button
                   onClick={() =>
@@ -1084,20 +1089,9 @@ function PartnersContent({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-            </div>
+            </PageHeader>
 
             <Tabs defaultValue="outstanding">
-              <TabsList>
-                <TabsTrigger value="outstanding">
-                  <span className="hidden sm:inline">Outstanding MOA</span>
-                  <span className="sm:hidden">Outstanding</span>
-                </TabsTrigger>
-                <TabsTrigger value="expired">
-                  <span className="hidden sm:inline">Expired or none</span>
-                  <span className="sm:hidden">Expired</span>
-                </TabsTrigger>
-                <TabsTrigger value="blacklisted">Blacklisted</TabsTrigger>
-              </TabsList>
               <TabsContent value="outstanding">
                 <UniversityPartnersTable
                   rows={outstandingRows}
@@ -1107,6 +1101,13 @@ function PartnersContent({
                   onPartnerClick={navigateToDetail}
                   onInvite={(row) => openInviteModal(row, "listing")}
                   onBulkAction={openBulkInviteSheet}
+                  toolbarStart={
+                    <PartnerTabs
+                      outstandingCount={outstandingRows.length}
+                      expiredCount={expiredOrNoneRows.length}
+                      blacklistedCount={blacklistedRows.length}
+                    />
+                  }
                 />
               </TabsContent>
               <TabsContent value="expired">
@@ -1118,6 +1119,13 @@ function PartnersContent({
                   onPartnerClick={navigateToDetail}
                   onInvite={(row) => openInviteModal(row, "moa")}
                   onBulkAction={openBulkInviteSheet}
+                  toolbarStart={
+                    <PartnerTabs
+                      outstandingCount={outstandingRows.length}
+                      expiredCount={expiredOrNoneRows.length}
+                      blacklistedCount={blacklistedRows.length}
+                    />
+                  }
                 />
               </TabsContent>
               <TabsContent value="blacklisted">
@@ -1127,6 +1135,13 @@ function PartnersContent({
                   tab="blacklisted"
                   expiringSoonDays={expiringSoonDays}
                   onPartnerClick={navigateToDetail}
+                  toolbarStart={
+                    <PartnerTabs
+                      outstandingCount={outstandingRows.length}
+                      expiredCount={expiredOrNoneRows.length}
+                      blacklistedCount={blacklistedRows.length}
+                    />
+                  }
                 />
               </TabsContent>
             </Tabs>
