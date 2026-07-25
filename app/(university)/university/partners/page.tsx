@@ -983,7 +983,10 @@ function PartnersContent({
         {/* ── List panel ───────────────────────────────────────────────────── */}
         {showList && (
           <div className="space-y-4">
-            <PageHeader title="Partners">
+            <PageHeader
+              title="Partners"
+              description="Manage your university's partner companies and their MOAs."
+            >
               <div className="flex">
                 <Button
                   onClick={() =>
