@@ -26,6 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type {
   ResourceFilterGroup,
@@ -54,23 +59,36 @@ const SELECTION_CHECKBOX_CLASS =
  * instead, so "you can't pick this row" doesn't depend on noticing a
  * subtle opacity change.
  */
-function UnselectableMark({ className }: { className?: string }) {
+function UnselectableMark({
+  className,
+  reason = "Not selectable",
+}: {
+  className?: string;
+  reason?: ReactNode;
+}) {
   return (
-    <div
-      className={cn(
-        "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-gray-300 bg-gray-100",
-        className,
-      )}
-      role="img"
-      aria-label="Not selectable"
-      title="Not selectable"
-    >
-      <X
-        className="size-3.5 text-gray-400"
-        strokeWidth={3}
-        aria-hidden="true"
-      />
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-gray-300 bg-gray-100",
+            className,
+          )}
+          role="img"
+          tabIndex={0}
+          aria-label="Not selectable"
+        >
+          <X
+            className="size-3.5 text-gray-400"
+            strokeWidth={3}
+            aria-hidden="true"
+          />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={6}>
+        {reason}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -186,6 +204,7 @@ export function ResourceTable<TData>({
   selectionColumnClassName,
   rowSelectionCheckboxClassName,
   rowSelectionUnavailableClassName,
+  getRowSelectionUnavailableReason,
   selectionIndicatorClassName,
   headerSelectionCheckboxClassName,
   onRowClick,
@@ -208,6 +227,7 @@ export function ResourceTable<TData>({
   selectionColumnClassName?: string;
   rowSelectionCheckboxClassName?: string;
   rowSelectionUnavailableClassName?: string;
+  getRowSelectionUnavailableReason?: (row: TData) => ReactNode;
   selectionIndicatorClassName?: string;
   headerSelectionCheckboxClassName?: string;
   onRowClick?: (row: TData) => void;
@@ -500,6 +520,7 @@ export function ResourceTable<TData>({
                               />
                             ) : (
                               <UnselectableMark
+                                reason={getRowSelectionUnavailableReason?.(row)}
                                 className={cn(
                                   selectionIndicatorClassName,
                                   rowSelectionUnavailableClassName,
@@ -557,6 +578,7 @@ export function ResourceTable<TData>({
                         />
                       ) : (
                         <UnselectableMark
+                          reason={getRowSelectionUnavailableReason?.(row)}
                           className={cn(
                             selectionIndicatorClassName,
                             rowSelectionUnavailableClassName,

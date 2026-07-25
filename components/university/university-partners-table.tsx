@@ -3,7 +3,7 @@
 import type { KeyboardEvent, ReactNode } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, type Transition } from "framer-motion";
-import { ChevronRight, UserPlus } from "lucide-react";
+import { ChevronRight, Megaphone, RefreshCw, UserRoundX } from "lucide-react";
 
 import {
   ResourceTable,
@@ -264,6 +264,20 @@ function CompanySecondLine({
   );
 }
 
+function NoAccountIndicator() {
+  return (
+    <span
+      className="group/no-account text-muted-foreground inline-flex h-7 max-w-7 shrink-0 items-center gap-0 overflow-hidden rounded-full border border-gray-300 bg-white px-1.5 transition-[max-width,padding,gap] duration-200 hover:max-w-32 hover:gap-1.5 hover:px-2.5"
+      aria-label="No account yet"
+    >
+      <UserRoundX className="size-3.5 shrink-0" aria-hidden="true" />
+      <span className="max-w-0 overflow-hidden text-xs whitespace-nowrap opacity-0 transition-[max-width,opacity] duration-200 group-hover/no-account:max-w-24 group-hover/no-account:opacity-100">
+        No account yet
+      </span>
+    </span>
+  );
+}
+
 function PartnersTableSkeleton({ toolbarStart }: { toolbarStart?: ReactNode }) {
   return (
     <div className="space-y-4">
@@ -328,6 +342,7 @@ export function UniversityPartnersTable({
 }) {
   const showStatusColumn = tab === "expired";
   const showSelection = tab !== "blacklisted";
+  const inviteLabel = tab === "expired" ? "Renew MOA" : "Post Listing";
 
   const statusOptions = showStatusColumn
     ? Array.from(new Set(rows.map((row) => getPartnerStatus(row))))
@@ -358,13 +373,10 @@ export function UniversityPartnersTable({
   columns.push({
     id: "company",
     header: "Company",
-    width: showStatusColumn ? "w-[38%]" : "w-[50%]",
+    width: showStatusColumn ? "w-[32%]" : "w-[44%]",
     getSortValue: (row) => row.displayName,
     render: (row) => (
-      <PartnerLink
-        row={row}
-        className="flex min-w-0 items-center text-inherit"
-      >
+      <PartnerLink row={row} className="flex min-w-0 items-center text-inherit">
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <TruncatedTooltip className="font-medium text-gray-900">
@@ -372,11 +384,7 @@ export function UniversityPartnersTable({
             </TruncatedTooltip>
             {tab !== "blacklisted" &&
               row.isImported &&
-              !row.legacyEntry?.registered_company_id && (
-                <span className="text-muted-foreground shrink-0 rounded-full border border-gray-300 px-2 py-0.5 text-xs mt-0.5">
-                  No account yet
-                </span>
-              )}
+              !row.legacyEntry?.registered_company_id && <NoAccountIndicator />}
           </div>
           <CompanySecondLine
             row={row}
@@ -456,19 +464,38 @@ export function UniversityPartnersTable({
     width: "w-[14%]",
     sortable: false,
     render: (row) => (
-      <div className="flex items-center justify-end gap-2">
+      <div className="flex items-start">
         {tab !== "blacklisted" && (
           <Button
-            size="xs"
-            variant="outline"
+            size="sm"
+            variant="link"
+            className="-ml-3 hover:no-underline"
+            aria-label={inviteLabel}
             onClick={(event) => {
               event.stopPropagation();
               onInvite?.(row);
             }}
           >
-            <UserPlus className="h-3.5 w-3.5" /> Invite
+            {tab === "expired" ? (
+              <RefreshCw className="h-3.5 w-3.5" />
+            ) : (
+              <Megaphone className="h-3.5 w-3.5" />
+            )}
+            {inviteLabel}
           </Button>
         )}
+      </div>
+    ),
+  });
+
+  columns.push({
+    id: "open",
+    header: "",
+    width: "w-[6%]",
+    sortable: false,
+    align: "right",
+    render: (row) => (
+      <div className="flex justify-end">
         <PartnerLink
           row={row}
           className="text-primary inline-flex h-8 w-8 items-center justify-center"
@@ -567,6 +594,9 @@ export function UniversityPartnersTable({
             ? "translate-y-0"
             : "translate-y-0 opacity-0 group-hover:opacity-100"
         }
+        getRowSelectionUnavailableReason={() =>
+          "Cannot invite this partner because no contact email is available."
+        }
         selectionIndicatorClassName="translate-y-0.5"
         headerSelectionCheckboxClassName="translate-y-0"
         toolbarLeading={
@@ -593,9 +623,7 @@ export function UniversityPartnersTable({
                     {tab !== "blacklisted" &&
                       row.isImported &&
                       !row.legacyEntry?.registered_company_id && (
-                        <span className="text-muted-foreground shrink-0 rounded-full border border-gray-300 px-1.5 py-0.5 text-[10px]">
-                          No account yet
-                        </span>
+                        <NoAccountIndicator />
                       )}
                   </div>
                   <CompanySecondLine
@@ -650,14 +678,18 @@ export function UniversityPartnersTable({
                 </div>
                 <Button
                   size="xs"
-                  variant="outline"
                   className="shrink-0"
                   onClick={(event) => {
                     event.stopPropagation();
                     onInvite?.(row);
                   }}
                 >
-                  <UserPlus className="h-3.5 w-3.5" /> Invite
+                  {tab === "expired" ? (
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  ) : (
+                    <Megaphone className="h-3.5 w-3.5" />
+                  )}
+                  {inviteLabel}
                 </Button>
               </div>
             )}

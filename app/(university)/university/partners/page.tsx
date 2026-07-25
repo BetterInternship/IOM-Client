@@ -128,7 +128,7 @@ function PartnerTabs({
         className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
       >
         Active
-        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-primary/10 group-data-[state=active]:text-primary">
+        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-supportive group-data-[state=active]:text-supportive-foreground">
           {outstandingCount}
         </span>
       </TabsTrigger>
@@ -137,7 +137,7 @@ function PartnerTabs({
         className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
       >
         Expired/None
-        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-primary/10 group-data-[state=active]:text-primary">
+        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground">
           {expiredCount}
         </span>
       </TabsTrigger>
@@ -146,7 +146,7 @@ function PartnerTabs({
         className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
       >
         Blacklisted
-        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-primary/10 group-data-[state=active]:text-primary">
+        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-gray-900 group-data-[state=active]:text-white">
           {blacklistedCount}
         </span>
       </TabsTrigger>
