@@ -2,9 +2,15 @@
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import {
+  getAdminControllerCompanyReviewDetailQueryKey,
+  getAdminControllerCompanyReviewQueueQueryKey,
+  useAdminControllerApproveCompany,
+  useAdminControllerCompanyReviewDetail,
+  useAdminControllerRejectCompany,
+} from "@/app/api";
 import { PageContainer } from "@/components/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -267,19 +273,20 @@ export default function AdminCompanyReviewPage() {
   const [approvalExpiresAt, setApprovalExpiresAt] = useState("");
   const [selectedPast, setSelectedPast] = useState<HistoryEntry | null>(null);
 
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ["admin-company-review", companyId],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(`/api/admin/companies/${companyId}/review`)
-        .then((r) => r.data as ReviewDetail),
-    enabled: !!companyId,
-    refetchInterval: 25 * 60 * 1000,
-  });
+  const { data, isLoading, refetch } =
+    useAdminControllerCompanyReviewDetail<ReviewDetail>(companyId, {
+      query: {
+        queryKey: getAdminControllerCompanyReviewDetailQueryKey(companyId),
+        enabled: !!companyId,
+        refetchInterval: 25 * 60 * 1000,
+      },
+    });
 
   const invalidate = () => {
     refetch();
-    queryClient.invalidateQueries({ queryKey: ["admin-company-reviews"] });
+    queryClient.invalidateQueries({
+      queryKey: getAdminControllerCompanyReviewQueueQueryKey(),
+    });
   };
 
   const onConflict = (e: Error) => {
@@ -292,36 +299,31 @@ export default function AdminCompanyReviewPage() {
     return false;
   };
 
-  const approve = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post(`/api/admin/companies/${companyId}/approve`, {
-        document_review_details: buildReviewDetails(reviewValues),
-        approval_expires_at: approvalExpiresAt,
-      }),
-    onSuccess: () => {
-      toast.success("Company verified");
-      setReviewValues({});
-      setApprovalExpiresAt("");
-      invalidate();
-    },
-    onError: (e: Error) => {
-      if (!onConflict(e)) toast.error(e.message);
+  const approve = useAdminControllerApproveCompany({
+    mutation: {
+      onSuccess: () => {
+        toast.success("Company verified");
+        setReviewValues({});
+        setApprovalExpiresAt("");
+        invalidate();
+      },
+      onError: (e: Error) => {
+        if (!onConflict(e)) toast.error(e.message);
+      },
     },
   });
 
-  const reject = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post(`/api/admin/companies/${companyId}/reject`, {
-        reason: reason || undefined,
-      }),
-    onSuccess: () => {
-      toast.success("Company review rejected");
-      closeModal("reject-company");
-      setReason("");
-      invalidate();
-    },
-    onError: (e: Error) => {
-      if (!onConflict(e)) toast.error(e.message);
+  const reject = useAdminControllerRejectCompany({
+    mutation: {
+      onSuccess: () => {
+        toast.success("Company review rejected");
+        closeModal("reject-company");
+        setReason("");
+        invalidate();
+      },
+      onError: (e: Error) => {
+        if (!onConflict(e)) toast.error(e.message);
+      },
     },
   });
 
@@ -489,7 +491,15 @@ export default function AdminCompanyReviewPage() {
                   description:
                     "The company will be able to request MOAs from any university and is emailed a confirmation.",
                   confirmLabel: "Approve",
-                  onConfirm: () => approve.mutate(),
+                  onConfirm: () =>
+                    approve.mutate({
+                      companyId,
+                      data: {
+                        document_review_details:
+                          buildReviewDetails(reviewValues),
+                        approval_expires_at: approvalExpiresAt,
+                      },
+                    }),
                   isPending: approve.isPending,
                 })
               }
@@ -530,7 +540,12 @@ export default function AdminCompanyReviewPage() {
                       <Button
                         scheme="destructive"
                         disabled={reject.isPending}
-                        onClick={() => reject.mutate()}
+                        onClick={() =>
+                          reject.mutate({
+                            companyId,
+                            data: { reason: reason || undefined },
+                          })
+                        }
                       >
                         {reject.isPending && (
                           <Loader2 className="animate-spin" />

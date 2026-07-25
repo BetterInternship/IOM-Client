@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import {
   BasePdfViewer,
@@ -11,7 +10,7 @@ import {
 } from "@betterinternship/core/pdf-viewer";
 import { ArrowRight, Eye, FileText } from "lucide-react";
 
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useUniversityControllerGetMoaDetail } from "@/app/api/app/api/endpoints/university/university";
 import type { LegacyCompanyDetail } from "@/components/legacy-companies/legacy-companies-panel";
 import { isLegacyMoaExpired } from "@/components/legacy-companies/legacy-companies-panel";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
@@ -120,19 +119,9 @@ export function PartnerPdfPane({
 }: {
   selection: PartnerPdfSelection;
 }) {
-  const { data, isLoading } = useQuery({
-    queryKey: [
-      "university-moa-pdf",
-      selection.kind === "registered" ? selection.moaId : null,
-    ],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(
-          `/api/university/moas/${selection.kind === "registered" ? selection.moaId : ""}`,
-        )
-        .then((response) => response.data as { pdfUrl: string | null }),
-    enabled: selection.kind === "registered",
-  });
+  const { data, isLoading } = useUniversityControllerGetMoaDetail(
+    selection.kind === "registered" ? selection.moaId : null,
+  );
   const pdfUrl = selection.kind === "registered" ? data?.pdfUrl : selection.url;
   const proxiedUrl = pdfUrl
     ? `/gcs-proxy?url=${encodeURIComponent(pdfUrl)}`

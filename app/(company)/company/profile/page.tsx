@@ -17,6 +17,7 @@ import {
   useCompanyControllerGetDocuments,
   useCompanyControllerPatchProfile,
   useCompanyControllerUploadDocument,
+  type CompanyDocumentDto,
   type PatchCompanyProfileDto,
 } from "@/app/api";
 import { cn } from "@/lib/utils";
@@ -73,13 +74,6 @@ const DOC_TYPES = [
   { value: "sec_dti_registration", label: "SEC/DTI Registration" },
   { value: "mayor_permit", label: "Mayor's Permit" },
 ];
-
-interface CompanyDoc {
-  id: string;
-  type: string;
-  filename: string;
-  uploaded_at: string;
-}
 
 function ProfileContent() {
   const searchParams = useSearchParams();
@@ -282,7 +276,7 @@ function ProfileContent() {
     }
   }
 
-  function preview(doc: CompanyDoc) {
+  function preview(doc: CompanyDocumentDto) {
     const documentTitle =
       DOC_TYPES.find(({ value }) => value === doc.type)?.label ??
       "Legal Document";
@@ -296,7 +290,7 @@ function ProfileContent() {
     });
   }
 
-  const docs = (docsData?.documents ?? []) as CompanyDoc[];
+  const docs = docsData?.documents ?? [];
   const latestDoc = (type: string) => docs.find((d) => d.type === type);
   const docCount = DOC_TYPES.filter(({ value }) => latestDoc(value)).length;
   const watched = form.watch();

@@ -1,8 +1,21 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  getAdminControllerGetPartnerLegacyCompanyQueryKey,
+  getAdminControllerGetUniversityLegacyCompanyQueryKey,
+  getAdminControllerGetUniversityPartnerMoasQueryKey,
+  getAdminControllerGetUniversityPartnersQueryKey,
+  getAdminControllerGetUniversityQueryKey,
+  getAdminControllerListUniversityLegacyCompaniesQueryKey,
+  useAdminControllerGetPartnerLegacyCompany,
+  useAdminControllerGetUniversity,
+  useAdminControllerGetUniversityLegacyCompany,
+  useAdminControllerGetUniversityPartnerMoas,
+  useAdminControllerGetUniversityPartners,
+  useAdminControllerListUniversityLegacyCompanies,
+} from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -24,7 +37,13 @@ import {
   formatLegacyMoaPeriod,
   isFilledValue,
   isLegacyMoaExpired,
+  normalizeBulkUploadResult,
 } from "@/components/legacy-companies/legacy-companies-panel";
+import {
+  adminControllerBulkCreateLegacyCompaniesFromCsv,
+  adminControllerBulkCreateLegacyCompaniesFromZip,
+  adminControllerCreateUniversityLegacyCompany,
+} from "@/app/api";
 import {
   ArrowLeft,
   Ban,
@@ -52,6 +71,20 @@ interface University {
   id: string;
   registered_name: string;
   is_deactivated: boolean | null;
+}
+
+function mapUniversityDetail(university: Record<string, unknown>): University {
+  return {
+    id: typeof university.id === "string" ? university.id : "",
+    registered_name:
+      typeof university.registered_name === "string"
+        ? university.registered_name
+        : "",
+    is_deactivated:
+      typeof university.is_deactivated === "boolean"
+        ? university.is_deactivated
+        : null,
+  };
 }
 
 interface PartnerCompany {
@@ -93,32 +126,10 @@ interface LegacyCompanySummary {
   latestMoaIsPerpetual: boolean;
 }
 
-interface PartnerMoaEntry {
-  id: string;
-  status: string;
-  created_at: string;
-  effective_date: string;
-  expiry_date: string | null;
-  is_expired: boolean | null;
-  template: { name: string } | null;
-}
-
 type DocReviewDetails = Record<
   string,
   { type?: string; document?: string; value: string }
 >;
-
-interface CompanyDoc {
-  type: string;
-  filename: string;
-  url: string | null;
-}
-
-interface PartnerMoasData {
-  company: PartnerCompany & { document_review_details?: DocReviewDetails };
-  moas: PartnerMoaEntry[];
-  companyDocuments: CompanyDoc[];
-}
 
 interface PartnerTableRow {
   id: string;
@@ -214,6 +225,33 @@ function VerifiedDocumentDetails({ details }: { details: DocReviewDetails }) {
       </div>
     </div>
   );
+}
+
+function normalizeDocumentReviewDetails(
+  details: Record<string, unknown>,
+): DocReviewDetails {
+  const normalized: DocReviewDetails = {};
+
+  for (const [key, field] of Object.entries(details)) {
+    if (
+      typeof field === "object" &&
+      field !== null &&
+      "value" in field &&
+      typeof field.value === "string"
+    ) {
+      normalized[key] = {
+        value: field.value,
+        ...("type" in field && typeof field.type === "string"
+          ? { type: field.type }
+          : {}),
+        ...("document" in field && typeof field.document === "string"
+          ? { document: field.document }
+          : {}),
+      };
+    }
+  }
+
+  return normalized;
 }
 
 function ReadOnlyLegacyDetail({
@@ -385,15 +423,16 @@ function LegacyRecordsSection({
   const [open, setOpen] = useState(false);
   const { openModal, closeModal } = useModal();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-partner-legacy-company", universityId, companyId],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(
-          `/api/admin/universities/${universityId}/partners/${companyId}/legacy-companies`,
-        )
-        .then((r) => r.data as { legacyCompany: LegacyCompanyDetail | null }),
-    enabled: open && !!companyId && !!universityId,
+  const { data, isLoading } = useAdminControllerGetPartnerLegacyCompany<{
+    legacyCompany: LegacyCompanyDetail | null;
+  }>(universityId, companyId, {
+    query: {
+      queryKey: getAdminControllerGetPartnerLegacyCompanyQueryKey(
+        universityId,
+        companyId,
+      ),
+      enabled: open && !!companyId && !!universityId,
+    },
   });
 
   const company = data?.legacyCompany;
@@ -466,61 +505,61 @@ export default function AdminUniversityPartnersPage() {
 
   const showDetail = detailType !== null;
 
-  const { data: uniData, isLoading: uniLoading } = useQuery({
-    queryKey: ["admin-university", universityId],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(`/api/admin/universities/${universityId}`)
-        .then((r) => r.data.university as University),
-    enabled: !!universityId,
-  });
+  const { data: uniData, isLoading: uniLoading } =
+    useAdminControllerGetUniversity<University>(universityId, {
+      query: {
+        queryKey: getAdminControllerGetUniversityQueryKey(universityId),
+        select: (response) => mapUniversityDetail(response.university),
+        enabled: !!universityId,
+      },
+    });
 
-  const { data: partnersData, isLoading: partnersLoading } = useQuery({
-    queryKey: ["admin-university-partners", universityId],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(`/api/admin/universities/${universityId}/partners`)
-        .then(
-          (r) =>
-            r.data as {
-              university: University;
-              partners: Partner[];
-              blacklist: BlacklistEntry[];
-            },
+  const { data: partnersData, isLoading: partnersLoading } =
+    useAdminControllerGetUniversityPartners<{
+      university: University;
+      partners: Partner[];
+      blacklist: BlacklistEntry[];
+    }>(universityId, {
+      query: {
+        queryKey: getAdminControllerGetUniversityPartnersQueryKey(universityId),
+        enabled: !!universityId,
+      },
+    });
+
+  const { data: legacyData, isLoading: legacyLoading } =
+    useAdminControllerListUniversityLegacyCompanies<{
+      legacyCompanies: LegacyCompanySummary[];
+    }>(universityId, {
+      query: {
+        queryKey:
+          getAdminControllerListUniversityLegacyCompaniesQueryKey(universityId),
+        enabled: !!universityId,
+      },
+    });
+
+  const { data: partnerMoasData, isLoading: moasLoading } =
+    useAdminControllerGetUniversityPartnerMoas(universityId, detailId, {
+      query: {
+        queryKey: getAdminControllerGetUniversityPartnerMoasQueryKey(
+          universityId,
+          detailId,
         ),
-    enabled: !!universityId,
-  });
+        enabled: detailType === "partner" && !!detailId,
+      },
+    });
 
-  const { data: legacyData, isLoading: legacyLoading } = useQuery({
-    queryKey: ["admin-university-legacy", universityId],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(`/api/admin/universities/${universityId}/legacy-companies`)
-        .then((r) => r.data as { legacyCompanies: LegacyCompanySummary[] }),
-    enabled: !!universityId,
-  });
-
-  const { data: partnerMoasData, isLoading: moasLoading } = useQuery({
-    queryKey: ["admin-university-partner-moas", universityId, detailId],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(
-          `/api/admin/universities/${universityId}/partners/${detailId}/moas`,
-        )
-        .then((r) => r.data as PartnerMoasData),
-    enabled: detailType === "partner" && !!detailId,
-  });
-
-  const { data: legacyDetailData, isLoading: legacyDetailLoading } = useQuery({
-    queryKey: ["admin-university-legacy-detail", universityId, detailId],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(
-          `/api/admin/universities/${universityId}/legacy-companies/${detailId}`,
-        )
-        .then((r) => r.data as { legacyCompany: LegacyCompanyDetail }),
-    enabled: detailType === "legacy" && !!detailId,
-  });
+  const { data: legacyDetailData, isLoading: legacyDetailLoading } =
+    useAdminControllerGetUniversityLegacyCompany<{
+      legacyCompany: LegacyCompanyDetail;
+    }>(universityId, detailId, {
+      query: {
+        queryKey: getAdminControllerGetUniversityLegacyCompanyQueryKey(
+          universityId,
+          detailId,
+        ),
+        enabled: detailType === "legacy" && !!detailId,
+      },
+    });
 
   const rows = useMemo<PartnerTableRow[]>(() => {
     const map = new Map<string, PartnerTableRow>();
@@ -678,6 +717,29 @@ export default function AdminUniversityPartnersPage() {
           }
           return "—";
         },
+        render: (row) => {
+          if (row.isImported && row.legacyEntry) {
+            if (row.legacyEntry.latestMoaIsPerpetual) return "Perpetual";
+            if (
+              row.legacyEntry.latestMoaEffectiveDate ||
+              row.legacyEntry.latestMoaExpiryDate
+            ) {
+              const from = row.legacyEntry.latestMoaEffectiveDate
+                ? formatDateWithoutTime(row.legacyEntry.latestMoaEffectiveDate)
+                : "—";
+              const to = row.legacyEntry.latestMoaExpiryDate
+                ? formatDateWithoutTime(row.legacyEntry.latestMoaExpiryDate)
+                : "—";
+              return `${from} – ${to}`;
+            }
+            return "—";
+          }
+          if (!row.effectiveDate) return "—";
+          const to = row.expiryDate
+            ? formatDateWithoutTime(row.expiryDate)
+            : "Perpetual";
+          return `${formatDateWithoutTime(row.effectiveDate)} – ${to}`;
+        },
       },
       {
         id: "imported",
@@ -830,21 +892,28 @@ export default function AdminUniversityPartnersPage() {
                         openModal(
                           "legacy-upload",
                           <UploadDialog
-                            uploadEndpoint={`/api/admin/universities/${universityId}/legacy-companies`}
-                            queryKeyPrefix={`admin-university-legacy-${universityId}`}
+                            createRequest={(data) =>
+                              adminControllerCreateUniversityLegacyCompany(
+                                universityId,
+                                data,
+                              )
+                            }
+                            queryKey={getAdminControllerListUniversityLegacyCompaniesQueryKey(
+                              universityId,
+                            )}
                             onClose={() => {
                               closeModal("legacy-upload");
                               queryClient.invalidateQueries({
-                                queryKey: [
-                                  "admin-university-partners",
-                                  universityId,
-                                ],
+                                queryKey:
+                                  getAdminControllerGetUniversityPartnersQueryKey(
+                                    universityId,
+                                  ),
                               });
                               queryClient.invalidateQueries({
-                                queryKey: [
-                                  "admin-university-legacy",
-                                  universityId,
-                                ],
+                                queryKey:
+                                  getAdminControllerListUniversityLegacyCompaniesQueryKey(
+                                    universityId,
+                                  ),
                               });
                             }}
                           />,
@@ -871,21 +940,30 @@ export default function AdminUniversityPartnersPage() {
                             openModal(
                               "csv-upload",
                               <CsvUploadDialog
-                                csvEndpoint={`/api/admin/universities/${universityId}/legacy-companies/bulk/csv`}
-                                queryKeyPrefix={`admin-university-legacy-${universityId}`}
+                                uploadRequest={async (file) =>
+                                  normalizeBulkUploadResult(
+                                    await adminControllerBulkCreateLegacyCompaniesFromCsv(
+                                      universityId,
+                                      { file },
+                                    ),
+                                  )
+                                }
+                                queryKey={getAdminControllerListUniversityLegacyCompaniesQueryKey(
+                                  universityId,
+                                )}
                                 onClose={() => {
                                   closeModal("csv-upload");
                                   queryClient.invalidateQueries({
-                                    queryKey: [
-                                      "admin-university-partners",
-                                      universityId,
-                                    ],
+                                    queryKey:
+                                      getAdminControllerGetUniversityPartnersQueryKey(
+                                        universityId,
+                                      ),
                                   });
                                   queryClient.invalidateQueries({
-                                    queryKey: [
-                                      "admin-university-legacy",
-                                      universityId,
-                                    ],
+                                    queryKey:
+                                      getAdminControllerListUniversityLegacyCompaniesQueryKey(
+                                        universityId,
+                                      ),
                                   });
                                 }}
                               />,
@@ -906,21 +984,30 @@ export default function AdminUniversityPartnersPage() {
                             openModal(
                               "zip-upload",
                               <ZipUploadDialog
-                                zipEndpoint={`/api/admin/universities/${universityId}/legacy-companies/bulk/zip`}
-                                queryKeyPrefix={`admin-university-legacy-${universityId}`}
+                                uploadRequest={async (file) =>
+                                  normalizeBulkUploadResult(
+                                    await adminControllerBulkCreateLegacyCompaniesFromZip(
+                                      universityId,
+                                      { file },
+                                    ),
+                                  )
+                                }
+                                queryKey={getAdminControllerListUniversityLegacyCompaniesQueryKey(
+                                  universityId,
+                                )}
                                 onClose={() => {
                                   closeModal("zip-upload");
                                   queryClient.invalidateQueries({
-                                    queryKey: [
-                                      "admin-university-partners",
-                                      universityId,
-                                    ],
+                                    queryKey:
+                                      getAdminControllerGetUniversityPartnersQueryKey(
+                                        universityId,
+                                      ),
                                   });
                                   queryClient.invalidateQueries({
-                                    queryKey: [
-                                      "admin-university-legacy",
-                                      universityId,
-                                    ],
+                                    queryKey:
+                                      getAdminControllerListUniversityLegacyCompaniesQueryKey(
+                                        universityId,
+                                      ),
                                   });
                                 }}
                               />,
@@ -981,7 +1068,9 @@ export default function AdminUniversityPartnersPage() {
 
             {partnerMoasData?.company?.document_review_details && (
               <VerifiedDocumentDetails
-                details={partnerMoasData.company.document_review_details}
+                details={normalizeDocumentReviewDetails(
+                  partnerMoasData.company.document_review_details,
+                )}
               />
             )}
 

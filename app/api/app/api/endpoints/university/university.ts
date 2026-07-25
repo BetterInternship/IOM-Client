@@ -40,6 +40,7 @@ import type {
   UniversityBulkResultResponse,
   UniversityControllerAppendLegacyCompanyDocumentsBody,
   UniversityControllerBulkCreateLegacyCompaniesFromCsvBody,
+  UniversityControllerBulkCreateLegacyCompaniesFromWizardBody,
   UniversityControllerBulkCreateLegacyCompaniesFromZipBody,
   UniversityControllerCreateLegacyCompanyBody,
   UniversityControllerGetAuditLogParams,
@@ -2539,8 +2540,13 @@ export const universityControllerAppendLegacyCompanyMoas = (
 ) => {
   const formData = new FormData();
   formData.append(`moas`, appendLegacyMoasDto.moas);
+  if (appendLegacyMoasDto.moaDocuments !== undefined) {
+    appendLegacyMoasDto.moaDocuments.forEach((value) =>
+      formData.append(`moaDocuments`, value),
+    );
+  }
 
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityLegacyCompanyDetailResponse>({
     url: `/api/university/legacy-companies/${legacyCompanyId}/moas`,
     method: "POST",
     headers: { "Content-Type": "multipart/form-data" },
@@ -2550,7 +2556,7 @@ export const universityControllerAppendLegacyCompanyMoas = (
 };
 
 export const getUniversityControllerAppendLegacyCompanyMoasMutationOptions = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -2592,10 +2598,11 @@ export type UniversityControllerAppendLegacyCompanyMoasMutationResult =
   >;
 export type UniversityControllerAppendLegacyCompanyMoasMutationBody =
   AppendLegacyMoasDto;
-export type UniversityControllerAppendLegacyCompanyMoasMutationError = unknown;
+export type UniversityControllerAppendLegacyCompanyMoasMutationError =
+  ErrorResponse;
 
 export const useUniversityControllerAppendLegacyCompanyMoas = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
@@ -2819,6 +2826,118 @@ export const useUniversityControllerBulkCreateLegacyCompaniesFromZip = <
 > => {
   const mutationOptions =
     getUniversityControllerBulkCreateLegacyCompaniesFromZipMutationOptions(
+      options,
+    );
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerBulkCreateLegacyCompaniesFromWizard = (
+  universityControllerBulkCreateLegacyCompaniesFromWizardBody: UniversityControllerBulkCreateLegacyCompaniesFromWizardBody,
+  signal?: AbortSignal,
+) => {
+  const formData = new FormData();
+  formData.append(
+    `moas`,
+    universityControllerBulkCreateLegacyCompaniesFromWizardBody.moas,
+  );
+  universityControllerBulkCreateLegacyCompaniesFromWizardBody.moaDocuments.forEach(
+    (value) => formData.append(`moaDocuments`, value),
+  );
+
+  return preconfiguredAxiosFunction<UniversityBulkResultResponse>({
+    url: `/api/university/legacy-companies/bulk/wizard`,
+    method: "POST",
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
+    signal,
+  });
+};
+
+export const getUniversityControllerBulkCreateLegacyCompaniesFromWizardMutationOptions =
+  <TError = ErrorResponse, TContext = unknown>(options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<
+          typeof universityControllerBulkCreateLegacyCompaniesFromWizard
+        >
+      >,
+      TError,
+      { data: UniversityControllerBulkCreateLegacyCompaniesFromWizardBody },
+      TContext
+    >;
+  }): UseMutationOptions<
+    Awaited<
+      ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromWizard>
+    >,
+    TError,
+    { data: UniversityControllerBulkCreateLegacyCompaniesFromWizardBody },
+    TContext
+  > => {
+    const mutationKey = [
+      "universityControllerBulkCreateLegacyCompaniesFromWizard",
+    ];
+    const { mutation: mutationOptions } = options
+      ? options.mutation &&
+        "mutationKey" in options.mutation &&
+        options.mutation.mutationKey
+        ? options
+        : { ...options, mutation: { ...options.mutation, mutationKey } }
+      : { mutation: { mutationKey } };
+
+    const mutationFn: MutationFunction<
+      Awaited<
+        ReturnType<
+          typeof universityControllerBulkCreateLegacyCompaniesFromWizard
+        >
+      >,
+      { data: UniversityControllerBulkCreateLegacyCompaniesFromWizardBody }
+    > = (props) => {
+      const { data } = props ?? {};
+
+      return universityControllerBulkCreateLegacyCompaniesFromWizard(data);
+    };
+
+    return { mutationFn, ...mutationOptions };
+  };
+
+export type UniversityControllerBulkCreateLegacyCompaniesFromWizardMutationResult =
+  NonNullable<
+    Awaited<
+      ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromWizard>
+    >
+  >;
+export type UniversityControllerBulkCreateLegacyCompaniesFromWizardMutationBody =
+  UniversityControllerBulkCreateLegacyCompaniesFromWizardBody;
+export type UniversityControllerBulkCreateLegacyCompaniesFromWizardMutationError =
+  ErrorResponse;
+
+export const useUniversityControllerBulkCreateLegacyCompaniesFromWizard = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<
+        ReturnType<
+          typeof universityControllerBulkCreateLegacyCompaniesFromWizard
+        >
+      >,
+      TError,
+      { data: UniversityControllerBulkCreateLegacyCompaniesFromWizardBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<
+    ReturnType<typeof universityControllerBulkCreateLegacyCompaniesFromWizard>
+  >,
+  TError,
+  { data: UniversityControllerBulkCreateLegacyCompaniesFromWizardBody },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerBulkCreateLegacyCompaniesFromWizardMutationOptions(
       options,
     );
 

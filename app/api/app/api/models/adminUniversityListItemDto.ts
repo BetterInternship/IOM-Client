@@ -11,6 +11,8 @@ export interface AdminUniversityListItemDto {
   id: string;
   registered_name: string;
   /** @nullable */
+  logo_url: string | null;
+  /** @nullable */
   is_deactivated: boolean | null;
   university_accounts: AdminUniversityAccountDto[];
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { createWorker, type Worker as TesseractWorker } from "tesseract.js";
 import {
@@ -10,7 +10,12 @@ import {
   usePdfDocumentFromFile,
   usePdfPageRenderer,
 } from "@betterinternship/core/pdf-viewer";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import {
+  getUniversityControllerListLegacyCompaniesQueryKey,
+  getUniversityControllerListPartnersQueryKey,
+  universityControllerBulkCreateLegacyCompaniesFromWizard,
+  useUniversityControllerListLegacyCompanies,
+} from "@/app/api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,11 +67,6 @@ type BulkResult = {
     status: string;
     message?: string;
   }>;
-};
-
-type LegacyCompanySummary = {
-  id: string;
-  company_name: string;
 };
 
 function PdfPage({
@@ -224,16 +224,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
   const [isDragging, setIsDragging] = useState(false);
   const [result, setResult] = useState<BulkResult | null>(null);
 
-  const { data: legacyData } = useQuery({
-    queryKey: ["university-legacy-companies"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/legacy-companies")
-        .then(
-          (response) =>
-            response.data as { legacyCompanies: LegacyCompanySummary[] },
-        ),
-  });
+  const { data: legacyData } = useUniversityControllerListLegacyCompanies();
   const companyNames = legacyData?.legacyCompanies ?? [];
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const selectedIndex = selected
@@ -251,11 +242,9 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
 
   const commit = useMutation({
     mutationFn: async () => {
-      const formData = new FormData();
-      for (const item of items) formData.append("moaDocuments", item.file);
-      formData.append(
-        "moas",
-        JSON.stringify(
+      return universityControllerBulkCreateLegacyCompaniesFromWizard({
+        moaDocuments: items.map((item) => item.file),
+        moas: JSON.stringify(
           items.map((item, index) => ({
             company_name: item.companyName.trim(),
             effective_date: item.effectiveDate,
@@ -264,20 +253,16 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
             document_file_index: index,
           })),
         ),
-      );
-      const response = await preconfiguredAxios.post(
-        "/api/university/legacy-companies/bulk/wizard",
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } },
-      );
-      return response.data as BulkResult;
+      }) as Promise<BulkResult>;
     },
     onSuccess: (data) => {
       setResult(data);
       queryClient.invalidateQueries({
-        queryKey: ["university-legacy-companies"],
+        queryKey: getUniversityControllerListLegacyCompaniesQueryKey(),
       });
-      queryClient.invalidateQueries({ queryKey: ["university-partners"] });
+      queryClient.invalidateQueries({
+        queryKey: getUniversityControllerListPartnersQueryKey(),
+      });
     },
     onError: () => {
       toast(

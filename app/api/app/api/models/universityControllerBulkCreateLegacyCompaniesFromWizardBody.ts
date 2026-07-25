@@ -6,8 +6,8 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface AppendLegacyMoasDto {
-  /** JSON array of MOA records: [{ effective_date, expiry_date, notes?, document_file_index? }] */
+export type UniversityControllerBulkCreateLegacyCompaniesFromWizardBody = {
+  /** JSON array of MOA records: [{ company_name, effective_date, expiry_date, is_perpetual, document_file_index }] */
   moas: string;
-  moaDocuments?: Blob[];
-}
+  moaDocuments: Blob[];
+};

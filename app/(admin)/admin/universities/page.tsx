@@ -1,9 +1,14 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import {
+  getAdminControllerListUniversitiesQueryKey,
+  useAdminControllerCreateUniversity,
+  useAdminControllerDeactivateUniversity,
+  useAdminControllerListUniversities,
+} from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { Button } from "@/components/ui/button";
@@ -91,18 +96,15 @@ function CreateUniversityForm({
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
 
-  const create = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post("/api/admin/universities", {
-        ...form,
-        superadmin_display_name: "Super Admin",
-      }),
-    onSuccess: async () => {
-      await onCreated();
-      toast("University created", toastPresets.success);
-      onClose();
+  const create = useAdminControllerCreateUniversity({
+    mutation: {
+      onSuccess: async () => {
+        await onCreated();
+        toast("University created", toastPresets.success);
+        onClose();
+      },
+      onError: (e: Error) => setError(e.message),
     },
-    onError: (e: Error) => setError(e.message),
   });
 
   const valid = form.registered_name && form.superadmin_email;
@@ -113,7 +115,9 @@ function CreateUniversityForm({
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
-        create.mutate();
+        create.mutate({
+          data: { ...form, superadmin_display_name: "Super Admin" },
+        });
       }}
       className="space-y-4"
     >
@@ -164,14 +168,16 @@ function DeactivateCell({ uni }: { uni: University }) {
   const queryClient = useQueryClient();
   const { confirmAction } = useIomModalRegistry();
 
-  const deactivate = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.patch(`/api/admin/universities/${uni.id}/deactivate`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-universities"] });
-      toast.success("University deactivated");
+  const deactivate = useAdminControllerDeactivateUniversity({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getAdminControllerListUniversitiesQueryKey(),
+        });
+        toast.success("University deactivated");
+      },
+      onError: (e: Error) => toast.error(e.message),
     },
-    onError: (e: Error) => toast.error(e.message),
   });
 
   if (uni.is_deactivated) return null;
@@ -188,7 +194,7 @@ function DeactivateCell({ uni }: { uni: University }) {
           description:
             "Staff will lose access and the institution can no longer receive new MOA requests. This can be reversed later.",
           confirmLabel: "Deactivate",
-          onConfirm: () => deactivate.mutate(),
+          onConfirm: () => deactivate.mutate({ universityId: uni.id }),
           isPending: deactivate.isPending,
         });
       }}
@@ -237,11 +243,12 @@ const columns: Array<ResourceTableColumn<University>> = [
 export default function AdminUniversitiesPage() {
   const router = useRouter();
   const { openModal, closeModal } = useModal();
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ["admin-universities"],
-    queryFn: async () => {
-      const res = await preconfiguredAxios.get("/api/admin/universities");
-      return res.data.universities as University[];
+  const { data, isLoading, refetch } = useAdminControllerListUniversities<
+    University[]
+  >({
+    query: {
+      queryKey: getAdminControllerListUniversitiesQueryKey(),
+      select: (response) => response.universities,
     },
   });
   const universities = data ?? [];

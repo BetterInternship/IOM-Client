@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import {
   ResourceTable,
   type ResourceTableColumn,
@@ -65,9 +67,17 @@ function resolveDisplayName(invite: CompanyInvite): string {
   return invite.company_name ?? invite.invited_email;
 }
 
-function InvitesTableSkeleton() {
+function InvitesTableSkeleton({ toolbarStart }: { toolbarStart?: ReactNode }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-4">
+      {toolbarStart && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 max-w-full overflow-hidden">
+            {toolbarStart}
+          </div>
+          <Skeleton className="ml-auto h-11 w-full max-w-xl sm:w-80" />
+        </div>
+      )}
       {[0, 1, 2].map((index) => (
         <Skeleton key={index} className="h-12 w-full" />
       ))}
@@ -78,9 +88,11 @@ function InvitesTableSkeleton() {
 export function UniversityInvitesTable({
   invites,
   isLoading,
+  toolbarStart,
 }: {
   invites: CompanyInvite[];
   isLoading: boolean;
+  toolbarStart?: ReactNode;
 }) {
   const statusOptions = Array.from(
     new Set(invites.map((invite) => invite.status)),
@@ -186,12 +198,13 @@ export function UniversityInvitesTable({
     pagination: { pageSize: 20, pageSizeOptions: [10, 20, 50] },
   });
 
-  if (isLoading) return <InvitesTableSkeleton />;
+  if (isLoading) return <InvitesTableSkeleton toolbarStart={toolbarStart} />;
 
   return (
     <ResourceTable
       table={table}
       className="[&_table]:min-w-[760px]"
+      toolbarStart={toolbarStart}
       renderMobileRow={(invite) => {
         const name = resolveDisplayName(invite);
         const showEmail = name !== invite.invited_email;

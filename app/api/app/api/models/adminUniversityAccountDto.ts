@@ -11,4 +11,5 @@ export interface AdminUniversityAccountDto {
   display_name: string;
   /** @nullable */
   is_deactivated: boolean | null;
+  is_pending: boolean;
 }

@@ -1,8 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import {
+  getAdminControllerListTemplatesQueryKey,
+  useAdminControllerDeleteTemplate,
+  useAdminControllerListTemplates,
+} from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,14 +31,16 @@ function ActionsCell({ template }: { template: Template }) {
   const queryClient = useQueryClient();
   const { confirmAction } = useIomModalRegistry();
 
-  const remove = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.delete(`/api/admin/templates/${template.id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-templates"] });
-      toast.success("Template deleted");
+  const remove = useAdminControllerDeleteTemplate({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getAdminControllerListTemplatesQueryKey(),
+        });
+        toast.success("Template deleted");
+      },
+      onError: (e: Error) => toast.error(e.message),
     },
-    onError: (e: Error) => toast.error(e.message),
   });
 
   return (
@@ -59,7 +65,7 @@ function ActionsCell({ template }: { template: Template }) {
             description:
               "It will be removed from the catalog and universities can no longer offer it. Existing MOAs are unaffected (their PDFs are frozen). This can't be undone.",
             confirmLabel: "Delete",
-            onConfirm: () => remove.mutate(),
+            onConfirm: () => remove.mutate({ templateId: template.id }),
             isPending: remove.isPending,
           })
         }
@@ -113,12 +119,11 @@ const columns: Array<ResourceTableColumn<Template>> = [
 export default function AdminTemplatesPage() {
   const router = useRouter();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-templates"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/admin/templates")
-        .then((r) => r.data.templates as Template[]),
+  const { data, isLoading } = useAdminControllerListTemplates<Template[]>({
+    query: {
+      queryKey: getAdminControllerListTemplatesQueryKey(),
+      select: (response) => response.templates as Template[],
+    },
   });
   const templates = data ?? [];
   const table = useResourceTable({

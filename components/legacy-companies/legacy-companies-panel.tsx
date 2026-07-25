@@ -1,8 +1,12 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type QueryKey,
+} from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
 import { useModal } from "@/app/providers/modal-provider";
 import { Button } from "@/components/ui/button";
 import { FileUpload } from "@/components/ui/file-upload";
@@ -38,6 +42,11 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import type {
+  AppendLegacyMoasDto,
+  UniversityLegacyCompanyDetailDto,
+  UniversityLegacyCompanySummaryDto,
+} from "@/app/api";
 import { toast } from "sonner";
 import { toastPresets } from "@/components/sonner-toaster";
 
@@ -48,52 +57,50 @@ const COMPANY_TYPES = [
   { value: "government_agency", label: "Government Agency" },
 ];
 
-export interface LegacyCompanySummary {
-  id: string;
-  company_name: string;
-  company_details: Record<string, unknown>;
-  moaCount: number;
-  documentCount: number;
-  valid_until: string | null;
-}
-
-export interface LegacyCompanyDetail {
-  id: string;
-  company_name: string;
-  company_details: Record<string, unknown>;
-  company_documents: {
-    id: string;
-    type: string;
-    filename: string;
-    url: string | null;
-    expiry_date: string | null;
-    uploaded_at: string;
-  }[];
-  moas: {
-    id: string;
-    effective_date: string | null;
-    expiry_date: string | null;
-    is_perpetual?: boolean;
-    document_url: string | null;
-    filename: string | null;
-    notes: string | null;
-    created_at: string;
-  }[];
-}
+export type LegacyCompanySummary = UniversityLegacyCompanySummaryDto;
+export type LegacyCompanyDetail = UniversityLegacyCompanyDetailDto;
 
 type LegacyCompaniesPanelProps = {
-  listEndpoint: string;
-  uploadEndpoint: string;
-  detailEndpoint: (legacyCompanyId: string) => string;
-  addDocumentsEndpoint: (legacyCompanyId: string) => string;
-  addMoaEndpoint: (legacyCompanyId: string) => string;
-  bulkCsvEndpoint?: string;
-  bulkZipEndpoint?: string;
+  requests: LegacyCompanyRequests;
   canUpload: boolean;
-  queryKeyPrefix: string;
+  queryKey: QueryKey;
   selectedId?: string | null;
   onSelectedIdChange?: (id: string | null) => void;
   showDetailBackButton?: boolean;
+};
+
+type LegacyCompanyRequests = {
+  list: (
+    signal?: AbortSignal,
+  ) => Promise<{ legacyCompanies: LegacyCompanySummary[] }>;
+  detail: (
+    id: string,
+    signal?: AbortSignal,
+  ) => Promise<{ legacyCompany: LegacyCompanyDetail }>;
+  create: (data: LegacyCompanyCreateInput) => Promise<unknown>;
+  addDocuments: (
+    id: string,
+    data: LegacyCompanyDocumentsInput,
+  ) => Promise<unknown>;
+  addMoas: (id: string, data: AppendLegacyMoasDto) => Promise<unknown>;
+  bulkCsv?: (file: File) => Promise<BulkUploadResult>;
+  bulkZip?: (file: File) => Promise<BulkUploadResult>;
+};
+
+type LegacyCompanyDocumentsInput = {
+  companyDocuments: File[];
+  documentTypes: string;
+};
+type LegacyCompanyCreateInput = AppendLegacyMoasDto & {
+  company_name: string;
+  tin?: string;
+  company_type?: string;
+  registered_address?: string;
+  contact_person?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  companyDocuments?: File[];
+  documentTypes?: string;
 };
 
 export function formatLegacyLabel(value: string) {
@@ -146,15 +153,9 @@ export function formatLegacyMoaPeriod(moa: {
 }
 
 export function LegacyCompaniesPanel({
-  listEndpoint,
-  uploadEndpoint,
-  detailEndpoint,
-  addDocumentsEndpoint,
-  addMoaEndpoint,
-  bulkCsvEndpoint,
-  bulkZipEndpoint,
+  requests,
   canUpload,
-  queryKeyPrefix,
+  queryKey,
   selectedId: controlledSelectedId,
   onSelectedIdChange,
   showDetailBackButton = true,
@@ -163,6 +164,8 @@ export function LegacyCompaniesPanel({
     null,
   );
   const { openModal, closeModal } = useModal();
+  const bulkCsv = requests.bulkCsv;
+  const bulkZip = requests.bulkZip;
   const selectedId =
     controlledSelectedId !== undefined
       ? controlledSelectedId
@@ -173,11 +176,8 @@ export function LegacyCompaniesPanel({
   };
 
   const { data, isLoading } = useQuery({
-    queryKey: [queryKeyPrefix],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(listEndpoint)
-        .then((r) => r.data as { legacyCompanies: LegacyCompanySummary[] }),
+    queryKey,
+    queryFn: ({ signal }) => requests.list(signal),
   });
 
   const legacyCompanies = data?.legacyCompanies ?? [];
@@ -211,11 +211,9 @@ export function LegacyCompaniesPanel({
     return (
       <LegacyCompanyDetailView
         legacyCompanyId={selectedId}
-        detailEndpoint={detailEndpoint}
-        addDocumentsEndpoint={addDocumentsEndpoint}
-        addMoaEndpoint={addMoaEndpoint}
+        requests={requests}
         canUpload={canUpload}
-        queryKeyPrefix={queryKeyPrefix}
+        queryKey={queryKey}
         showBackButton={showDetailBackButton}
         onBack={() => setSelectedId(null)}
       />
@@ -232,7 +230,7 @@ export function LegacyCompaniesPanel({
         </div>
       ) : (
         <DataTable
-          id={`${queryKeyPrefix}-table`}
+          id={`${String(queryKey[0])}-table`}
           columns={columns}
           data={legacyCompanies}
           searchKey="company"
@@ -250,8 +248,8 @@ export function LegacyCompaniesPanel({
                     openModal(
                       "legacy-upload",
                       <UploadDialog
-                        uploadEndpoint={uploadEndpoint}
-                        queryKeyPrefix={queryKeyPrefix}
+                        createRequest={requests.create}
+                        queryKey={queryKey}
                         onClose={() => closeModal("legacy-upload")}
                       />,
                       {
@@ -262,15 +260,11 @@ export function LegacyCompaniesPanel({
                       },
                     )
                   }
-                  className={
-                    bulkCsvEndpoint || bulkZipEndpoint
-                      ? "rounded-r-none"
-                      : undefined
-                  }
+                  className={bulkCsv || bulkZip ? "rounded-r-none" : undefined}
                 >
                   <Plus /> Add Legacy Company
                 </Button>
-                {(bulkCsvEndpoint || bulkZipEndpoint) && (
+                {(bulkCsv || bulkZip) && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button className="rounded-l-none border-l-0 px-2">
@@ -278,14 +272,14 @@ export function LegacyCompaniesPanel({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {bulkCsvEndpoint && (
+                      {bulkCsv && (
                         <DropdownMenuItem
                           onSelect={() =>
                             openModal(
                               "csv-upload",
                               <CsvUploadDialog
-                                csvEndpoint={bulkCsvEndpoint}
-                                queryKeyPrefix={queryKeyPrefix}
+                                uploadRequest={bulkCsv}
+                                queryKey={queryKey}
                                 onClose={() => closeModal("csv-upload")}
                               />,
                               {
@@ -301,14 +295,14 @@ export function LegacyCompaniesPanel({
                           Bulk upload via CSV
                         </DropdownMenuItem>
                       )}
-                      {bulkZipEndpoint && (
+                      {bulkZip && (
                         <DropdownMenuItem
                           onSelect={() =>
                             openModal(
                               "zip-upload",
                               <ZipUploadDialog
-                                zipEndpoint={bulkZipEndpoint}
-                                queryKeyPrefix={queryKeyPrefix}
+                                uploadRequest={bulkZip}
+                                queryKey={queryKey}
                                 onClose={() => closeModal("zip-upload")}
                               />,
                               {
@@ -338,20 +332,16 @@ export function LegacyCompaniesPanel({
 
 export function LegacyCompanyDetailView({
   legacyCompanyId,
-  detailEndpoint,
-  addDocumentsEndpoint,
-  addMoaEndpoint,
+  requests,
   canUpload,
-  queryKeyPrefix,
+  queryKey,
   showBackButton,
   onBack,
 }: {
   legacyCompanyId: string;
-  detailEndpoint: (id: string) => string;
-  addDocumentsEndpoint: (id: string) => string;
-  addMoaEndpoint: (id: string) => string;
+  requests: LegacyCompanyRequests;
   canUpload: boolean;
-  queryKeyPrefix: string;
+  queryKey: QueryKey;
   showBackButton: boolean;
   onBack: () => void;
 }) {
@@ -359,33 +349,27 @@ export function LegacyCompanyDetailView({
   const { openModal, closeModal } = useModal();
 
   const { data, isLoading } = useQuery({
-    queryKey: [queryKeyPrefix, "detail", legacyCompanyId],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(detailEndpoint(legacyCompanyId))
-        .then((r) => r.data as { legacyCompany: LegacyCompanyDetail }),
+    queryKey: [...queryKey, legacyCompanyId],
+    queryFn: ({ signal }) => requests.detail(legacyCompanyId, signal),
   });
 
   const company = data?.legacyCompany;
 
   const docUploadMutation = useMutation({
     mutationFn: (inputs: { id: string; file: File; type: string }[]) => {
-      const formData = new FormData();
       const documentTypes: string[] = [];
       inputs.forEach(({ file, type }) => {
-        formData.append("companyDocuments", file);
         documentTypes.push(type || "other");
       });
-      formData.append("documentTypes", JSON.stringify(documentTypes));
-      return preconfiguredAxios.post(
-        addDocumentsEndpoint(legacyCompanyId),
-        formData,
-      );
+      return requests.addDocuments(legacyCompanyId, {
+        companyDocuments: inputs.map(({ file }) => file),
+        documentTypes: JSON.stringify(documentTypes),
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKeyPrefix] });
+      queryClient.invalidateQueries({ queryKey });
       queryClient.invalidateQueries({
-        queryKey: [queryKeyPrefix, "detail", legacyCompanyId],
+        queryKey: [...queryKey, legacyCompanyId],
       });
       toast("Documents uploaded", toastPresets.success);
     },
@@ -399,13 +383,12 @@ export function LegacyCompanyDetailView({
 
   const moaUploadMutation = useMutation({
     mutationFn: (inputs: MoaRecordInput[]) => {
-      const formData = buildMoaFormData(inputs);
-      return preconfiguredAxios.post(addMoaEndpoint(legacyCompanyId), formData);
+      return requests.addMoas(legacyCompanyId, buildMoaRequest(inputs));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKeyPrefix] });
+      queryClient.invalidateQueries({ queryKey });
       queryClient.invalidateQueries({
-        queryKey: [queryKeyPrefix, "detail", legacyCompanyId],
+        queryKey: [...queryKey, legacyCompanyId],
       });
       closeModal("moa-upload");
       toast("Legacy MOA added", toastPresets.success);
@@ -764,7 +747,16 @@ function hasIncompleteMoa(moas: MoaRecordInput[]): boolean {
 }
 
 export function buildMoaFormData(moas: MoaRecordInput[]) {
+  const request = buildMoaRequest(moas);
   const formData = new FormData();
+  formData.append("moas", request.moas);
+  request.moaDocuments?.forEach((file) =>
+    formData.append("moaDocuments", file),
+  );
+  return formData;
+}
+
+export function buildMoaRequest(moas: MoaRecordInput[]): AppendLegacyMoasDto {
   const moaPayload: {
     effective_date: string | null;
     expiry_date: string | null;
@@ -791,9 +783,7 @@ export function buildMoaFormData(moas: MoaRecordInput[]) {
     });
   }
 
-  formData.append("moas", JSON.stringify(moaPayload));
-  moaFiles.forEach((f) => formData.append("moaDocuments", f));
-  return formData;
+  return { moas: JSON.stringify(moaPayload), moaDocuments: moaFiles };
 }
 
 export function MoaUploadDialog({
@@ -1027,12 +1017,12 @@ export function AddDocumentsForm({
 }
 
 export function UploadDialog({
-  uploadEndpoint,
-  queryKeyPrefix,
+  createRequest,
+  queryKey,
   onClose,
 }: {
-  uploadEndpoint: string;
-  queryKeyPrefix: string;
+  createRequest: (data: LegacyCompanyCreateInput) => Promise<unknown>;
+  queryKey: QueryKey;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
@@ -1058,35 +1048,26 @@ export function UploadDialog({
 
   const mutation = useMutation({
     mutationFn: () => {
-      const formData = new FormData();
-      formData.append("company_name", companyName);
-
-      const moaFormData = buildMoaFormData(moas);
-      const moasValue = moaFormData.get("moas");
-      if (typeof moasValue === "string") formData.append("moas", moasValue);
-      moaFormData
-        .getAll("moaDocuments")
-        .forEach((f) => formData.append("moaDocuments", f));
-
-      if (tin) formData.append("tin", tin);
-      if (companyType) formData.append("company_type", companyType);
-      if (registeredAddress)
-        formData.append("registered_address", registeredAddress);
-      if (contactPerson) formData.append("contact_person", contactPerson);
-      if (contactEmail) formData.append("contact_email", contactEmail);
-      if (contactPhone) formData.append("contact_phone", contactPhone);
-      if (companyDocInputs.length > 0) {
-        const documentTypes: string[] = [];
-        companyDocInputs.forEach(({ file, type }) => {
-          formData.append("companyDocuments", file);
-          documentTypes.push(type || "other");
-        });
-        formData.append("documentTypes", JSON.stringify(documentTypes));
-      }
-      return preconfiguredAxios.post(uploadEndpoint, formData);
+      const moaRequest = buildMoaRequest(moas);
+      return createRequest({
+        company_name: companyName,
+        ...moaRequest,
+        tin: tin || undefined,
+        company_type: companyType || undefined,
+        registered_address: registeredAddress || undefined,
+        contact_person: contactPerson || undefined,
+        contact_email: contactEmail || undefined,
+        contact_phone: contactPhone || undefined,
+        companyDocuments: companyDocInputs.length
+          ? companyDocInputs.map(({ file }) => file)
+          : undefined,
+        documentTypes: companyDocInputs.length
+          ? JSON.stringify(companyDocInputs.map(({ type }) => type || "other"))
+          : undefined,
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKeyPrefix] });
+      queryClient.invalidateQueries({ queryKey });
       onClose();
       toast("Legacy company saved", toastPresets.success);
     },
@@ -1394,15 +1375,49 @@ interface BulkCsvRowResult {
   message?: string;
 }
 
+type BulkUploadResult = {
+  summary: {
+    createdCompanies: number;
+    appendedMoas: number;
+    invalid: number;
+    failed: number;
+  };
+  results: BulkCsvRowResult[];
+};
+
+export function normalizeBulkUploadResult(result: {
+  summary: BulkUploadResult["summary"];
+  results: Array<{
+    row: number;
+    company_name: string;
+    status: string;
+    message?: string;
+  }>;
+}): BulkUploadResult {
+  return {
+    summary: result.summary,
+    results: result.results.map((row) => ({
+      ...row,
+      status:
+        row.status === "created_company" ||
+        row.status === "appended_moa" ||
+        row.status === "updated_company" ||
+        row.status === "invalid"
+          ? row.status
+          : "failed",
+    })),
+  };
+}
+
 interface CsvUploadDialogProps {
-  csvEndpoint: string;
-  queryKeyPrefix: string;
+  uploadRequest: (file: File) => Promise<BulkUploadResult>;
+  queryKey: QueryKey;
   onClose: () => void;
 }
 
 export function CsvUploadDialog({
-  csvEndpoint,
-  queryKeyPrefix,
+  uploadRequest,
+  queryKey,
   onClose,
 }: CsvUploadDialogProps) {
   const queryClient = useQueryClient();
@@ -1420,25 +1435,12 @@ export function CsvUploadDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       if (!file) return;
-      const formData = new FormData();
-      formData.append("file", file);
-      const r = await preconfiguredAxios.post(csvEndpoint, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      return r.data as {
-        summary: {
-          createdCompanies: number;
-          appendedMoas: number;
-          invalid: number;
-          failed: number;
-        };
-        results: BulkCsvRowResult[];
-      };
+      return uploadRequest(file);
     },
     onSuccess: (data) => {
       if (!data) return;
       setResult(data);
-      queryClient.invalidateQueries({ queryKey: [queryKeyPrefix] });
+      queryClient.invalidateQueries({ queryKey });
     },
     onError: () => {
       toast("CSV upload failed", toastPresets.destructive);
@@ -1750,14 +1752,14 @@ export function CsvUploadDialog({
 }
 
 interface ZipUploadDialogProps {
-  zipEndpoint: string;
-  queryKeyPrefix: string;
+  uploadRequest: (file: File) => Promise<BulkUploadResult>;
+  queryKey: QueryKey;
   onClose: () => void;
 }
 
 export function ZipUploadDialog({
-  zipEndpoint,
-  queryKeyPrefix,
+  uploadRequest,
+  queryKey,
   onClose,
 }: ZipUploadDialogProps) {
   const queryClient = useQueryClient();
@@ -1775,25 +1777,12 @@ export function ZipUploadDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       if (!file) return;
-      const formData = new FormData();
-      formData.append("file", file);
-      const r = await preconfiguredAxios.post(zipEndpoint, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      return r.data as {
-        summary: {
-          createdCompanies: number;
-          appendedMoas: number;
-          invalid: number;
-          failed: number;
-        };
-        results: BulkCsvRowResult[];
-      };
+      return uploadRequest(file);
     },
     onSuccess: (data) => {
       if (!data) return;
       setResult(data);
-      queryClient.invalidateQueries({ queryKey: [queryKeyPrefix] });
+      queryClient.invalidateQueries({ queryKey });
     },
     onError: () => {
       toast("ZIP upload failed", toastPresets.destructive);

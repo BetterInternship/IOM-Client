@@ -1,13 +1,19 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
-import { getUniversityControllerMeQueryKey } from "@/app/api";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import {
+  getUniversityControllerGetProfileQueryKey,
+  getUniversityControllerMeQueryKey,
+  universityControllerPatchProfile,
+  universityControllerUploadSignature,
+  useUniversityControllerGetProfile,
+  useUniversityControllerUploadLogo,
+} from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
@@ -89,16 +95,13 @@ export default function UniversityProfilePage() {
   const [signatureFile, setSignatureFile] = useState<File | null>(null);
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
 
-  const { data, isLoading: profileLoading } = useQuery({
-    queryKey: ["university-profile"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/profile")
-        .then((r) => r.data as { university: UniversityProfile }),
-    enabled: !!account,
-  });
+  const { data, isLoading: profileLoading } = useUniversityControllerGetProfile(
+    {
+      query: { enabled: !!account },
+    },
+  );
 
-  const uni = data?.university;
+  const uni = data?.university as UniversityProfile | undefined;
   const displayLogoUrl = logoPreviewUrl ?? uni?.logo_url ?? null;
   const displaySigUrl = uni?.rep_signature_url ?? null;
 
@@ -106,20 +109,17 @@ export default function UniversityProfilePage() {
     mutationFn: async () => {
       if (!editing)
         return {
-          response: await preconfiguredAxios.patch(
-            "/api/university/profile",
-            {},
-          ),
+          response: await universityControllerPatchProfile({}),
           completedSetup: false,
         };
       const values = form.getValues();
       const completedSetup = Boolean(
         setupMode &&
-          values.registered_name.trim() &&
-          values.address.trim() &&
-          values.rep_name.trim() &&
-          values.rep_title.trim() &&
-          (uni?.rep_signature_url || signatureFile),
+        values.registered_name.trim() &&
+        values.address.trim() &&
+        values.rep_name.trim() &&
+        values.rep_title.trim() &&
+        (uni?.rep_signature_url || signatureFile),
       );
       const keys = setupMode
         ? (Object.keys(
@@ -131,25 +131,19 @@ export default function UniversityProfilePage() {
             ) as (keyof UniversityProfileDraft)[])
           : SECTION_FIELDS[editing];
       const payload = Object.fromEntries(keys.map((key) => [key, values[key]]));
-      const response = await preconfiguredAxios.patch(
-        "/api/university/profile",
-        payload,
-      );
+      const response = await universityControllerPatchProfile(payload);
 
       if (signatureFile) {
-        const formData = new FormData();
-        formData.append("file", signatureFile);
-        await preconfiguredAxios.post(
-          "/api/university/profile/signature",
-          formData,
-        );
+        await universityControllerUploadSignature({ file: signatureFile });
       }
 
       return { response, completedSetup };
     },
     onSuccess: async ({ completedSetup }) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["university-profile"] }),
+        queryClient.invalidateQueries({
+          queryKey: getUniversityControllerGetProfileQueryKey(),
+        }),
         queryClient.invalidateQueries({
           queryKey: getUniversityControllerMeQueryKey(),
         }),
@@ -166,22 +160,21 @@ export default function UniversityProfilePage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const uploadLogo = useMutation({
-    mutationFn: (file: File) => {
-      const fd = new FormData();
-      fd.append("file", file);
-      return preconfiguredAxios.post("/api/university/profile/logo", fd);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["university-profile"] });
-      queryClient.invalidateQueries({
-        queryKey: getUniversityControllerMeQueryKey(),
-      });
-      toast.success("Logo uploaded");
-    },
-    onError: (e: Error) => {
-      setLogoPreviewUrl(null);
-      toast.error(e.message);
+  const uploadLogo = useUniversityControllerUploadLogo({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getUniversityControllerGetProfileQueryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: getUniversityControllerMeQueryKey(),
+        });
+        toast.success("Logo uploaded");
+      },
+      onError: (e: Error) => {
+        setLogoPreviewUrl(null);
+        toast.error(e.message);
+      },
     },
   });
 
@@ -344,7 +337,7 @@ export default function UniversityProfilePage() {
             const file = event.target.files?.[0];
             if (!file) return;
             setLogoPreviewUrl(URL.createObjectURL(file));
-            uploadLogo.mutate(file);
+            uploadLogo.mutate({ data: { file } });
             event.target.value = "";
           }}
         />

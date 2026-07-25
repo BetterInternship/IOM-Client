@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import {
   ResourceTable,
   type ResourceTableColumn,
@@ -35,9 +37,17 @@ function RenewalStatusBadge({ status }: { status: UniversityRenewal["status"] })
   return <PartnershipStatusBadge status="inactive" label="Awaiting" />;
 }
 
-function RenewalsTableSkeleton() {
+function RenewalsTableSkeleton({ toolbarStart }: { toolbarStart?: ReactNode }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-4">
+      {toolbarStart && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="min-w-0 max-w-full overflow-hidden">
+            {toolbarStart}
+          </div>
+          <Skeleton className="ml-auto h-11 w-full max-w-xl sm:w-80" />
+        </div>
+      )}
       {[0, 1, 2].map((index) => (
         <Skeleton key={index} className="h-12 w-full" />
       ))}
@@ -48,9 +58,11 @@ function RenewalsTableSkeleton() {
 export function UniversityRenewalsTable({
   renewals,
   isLoading,
+  toolbarStart,
 }: {
   renewals: UniversityRenewal[];
   isLoading: boolean;
+  toolbarStart?: ReactNode;
 }) {
   const statusOptions = (["renewed", "awaiting", "lapsed"] as const).map((status) => ({
     value: status,
@@ -120,12 +132,13 @@ export function UniversityRenewalsTable({
     pagination: { pageSize: 20, pageSizeOptions: [10, 20, 50] },
   });
 
-  if (isLoading) return <RenewalsTableSkeleton />;
+  if (isLoading) return <RenewalsTableSkeleton toolbarStart={toolbarStart} />;
 
   return (
     <ResourceTable
       table={table}
       className="[&_table]:min-w-[600px]"
+      toolbarStart={toolbarStart}
       renderMobileRow={(r) => {
         const showEmail = r.displayName !== r.email;
         return (

@@ -8,9 +8,28 @@ import {
   type ReactNode,
 } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import {
+  getUniversityControllerGetAuditLogQueryKey,
+  getUniversityControllerGetBlacklistQueryKey,
+  getUniversityControllerGetLegacyCompanyQueryKey,
+  getUniversityControllerListInvitesQueryKey,
+  getUniversityControllerListLegacyCompaniesQueryKey,
+  getUniversityControllerListPartnersQueryKey,
+  getUniversityControllerListRenewalsQueryKey,
+  useUniversityControllerAppendLegacyCompanyDocuments,
+  useUniversityControllerAppendLegacyCompanyMoas,
+  useUniversityControllerBlacklistCompany,
+  useUniversityControllerGetBlacklist,
+  useUniversityControllerGetLegacyCompany,
+  useUniversityControllerGetPartnerLegacyCompany,
+  useUniversityControllerGetPartnerMoas,
+  useUniversityControllerListLegacyCompanies,
+  useUniversityControllerListPartners,
+  useUniversityControllerUnblacklistCompany,
+  type UniversityPartnerMoasDocumentDto,
+} from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,27 +51,31 @@ import {
   LegacyCompanyDetail,
   AddDocumentsForm,
   MoaUploadDialog,
-  buildMoaFormData,
+  buildMoaRequest,
   type DocInput,
   formatLegacyLabel,
   formatLegacyFieldLabel,
   isFilledValue,
   isLegacyMoaExpired,
+  normalizeBulkUploadResult,
   UploadDialog,
   CsvUploadDialog,
   ZipUploadDialog,
 } from "@/components/legacy-companies/legacy-companies-panel";
 import { formatDateWithoutTime, cn } from "@/lib/utils";
 import {
+  Archive,
   ArrowLeft,
   ChevronDown,
   ChevronRight,
   CircleAlert,
   CircleCheck,
+  FileText,
   GripVertical,
   Plus,
   ShieldCheck,
   Upload,
+  UserPlus,
   X,
 } from "lucide-react";
 import {
@@ -75,6 +98,11 @@ import {
   type PartnerPdfSelection,
   type RegisteredPartnerMoa,
 } from "@/components/university/partner-moa-history-tables";
+import {
+  universityControllerBulkCreateLegacyCompaniesFromCsv,
+  universityControllerBulkCreateLegacyCompaniesFromZip,
+  universityControllerCreateLegacyCompany,
+} from "@/app/api/app/api/endpoints/university/university";
 
 interface Partner {
   company: {
@@ -97,12 +125,6 @@ type DocReviewDetails = Record<
   { type?: string; document?: string; value: string }
 >;
 
-interface CompanyDoc {
-  type: string;
-  filename: string;
-  url: string | null;
-}
-
 const DOC_LABELS: Record<string, string> = {
   business_permit: "Business Permit",
   mayor_permit: "Mayor's Permit",
@@ -111,6 +133,47 @@ const DOC_LABELS: Record<string, string> = {
 
 const DOC_TYPES_LIST = Object.entries(DOC_LABELS);
 const PREVIEW_WIDTH_STORAGE_KEY = "iom-partner-preview-width";
+
+function mapLegacyCompanySummary(value: unknown): LegacyCompanySummary | null {
+  if (typeof value !== "object" || value === null) return null;
+
+  const field = (key: string): unknown =>
+    key in value ? Reflect.get(value, key) : undefined;
+  const stringField = (key: string): string | null => {
+    const result = field(key);
+    return typeof result === "string" ? result : null;
+  };
+  const numberField = (key: string): number => {
+    const result = field(key);
+    return typeof result === "number" ? result : 0;
+  };
+  const id = field("id");
+  const companyName = field("company_name");
+  const companyDetails = field("company_details");
+  if (
+    typeof id !== "string" ||
+    typeof companyName !== "string" ||
+    typeof companyDetails !== "object" ||
+    companyDetails === null
+  ) {
+    return null;
+  }
+
+  return {
+    id,
+    company_name: companyName,
+    company_details: Object.fromEntries(Object.entries(companyDetails)),
+    moaCount: numberField("moaCount"),
+    documentCount: numberField("documentCount"),
+    valid_until: stringField("valid_until"),
+    hasMoa: field("hasMoa") === true,
+    hasPerpetualMoa: field("hasPerpetualMoa") === true,
+    latestMoaEffectiveDate: stringField("latestMoaEffectiveDate"),
+    latestMoaExpiryDate: stringField("latestMoaExpiryDate"),
+    latestMoaIsPerpetual: field("latestMoaIsPerpetual") === true,
+    registered_company_id: stringField("registered_company_id"),
+  };
+}
 
 function PartnerTabs({
   outstandingCount,
@@ -301,7 +364,7 @@ function DocumentsSection({
   documents,
   onOpenDocument,
 }: {
-  documents: CompanyDoc[];
+  documents: UniversityPartnerMoasDocumentDto[];
   onOpenDocument: (url: string, label: string) => void;
 }) {
   return (
@@ -384,59 +447,49 @@ function ReadOnlyLegacyDetail({
       .map(([key, value]) => [formatLegacyFieldLabel(key), value] as const),
   ];
 
-  const docUploadMutation = useMutation({
-    mutationFn: (inputs: DocInput[]) => {
-      const formData = new FormData();
-      const documentTypes: string[] = [];
-      inputs.forEach(({ file, type }) => {
-        formData.append("companyDocuments", file);
-        documentTypes.push(type || "other");
-      });
-      formData.append("documentTypes", JSON.stringify(documentTypes));
-      return preconfiguredAxios.post(
-        `/api/university/legacy-companies/${company.id}/documents`,
-        formData,
-      );
+  const docUploadMutation = useUniversityControllerAppendLegacyCompanyDocuments(
+    {
+      mutation: {
+        onSuccess: () => {
+          queryClient.invalidateQueries({
+            queryKey: getUniversityControllerGetLegacyCompanyQueryKey(
+              company.id,
+            ),
+          });
+          queryClient.invalidateQueries({
+            queryKey: getUniversityControllerListLegacyCompaniesQueryKey(),
+          });
+          closeModal("legacy-add-documents");
+          toast("Documents uploaded", toastPresets.success);
+        },
+        onError: (err) => {
+          toast(
+            err instanceof Error ? err.message : "Failed to upload documents",
+            toastPresets.destructive,
+          );
+        },
+      },
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["university-legacy-company-detail", company.id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["university-legacy-companies"],
-      });
-      closeModal("legacy-add-documents");
-      toast("Documents uploaded", toastPresets.success);
-    },
-    onError: (err) => {
-      toast(
-        err instanceof Error ? err.message : "Failed to upload documents",
-        toastPresets.destructive,
-      );
-    },
-  });
+  );
 
-  const moaUploadMutation = useMutation({
-    mutationFn: (inputs: Parameters<typeof buildMoaFormData>[0]) =>
-      preconfiguredAxios.post(
-        `/api/university/legacy-companies/${company.id}/moas`,
-        buildMoaFormData(inputs),
-      ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["university-legacy-company-detail", company.id],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["university-legacy-companies"],
-      });
-      closeModal("legacy-add-moa");
-      toast("Legacy MOA added", toastPresets.success);
-    },
-    onError: (err) => {
-      toast(
-        err instanceof Error ? err.message : "Failed to add legacy MOA",
-        toastPresets.destructive,
-      );
+  const moaUploadMutation = useUniversityControllerAppendLegacyCompanyMoas({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getUniversityControllerGetLegacyCompanyQueryKey(company.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: getUniversityControllerListLegacyCompaniesQueryKey(),
+        });
+        closeModal("legacy-add-moa");
+        toast("Legacy MOA added", toastPresets.success);
+      },
+      onError: (err) => {
+        toast(
+          err instanceof Error ? err.message : "Failed to add legacy MOA",
+          toastPresets.destructive,
+        );
+      },
     },
   });
 
@@ -486,7 +539,17 @@ function ReadOnlyLegacyDetail({
                     "legacy-add-documents",
                     <AddDocumentsForm
                       isPending={docUploadMutation.isPending}
-                      onSubmit={(inputs) => docUploadMutation.mutate(inputs)}
+                      onSubmit={(inputs: DocInput[]) =>
+                        docUploadMutation.mutate({
+                          legacyCompanyId: company.id,
+                          data: {
+                            companyDocuments: inputs.map(({ file }) => file),
+                            documentTypes: JSON.stringify(
+                              inputs.map(({ type }) => type || "other"),
+                            ),
+                          },
+                        })
+                      }
                       onClose={() => closeModal("legacy-add-documents")}
                     />,
                     {
@@ -561,7 +624,12 @@ function ReadOnlyLegacyDetail({
                       description="Add an MOA record to this imported company."
                       isPending={moaUploadMutation.isPending}
                       onClose={() => closeModal("legacy-add-moa")}
-                      onSubmit={(moas) => moaUploadMutation.mutate(moas)}
+                      onSubmit={(moas) =>
+                        moaUploadMutation.mutate({
+                          legacyCompanyId: company.id,
+                          data: buildMoaRequest(moas),
+                        })
+                      }
                     />,
                     {
                       title: "Add Legacy MOA",
@@ -596,14 +664,12 @@ function LegacyRecordsSection({
 }) {
   const [open, setOpen] = useState(false);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["partner-legacy-company", companyId],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(`/api/university/partners/${companyId}/legacy-companies`)
-        .then((r) => r.data as { legacyCompany: LegacyCompanyDetail | null }),
-    enabled: open && !!companyId,
-  });
+  const { data, isLoading } = useUniversityControllerGetPartnerLegacyCompany(
+    companyId,
+    {
+      query: { enabled: open && !!companyId },
+    },
+  );
 
   const company = data?.legacyCompany;
 
@@ -675,96 +741,72 @@ function PartnersContent({
   const { openModal, closeModal } = useModal();
   const modal = useIomModalRegistry();
 
-  const { data: partnersData, isLoading: isPartnersLoading } = useQuery({
-    queryKey: ["university-partners"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/partners")
-        .then(
-          (r) => r.data as { partners: Partner[]; expiringSoonDays: number },
-        ),
-    enabled: !!account,
-  });
+  const { data: partnersData, isLoading: isPartnersLoading } =
+    useUniversityControllerListPartners({
+      query: { enabled: !!account },
+    });
 
-  const { data: blacklistData, isLoading: isBlacklistLoading } = useQuery({
-    queryKey: ["university-blacklist"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/blacklist")
-        .then((r) => r.data as { blacklist: BlacklistEntry[] }),
-    enabled: !!account,
-  });
+  const { data: blacklistData, isLoading: isBlacklistLoading } =
+    useUniversityControllerGetBlacklist({
+      query: { enabled: !!account },
+    });
 
-  const { data: legacyData, isLoading: isLegacyLoading } = useQuery({
-    queryKey: ["university-legacy-companies"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/legacy-companies")
-        .then((r) => r.data as { legacyCompanies: LegacyCompanySummary[] }),
-    enabled: !!account,
-  });
+  const { data: legacyData, isLoading: isLegacyLoading } =
+    useUniversityControllerListLegacyCompanies({
+      query: { enabled: !!account },
+    });
 
-  const { data: partnerMoasData, isLoading: isMoasLoading } = useQuery({
-    queryKey: ["university-partner-moas", detailId],
-    queryFn: () =>
-      preconfiguredAxios.get(`/api/university/partners/${detailId}/moas`).then(
-        (r) =>
-          r.data as {
-            company: Partner["company"] & {
-              document_review_details?: DocReviewDetails;
-            };
-            moas: RegisteredPartnerMoa[];
-            companyDocuments: CompanyDoc[];
-          },
-      ),
-    enabled: detailType === "partner" && !!detailId,
-    refetchInterval: 25 * 60 * 1000,
-  });
+  const { data: partnerMoasData, isLoading: isMoasLoading } =
+    useUniversityControllerGetPartnerMoas(detailId, {
+      query: {
+        enabled: detailType === "partner" && !!detailId,
+        refetchInterval: 25 * 60 * 1000,
+      },
+    });
 
-  const { data: legacyDetailData, isLoading: isLegacyDetailLoading } = useQuery(
-    {
-      queryKey: ["university-legacy-company-detail", detailId],
-      queryFn: () =>
-        preconfiguredAxios
-          .get(`/api/university/legacy-companies/${detailId}`)
-          .then((r) => r.data as { legacyCompany: LegacyCompanyDetail }),
-      enabled: detailType === "legacy" && !!detailId,
-    },
-  );
+  const { data: legacyDetailData, isLoading: isLegacyDetailLoading } =
+    useUniversityControllerGetLegacyCompany(detailId, {
+      query: { enabled: detailType === "legacy" && !!detailId },
+    });
+  const blacklist = (blacklistData?.blacklist ?? []) as BlacklistEntry[];
+  const legacyCompanies = (legacyData?.legacyCompanies ?? [])
+    .map(mapLegacyCompanySummary)
+    .filter((company): company is LegacyCompanySummary => company !== null);
 
   const refresh = () => {
-    queryClient.invalidateQueries({ queryKey: ["university-partners"] });
-    queryClient.invalidateQueries({ queryKey: ["university-blacklist"] });
     queryClient.invalidateQueries({
-      queryKey: ["university-legacy-companies"],
+      queryKey: getUniversityControllerListPartnersQueryKey(),
     });
-    queryClient.invalidateQueries({ queryKey: ["university-audit"] });
-    queryClient.invalidateQueries({ queryKey: ["university-invites"] });
-    queryClient.invalidateQueries({ queryKey: ["university-renewals"] });
+    queryClient.invalidateQueries({
+      queryKey: getUniversityControllerGetBlacklistQueryKey(),
+    });
+    queryClient.invalidateQueries({
+      queryKey: getUniversityControllerListLegacyCompaniesQueryKey(),
+    });
+    queryClient.invalidateQueries({
+      queryKey: getUniversityControllerGetAuditLogQueryKey(),
+    });
+    queryClient.invalidateQueries({
+      queryKey: getUniversityControllerListInvitesQueryKey(),
+    });
+    queryClient.invalidateQueries({
+      queryKey: getUniversityControllerListRenewalsQueryKey(),
+    });
   };
 
-  const blacklistMutation = useMutation({
-    mutationFn: ({
-      companyId,
-      reason,
-    }: {
-      companyId: string;
-      reason: string;
-    }) =>
-      preconfiguredAxios.post("/api/university/blacklist", {
-        companyId,
-        reason: reason || undefined,
-      }),
-    onSuccess: () => {
-      refresh();
+  const blacklistMutation = useUniversityControllerBlacklistCompany({
+    mutation: {
+      onSuccess: () => {
+        refresh();
+      },
     },
   });
 
-  const unblacklistMutation = useMutation({
-    mutationFn: (companyId: string) =>
-      preconfiguredAxios.delete(`/api/university/blacklist/${companyId}`),
-    onSuccess: () => {
-      refresh();
+  const unblacklistMutation = useUniversityControllerUnblacklistCompany({
+    mutation: {
+      onSuccess: () => {
+        refresh();
+      },
     },
   });
 
@@ -845,7 +887,7 @@ function PartnersContent({
       });
     }
 
-    for (const b of blacklistData?.blacklist ?? []) {
+    for (const b of blacklist) {
       const key = `registered:${b.company_id}`;
       const existing = map.get(key);
       if (existing) {
@@ -873,7 +915,7 @@ function PartnersContent({
       }
     }
 
-    for (const l of legacyData?.legacyCompanies ?? []) {
+    for (const l of legacyCompanies) {
       const details = l.company_details as Record<string, unknown>;
       const contactEmail =
         typeof details.contact_email === "string" &&
@@ -901,7 +943,7 @@ function PartnersContent({
     }
 
     return [...map.values()];
-  }, [partnersData, blacklistData, legacyData]);
+  }, [partnersData, blacklist, legacyCompanies]);
 
   const navigateToDetail = (row: PartnerTableRow) => {
     if (row.isImported && row.legacyEntry) {
@@ -987,111 +1029,183 @@ function PartnersContent({
               title="Partners"
               description="Manage your university's partner companies and their MOAs."
             >
-              <div className="flex">
-                <Button
-                  onClick={() =>
-                    openModal(
-                      "legacy-upload",
-                      <UploadDialog
-                        uploadEndpoint="/api/university/legacy-companies"
-                        queryKeyPrefix="university-legacy-companies"
-                        onClose={() => {
-                          closeModal("legacy-upload");
-                          queryClient.invalidateQueries({
-                            queryKey: ["university-partners"],
-                          });
-                          queryClient.invalidateQueries({
-                            queryKey: ["university-legacy-companies"],
-                          });
-                        }}
-                      />,
-                      {
-                        title: "Add Legacy Company",
-                        description:
-                          "Create a legacy company record. You can add MOAs now or later from the company detail view.",
-                        panelClassName: "!w-full sm:!max-w-2xl",
-                      },
-                    )
-                  }
-                  className="rounded-r-none"
-                >
-                  <Plus /> Import Partner
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className="rounded-l-none border-l-0 px-2">
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        router.push("/university/partners/import-wizard")
-                      }
-                    >
-                      <Upload className="h-4 w-4" /> anaj00&apos;s import wizard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        openModal(
-                          "csv-upload",
-                          <CsvUploadDialog
-                            csvEndpoint="/api/university/legacy-companies/bulk/csv"
-                            queryKeyPrefix="university-legacy-companies"
-                            onClose={() => {
-                              closeModal("csv-upload");
-                              queryClient.invalidateQueries({
-                                queryKey: ["university-partners"],
-                              });
-                              queryClient.invalidateQueries({
-                                queryKey: ["university-legacy-companies"],
-                              });
-                            }}
-                          />,
-                          {
-                            title: "Bulk Upload Legacy MOAs",
-                            description:
-                              "Upload a CSV file to create or append multiple legacy MOAs at once. Each row represents one legacy MOA. Rows with the same company name append MOAs to the same legacy partner.",
-                            panelClassName: "!w-full sm:!max-w-5xl",
-                          },
-                        )
-                      }
-                    >
-                      <Upload className="h-4 w-4" />
-                      Bulk upload via CSV
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onSelect={() =>
-                        openModal(
-                          "zip-upload",
-                          <ZipUploadDialog
-                            zipEndpoint="/api/university/legacy-companies/bulk/zip"
-                            queryKeyPrefix="university-legacy-companies"
-                            onClose={() => {
-                              closeModal("zip-upload");
-                              queryClient.invalidateQueries({
-                                queryKey: ["university-partners"],
-                              });
-                              queryClient.invalidateQueries({
-                                queryKey: ["university-legacy-companies"],
-                              });
-                            }}
-                          />,
-                          {
-                            title: "Bulk Upload Legacy MOAs via ZIP",
-                            description:
-                              "Upload a ZIP file containing a legacy-import.csv manifest and referenced PDF files. Each CSV row creates or updates one legacy company, and can also add an MOA.",
-                            panelClassName: "!w-full sm:!max-w-5xl",
-                          },
-                        )
-                      }
-                    >
-                      <Upload className="h-4 w-4" />
-                      Bulk upload via ZIP
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>
+                    <Plus /> Add Partner
+                    <ChevronDown className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-72 p-1.5">
+                  <DropdownMenuItem
+                    className="cursor-pointer items-start gap-3 px-3 py-2"
+                    onSelect={() =>
+                      modal.inviteCompany.open({
+                        onSent: refresh,
+                        initialMode: "new",
+                        initialKind: "moa",
+                      })
+                    }
+                  >
+                    <UserPlus className="mt-0.5 size-4 text-primary" />
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-900">
+                        Invite Partner
+                      </span>
+                      <span className="text-muted-foreground block text-xs">
+                        Invite a company to sign a MOA
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer items-start gap-3 px-3 py-2"
+                    onSelect={() =>
+                      openModal(
+                        "legacy-upload",
+                        <UploadDialog
+                          createRequest={
+                            universityControllerCreateLegacyCompany
+                          }
+                          queryKey={getUniversityControllerListLegacyCompaniesQueryKey()}
+                          onClose={() => {
+                            closeModal("legacy-upload");
+                            queryClient.invalidateQueries({
+                              queryKey:
+                                getUniversityControllerListPartnersQueryKey(),
+                            });
+                            queryClient.invalidateQueries({
+                              queryKey:
+                                getUniversityControllerListLegacyCompaniesQueryKey(),
+                            });
+                          }}
+                        />,
+                        {
+                          title: "Add Partner",
+                          description:
+                            "Create a partner manually. You can add MOAs now or later from the company detail view.",
+                          panelClassName: "!w-full sm:!max-w-2xl",
+                        },
+                      )
+                    }
+                  >
+                    <Plus className="mt-0.5 size-4 text-primary" />
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-900">
+                        Add Partner
+                      </span>
+                      <span className="text-muted-foreground block text-xs">
+                        Manually create a new partner
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer items-start gap-3 px-3 py-2"
+                    onSelect={() =>
+                      openModal(
+                        "csv-upload",
+                        <CsvUploadDialog
+                          uploadRequest={async (file) =>
+                            normalizeBulkUploadResult(
+                              await universityControllerBulkCreateLegacyCompaniesFromCsv(
+                                { file },
+                              ),
+                            )
+                          }
+                          queryKey={getUniversityControllerListLegacyCompaniesQueryKey()}
+                          onClose={() => {
+                            closeModal("csv-upload");
+                            queryClient.invalidateQueries({
+                              queryKey:
+                                getUniversityControllerListPartnersQueryKey(),
+                            });
+                            queryClient.invalidateQueries({
+                              queryKey:
+                                getUniversityControllerListLegacyCompaniesQueryKey(),
+                            });
+                          }}
+                        />,
+                        {
+                          title: "Bulk Upload Legacy MOAs",
+                          description:
+                            "Upload a CSV file to create or append multiple legacy MOAs at once. Each row represents one legacy MOA. Rows with the same company name append MOAs to the same legacy partner.",
+                          panelClassName: "!w-full sm:!max-w-5xl",
+                        },
+                      )
+                    }
+                  >
+                    <Upload className="mt-0.5 size-4 text-primary" />
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-900">
+                        Bulk Upload via CSV
+                      </span>
+                      <span className="text-muted-foreground block text-xs">
+                        Import partner records from a spreadsheet
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer items-start gap-3 px-3 py-2"
+                    onSelect={() =>
+                      openModal(
+                        "zip-upload",
+                        <ZipUploadDialog
+                          uploadRequest={async (file) =>
+                            normalizeBulkUploadResult(
+                              await universityControllerBulkCreateLegacyCompaniesFromZip(
+                                { file },
+                              ),
+                            )
+                          }
+                          queryKey={getUniversityControllerListLegacyCompaniesQueryKey()}
+                          onClose={() => {
+                            closeModal("zip-upload");
+                            queryClient.invalidateQueries({
+                              queryKey:
+                                getUniversityControllerListPartnersQueryKey(),
+                            });
+                            queryClient.invalidateQueries({
+                              queryKey:
+                                getUniversityControllerListLegacyCompaniesQueryKey(),
+                            });
+                          }}
+                        />,
+                        {
+                          title: "Bulk Upload Legacy MOAs via ZIP",
+                          description:
+                            "Upload a ZIP file containing a legacy-import.csv manifest and referenced PDF files. Each CSV row creates or updates one legacy company, and can also add an MOA.",
+                          panelClassName: "!w-full sm:!max-w-5xl",
+                        },
+                      )
+                    }
+                  >
+                    <Archive className="mt-0.5 size-4 text-primary" />
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-900">
+                        Bulk Upload via ZIP
+                      </span>
+                      <span className="text-muted-foreground block text-xs">
+                        Import a ZIP file with MOA documents
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer items-start gap-3 px-3 py-2"
+                    onSelect={() =>
+                      router.push("/university/partners/import-wizard")
+                    }
+                  >
+                    <FileText className="mt-0.5 size-4 text-primary" />
+                    <span>
+                      <span className="block text-sm font-semibold text-gray-900">
+                        Bulk Upload Wizard
+                      </span>
+                      <span className="text-muted-foreground block text-xs">
+                        Upload PDFs and manually name them through the wizard
+                      </span>
+                    </span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </PageHeader>
 
             <Tabs defaultValue="outstanding">
@@ -1214,7 +1328,8 @@ function PartnersContent({
                     company?.company_type) && (
                     <VerifiedDocumentDetails
                       details={
-                        partnerMoasData?.company?.document_review_details ?? {}
+                        (partnerMoasData?.company?.document_review_details ??
+                          {}) as DocReviewDetails
                       }
                       companyType={company?.company_type}
                     />
@@ -1264,9 +1379,10 @@ function PartnersContent({
                                   "This re-enables future requests from this company. Previously revoked MOAs will not be restored.",
                                 confirmLabel: "Remove",
                                 onConfirm: () =>
-                                  unblacklistMutation.mutate(
-                                    getCompanyIdForBlacklist(partnerEntry),
-                                  ),
+                                  unblacklistMutation.mutate({
+                                    companyId:
+                                      getCompanyIdForBlacklist(partnerEntry),
+                                  }),
                               })
                             }
                           >
@@ -1283,9 +1399,11 @@ function PartnersContent({
                                 companyName: partnerEntry.displayName,
                                 onBlacklist: (reason) =>
                                   blacklistMutation.mutate({
-                                    companyId:
-                                      getCompanyIdForBlacklist(partnerEntry),
-                                    reason,
+                                    data: {
+                                      companyId:
+                                        getCompanyIdForBlacklist(partnerEntry),
+                                      reason: reason || undefined,
+                                    },
                                   }),
                                 isPending: blacklistMutation.isPending,
                               })
