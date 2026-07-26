@@ -1,9 +1,16 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useRef, useState, type ChangeEvent } from "react";
+import {
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 import { Upload } from "lucide-react";
 
 import { Label } from "@/components/ui/label";
+import { useFileDrop } from "@/components/ui/use-file-drop";
 import { cn } from "@/lib/utils";
 
 interface FileUploadProps {
@@ -35,7 +42,7 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
       placeholder,
       disabled = false,
     },
-    ref
+    ref,
   ) => {
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [fileName, setFileName] = useState<string | null>(null);
@@ -48,13 +55,27 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
       },
     }));
 
-    function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
-      const files = Array.from(e.target.files ?? []);
+    function selectFiles(files: File[]) {
       const file = files[0] ?? null;
-      setFileName(files.length > 1 ? `${files.length} files selected` : file?.name ?? null);
+      setFileName(
+        files.length > 1
+          ? `${files.length} files selected`
+          : (file?.name ?? null),
+      );
       onFileSelect?.(file);
       onFilesSelect?.(files);
     }
+
+    function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+      selectFiles(Array.from(e.target.files ?? []));
+    }
+
+    const { isDragging, dropProps } = useFileDrop({
+      accept,
+      multiple,
+      disabled,
+      onFiles: selectFiles,
+    });
 
     function handleClick() {
       if (disabled) return;
@@ -64,7 +85,10 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
 
     return (
       <div className="grid gap-1">
-        <Label htmlFor={id} className="text-muted-foreground text-xs font-normal">
+        <Label
+          htmlFor={id}
+          className="text-muted-foreground text-xs font-normal"
+        >
           {label}
           {required && <span className="text-red-500"> *</span>}
         </Label>
@@ -72,11 +96,13 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
         <button
           type="button"
           onClick={handleClick}
+          {...dropProps}
           disabled={disabled}
           className={cn(
             "flex items-center gap-2 rounded-[0.33em] border border-gray-300 px-4 py-4 text-left text-sm transition-colors",
             "hover:bg-muted text-muted-foreground hover:cursor-pointer",
-            disabled && "cursor-not-allowed opacity-60"
+            isDragging && "border-primary bg-primary/5 ring-2 ring-primary/15",
+            disabled && "cursor-not-allowed opacity-60",
           )}
           aria-label={label}
         >
@@ -84,7 +110,7 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
           {fileName ? (
             <span className="text-foreground truncate">{fileName}</span>
           ) : (
-            <span>{placeholder ?? "Click to upload file"}</span>
+            <span>{placeholder ?? "Drop a file here or click to upload"}</span>
           )}
         </button>
 
@@ -102,7 +128,7 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
         />
       </div>
     );
-  }
+  },
 );
 
 FileUpload.displayName = "FileUpload";

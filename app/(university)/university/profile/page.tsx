@@ -30,6 +30,7 @@ import {
   CollapsibleCardSectionTitle,
 } from "@/components/ui/collapsible-card";
 import { DetailField } from "@/components/ui/detail-field";
+import { FileDropTarget } from "@/components/ui/use-file-drop";
 import {
   AlertTriangle,
   Building2,
@@ -176,6 +177,11 @@ export default function UniversityProfilePage() {
     },
   });
 
+  const selectLogo = (file: File) => {
+    setLogoPreviewUrl(URL.createObjectURL(file));
+    uploadLogo.mutate({ data: { file } });
+  };
+
   const persistedInstitutionComplete = Boolean(
     uni?.registered_name?.trim() && uni.address?.trim(),
   );
@@ -307,8 +313,7 @@ export default function UniversityProfilePage() {
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (!file) return;
-            setLogoPreviewUrl(URL.createObjectURL(file));
-            uploadLogo.mutate({ data: { file } });
+            selectLogo(file);
             event.target.value = "";
           }}
         />
@@ -357,7 +362,12 @@ export default function UniversityProfilePage() {
         {!setupMode && (
           <div className="flex items-start justify-between gap-4">
             <div className="flex min-w-0 items-center gap-4">
-              <div className="relative shrink-0">
+              <FileDropTarget
+                accept="image/jpeg,image/png,image/webp"
+                disabled={editing !== "all" || uploadLogo.isPending}
+                onFiles={([file]) => file && selectLogo(file)}
+                className="relative shrink-0 rounded-full"
+              >
                 <button
                   type="button"
                   onClick={() => editing === "all" && logoRef.current?.click()}
@@ -386,7 +396,7 @@ export default function UniversityProfilePage() {
                     <Camera className="h-3 w-3 text-gray-500" />
                   </span>
                 )}
-              </div>
+              </FileDropTarget>
               <PageHeader title={account.university.registered_name} />
             </div>
             {isSuperadmin &&
@@ -571,7 +581,14 @@ export default function UniversityProfilePage() {
                 labelClassName="sm:min-h-10"
                 className="gap-3"
               >
-                <div className="flex flex-wrap items-center gap-4">
+                <FileDropTarget
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={
+                    (!setupMode && editing !== "all") || uploadLogo.isPending
+                  }
+                  onFiles={([file]) => file && selectLogo(file)}
+                  className="flex flex-wrap items-center gap-4 rounded-[0.33em]"
+                >
                   <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-gray-200 bg-gray-50">
                     {uploadLogo.isPending ? (
                       <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
@@ -596,7 +613,7 @@ export default function UniversityProfilePage() {
                       {displayLogoUrl ? "Replace logo" : "Upload logo"}
                     </Button>
                   )}
-                </div>
+                </FileDropTarget>
               </DetailField>
             </CollapsibleCardSection>
           </CollapsibleCardGroup>

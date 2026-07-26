@@ -613,7 +613,30 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
           </span>
         </button>
       ) : (
-        <div className="grid w-full overflow-hidden rounded-[0.5em] border border-gray-200 bg-white lg:min-h-0 lg:flex-1 lg:grid-cols-[22rem_minmax(0,1fr)_28rem]">
+        <div
+          className={cn(
+            "grid w-full overflow-hidden rounded-[0.5em] border border-gray-200 bg-white lg:min-h-0 lg:flex-1 lg:grid-cols-[22rem_minmax(0,1fr)_28rem]",
+            isDragging && "ring-2 ring-primary/30 ring-inset",
+          )}
+          onDragEnter={(event) => {
+            event.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+          }}
+          onDragLeave={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+              setIsDragging(false);
+            }
+          }}
+          onDrop={(event) => {
+            event.preventDefault();
+            setIsDragging(false);
+            if (!commit.isPending) addFiles(event.dataTransfer.files);
+          }}
+        >
           <aside className="flex min-h-0 flex-col border-b border-gray-200 lg:border-r lg:border-b-0">
             <div className="flex h-12 shrink-0 items-center justify-between border-b border-gray-200 px-3">
               <p className="text-sm font-semibold text-gray-900">

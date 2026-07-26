@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { FileUpload } from "@/components/ui/file-upload";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
@@ -445,7 +446,6 @@ function BulkUploadForm({ onClose }: { onClose: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [results, setResults] = useState<any>(null);
   const [error, setError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const upload = useAdminControllerBulkCreateCompanies({
     mutation: {
@@ -504,16 +504,13 @@ function BulkUploadForm({ onClose }: { onClose: () => void }) {
       <FormError>{error}</FormError>
 
       {!results ? (
-        <div className="space-y-1.5">
-          <Label htmlFor="csv-file">CSV file</Label>
-          <Input
-            id="csv-file"
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-        </div>
+        <FileUpload
+          label="CSV file"
+          name="csv-file"
+          accept=".csv,text/csv"
+          disabled={upload.isPending}
+          onFileSelect={setFile}
+        />
       ) : (
         <div className="space-y-2">
           <p className="text-sm font-medium">Results</p>

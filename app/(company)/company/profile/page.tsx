@@ -27,6 +27,7 @@ import {
 } from "@/lib/profile-validation";
 import { PageContainer } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { FileDropTarget } from "@/components/ui/use-file-drop";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -133,7 +134,14 @@ function ProfileContent() {
 
   // Auto-redirect to the MOA modal as soon as profile is complete (invite flow).
   useEffect(() => {
-    if (!inviteUniId || isLoading || vLoading || !company || !verification)
+    if (
+      awaitingCompletionReview ||
+      !inviteUniId ||
+      isLoading ||
+      vLoading ||
+      !company ||
+      !verification
+    )
       return;
     if (verification.status === "incomplete") return;
     const params = new URLSearchParams({ open_university_id: inviteUniId });
@@ -149,6 +157,7 @@ function ProfileContent() {
     inviteTemplateId,
     inviteId,
     router,
+    awaitingCompletionReview,
   ]);
 
   useEffect(() => {
@@ -162,7 +171,7 @@ function ProfileContent() {
     if (inviteUniId) params.set("open_university_id", inviteUniId);
     if (inviteTemplateId) params.set("template_id", inviteTemplateId);
     if (inviteId) params.set("invite_id", inviteId);
-    router.replace(`/company/dashboard?${params}`);
+    router.replace(`/company/universities?${params}`);
   }, [
     awaitingCompletionReview,
     inviteId,
@@ -224,12 +233,24 @@ function ProfileContent() {
   };
 
   function attemptSave(sectionKey: SectionKey) {
-    if (!form.formState.isValid) return;
+    if (
+      save.isPending ||
+      uploadDoc.isPending ||
+      (incomplete && !documentsComplete) ||
+      !form.formState.isValid
+    )
+      return;
     const matKeys = MATERIAL_KEYS_BY_SECTION[sectionKey] ?? [];
     const changedMaterial = matKeys.some(
       (k) => form.getValues(k as keyof CompanyProfileDraft) !== persisted(k),
     );
     const submit = () => {
+      if (
+        save.isPending ||
+        uploadDoc.isPending ||
+        (incomplete && !documentsComplete)
+      )
+        return;
       const values = form.getValues();
       save.mutate({
         data: {
@@ -355,7 +376,11 @@ function ProfileContent() {
           companyInfoComplete={companyInfoComplete}
           documentsComplete={documentsComplete}
           isSaveDisabled={
-            save.isPending || !form.formState.isValid || !form.formState.isDirty
+            save.isPending ||
+            uploadDoc.isPending ||
+            (incomplete && !documentsComplete) ||
+            !form.formState.isValid ||
+            !form.formState.isDirty
           }
           isSaving={save.isPending}
           onEdit={() => setIsEditing(true)}
@@ -497,9 +522,20 @@ function ProfileContent() {
               {DOC_TYPES.map(({ value, label }) => {
                 const existing = latestDoc(value);
                 return (
-                  <div
+                  <FileDropTarget
                     key={value}
-                    className="flex flex-row items-center border-b border-gray-100 px-4 last:border-b-0"
+                    accept="application/pdf"
+                    disabled={!incomplete || uploadDoc.isPending}
+                    onFiles={([file]) => {
+                      if (file) attemptUploadDoc(file, value);
+                    }}
+                    dragOverlay={
+                      <div className="text-primary flex min-h-[72px] w-full items-center justify-center gap-2 rounded-[0.33em] border-2 border-dashed border-primary/50 bg-primary/5 text-sm font-medium">
+                        <Upload className="h-4 w-4" />
+                        Drop PDF to {existing ? "replace" : "upload"}
+                      </div>
+                    }
+                    className="flex min-h-[72px] flex-row items-center border-b border-gray-100 px-4 last:border-b-0"
                   >
                     {existing ? (
                       <CircleCheck className="text-supportive" />
@@ -537,8 +573,8 @@ function ProfileContent() {
                               {uploadingType === value
                                 ? "Uploading..."
                                 : existing
-                                  ? "Replace"
-                                  : "Upload"}
+                                  ? "Drop or replace"
+                                  : "Drop or upload"}
                             </Button>
                             <input
                               ref={(input) => {
@@ -567,7 +603,7 @@ function ProfileContent() {
                         )}
                       </div>
                     </div>
-                  </div>
+                  </FileDropTarget>
                 );
               })}
             </div>
@@ -628,6 +664,8 @@ function ProfileContent() {
               onClick={() => attemptSave("company")}
               disabled={
                 save.isPending ||
+                uploadDoc.isPending ||
+                (incomplete && !documentsComplete) ||
                 !form.formState.isValid ||
                 (!incomplete && !form.formState.isDirty)
               }
