@@ -347,7 +347,7 @@ export function UniversityPartnersTable({
 }) {
   const showStatusColumn = tab === "expired";
   const showSelection = tab !== "blacklisted" && !!onBulkAction;
-  const inviteLabel = tab === "expired" ? "Renew MOA" : "Post Listing";
+  const inviteLabel = tab === "expired" ? "Renew MOA" : "Invite to Hire";
 
   const statusOptions = showStatusColumn
     ? Array.from(new Set(rows.map((row) => getPartnerStatus(row))))
@@ -498,8 +498,7 @@ export function UniversityPartnersTable({
           {tab !== "blacklisted" && (
             <Button
               size="sm"
-              variant="link"
-              className="-ml-3 hover:no-underline"
+              variant="outline"
               aria-label={inviteLabel}
               onClick={(event) => {
                 event.stopPropagation();

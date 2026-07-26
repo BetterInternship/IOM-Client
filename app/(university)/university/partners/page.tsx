@@ -436,7 +436,18 @@ function ReadOnlyLegacyDetail({
                 ? "expired"
                 : "inactive"
           }
-          badge={<PartnershipStatusBadge status="imported" label="Imported" />}
+          badge={
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              expandIcon
+              aria-label="Imported"
+            >
+              <Archive className="h-3.5 w-3.5 shrink-0" />
+              <span className="button-label whitespace-nowrap">Imported</span>
+            </Button>
+          }
         />
       )}
 
