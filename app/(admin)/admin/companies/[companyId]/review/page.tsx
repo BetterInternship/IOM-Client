@@ -19,6 +19,7 @@ import {
 import { PageContainer } from "@/components/page-header";
 import { CompanyLogo } from "@/components/company-logo";
 import { DocumentPreviewPane } from "@/components/document-preview-pane";
+import { toastPresets } from "@/components/sonner-toaster";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   CollapsibleCard,
@@ -468,7 +469,8 @@ export default function AdminCompanyReviewPage() {
   const approve = useAdminControllerApproveCompany({
     mutation: {
       onSuccess: () => {
-        toast.success("Company verified");
+        toast("Company verified", toastPresets.success);
+        confirmAction.close();
         setReviewValues({});
         setApprovalExpiresAt("");
         invalidate();
