@@ -12,6 +12,10 @@ import { toast } from "sonner";
 import {
   getAdminControllerCompanyReviewDetailQueryKey,
   getAdminControllerCompanyReviewQueueQueryKey,
+  getAdminControllerCompanyReviewQueueQueryOptions,
+  getAdminControllerGetCompanyQueryKey,
+  getAdminControllerListCompaniesQueryKey,
+  getAdminControllerOverviewQueryKey,
   useAdminControllerApproveCompany,
   useAdminControllerCompanyReviewDetail,
   useAdminControllerRejectCompany,
@@ -224,12 +228,10 @@ function CompanyIdentity({
   name,
   email,
   logoUrl,
-  status,
 }: {
   name: string;
   email: string;
   logoUrl?: string | null;
-  status: HistoryEntry["status"];
 }) {
   return (
     <div className="flex items-center gap-3">
@@ -239,7 +241,6 @@ function CompanyIdentity({
           <h1 className="text-lg leading-tight font-semibold text-gray-900">
             {name}
           </h1>
-          <ReviewStatusBadge status={status} />
         </div>
         <p className="text-muted-foreground mt-1.5 text-sm">{email}</p>
       </div>
@@ -468,12 +469,40 @@ export default function AdminCompanyReviewPage() {
 
   const approve = useAdminControllerApproveCompany({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
         toast("Company verified", toastPresets.success);
         confirmAction.close();
         setReviewValues({});
         setApprovalExpiresAt("");
-        invalidate();
+
+        await queryClient.invalidateQueries({
+          queryKey: getAdminControllerCompanyReviewQueueQueryKey(),
+          exact: true,
+          refetchType: "none",
+        });
+
+        const [queueResult] = await Promise.allSettled([
+          queryClient.fetchQuery(
+            getAdminControllerCompanyReviewQueueQueryOptions(),
+          ),
+          queryClient.refetchQueries({
+            queryKey: getAdminControllerOverviewQueryKey(),
+            exact: true,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getAdminControllerListCompaniesQueryKey(),
+            exact: true,
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getAdminControllerGetCompanyQueryKey(companyId),
+            exact: true,
+          }),
+        ]);
+
+        const hasNoPendingReviews =
+          queueResult.status === "fulfilled" &&
+          queueResult.value.reviews.length === 0;
+        router.replace(hasNoPendingReviews ? "/companies" : "/reviews");
       },
       onError: (e: Error) => {
         if (!onConflict(e)) toast.error(e.message);
@@ -637,7 +666,6 @@ export default function AdminCompanyReviewPage() {
             name={company.registered_name}
             email={company.email}
             logoUrl={company.cosmetic?.logo_url}
-            status={openEntry.status}
           />
           <p className="text-muted-foreground text-sm">
             Submitted {formatDateWithoutTime(openEntry.created_at)}
