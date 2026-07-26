@@ -367,13 +367,65 @@ function DocPreviewContent({ url, title }: { url: string; title: string }) {
   );
 }
 
+function RejectCompanyForm({
+  companyName,
+  onReject,
+}: {
+  companyName: string;
+  onReject: (reason: string) => Promise<unknown>;
+}) {
+  const { closeModal } = useModal();
+  const [reason, setReason] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const rejectCompany = async () => {
+    setIsSubmitting(true);
+    try {
+      await onReject(reason);
+    } catch {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <p className="text-muted-foreground text-sm">
+        {companyName} will be asked to update their details. The reason is
+        emailed to the company.
+      </p>
+      <Textarea
+        rows={3}
+        placeholder="Reason (optional — emailed to the company)"
+        value={reason}
+        onChange={(event) => setReason(event.target.value)}
+      />
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          disabled={isSubmitting}
+          onClick={() => closeModal("reject-company")}
+        >
+          Cancel
+        </Button>
+        <Button
+          scheme="destructive"
+          disabled={isSubmitting}
+          onClick={rejectCompany}
+        >
+          {isSubmitting && <Loader2 className="animate-spin" />}
+          {isSubmitting ? "Rejecting…" : "Reject"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminCompanyReviewPage() {
   const { companyId } = useParams<{ companyId: string }>();
   const queryClient = useQueryClient();
   const router = useRouter();
   const { openModal, closeModal } = useModal();
   const { confirmAction } = useIomModalRegistry();
-  const [reason, setReason] = useState("");
   const [reviewValues, setReviewValues] = useState<Record<string, string>>({});
   const [approvalExpiresAt, setApprovalExpiresAt] = useState("");
   const [documentPreview, setDocumentPreview] =
@@ -432,7 +484,6 @@ export default function AdminCompanyReviewPage() {
       onSuccess: () => {
         toast.success("Company review rejected");
         closeModal("reject-company");
-        setReason("");
         invalidate();
       },
       onError: (e: Error) => {
@@ -655,41 +706,15 @@ export default function AdminCompanyReviewPage() {
               onClick={() =>
                 openModal(
                   "reject-company",
-                  <div className="space-y-4">
-                    <p className="text-muted-foreground text-sm">
-                      {company.registered_name} will be asked to update their
-                      details. The reason is emailed to the company.
-                    </p>
-                    <Textarea
-                      rows={3}
-                      placeholder="Reason (optional — emailed to the company)"
-                      value={reason}
-                      onChange={(event) => setReason(event.target.value)}
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() => closeModal("reject-company")}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        scheme="destructive"
-                        disabled={reject.isPending}
-                        onClick={() =>
-                          reject.mutate({
-                            companyId,
-                            data: { reason: reason || undefined },
-                          })
-                        }
-                      >
-                        {reject.isPending && (
-                          <Loader2 className="animate-spin" />
-                        )}
-                        {reject.isPending ? "Rejecting…" : "Reject"}
-                      </Button>
-                    </div>
-                  </div>,
+                  <RejectCompanyForm
+                    companyName={company.registered_name}
+                    onReject={(reason) =>
+                      reject.mutateAsync({
+                        companyId,
+                        data: { reason: reason || undefined },
+                      })
+                    }
+                  />,
                   {
                     title: "Reject verification",
                     panelClassName: "!w-full sm:!max-w-md",
