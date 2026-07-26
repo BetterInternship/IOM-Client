@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
 import {
   ResourceTable,
   type ResourceTableColumn,
@@ -24,12 +26,11 @@ import { FormError } from "@/components/auth-shell";
 import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { toastPresets } from "@/components/sonner-toaster";
-import { Loader2, Plus } from "lucide-react";
+import { ChevronRight, Loader2, Plus, UserRoundX } from "lucide-react";
 
 interface University {
   id: string;
   registered_name: string;
-  logo_url: string | null;
   is_deactivated: boolean | null;
   university_accounts: {
     email: string;
@@ -38,45 +39,102 @@ interface University {
   }[];
 }
 
-function UniversityIdentity({ university }: { university: University }) {
-  const initials = university.registered_name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
+type UniversityStatusValue = "active" | "pending" | "deactivated";
+type UniversityStatusTab = "all" | UniversityStatusValue;
 
-  return (
-    <div className="flex min-w-0 items-center gap-3">
-      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[0.33em] border border-gray-200 bg-gray-50 text-xs font-semibold text-gray-600">
-        {university.logo_url ? (
-          // University logos are user-uploaded and served from signed URLs.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={university.logo_url}
-            alt={`${university.registered_name} logo`}
-            className="h-full w-full object-contain p-1"
-          />
-        ) : (
-          <span aria-hidden="true">{initials}</span>
-        )}
-      </div>
-      <span className="truncate font-medium text-gray-900">
-        {university.registered_name}
-      </span>
-    </div>
-  );
+const STATUS_TABS: Array<{
+  value: UniversityStatusTab;
+  label: string;
+  activeCountClassName: string;
+}> = [
+  {
+    value: "all",
+    label: "All",
+    activeCountClassName:
+      "group-data-[state=active]:bg-primary group-data-[state=active]:text-primary-foreground",
+  },
+  {
+    value: "active",
+    label: "Active",
+    activeCountClassName:
+      "group-data-[state=active]:bg-supportive group-data-[state=active]:text-supportive-foreground",
+  },
+  {
+    value: "pending",
+    label: "Pending",
+    activeCountClassName:
+      "group-data-[state=active]:bg-primary group-data-[state=active]:text-primary-foreground",
+  },
+  {
+    value: "deactivated",
+    label: "Deactivated",
+    activeCountClassName:
+      "group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground",
+  },
+];
+
+function universityStatus(university: University): UniversityStatusValue {
+  if (university.is_deactivated) return "deactivated";
+  if (
+    !university.university_accounts[0] ||
+    university.university_accounts[0].is_pending
+  ) {
+    return "pending";
+  }
+  return "active";
 }
 
 function UniversityStatus({ university }: { university: University }) {
-  return university.is_deactivated ? (
+  const status = universityStatus(university);
+  return status === "deactivated" ? (
     <PartnershipStatusBadge status="rejected" label="Deactivated" />
-  ) : !university.university_accounts[0] ||
-    university.university_accounts[0].is_pending ? (
+  ) : status === "pending" ? (
     <PartnershipStatusBadge status="pending" label="Pending" />
   ) : (
     <PartnershipStatusBadge status="active" label="Active" />
+  );
+}
+
+function UniversityStatusTabs({
+  universities,
+  value,
+  onValueChange,
+}: {
+  universities: University[];
+  value: UniversityStatusTab;
+  onValueChange: (value: UniversityStatusTab) => void;
+}) {
+  return (
+    <Tabs
+      value={value}
+      onValueChange={(nextValue) =>
+        onValueChange(nextValue as UniversityStatusTab)
+      }
+      className="block"
+    >
+      <TabsList className="h-auto max-w-full justify-start overflow-x-auto rounded-none border-0 border-b border-gray-200 bg-transparent">
+        {STATUS_TABS.map((tab) => {
+          const count = universities.filter(
+            (university) =>
+              tab.value === "all" || universityStatus(university) === tab.value,
+          ).length;
+          return (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
+            >
+              {tab.label}
+              <span
+                className={`ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 ${tab.activeCountClassName}`}
+              >
+                {count}
+              </span>
+            </TabsTrigger>
+          );
+        })}
+      </TabsList>
+    </Tabs>
   );
 }
 
@@ -184,9 +242,11 @@ function DeactivateCell({ uni }: { uni: University }) {
 
   return (
     <Button
-      variant="outline"
       scheme="destructive"
+      variant="outline"
       size="sm"
+      aria-label={`Deactivate ${uni.registered_name}`}
+      title="Deactivate university"
       onClick={(e) => {
         e.stopPropagation();
         confirmAction.open({
@@ -199,6 +259,7 @@ function DeactivateCell({ uni }: { uni: University }) {
         });
       }}
     >
+      <UserRoundX className="h-3.5 w-3.5" />
       Deactivate
     </Button>
   );
@@ -206,11 +267,26 @@ function DeactivateCell({ uni }: { uni: University }) {
 
 const columns: Array<ResourceTableColumn<University>> = [
   {
+    id: "status",
+    header: "Status",
+    width: "w-[12%]",
+    sortable: false,
+    render: (university) => <UniversityStatus university={university} />,
+  },
+  {
     id: "name",
     header: "University",
-    width: "w-[35%]",
+    width: "w-[32%]",
     getSortValue: (university) => university.registered_name,
-    render: (university) => <UniversityIdentity university={university} />,
+    render: (university) => (
+      <TruncatedTooltip
+        align="start"
+        className="text-sm font-medium text-gray-900"
+        contentClassName="text-left"
+      >
+        {university.registered_name}
+      </TruncatedTooltip>
+    ),
   },
   {
     id: "superadmin",
@@ -218,30 +294,39 @@ const columns: Array<ResourceTableColumn<University>> = [
     width: "w-[35%]",
     getSortValue: (university) => university.university_accounts[0]?.email,
     render: (university) => (
-      <span className="text-muted-foreground">
+      <span className="text-muted-foreground text-sm">
         {university.university_accounts[0]?.email ?? "—"}
       </span>
     ),
   },
   {
-    id: "status",
-    header: "Status",
-    width: "w-[15%]",
-    sortable: false,
-    render: (university) => <UniversityStatus university={university} />,
-  },
-  {
     id: "actions",
-    header: "",
+    header: "Actions",
     width: "w-[15%]",
-    align: "right",
     sortable: false,
     render: (university) => <DeactivateCell uni={university} />,
+  },
+  {
+    id: "open",
+    header: "",
+    width: "w-[6%]",
+    align: "right",
+    sortable: false,
+    render: (university) => (
+      <div className="text-primary flex justify-end">
+        <ChevronRight
+          className="h-5 w-5 transition-transform group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
+        <span className="sr-only">Open {university.registered_name}</span>
+      </div>
+    ),
   },
 ];
 
 export default function AdminUniversitiesPage() {
   const router = useRouter();
+  const [statusTab, setStatusTab] = useState<UniversityStatusTab>("all");
   const { openModal, closeModal } = useModal();
   const { data, isLoading, refetch } = useAdminControllerListUniversities<
     University[]
@@ -252,8 +337,17 @@ export default function AdminUniversitiesPage() {
     },
   });
   const universities = data ?? [];
+  const visibleUniversities = useMemo(
+    () =>
+      statusTab === "all"
+        ? universities
+        : universities.filter(
+            (university) => universityStatus(university) === statusTab,
+          ),
+    [statusTab, universities],
+  );
   const table = useResourceTable({
-    data: universities,
+    data: visibleUniversities,
     getRowId: (university) => university.id,
     columns,
     search: {
@@ -306,16 +400,31 @@ export default function AdminUniversitiesPage() {
       ) : (
         <ResourceTable
           table={table}
+          columns={
+            statusTab === "all"
+              ? columns
+              : columns.filter((column) => column.id !== "status")
+          }
+          className="space-y-4 [&_td]:py-2.5"
+          toolbarStart={
+            <UniversityStatusTabs
+              universities={universities}
+              value={statusTab}
+              onValueChange={setStatusTab}
+            />
+          }
           renderMobileRow={(university) => (
             <article
-              className="cursor-pointer px-4 py-4 transition-colors hover:bg-primary/[0.035]"
+              className="cursor-pointer px-4 py-3 transition-colors hover:bg-primary/[0.035]"
               onClick={() =>
                 router.push(`/admin/universities/${university.id}`)
               }
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <UniversityIdentity university={university} />
+                  <p className="text-sm font-semibold text-gray-900">
+                    {university.registered_name}
+                  </p>
                   <p className="text-muted-foreground mt-1 break-all text-sm">
                     {university.university_accounts[0]?.email ??
                       "No superadmin"}

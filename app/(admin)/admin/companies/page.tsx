@@ -3,7 +3,14 @@ import { useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, ChevronDown, Loader2, Plus, Upload } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Plus,
+  Upload,
+} from "lucide-react";
 import {
   getAdminControllerListCompaniesQueryKey,
   useAdminControllerBulkCreateCompanies,
@@ -56,14 +63,53 @@ type CompanyListItem = AdminCompanyListItemDto & {
   verification_status: VerificationStatus;
 };
 
-const STATUS_TABS: Array<{ value: CompanyStatusTab; label: string }> = [
-  { value: "all", label: "All" },
-  { value: "pending", label: "Pending" },
-  { value: "rejected", label: "Rejected" },
-  { value: "verified", label: "Verified" },
-  { value: "expired", label: "Expired" },
-  { value: "incomplete", label: "Incomplete" },
-  { value: "deactivated", label: "Deactivated" },
+const STATUS_TABS: Array<{
+  value: CompanyStatusTab;
+  label: string;
+  activeCountClassName: string;
+}> = [
+  {
+    value: "all",
+    label: "All",
+    activeCountClassName:
+      "group-data-[state=active]:bg-primary group-data-[state=active]:text-primary-foreground",
+  },
+  {
+    value: "pending",
+    label: "Pending",
+    activeCountClassName:
+      "group-data-[state=active]:bg-primary group-data-[state=active]:text-primary-foreground",
+  },
+  {
+    value: "rejected",
+    label: "Rejected",
+    activeCountClassName:
+      "group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground",
+  },
+  {
+    value: "verified",
+    label: "Verified",
+    activeCountClassName:
+      "group-data-[state=active]:bg-supportive group-data-[state=active]:text-supportive-foreground",
+  },
+  {
+    value: "expired",
+    label: "Expired",
+    activeCountClassName:
+      "group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground",
+  },
+  {
+    value: "incomplete",
+    label: "Incomplete",
+    activeCountClassName:
+      "group-data-[state=active]:bg-gray-600 group-data-[state=active]:text-white",
+  },
+  {
+    value: "deactivated",
+    label: "Deactivated",
+    activeCountClassName:
+      "group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground",
+  },
 ];
 
 function companyStatus(company: CompanyListItem): CompanyStatusTab {
@@ -101,7 +147,7 @@ const columns: Array<ResourceTableColumn<CompanyListItem>> = [
   {
     id: "name",
     header: "Company",
-    width: "w-[40%]",
+    width: "w-[34%]",
     getSortValue: (company) => company.registered_name,
     render: (company) => (
       <div className="flex items-center gap-2 min-w-0">
@@ -140,6 +186,22 @@ const columns: Array<ResourceTableColumn<CompanyListItem>> = [
       </span>
     ),
   },
+  {
+    id: "open",
+    header: "",
+    width: "w-[6%]",
+    align: "right",
+    sortable: false,
+    render: (company) => (
+      <div className="text-primary flex justify-end">
+        <ChevronRight
+          className="h-5 w-5 transition-transform group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
+        <span className="sr-only">Open {company.registered_name}</span>
+      </div>
+    ),
+  },
 ];
 
 function CompanyStatusTabs({
@@ -172,7 +234,9 @@ function CompanyStatusTabs({
               className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
             >
               {tab.label}
-              <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-primary group-data-[state=active]:text-primary-foreground">
+              <span
+                className={`ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 ${tab.activeCountClassName}`}
+              >
                 {count}
               </span>
             </TabsTrigger>
@@ -605,6 +669,11 @@ export default function AdminCompaniesPage() {
       ) : (
         <ResourceTable
           table={table}
+          columns={
+            statusTab === "all"
+              ? columns
+              : columns.filter((column) => column.id !== "status")
+          }
           className="space-y-4 [&_td]:py-2.5"
           toolbarStart={
             <CompanyStatusTabs
