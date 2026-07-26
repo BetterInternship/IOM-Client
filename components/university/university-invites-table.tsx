@@ -106,14 +106,14 @@ export function UniversityInvitesTable({
     {
       id: "status",
       header: "Status",
-      width: "w-[22%]",
+      width: "w-[12%]",
       getSortValue: (invite) => invite.status,
       render: (invite) => <InviteStatusBadge status={invite.status} />,
     },
     {
       id: "company",
       header: "Company",
-      width: "w-[24%]",
+      width: "w-[32%]",
       getSortValue: resolveDisplayName,
       render: (invite) => {
         const name = resolveDisplayName(invite);
@@ -203,7 +203,7 @@ export function UniversityInvitesTable({
   return (
     <ResourceTable
       table={table}
-      className="[&_table]:min-w-[760px]"
+      className="[&_table]:min-w-[760px] [&_table]:text-sm"
       toolbarStart={toolbarStart}
       renderMobileRow={(invite) => {
         const name = resolveDisplayName(invite);
