@@ -1,5 +1,10 @@
 "use client";
-import { useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,7 +17,15 @@ import {
   useAdminControllerRejectCompany,
 } from "@/app/api";
 import { PageContainer } from "@/components/page-header";
+import { CompanyLogo } from "@/components/company-logo";
+import { DocumentPreviewPane } from "@/components/document-preview-pane";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  CollapsibleCard,
+  CollapsibleCardGroup,
+  CollapsibleCardSection,
+} from "@/components/ui/collapsible-card";
+import { DetailField } from "@/components/ui/detail-field";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -25,21 +38,29 @@ import {
   type ResourceTableColumn,
 } from "@/components/ui/resource-table";
 import { useResourceTable } from "@/components/ui/use-resource-table";
-import * as AccordionPrimitive from "@radix-ui/react-accordion";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionContent,
-} from "@/components/ui/accordion";
 import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
-import { formatDateWithoutTime } from "@/lib/utils";
-import { ArrowLeft, Check, Eye, Loader2, X } from "lucide-react";
+import { cn, formatDateWithoutTime } from "@/lib/utils";
+import {
+  ArrowLeft,
+  Check,
+  CircleAlert,
+  CircleCheck,
+  Eye,
+  GripVertical,
+  Loader2,
+  X,
+} from "lucide-react";
 
 interface ReviewDoc {
   type: string;
   filename: string;
   url: string | null;
+}
+
+interface DocumentPreviewSelection {
+  document: ReviewDoc;
+  label: string;
 }
 
 type ReviewFieldDetails = Record<
@@ -66,6 +87,7 @@ interface ReviewDetail {
     registered_name: string;
     email: string;
     company_type: string | null;
+    cosmetic: { logo_url?: string | null } | null;
   };
   history: HistoryEntry[];
   openReviewId: string | null;
@@ -75,6 +97,13 @@ const DOC_LABELS: Record<string, string> = {
   business_permit: "Business Permit",
   mayor_permit: "Mayor's Permit",
   sec_dti_registration: "SEC/DTI Registration",
+};
+
+const COMPANY_TYPE_LABELS: Record<string, string> = {
+  corporation: "Corporation",
+  partnership: "Partnership",
+  sole_proprietorship: "Sole Proprietorship",
+  government_agency: "Government Agency",
 };
 
 function ReviewStatusBadge({ status }: { status: HistoryEntry["status"] }) {
@@ -105,27 +134,33 @@ function ReviewFieldsEditor({
   onChange: (next: Record<string, string>) => void;
 }) {
   return (
-    <div className="space-y-1.5">
-      <Label htmlFor="approval-expires" className="text-md">
-        Review Details
-      </Label>
-      <div className="divide-y divide-gray-100 rounded-[0.33em] border border-gray-200">
-        {REVIEW_FIELDS.map((field) => (
-          <div key={field.key} className="flex items-center gap-4 px-3 py-2.5">
-            <Label className="text-muted-foreground w-52 flex-shrink-0 text-xs font-normal">
-              {field.key}
-            </Label>
-            <Input
-              type={field.type}
-              className="h-8 text-xs"
+    <div className="space-y-4 px-5 pb-5">
+      {REVIEW_FIELDS.map((field) => (
+        <DetailField
+          key={field.key}
+          label={<Label htmlFor={`review-${field.key}`}>{field.key}</Label>}
+          labelClassName="sm:min-h-9"
+        >
+          {field.type === "date" ? (
+            <DatePicker
+              id={`review-${field.key}`}
+              className="h-9 text-sm"
               value={values[field.key] ?? ""}
-              onChange={(e) =>
-                onChange({ ...values, [field.key]: e.target.value })
+              onChange={(value) => onChange({ ...values, [field.key]: value })}
+            />
+          ) : (
+            <Input
+              id={`review-${field.key}`}
+              type={field.type}
+              className="h-9 text-sm"
+              value={values[field.key] ?? ""}
+              onChange={(event) =>
+                onChange({ ...values, [field.key]: event.target.value })
               }
             />
-          </div>
-        ))}
-      </div>
+          )}
+        </DetailField>
+      ))}
     </div>
   );
 }
@@ -184,21 +219,94 @@ function DocumentsReadOnly({
   );
 }
 
+function CompanyIdentity({
+  name,
+  email,
+  logoUrl,
+  status,
+}: {
+  name: string;
+  email: string;
+  logoUrl?: string | null;
+  status: HistoryEntry["status"];
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <CompanyLogo name={name} logoUrl={logoUrl} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg leading-tight font-semibold text-gray-900">
+            {name}
+          </h1>
+          <ReviewStatusBadge status={status} />
+        </div>
+        <p className="text-muted-foreground mt-1.5 text-sm">{email}</p>
+      </div>
+    </div>
+  );
+}
+
+function PendingDocumentsContent({
+  entry,
+  onOpenDocument,
+}: {
+  entry: HistoryEntry;
+  onOpenDocument: (document: ReviewDoc, label: string) => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[0.33em] border border-blue-100 bg-white">
+      {Object.entries(DOC_LABELS).map(([type, label]) => {
+        const document = entry.documents.find((item) => item.type === type);
+        return (
+          <button
+            key={type}
+            type="button"
+            disabled={!document?.url}
+            onClick={() => document?.url && onOpenDocument(document, label)}
+            className="flex w-full items-center border-b border-gray-100 px-4 text-left transition-colors last:border-b-0 enabled:cursor-pointer enabled:hover:bg-gray-50 disabled:cursor-default"
+          >
+            {document ? (
+              <CircleCheck className="text-supportive shrink-0" />
+            ) : (
+              <CircleAlert className="text-warning shrink-0" />
+            )}
+            <div className="flex min-w-0 flex-1 items-center gap-3 rounded-[0.16em] p-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-800">{label}</p>
+                <p className="text-muted-foreground mt-0.5 truncate text-xs">
+                  {document
+                    ? document.filename
+                    : "Not included with this request"}
+                </p>
+              </div>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function MaterialFields({ entry }: { entry: HistoryEntry }) {
   if (!entry.material) return null;
   const fields = Object.entries(entry.material).filter(
-    ([, v]) => v !== null && v !== "",
+    (field): field is [string, string] => field[1] !== null && field[1] !== "",
   );
   if (fields.length === 0) return null;
   return (
-    <div className="divide-y divide-gray-100 rounded-[0.33em] border border-gray-200">
+    <div className="space-y-4 px-5 pb-5">
       {fields.map(([key, value]) => (
-        <div key={key} className="flex items-start gap-4 px-3 py-2">
-          <p className="text-muted-foreground w-44 flex-shrink-0 text-xs">
-            {key.replace(/_/g, " ")}
+        <DetailField
+          key={key}
+          label={key.replace(/_/g, " ")}
+          labelClassName="capitalize"
+        >
+          <p className="flex min-h-8 min-w-0 items-center break-words text-sm font-medium text-gray-900">
+            {key === "company_type"
+              ? (COMPANY_TYPE_LABELS[value] ?? value)
+              : value}
           </p>
-          <p className="min-w-0 flex-1 text-sm text-gray-900">{value}</p>
-        </div>
+        </DetailField>
       ))}
     </div>
   );
@@ -208,16 +316,13 @@ function ReviewFieldsReadOnly({ details }: { details: ReviewFieldDetails }) {
   const entries = Object.entries(details).filter(([, v]) => v.value);
   if (entries.length === 0) return null;
   return (
-    <div className="divide-y divide-gray-100 rounded-[0.33em] border border-gray-200">
+    <div className="space-y-4">
       {entries.map(([key, field]) => (
-        <div key={key} className="flex items-start gap-4 px-3 py-2">
-          <p className="text-muted-foreground w-52 flex-shrink-0 text-xs">
-            {key}
-          </p>
-          <p className="min-w-0 flex-1 text-sm font-medium text-gray-900">
+        <DetailField key={key} label={key}>
+          <p className="flex min-h-8 min-w-0 items-center break-words text-sm font-medium text-gray-900">
             {field.value}
           </p>
-        </div>
+        </DetailField>
       ))}
     </div>
   );
@@ -271,7 +376,16 @@ export default function AdminCompanyReviewPage() {
   const [reason, setReason] = useState("");
   const [reviewValues, setReviewValues] = useState<Record<string, string>>({});
   const [approvalExpiresAt, setApprovalExpiresAt] = useState("");
-  const [selectedPast, setSelectedPast] = useState<HistoryEntry | null>(null);
+  const [documentPreview, setDocumentPreview] =
+    useState<DocumentPreviewSelection | null>(null);
+  const [previewWidth, setPreviewWidth] = useState(50);
+
+  useEffect(() => {
+    const savedWidth = Number(
+      window.localStorage.getItem("iom-admin-review-preview-width"),
+    );
+    if (savedWidth >= 30 && savedWidth <= 70) setPreviewWidth(savedWidth);
+  }, []);
 
   const { data, isLoading, refetch } =
     useAdminControllerCompanyReviewDetail<ReviewDetail>(companyId, {
@@ -351,7 +465,6 @@ export default function AdminCompanyReviewPage() {
   });
 
   const openPastReview = (entry: HistoryEntry) => {
-    setSelectedPast(entry);
     const label = entry.status === "approved" ? "Approved" : "Reviewed";
     openModal(
       "past-review",
@@ -399,6 +512,22 @@ export default function AdminCompanyReviewPage() {
     );
   };
 
+  const updatePreviewWidth = (nextWidth: number) => {
+    const clampedWidth = Math.min(70, Math.max(30, nextWidth));
+    setPreviewWidth(clampedWidth);
+    window.localStorage.setItem(
+      "iom-admin-review-preview-width",
+      String(clampedWidth),
+    );
+  };
+
+  const resizePreview = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
+    const bounds = event.currentTarget.parentElement?.getBoundingClientRect();
+    if (!bounds) return;
+    updatePreviewWidth(((bounds.right - event.clientX) / bounds.width) * 100);
+  };
+
   if (isLoading) {
     return (
       <PageContainer className="max-w-3xl space-y-6">
@@ -427,108 +556,115 @@ export default function AdminCompanyReviewPage() {
   const { company } = data;
 
   return (
-    <PageContainer className="max-w-3xl space-y-6">
-      <Link
-        href="/reviews"
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
+    <PageContainer
+      className={cn(
+        documentPreview ? "max-w-none py-0 pr-0 sm:pr-0" : "max-w-3xl py-0",
+      )}
+    >
+      <div
+        className={cn(
+          "relative min-h-[calc(100dvh-5rem-1px)] lg:h-[calc(100dvh-5rem-1px)] lg:min-h-0 lg:overflow-hidden",
+          documentPreview && "lg:grid",
+        )}
+        style={
+          documentPreview
+            ? { gridTemplateColumns: `${100 - previewWidth}% ${previewWidth}%` }
+            : undefined
+        }
       >
-        <ArrowLeft className="h-4 w-4" /> Company Reviews
-      </Link>
+        <div className="min-w-0 space-y-3 py-5 pr-4 lg:h-full lg:overflow-y-auto lg:px-6">
+          <Link
+            href="/reviews"
+            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm"
+          >
+            <ArrowLeft className="h-4 w-4" /> Company Reviews
+          </Link>
 
-      <div>
-        <h1 className="flex flex-row items-center gap-2 text-xl font-semibold text-gray-900">
-          {company.registered_name}
-          <ReviewStatusBadge status={openEntry.status} />
-        </h1>
-        <p className="text-muted-foreground mt-0.5 text-sm">{company.email}</p>
-        <p className="text-muted-foreground mt-0.5 text-sm">
-          Submitted {formatDateWithoutTime(openEntry.created_at)}
-        </p>
-      </div>
+          <CompanyIdentity
+            name={company.registered_name}
+            email={company.email}
+            logoUrl={company.cosmetic?.logo_url}
+            status={openEntry.status}
+          />
+          <p className="text-muted-foreground text-sm">
+            Submitted {formatDateWithoutTime(openEntry.created_at)}
+          </p>
 
-      {/* Pending review */}
-      {openEntry ? (
-        <>
-          <DocumentsReadOnly
-            entry={openEntry}
-            openPreview={(url, title) =>
-              openModal(
-                "preview-doc",
-                <DocPreviewContent url={url} title={title} />,
-                {
-                  title,
-                  panelClassName: "!w-full sm:!max-w-4xl",
-                  contentClassName: "min-h-0 flex-1 overflow-hidden p-0 sm:p-0",
-                  showHeaderDivider: true,
-                },
-              )
-            }
-          />
-          <br />
-          <ReviewFieldsEditor
-            values={reviewValues}
-            onChange={setReviewValues}
-          />
-          <div className="space-y-1.5">
-            <Label htmlFor="approval-expires" className="text-md">
-              Approval expires on
-            </Label>
-            <DatePicker
-              id="approval-expires"
-              className="h-8 text-xs"
-              value={approvalExpiresAt}
-              onChange={setApprovalExpiresAt}
-            />
-          </div>
-          <div className="flex gap-3 border-t border-gray-100 pt-4">
-            <Button
-              scheme="supportive"
-              className="flex-1"
-              disabled={approve.isPending || !canApprove}
-              onClick={() =>
-                confirmAction.open({
-                  title: `Verify ${company.registered_name}?`,
-                  description:
-                    "The company will be able to request MOAs from any university and is emailed a confirmation.",
-                  confirmLabel: "Approve",
-                  onConfirm: () =>
-                    approve.mutate({
-                      companyId,
-                      data: {
-                        document_review_details:
-                          buildReviewDetails(reviewValues),
-                        approval_expires_at: approvalExpiresAt,
-                      },
-                    }),
-                  isPending: approve.isPending,
-                })
-              }
+          <CollapsibleCardGroup
+            type="multiple"
+            defaultValue={[
+              ...(openEntry.material ? ["submitted-details"] : []),
+              "documents",
+              "review-details",
+            ]}
+            variant="grouped"
+          >
+            {openEntry.material && (
+              <CollapsibleCardSection
+                value="submitted-details"
+                trigger="Company details"
+                triggerClassName="hover:bg-gray-50"
+              >
+                <MaterialFields entry={openEntry} />
+              </CollapsibleCardSection>
+            )}
+
+            <CollapsibleCardSection
+              value="documents"
+              trigger="Documents"
+              triggerClassName="hover:bg-gray-50"
+              contentClassName="px-5 pb-5"
             >
-              {approve.isPending ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <Check />
-              )}
-              Approve
-            </Button>
+              <PendingDocumentsContent
+                entry={openEntry}
+                onOpenDocument={(document, label) =>
+                  setDocumentPreview({ document, label })
+                }
+              />
+            </CollapsibleCardSection>
+
+            <CollapsibleCardSection
+              value="review-details"
+              trigger="Review details"
+              triggerClassName="hover:bg-gray-50"
+            >
+              <ReviewFieldsEditor
+                values={reviewValues}
+                onChange={setReviewValues}
+              />
+              <DetailField
+                label={
+                  <Label htmlFor="approval-expires">Approval expires on</Label>
+                }
+                labelClassName="sm:min-h-9"
+                className="px-5 pb-5"
+              >
+                <DatePicker
+                  id="approval-expires"
+                  className="h-9 text-sm"
+                  value={approvalExpiresAt}
+                  onChange={setApprovalExpiresAt}
+                />
+              </DetailField>
+            </CollapsibleCardSection>
+          </CollapsibleCardGroup>
+
+          <div className="flex justify-end gap-3">
             <Button
-              variant="outline"
               scheme="destructive"
-              className="flex-1"
               onClick={() =>
                 openModal(
                   "reject-company",
                   <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-muted-foreground text-sm">
                       {company.registered_name} will be asked to update their
                       details. The reason is emailed to the company.
                     </p>
-                    <textarea
+                    <Textarea
                       rows={3}
                       placeholder="Reason (optional — emailed to the company)"
                       value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      className="w-full rounded-[0.33em] border border-gray-200 p-2 text-sm"
+                      onChange={(event) => setReason(event.target.value)}
                     />
                     <div className="flex justify-end gap-2">
                       <Button
@@ -563,27 +699,43 @@ export default function AdminCompanyReviewPage() {
             >
               <X /> Reject
             </Button>
+            <Button
+              scheme="supportive"
+              disabled={approve.isPending || !canApprove}
+              onClick={() =>
+                confirmAction.open({
+                  title: `Verify ${company.registered_name}?`,
+                  description:
+                    "The company will be able to request MOAs from any university and is emailed a confirmation.",
+                  confirmLabel: "Approve",
+                  onConfirm: () =>
+                    approve.mutate({
+                      companyId,
+                      data: {
+                        document_review_details:
+                          buildReviewDetails(reviewValues),
+                        approval_expires_at: approvalExpiresAt,
+                      },
+                    }),
+                  isPending: approve.isPending,
+                })
+              }
+            >
+              {approve.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Check />
+              )}
+              Approve
+            </Button>
           </div>
-        </>
-      ) : !pastEntries.length ? (
-        <Card>
-          <CardContent className="text-muted-foreground py-8 text-center text-sm">
-            No review history yet.
-          </CardContent>
-        </Card>
-      ) : null}
 
-      {/* Past requests table */}
-      {pastEntries.length > 0 && (
-        <Accordion type="single" collapsible>
-          <AccordionItem value="past" className="border-none">
-            <AccordionPrimitive.Header>
-              <AccordionPrimitive.Trigger className="font-normal text-primary cursor-pointer py-1 text-sm outline-none underline">
-                Previous requests
-              </AccordionPrimitive.Trigger>
-            </AccordionPrimitive.Header>
-            <br />
-            <AccordionContent className="pb-0">
+          {pastEntries.length > 0 && (
+            <CollapsibleCard
+              id="past"
+              title="Previous requests"
+              triggerClassName="hover:bg-gray-50"
+            >
               <ResourceTable
                 table={pastTable}
                 emptyState={{ title: "No previous requests." }}
@@ -609,10 +761,64 @@ export default function AdminCompanyReviewPage() {
                   </button>
                 )}
               />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      )}
+            </CollapsibleCard>
+          )}
+        </div>
+
+        {documentPreview && (
+          <>
+            <div
+              role="separator"
+              aria-label="Resize document preview pane"
+              aria-orientation="vertical"
+              aria-valuemin={30}
+              aria-valuemax={70}
+              aria-valuenow={Math.round(previewWidth)}
+              tabIndex={0}
+              className="group absolute top-0 bottom-0 z-30 hidden w-5 -translate-x-1/2 cursor-col-resize touch-none lg:block"
+              style={{ left: `${100 - previewWidth}%` }}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.currentTarget.setPointerCapture(event.pointerId);
+              }}
+              onPointerMove={resizePreview}
+              onPointerUp={(event) =>
+                event.currentTarget.releasePointerCapture(event.pointerId)
+              }
+              onKeyDown={(event) => {
+                if (event.key === "ArrowLeft") {
+                  updatePreviewWidth(previewWidth + 2);
+                }
+                if (event.key === "ArrowRight") {
+                  updatePreviewWidth(previewWidth - 2);
+                }
+              }}
+            >
+              <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-gray-300 transition-colors group-hover:bg-primary group-focus:bg-primary" />
+              <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-full border border-gray-300 bg-white text-gray-500 shadow-sm transition-colors group-hover:border-primary group-focus:border-primary">
+                <button
+                  type="button"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={() => setDocumentPreview(null)}
+                  className="flex h-8 w-7 items-center justify-center border-b border-gray-200 hover:bg-gray-100 hover:text-gray-900"
+                  aria-label="Close preview"
+                >
+                  <X className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+                <span className="flex h-10 w-7 items-center justify-center group-hover:text-primary group-focus:text-primary">
+                  <GripVertical className="h-4 w-4" aria-hidden="true" />
+                </span>
+              </div>
+            </div>
+            <DocumentPreviewPane
+              url={documentPreview.document.url!}
+              filename={documentPreview.document.filename}
+              label={documentPreview.label}
+              zoomStorageKey="iom-admin-review-preview-zoom"
+            />
+          </>
+        )}
+      </div>
     </PageContainer>
   );
 }

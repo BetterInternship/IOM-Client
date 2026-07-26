@@ -31,6 +31,7 @@ import {
   type UniversityPartnerMoasDocumentDto,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
+import { CompanyLogo } from "@/components/company-logo";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useModal } from "@/app/providers/modal-provider";
@@ -38,12 +39,8 @@ import { useIomModalRegistry } from "@/components/modal-registry";
 import { toast } from "sonner";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Card } from "@/components/ui/card";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
+import { DetailField } from "@/components/ui/detail-field";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { isOutstandingMoa } from "@/lib/partner-predicates";
@@ -217,54 +214,6 @@ function PartnerTabs({
   );
 }
 
-function CollapsibleCard({
-  id,
-  title,
-  children,
-  defaultOpen = false,
-  contentClassName,
-}: {
-  id: string;
-  title: ReactNode;
-  children: ReactNode;
-  defaultOpen?: boolean;
-  contentClassName?: string;
-}) {
-  return (
-    <Card className="gap-0 overflow-hidden border-gray-200 py-0">
-      <Accordion
-        type="single"
-        collapsible
-        defaultValue={defaultOpen ? id : undefined}
-      >
-        <AccordionItem value={id} className="border-0">
-          <AccordionTrigger className="px-4 py-3 text-sm font-semibold text-gray-900 hover:no-underline">
-            {title}
-          </AccordionTrigger>
-          <AccordionContent
-            className={cn(
-              "border-t border-gray-100 pt-0 pb-0",
-              contentClassName,
-            )}
-          >
-            {children}
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </Card>
-  );
-}
-
-function companyInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
-}
-
 function PartnerIdentity({
   name,
   logoUrl,
@@ -278,19 +227,7 @@ function PartnerIdentity({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200 bg-gray-50 text-lg font-semibold text-gray-600">
-        {logoUrl ? (
-          // Company logos are user-uploaded external assets.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={logoUrl}
-            alt={`${name} logo`}
-            className="size-full object-contain p-2"
-          />
-        ) : (
-          <span aria-hidden="true">{companyInitials(name)}</span>
-        )}
-      </div>
+      <CompanyLogo name={name} logoUrl={logoUrl} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <h2 className="text-lg leading-tight font-semibold text-gray-900">
@@ -330,29 +267,22 @@ function VerifiedDocumentDetails({
   return (
     <CollapsibleCard
       id="verified-details"
-      title={
-        <span className="flex items-center gap-2">
-          <ShieldCheck className="text-supportive h-4 w-4" />
-          Verified details
-        </span>
-      }
+      title="Verified details"
+      icon={<ShieldCheck className="text-supportive h-4 w-4" />}
     >
-      <div className="divide-y divide-gray-100">
+      <div className="space-y-4 px-5 pb-5">
         {entries.map(([key, field]) => {
           const isDateOfIncorporation =
             key.toLowerCase().replace(/_/g, " ") === "date of incorporation";
 
           return (
-            <div key={key} className="flex items-center gap-4 px-4 py-2.5">
-              <p className="text-muted-foreground w-44 flex-shrink-0 text-xs">
-                {key}
-              </p>
-              <p className="text-sm font-medium text-gray-900">
+            <DetailField key={key} label={key}>
+              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
                 {isDateOfIncorporation
                   ? formatDateWithoutTime(field.value)
                   : field.value}
               </p>
-            </div>
+            </DetailField>
           );
         })}
       </div>
@@ -511,16 +441,13 @@ function ReadOnlyLegacyDetail({
       )}
 
       <CollapsibleCard id="company-details" title="Company details">
-        <div className="divide-y divide-gray-100">
+        <div className="space-y-4 px-5 pb-5">
           {detailEntries.map(([label, value]) => (
-            <div key={label} className="flex items-center gap-4 px-4 py-2.5">
-              <p className="text-muted-foreground w-44 flex-shrink-0 text-xs">
-                {label}
-              </p>
-              <p className="text-sm font-medium text-gray-900">
+            <DetailField key={label} label={label}>
+              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
                 {isFilledValue(value) ? String(value) : "—"}
               </p>
-            </div>
+            </DetailField>
           ))}
         </div>
       </CollapsibleCard>

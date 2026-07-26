@@ -25,17 +25,15 @@ import {
   type MoaSignatureMode,
 } from "@/components/moa-signature-input";
 import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
+  CollapsibleCardGroup,
+  CollapsibleCardSection,
+  CollapsibleCardSectionTitle,
+} from "@/components/ui/collapsible-card";
+import { DetailField } from "@/components/ui/detail-field";
 import {
   AlertTriangle,
   Building2,
   Camera,
-  CircleAlert,
-  CircleCheck,
   ImageIcon,
   Lightbulb,
   Loader2,
@@ -265,13 +263,7 @@ export default function UniversityProfilePage() {
   const textField = (sectionKey: SectionKey, field: string, label: string) => {
     const isEditing = setupMode || editing === "all" || editing === sectionKey;
     return (
-      <div className="grid gap-1 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-8">
-        <Label
-          htmlFor={field}
-          className="self-start text-xs font-medium text-slate-500 sm:flex sm:h-8 sm:items-center"
-        >
-          {label}
-        </Label>
+      <DetailField label={<Label htmlFor={field}>{label}</Label>}>
         <div className="min-w-0 flex-1">
           {isEditing ? (
             <Input
@@ -298,30 +290,9 @@ export default function UniversityProfilePage() {
             </p>
           )}
         </div>
-      </div>
+      </DetailField>
     );
   };
-
-  const sectionTrigger = (
-    Icon: typeof Building2,
-    title: string,
-    badge?: React.ReactNode,
-    requiredComplete?: boolean,
-  ) => (
-    <AccordionTrigger className="cursor-pointer px-5 py-4 hover:no-underline">
-      <span className="flex items-center gap-3 text-base font-semibold text-[#061858]">
-        {requiredComplete === undefined ? (
-          <Icon className="text-primary h-4 w-4" />
-        ) : requiredComplete ? (
-          <CircleCheck className="text-supportive h-5 w-5" />
-        ) : (
-          <CircleAlert className="text-destructive h-5 w-5" />
-        )}
-        {title}
-        {badge}
-      </span>
-    </AccordionTrigger>
-  );
 
   return (
     <div className="relative isolate min-h-screen flex-1 bg-slate-50/70">
@@ -469,162 +440,166 @@ export default function UniversityProfilePage() {
           </div>
         )}
 
-        <Accordion
+        <CollapsibleCardGroup
           type="multiple"
           value={openSections}
           onValueChange={(v) => {
             setOpenSections(v);
           }}
-          className={cn(
-            setupMode
-              ? "space-y-4"
-              : "overflow-hidden rounded-[0.33em] border border-blue-100 bg-white shadow-sm",
-          )}
+          variant={setupMode ? "separate" : "grouped"}
         >
           {/* 1 — University Details */}
-          <AccordionItem
+          <CollapsibleCardSection
             value="university"
-            className={cn(
-              setupMode &&
-                "overflow-hidden rounded-[0.33em] border border-blue-100 bg-white shadow-sm",
-            )}
+            trigger={
+              <CollapsibleCardSectionTitle
+                icon={Building2}
+                title={
+                  setupMode ? "University Information" : "University Details"
+                }
+                badge={
+                  setupMode ? (
+                    <Badge
+                      type={institutionComplete ? "supportive" : "default"}
+                      strength="medium"
+                    >
+                      {institutionComplete ? "Completed" : "Required"}
+                    </Badge>
+                  ) : undefined
+                }
+                requiredComplete={setupMode ? institutionComplete : undefined}
+              />
+            }
+            contentClassName="space-y-4 px-5 pb-5"
           >
-            {sectionTrigger(
-              Building2,
-              setupMode ? "University Information" : "University Details",
-              setupMode ? (
-                <Badge
-                  type={institutionComplete ? "supportive" : "default"}
-                  strength="medium"
-                >
-                  {institutionComplete ? "Completed" : "Required"}
-                </Badge>
-              ) : undefined,
-              setupMode ? institutionComplete : undefined,
-            )}
-            <AccordionContent className="space-y-4 px-5 pb-5">
-              {textField("university", "registered_name", "Registered name")}
-              {textField("university", "address", "Address (used in MOAs)")}
-            </AccordionContent>
-          </AccordionItem>
+            {textField("university", "registered_name", "Registered name")}
+            {textField("university", "address", "Address (used in MOAs)")}
+          </CollapsibleCardSection>
 
           {/* 2 — Representative Details */}
-          <AccordionItem
+          <CollapsibleCardSection
             value="representative"
-            className={cn(
-              setupMode &&
-                "overflow-hidden rounded-[0.33em] border border-blue-100 bg-white shadow-sm",
-            )}
+            trigger={
+              <CollapsibleCardSectionTitle
+                icon={UserRound}
+                title={
+                  setupMode ? "MOA Representative" : "Representative Details"
+                }
+                badge={
+                  setupMode ? (
+                    <Badge
+                      type={representativeComplete ? "supportive" : "default"}
+                      strength="medium"
+                    >
+                      {representativeComplete ? "Completed" : "Required"}
+                    </Badge>
+                  ) : undefined
+                }
+                requiredComplete={
+                  setupMode ? representativeComplete : undefined
+                }
+              />
+            }
+            contentClassName="space-y-4 px-5 pb-5"
           >
-            {sectionTrigger(
-              UserRound,
-              setupMode ? "MOA Representative" : "Representative Details",
-              setupMode ? (
-                <Badge
-                  type={representativeComplete ? "supportive" : "default"}
-                  strength="medium"
-                >
-                  {representativeComplete ? "Completed" : "Required"}
-                </Badge>
-              ) : undefined,
-              setupMode ? representativeComplete : undefined,
+            <p className="text-muted-foreground text-xs">
+              The representative&apos;s details will be used on all approved
+              MOAs.
+            </p>
+            {textField("representative", "rep_name", "Signatory name")}
+            {textField("representative", "rep_title", "Signatory title")}
+
+            {displaySigUrl && (
+              <div className="rounded-[0.33em] border border-blue-100 bg-white p-4">
+                <p className="text-muted-foreground mb-2 text-xs font-medium">
+                  Current signature
+                </p>
+                <img
+                  src={displaySigUrl}
+                  alt="Signature"
+                  className="h-16 max-w-xs object-contain"
+                />
+              </div>
             )}
-            <AccordionContent className="space-y-4 px-5 pb-5">
-              <p className="text-muted-foreground text-xs">
-                The representative&apos;s details will be used on all approved
-                MOAs.
-              </p>
-              {textField("representative", "rep_name", "Signatory name")}
-              {textField("representative", "rep_title", "Signatory title")}
 
-              {displaySigUrl && (
-                <div className="rounded-[0.33em] border border-blue-100 bg-white p-4">
-                  <p className="text-muted-foreground mb-2 text-xs font-medium">
-                    Current signature
-                  </p>
-                  <img
-                    src={displaySigUrl}
-                    alt="Signature"
-                    className="h-16 max-w-xs object-contain"
-                  />
-                </div>
-              )}
-
-              {isSuperadmin && (setupMode || editing === "all") && (
-                <div className="space-y-3">
-                  <MoaSignatureInput
-                    mode={signatureMode}
-                    onModeChange={setSignatureMode}
-                    text=""
-                    onTextChange={() => undefined}
-                    file={signatureFile}
-                    onFileChange={setSignatureFile}
-                    modes={["upload", "draw"]}
-                  />
-                </div>
-              )}
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+            {isSuperadmin && (setupMode || editing === "all") && (
+              <div className="space-y-3">
+                <MoaSignatureInput
+                  mode={signatureMode}
+                  onModeChange={setSignatureMode}
+                  text=""
+                  onTextChange={() => undefined}
+                  file={signatureFile}
+                  onFileChange={setSignatureFile}
+                  modes={["upload", "draw"]}
+                />
+              </div>
+            )}
+          </CollapsibleCardSection>
+        </CollapsibleCardGroup>
 
         {setupMode && (
-          <Accordion
-            type="single"
-            collapsible
-            className="rounded-[0.33em] border border-blue-100 bg-white shadow-sm"
-          >
-            <AccordionItem value="additional" className="border-none">
-              {sectionTrigger(
-                ImageIcon,
-                "Additional Information",
-                <span className="text-muted-foreground font-normal">
-                  (Optional)
-                </span>,
-              )}
-              <div className="border-primary/20 bg-primary/5 mx-5 mb-4 flex items-center gap-3 rounded-[0.33em] border px-4 py-3 text-sm text-gray-700">
-                <span className="bg-primary/10 rounded-full p-2">
-                  <Lightbulb className="text-primary h-4 w-4" />
-                </span>
-                <p>
-                  <span className="font-semibold">Tip:</span> Add your
-                  university logo so companies can recognize your institution.
-                </p>
-              </div>
-              <AccordionContent className="px-5 pb-5">
-                <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-8">
-                  <Label className="self-start text-xs font-medium text-slate-500 sm:flex sm:h-10 sm:items-center">
-                    University logo
-                  </Label>
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-gray-200 bg-gray-50">
-                      {uploadLogo.isPending ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                      ) : displayLogoUrl ? (
-                        <img
-                          src={displayLogoUrl}
-                          alt="University logo"
-                          className="h-full w-full object-contain"
-                        />
-                      ) : (
-                        <ImageIcon className="h-7 w-7 text-gray-400" />
-                      )}
-                    </div>
-                    {(setupMode || editing === "all") && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => logoRef.current?.click()}
-                        disabled={uploadLogo.isPending}
-                      >
-                        <Upload />
-                        {displayLogoUrl ? "Replace logo" : "Upload logo"}
-                      </Button>
+          <CollapsibleCardGroup type="single" collapsible variant="grouped">
+            <CollapsibleCardSection
+              value="additional"
+              trigger={
+                <CollapsibleCardSectionTitle
+                  icon={ImageIcon}
+                  title="Additional Information"
+                  badge={
+                    <span className="text-muted-foreground font-normal">
+                      (Optional)
+                    </span>
+                  }
+                />
+              }
+              persistentContent={
+                <div className="border-primary/20 bg-primary/5 mx-5 mb-4 flex items-center gap-3 rounded-[0.33em] border px-4 py-3 text-sm text-gray-700">
+                  <span className="bg-primary/10 rounded-full p-2">
+                    <Lightbulb className="text-primary h-4 w-4" />
+                  </span>
+                  <p>
+                    <span className="font-semibold">Tip:</span> Add your
+                    university logo so companies can recognize your institution.
+                  </p>
+                </div>
+              }
+              contentClassName="px-5 pb-5"
+            >
+              <DetailField
+                label="University logo"
+                labelClassName="sm:min-h-10"
+                className="gap-3"
+              >
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-gray-200 bg-gray-50">
+                    {uploadLogo.isPending ? (
+                      <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                    ) : displayLogoUrl ? (
+                      <img
+                        src={displayLogoUrl}
+                        alt="University logo"
+                        className="h-full w-full object-contain"
+                      />
+                    ) : (
+                      <ImageIcon className="h-7 w-7 text-gray-400" />
                     )}
                   </div>
+                  {(setupMode || editing === "all") && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => logoRef.current?.click()}
+                      disabled={uploadLogo.isPending}
+                    >
+                      <Upload />
+                      {displayLogoUrl ? "Replace logo" : "Upload logo"}
+                    </Button>
+                  )}
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+              </DetailField>
+            </CollapsibleCardSection>
+          </CollapsibleCardGroup>
         )}
 
         {setupMode && editing && (

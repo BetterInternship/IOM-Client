@@ -38,11 +38,11 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
+  CollapsibleCardGroup,
+  CollapsibleCardSection,
+  CollapsibleCardSectionTitle,
+} from "@/components/ui/collapsible-card";
+import { DetailField } from "@/components/ui/detail-field";
 import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { toastPresets } from "@/components/sonner-toaster";
@@ -312,13 +312,7 @@ function ProfileContent() {
       (incomplete || isEditing) &&
       (sectionKey !== "company" || field !== "registered_name");
     return (
-      <div className="grid gap-1 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-8">
-        <Label
-          htmlFor={field}
-          className="self-start text-xs font-medium text-slate-500 sm:flex sm:h-8 sm:items-center"
-        >
-          {label}
-        </Label>
+      <DetailField label={<Label htmlFor={field}>{label}</Label>}>
         <div className="min-w-0 flex-1 space-y-1">
           {fieldIsEditable ? (
             <Input
@@ -345,30 +339,9 @@ function ProfileContent() {
           )}
           {help && <p className="text-muted-foreground text-xs">{help}</p>}
         </div>
-      </div>
+      </DetailField>
     );
   };
-
-  const sectionTrigger = (
-    Icon: typeof Building2,
-    title: string,
-    badge?: React.ReactNode,
-    requiredComplete?: boolean,
-  ) => (
-    <AccordionTrigger className="cursor-pointer px-5 py-4 hover:no-underline">
-      <span className="flex items-center gap-3 text-base font-semibold text-[#061858]">
-        {requiredComplete === undefined ? (
-          <Icon className="text-primary h-4 w-4" />
-        ) : requiredComplete ? (
-          <CircleCheck className="text-supportive h-5 w-5" />
-        ) : (
-          <CircleAlert className="text-destructive h-5 w-5" />
-        )}
-        {title}
-        {badge}
-      </span>
-    </AccordionTrigger>
-  );
 
   return (
     <div className="relative isolate flex-1 bg-slate-50/70">
@@ -417,255 +390,247 @@ function ProfileContent() {
           </div>
         )}
 
-        <Accordion
+        <CollapsibleCardGroup
           type="multiple"
           defaultValue={["company", "documents"]}
-          className={cn(
-            incomplete
-              ? "space-y-4"
-              : "overflow-hidden rounded-[0.33em] border border-blue-100 bg-white shadow-sm",
-          )}
+          variant={incomplete ? "separate" : "grouped"}
         >
           {/* 1 — Company Profile */}
-          <AccordionItem
+          <CollapsibleCardSection
             value="company"
-            className={cn(
-              incomplete &&
-                "overflow-hidden rounded-[0.33em] border border-blue-100 bg-white shadow-sm",
-            )}
+            trigger={
+              <CollapsibleCardSectionTitle
+                icon={Building2}
+                title={incomplete ? "Company Information" : "Company Profile"}
+                badge={
+                  <Badge
+                    type={companyInfoComplete ? "supportive" : "default"}
+                    strength="medium"
+                  >
+                    {companyInfoComplete ? "Completed" : "Required"}
+                  </Badge>
+                }
+                requiredComplete={
+                  incomplete || isEditing ? companyInfoComplete : undefined
+                }
+              />
+            }
+            contentClassName="space-y-4 px-5 pb-5"
           >
-            {sectionTrigger(
-              Building2,
-              incomplete ? "Company Information" : "Company Profile",
-              <Badge
-                type={companyInfoComplete ? "supportive" : "default"}
-                strength="medium"
-              >
-                {companyInfoComplete ? "Completed" : "Required"}
-              </Badge>,
-              incomplete || isEditing ? companyInfoComplete : undefined,
-            )}
-            <AccordionContent className="space-y-4 px-5 pb-5">
-              <div className="grid gap-1 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-8">
-                <Label className="self-start text-xs font-medium text-slate-500 sm:flex sm:h-8 sm:items-center">
-                  Account email
-                </Label>
-                <div className="min-w-0 flex-1">
-                  <p className="flex min-h-8 items-center break-all text-sm font-medium text-gray-900">
-                    {company.email}
-                  </p>
-                </div>
-              </div>
-              <div className="grid gap-1 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-8">
-                <Label className="self-start text-xs font-medium text-slate-500 sm:flex sm:h-8 sm:items-center">
-                  Legal / registered name
-                </Label>
-                <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
-                  {company.registered_name}
-                </p>
-              </div>
-              {textField("company", "registered_address", "Registered address")}
-              <div className="grid gap-1 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-8">
-                <Label className="self-start text-xs font-medium text-slate-500 sm:flex sm:h-8 sm:items-center">
-                  Company type
-                </Label>
-                <div className="min-w-0 flex-1">
-                  {incomplete || isEditing ? (
-                    <Select
-                      value={form.watch("company_type") || undefined}
-                      onValueChange={(v) =>
-                        form.setValue("company_type", v, {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        })
-                      }
+            <DetailField label="Account email">
+              <p className="flex min-h-8 items-center break-all text-sm font-medium text-gray-900">
+                {company.email}
+              </p>
+            </DetailField>
+            <DetailField label="Legal / registered name">
+              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+                {company.registered_name}
+              </p>
+            </DetailField>
+            {textField("company", "registered_address", "Registered address")}
+            <DetailField label="Company type">
+              <div className="min-w-0 flex-1">
+                {incomplete || isEditing ? (
+                  <Select
+                    value={form.watch("company_type") || undefined}
+                    onValueChange={(v) =>
+                      form.setValue("company_type", v, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  >
+                    <SelectTrigger
+                      className="w-full"
+                      aria-invalid={!!fieldError("company_type")}
                     >
-                      <SelectTrigger
-                        className="w-full"
-                        aria-invalid={!!fieldError("company_type")}
-                      >
-                        <SelectValue placeholder="Select a type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {COMPANY_TYPES.map((t) => (
-                          <SelectItem key={t.value} value={t.value}>
-                            {t.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
-                      {COMPANY_TYPES.find(
-                        ({ value }) => value === company.company_type,
-                      )?.label ?? "Not set"}
-                    </p>
-                  )}
-                  {fieldError("company_type") && (
-                    <p className="text-destructive mt-1 text-xs">
-                      {fieldError("company_type")}
-                    </p>
-                  )}
-                </div>
+                      <SelectValue placeholder="Select a type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COMPANY_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
+                    {COMPANY_TYPES.find(
+                      ({ value }) => value === company.company_type,
+                    )?.label ?? "Not set"}
+                  </p>
+                )}
+                {fieldError("company_type") && (
+                  <p className="text-destructive mt-1 text-xs">
+                    {fieldError("company_type")}
+                  </p>
+                )}
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            </DetailField>
+          </CollapsibleCardSection>
 
           {/* 2 — Required Documents */}
-          <AccordionItem
+          <CollapsibleCardSection
             value="documents"
-            className={cn(
-              incomplete &&
-                "overflow-hidden rounded-[0.33em] border border-blue-100 bg-white shadow-sm",
-            )}
+            trigger={
+              <CollapsibleCardSectionTitle
+                icon={FileText}
+                title={incomplete ? "Legal Documents" : "Required Documents"}
+                badge={
+                  <Badge
+                    type={
+                      docCount === DOC_TYPES.length ? "supportive" : "default"
+                    }
+                    strength="medium"
+                  >
+                    {documentsComplete
+                      ? "Completed"
+                      : incomplete
+                        ? "Required"
+                        : `${docCount}/${DOC_TYPES.length}`}
+                  </Badge>
+                }
+                requiredComplete={
+                  incomplete || isEditing ? documentsComplete : undefined
+                }
+              />
+            }
+            contentClassName="space-y-4 px-5 pb-5"
           >
-            {sectionTrigger(
-              FileText,
-              incomplete ? "Legal Documents" : "Required Documents",
-              <Badge
-                type={docCount === DOC_TYPES.length ? "supportive" : "default"}
-                strength="medium"
-              >
-                {documentsComplete
-                  ? "Completed"
-                  : incomplete
-                    ? "Required"
-                    : `${docCount}/${DOC_TYPES.length}`}
-              </Badge>,
-              incomplete || isEditing ? documentsComplete : undefined,
-            )}
-            <AccordionContent className="space-y-4 px-5 pb-5">
-              {incomplete && (
-                <div className="space-y-2">
-                  <div className="flex max-w-xs items-center gap-3">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
-                      <div
-                        className="bg-primary h-full rounded-full"
-                        style={{
-                          width: `${(docCount / DOC_TYPES.length) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-muted-foreground text-xs">
-                      {docCount} of {DOC_TYPES.length} uploaded
-                    </span>
-                  </div>
-                </div>
-              )}
-              <div className="overflow-hidden rounded-[0.33em] border border-blue-100 bg-white">
-                {DOC_TYPES.map(({ value, label }) => {
-                  const existing = latestDoc(value);
-                  return (
+            {incomplete && (
+              <div className="space-y-2">
+                <div className="flex max-w-xs items-center gap-3">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
                     <div
-                      key={value}
-                      className="flex flex-row items-center border-b border-gray-100 px-4 last:border-b-0"
-                    >
-                      {existing ? (
-                        <CircleCheck className="text-supportive" />
-                      ) : (
-                        <CircleAlert className="text-warning" />
-                      )}
-                      <div className="flex flex-1 items-center justify-between gap-3 rounded-[0.16em] p-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-800">
-                            {label}
-                          </p>
-                          <p className="text-muted-foreground mt-0.5 text-xs">
-                            {existing
-                              ? `Uploaded ${new Date(existing.uploaded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
-                              : "Not uploaded"}
-                          </p>
-                        </div>
-                        <div className="flex flex-shrink-0 items-center gap-2">
-                          {incomplete && (
-                            <>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={uploadDoc.isPending}
-                                onClick={() =>
-                                  documentInputRefs.current[value]?.click()
-                                }
-                              >
-                                {uploadingType === value ? (
-                                  <Loader2 className="animate-spin" />
-                                ) : (
-                                  <Upload />
-                                )}
-                                {uploadingType === value
-                                  ? "Uploading..."
-                                  : existing
-                                    ? "Replace"
-                                    : "Upload"}
-                              </Button>
-                              <input
-                                ref={(input) => {
-                                  documentInputRefs.current[value] = input;
-                                }}
-                                type="file"
-                                accept="application/pdf"
-                                className="hidden"
-                                disabled={uploadDoc.isPending}
-                                onChange={(event) => {
-                                  const file = event.target.files?.[0];
-                                  if (file) attemptUploadDoc(file, value);
-                                  event.target.value = "";
-                                }}
-                              />
-                            </>
-                          )}
-                          {existing && (
+                      className="bg-primary h-full rounded-full"
+                      style={{
+                        width: `${(docCount / DOC_TYPES.length) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-muted-foreground text-xs">
+                    {docCount} of {DOC_TYPES.length} uploaded
+                  </span>
+                </div>
+              </div>
+            )}
+            <div className="overflow-hidden rounded-[0.33em] border border-blue-100 bg-white">
+              {DOC_TYPES.map(({ value, label }) => {
+                const existing = latestDoc(value);
+                return (
+                  <div
+                    key={value}
+                    className="flex flex-row items-center border-b border-gray-100 px-4 last:border-b-0"
+                  >
+                    {existing ? (
+                      <CircleCheck className="text-supportive" />
+                    ) : (
+                      <CircleAlert className="text-warning" />
+                    )}
+                    <div className="flex flex-1 items-center justify-between gap-3 rounded-[0.16em] p-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-800">
+                          {label}
+                        </p>
+                        <p className="text-muted-foreground mt-0.5 text-xs">
+                          {existing
+                            ? `Uploaded ${new Date(existing.uploaded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                            : "Not uploaded"}
+                        </p>
+                      </div>
+                      <div className="flex flex-shrink-0 items-center gap-2">
+                        {incomplete && (
+                          <>
                             <Button
+                              type="button"
                               variant="outline"
                               size="sm"
-                              onClick={() => preview(existing)}
+                              disabled={uploadDoc.isPending}
+                              onClick={() =>
+                                documentInputRefs.current[value]?.click()
+                              }
                             >
-                              <Eye /> View
+                              {uploadingType === value ? (
+                                <Loader2 className="animate-spin" />
+                              ) : (
+                                <Upload />
+                              )}
+                              {uploadingType === value
+                                ? "Uploading..."
+                                : existing
+                                  ? "Replace"
+                                  : "Upload"}
                             </Button>
-                          )}
-                        </div>
+                            <input
+                              ref={(input) => {
+                                documentInputRefs.current[value] = input;
+                              }}
+                              type="file"
+                              accept="application/pdf"
+                              className="hidden"
+                              disabled={uploadDoc.isPending}
+                              onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                if (file) attemptUploadDoc(file, value);
+                                event.target.value = "";
+                              }}
+                            />
+                          </>
+                        )}
+                        {existing && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => preview(existing)}
+                          >
+                            <Eye /> View
+                          </Button>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-
-        <Accordion
-          type="single"
-          collapsible
-          className="rounded-[0.33em] border border-blue-100 bg-white shadow-sm"
-        >
-          <AccordionItem value="additional" className="border-none">
-            {sectionTrigger(
-              Building2,
-              "Additional Information",
-              <span className="text-muted-foreground font-normal">
-                (Optional)
-              </span>,
-            )}
-            <div className="border-primary/20 bg-primary/5 mx-5 mb-4 flex items-center gap-3 rounded-[0.33em] border px-4 py-3 text-sm text-gray-700">
-              <span className="bg-primary/10 rounded-full p-2">
-                <Lightbulb className="text-primary h-4 w-4" />
-              </span>
-              <p>
-                <span className="font-semibold">Tip:</span> These details help
-                universities learn more about your company.
-              </p>
+                  </div>
+                );
+              })}
             </div>
-            <AccordionContent className="px-5 pb-5">
-              <div className="space-y-4">
-                {textField("other", "description", "Description")}
-                {textField("other", "website", "Website")}
-                {textField("other", "phone", "Phone")}
-                {textField("other", "industry", "Industry")}
+          </CollapsibleCardSection>
+        </CollapsibleCardGroup>
+
+        <CollapsibleCardGroup type="single" collapsible variant="grouped">
+          <CollapsibleCardSection
+            value="additional"
+            trigger={
+              <CollapsibleCardSectionTitle
+                icon={Building2}
+                title="Additional Information"
+                badge={
+                  <span className="text-muted-foreground font-normal">
+                    (Optional)
+                  </span>
+                }
+              />
+            }
+            persistentContent={
+              <div className="border-primary/20 bg-primary/5 mx-5 mb-4 flex items-center gap-3 rounded-[0.33em] border px-4 py-3 text-sm text-gray-700">
+                <span className="bg-primary/10 rounded-full p-2">
+                  <Lightbulb className="text-primary h-4 w-4" />
+                </span>
+                <p>
+                  <span className="font-semibold">Tip:</span> These details help
+                  universities learn more about your company.
+                </p>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+            }
+            contentClassName="px-5 pb-5"
+          >
+            <div className="space-y-4">
+              {textField("other", "description", "Description")}
+              {textField("other", "website", "Website")}
+              {textField("other", "phone", "Phone")}
+              {textField("other", "industry", "Industry")}
+            </div>
+          </CollapsibleCardSection>
+        </CollapsibleCardGroup>
 
         {(incomplete || isEditing) && (
           <div className="flex justify-end gap-2">
