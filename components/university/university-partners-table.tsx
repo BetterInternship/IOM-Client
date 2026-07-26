@@ -379,7 +379,7 @@ export function UniversityPartnersTable({
       <PartnerLink row={row} className="flex min-w-0 items-center text-inherit">
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
-            <TruncatedTooltip className="font-medium text-gray-900">
+            <TruncatedTooltip className="text-sm font-medium text-gray-900">
               {row.displayName}
             </TruncatedTooltip>
             {tab !== "blacklisted" &&
