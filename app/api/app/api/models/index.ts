@@ -262,3 +262,5 @@ export * from "./universityUploadLogoResponse";
 export * from "./universityUploadSignatureResponse";
 export * from "./updateStaffAccountDto";
 export * from "./verifyTinDto";
+export * from "./adminCompanyListItemDtoVerificationStatus";
+export * from "./universityValidateInviteDto";

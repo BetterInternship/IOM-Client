@@ -20,6 +20,7 @@ import type {
   UniversityForgotDto,
   UniversityLoginDto,
   UniversityResetDto,
+  UniversityValidateInviteDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
@@ -255,6 +256,87 @@ export const useUniversityAuthControllerAcceptInvite = <
 > => {
   const mutationOptions =
     getUniversityAuthControllerAcceptInviteMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityAuthControllerValidateInvite = (
+  universityValidateInviteDto: UniversityValidateInviteDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<BaseResponse>({
+    url: `/api/auth/university/accept-invite/validate`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: universityValidateInviteDto,
+    signal,
+  });
+};
+
+export const getUniversityAuthControllerValidateInviteMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>,
+    TError,
+    { data: UniversityValidateInviteDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>,
+  TError,
+  { data: UniversityValidateInviteDto },
+  TContext
+> => {
+  const mutationKey = ["universityAuthControllerValidateInvite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>,
+    { data: UniversityValidateInviteDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return universityAuthControllerValidateInvite(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityAuthControllerValidateInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>
+>;
+export type UniversityAuthControllerValidateInviteMutationBody =
+  UniversityValidateInviteDto;
+export type UniversityAuthControllerValidateInviteMutationError = ErrorResponse;
+
+export const useUniversityAuthControllerValidateInvite = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>,
+      TError,
+      { data: UniversityValidateInviteDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>,
+  TError,
+  { data: UniversityValidateInviteDto },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityAuthControllerValidateInviteMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

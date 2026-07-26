@@ -1,10 +1,11 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getUniversityControllerMeQueryOptions,
   useUniversityAuthControllerAcceptInvite,
+  useUniversityAuthControllerValidateInvite,
 } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,12 @@ function AcceptInviteForm() {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
+
+  const validate = useUniversityAuthControllerValidateInvite();
+
+  useEffect(() => {
+    if (token) validate.mutate({ data: { token } });
+  }, [token]);
 
   const accept = useUniversityAuthControllerAcceptInvite({
     mutation: {
@@ -40,7 +47,7 @@ function AcceptInviteForm() {
     },
   });
 
-  if (!token) {
+  if (!token || validate.isError) {
     return (
       <AuthShell
         variant="split"
@@ -52,6 +59,22 @@ function AcceptInviteForm() {
           This invitation link is invalid or has expired. Please ask your
           administrator to resend it.
         </FormError>
+      </AuthShell>
+    );
+  }
+
+  if (validate.isIdle || validate.isPending) {
+    return (
+      <AuthShell
+        variant="split"
+        splitFlush
+        portal="University"
+        title="Checking invitation"
+      >
+        <div className="text-muted-foreground flex items-center justify-center gap-2 py-8 text-sm">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Validating your invitation link…
+        </div>
       </AuthShell>
     );
   }
