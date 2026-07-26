@@ -402,14 +402,6 @@ function ProfileContent() {
               <CollapsibleCardSectionTitle
                 icon={Building2}
                 title={incomplete ? "Company Information" : "Company Profile"}
-                badge={
-                  <Badge
-                    type={companyInfoComplete ? "supportive" : "default"}
-                    strength="medium"
-                  >
-                    {companyInfoComplete ? "Completed" : "Required"}
-                  </Badge>
-                }
                 requiredComplete={
                   incomplete || isEditing ? companyInfoComplete : undefined
                 }
@@ -477,20 +469,6 @@ function ProfileContent() {
               <CollapsibleCardSectionTitle
                 icon={FileText}
                 title={incomplete ? "Legal Documents" : "Required Documents"}
-                badge={
-                  <Badge
-                    type={
-                      docCount === DOC_TYPES.length ? "supportive" : "default"
-                    }
-                    strength="medium"
-                  >
-                    {documentsComplete
-                      ? "Completed"
-                      : incomplete
-                        ? "Required"
-                        : `${docCount}/${DOC_TYPES.length}`}
-                  </Badge>
-                }
                 requiredComplete={
                   incomplete || isEditing ? documentsComplete : undefined
                 }
