@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCompanyProfile,
   useCompanyVerification,
@@ -15,8 +16,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RequestDialog } from "@/components/moa-request-dialog";
 import { useModal } from "@/app/providers/modal-provider";
 import { RequestableUniversitiesTable } from "@/components/company/requestable-universities-table";
+import { useIomModalRegistry } from "@/components/modal-registry";
 
-export default function UniversityDirectoryPage() {
+function UniversityDirectoryContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { company, isLoading } = useCompanyProfile();
   const { data: verification, isLoading: vLoading } =
     useCompanyVerification(!!company);
@@ -24,6 +28,16 @@ export default function UniversityDirectoryPage() {
   const status = verification?.status;
   const canRequestMoa = verified || status === "pending";
   const { openModal, closeModal } = useModal();
+  const { approvalPending } = useIomModalRegistry();
+  const showApprovalPending = searchParams.get("approval_pending") === "1";
+
+  useEffect(() => {
+    if (!showApprovalPending) return;
+    approvalPending.open({
+      onQueueMoa: () => router.replace("/company/universities"),
+      onClose: () => router.replace("/company/universities"),
+    });
+  }, [router, showApprovalPending]);
 
   const { data, isLoading: uniLoading } = useCompanyControllerListUniversities({
     query: { enabled: !!company && canRequestMoa },
@@ -116,5 +130,13 @@ export default function UniversityDirectoryPage() {
         onRequest={openRequestDialog}
       />
     </PageContainer>
+  );
+}
+
+export default function UniversityDirectoryPage() {
+  return (
+    <Suspense>
+      <UniversityDirectoryContent />
+    </Suspense>
   );
 }
