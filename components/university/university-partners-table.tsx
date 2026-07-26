@@ -173,14 +173,17 @@ function PartnerLink({
   row,
   children,
   className,
+  href,
 }: {
   row: UniversityPartnerTableRow;
   children: ReactNode;
   className?: string;
+  href?: string | null;
 }) {
+  if (href === null) return <span className={className}>{children}</span>;
   return (
     <Link
-      href={partnerHref(row)}
+      href={href ?? partnerHref(row)}
       onClick={(event) => event.stopPropagation()}
       className={className}
     >
@@ -325,6 +328,7 @@ export function UniversityPartnersTable({
   onPartnerClick,
   onInvite,
   onBulkAction,
+  getPartnerHref,
 }: {
   rows: UniversityPartnerTableRow[];
   isLoading: boolean;
@@ -339,9 +343,10 @@ export function UniversityPartnersTable({
     action: BulkInviteAction,
     rows: UniversityPartnerTableRow[],
   ) => void;
+  getPartnerHref?: (row: UniversityPartnerTableRow) => string | null;
 }) {
   const showStatusColumn = tab === "expired";
-  const showSelection = tab !== "blacklisted";
+  const showSelection = tab !== "blacklisted" && !!onBulkAction;
   const inviteLabel = tab === "expired" ? "Renew MOA" : "Post Listing";
 
   const statusOptions = showStatusColumn
@@ -363,7 +368,11 @@ export function UniversityPartnersTable({
       width: "w-[12%]",
       getSortValue: getPartnerStatus,
       render: (row) => (
-        <PartnerLink row={row} className="inline-flex text-inherit">
+        <PartnerLink
+          row={row}
+          href={getPartnerHref?.(row)}
+          className="inline-flex text-inherit"
+        >
           <PartnerStatus row={row} />
         </PartnerLink>
       ),
@@ -376,7 +385,11 @@ export function UniversityPartnersTable({
     width: showStatusColumn ? "w-[32%]" : "w-[44%]",
     getSortValue: (row) => row.displayName,
     render: (row) => (
-      <PartnerLink row={row} className="flex min-w-0 items-center text-inherit">
+      <PartnerLink
+        row={row}
+        href={getPartnerHref?.(row)}
+        className="flex min-w-0 items-center text-inherit"
+      >
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <TruncatedTooltip className="text-sm font-medium text-gray-900">
@@ -404,7 +417,11 @@ export function UniversityPartnersTable({
       width: "w-[28%]",
       sortable: false,
       render: (row) => (
-        <PartnerLink row={row} className="block text-inherit">
+        <PartnerLink
+          row={row}
+          href={getPartnerHref?.(row)}
+          className="block text-inherit"
+        >
           <TruncatedTooltip className="text-muted-foreground text-sm">
             {row.blacklistEntry?.reason ?? "—"}
           </TruncatedTooltip>
@@ -418,7 +435,11 @@ export function UniversityPartnersTable({
       getSortValue: (row) => row.blacklistEntry?.created_at ?? "",
       defaultSortDirection: "desc",
       render: (row) => (
-        <PartnerLink row={row} className="block text-inherit">
+        <PartnerLink
+          row={row}
+          href={getPartnerHref?.(row)}
+          className="block text-inherit"
+        >
           <span className="text-muted-foreground text-sm">
             {row.blacklistEntry
               ? formatDateWithoutTime(row.blacklistEntry.created_at)
@@ -434,7 +455,11 @@ export function UniversityPartnersTable({
       width: showStatusColumn ? "w-[15%]" : "w-[17%]",
       getSortValue: getPartnerStartDate,
       render: (row) => (
-        <PartnerLink row={row} className="block text-inherit">
+        <PartnerLink
+          row={row}
+          href={getPartnerHref?.(row)}
+          className="block text-inherit"
+        >
           <span className="text-muted-foreground text-sm">
             {getPartnerStartDate(row)}
           </span>
@@ -447,7 +472,11 @@ export function UniversityPartnersTable({
       width: showStatusColumn ? "w-[15%]" : "w-[17%]",
       getSortValue: (row) => getPartnerEndDateIso(row) ?? "",
       render: (row) => (
-        <PartnerLink row={row} className="block text-inherit">
+        <PartnerLink
+          row={row}
+          href={getPartnerHref?.(row)}
+          className="block text-inherit"
+        >
           <PartnerEndDate
             row={row}
             tab={tab}
@@ -458,35 +487,37 @@ export function UniversityPartnersTable({
     });
   }
 
-  columns.push({
-    id: "actions",
-    header: "Actions",
-    width: "w-[14%]",
-    sortable: false,
-    render: (row) => (
-      <div className="flex items-start">
-        {tab !== "blacklisted" && (
-          <Button
-            size="sm"
-            variant="link"
-            className="-ml-3 hover:no-underline"
-            aria-label={inviteLabel}
-            onClick={(event) => {
-              event.stopPropagation();
-              onInvite?.(row);
-            }}
-          >
-            {tab === "expired" ? (
-              <RefreshCw className="h-3.5 w-3.5" />
-            ) : (
-              <Megaphone className="h-3.5 w-3.5" />
-            )}
-            {inviteLabel}
-          </Button>
-        )}
-      </div>
-    ),
-  });
+  if (onInvite) {
+    columns.push({
+      id: "actions",
+      header: "Actions",
+      width: "w-[14%]",
+      sortable: false,
+      render: (row) => (
+        <div className="flex items-start">
+          {tab !== "blacklisted" && (
+            <Button
+              size="sm"
+              variant="link"
+              className="-ml-3 hover:no-underline"
+              aria-label={inviteLabel}
+              onClick={(event) => {
+                event.stopPropagation();
+                onInvite?.(row);
+              }}
+            >
+              {tab === "expired" ? (
+                <RefreshCw className="h-3.5 w-3.5" />
+              ) : (
+                <Megaphone className="h-3.5 w-3.5" />
+              )}
+              {inviteLabel}
+            </Button>
+          )}
+        </div>
+      ),
+    });
+  }
 
   columns.push({
     id: "open",
@@ -498,6 +529,7 @@ export function UniversityPartnersTable({
       <div className="flex justify-end">
         <PartnerLink
           row={row}
+          href={getPartnerHref?.(row)}
           className="text-primary inline-flex h-8 w-8 items-center justify-center"
         >
           <ChevronRight
@@ -641,6 +673,7 @@ export function UniversityPartnersTable({
               </div>
               <PartnerLink
                 row={row}
+                href={getPartnerHref?.(row)}
                 className="text-primary mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center"
               >
                 <ChevronRight className="h-5 w-5" aria-hidden="true" />
@@ -676,21 +709,23 @@ export function UniversityPartnersTable({
                     />
                   </p>
                 </div>
-                <Button
-                  size="xs"
-                  className="shrink-0"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onInvite?.(row);
-                  }}
-                >
-                  {tab === "expired" ? (
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  ) : (
-                    <Megaphone className="h-3.5 w-3.5" />
-                  )}
-                  {inviteLabel}
-                </Button>
+                {onInvite && (
+                  <Button
+                    size="xs"
+                    className="shrink-0"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onInvite?.(row);
+                    }}
+                  >
+                    {tab === "expired" ? (
+                      <RefreshCw className="h-3.5 w-3.5" />
+                    ) : (
+                      <Megaphone className="h-3.5 w-3.5" />
+                    )}
+                    {inviteLabel}
+                  </Button>
+                )}
               </div>
             )}
           </article>

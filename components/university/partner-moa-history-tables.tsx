@@ -21,7 +21,7 @@ export interface RegisteredPartnerMoa {
   id: string;
   status: string;
   created_at: string;
-  effective_date: string;
+  effective_date: string | null;
   expiry_date: string | null;
   is_expired: boolean | null;
   template: { name: string } | null;
@@ -203,7 +203,12 @@ export function RegisteredPartnerMoasTable({
             {moa.template?.name ?? "Template unavailable"}
           </p>
           <div className="text-muted-foreground mt-1 grid grid-cols-2 gap-3 text-xs">
-            <p>Start: {formatDateWithoutTime(moa.effective_date)}</p>
+            <p>
+              Start:{" "}
+              {moa.effective_date
+                ? formatDateWithoutTime(moa.effective_date)
+                : "—"}
+            </p>
             <p className="flex items-center gap-1">
               End:{" "}
               <MoaEndDate
