@@ -737,9 +737,7 @@ function isMoaRowTouched(m: MoaRecordInput): boolean {
 }
 
 function isMoaRowComplete(m: MoaRecordInput): boolean {
-  if (!m.effectiveDate) return false;
-  if (!m.isPerpetual && !m.expiryDate) return false;
-  return true;
+  return isMoaRowTouched(m);
 }
 
 function hasIncompleteMoa(moas: MoaRecordInput[]): boolean {
@@ -806,7 +804,11 @@ export function MoaUploadDialog({
   const removeMoa = (id: string) => {
     setMoas((prev) => prev.filter((m) => m.id !== id));
   };
-  const incompleteMoa = hasIncompleteMoa(moas);
+  // MOAs are optional when importing a partner. Only validate rows the user
+  // actually started filling in; the initial blank row must not block saving
+  // a company-only partner.
+  const touchedMoas = moas.filter(isMoaRowTouched);
+  const incompleteMoa = hasIncompleteMoa(touchedMoas);
   const hasValidMoa = moas.some(isMoaRowComplete) && !incompleteMoa;
 
   return (
@@ -1079,7 +1081,10 @@ export function UploadDialog({
     },
   });
 
-  const incompleteMoa = hasIncompleteMoa(moas);
+  // A partner may be imported before its MOA is available. Validate only
+  // rows the user has started filling in.
+  const touchedMoas = moas.filter(isMoaRowTouched);
+  const incompleteMoa = hasIncompleteMoa(touchedMoas);
   const isValid = !!companyName.trim() && !incompleteMoa;
 
   return (
@@ -1096,7 +1101,7 @@ export function UploadDialog({
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <Label>MOA Records (optional)</Label>
+          <Label>MOA Records (optional)</Label>
             <Button
               size="xs"
               variant="outline"

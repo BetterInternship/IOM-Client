@@ -176,10 +176,7 @@ function LocalPdfPreview({
 
 function itemError(item: ImportItem): string | null {
   if (!item.companyName.trim()) return "Choose or enter a company name.";
-  if (!item.effectiveDate) return "Enter the MOA start date.";
-  if (!item.isPerpetual && !item.expiryDate)
-    return "Enter the MOA end date or mark it perpetual.";
-  if (!item.isPerpetual && item.expiryDate < item.effectiveDate) {
+  if (item.effectiveDate && item.expiryDate && item.expiryDate < item.effectiveDate) {
     return "The end date must be on or after the start date.";
   }
   return null;
