@@ -393,7 +393,7 @@ export function UniversityPartnersTable({
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <TruncatedTooltip className="text-sm font-medium text-gray-900">
-              {row.displayName}
+              <span className="uppercase">{row.displayName}</span>
             </TruncatedTooltip>
             {tab !== "blacklisted" &&
               row.isImported &&
@@ -649,7 +649,7 @@ export function UniversityPartnersTable({
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-1.5">
                     <TruncatedTooltip className="text-sm font-semibold text-gray-900">
-                      {row.displayName}
+                      <span className="uppercase">{row.displayName}</span>
                     </TruncatedTooltip>
                     {tab !== "blacklisted" &&
                       row.isImported &&

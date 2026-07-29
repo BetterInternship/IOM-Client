@@ -176,10 +176,7 @@ function LocalPdfPreview({
 
 function itemError(item: ImportItem): string | null {
   if (!item.companyName.trim()) return "Choose or enter a company name.";
-  if (!item.effectiveDate) return "Enter the MOA start date.";
-  if (!item.isPerpetual && !item.expiryDate)
-    return "Enter the MOA end date or mark it perpetual.";
-  if (!item.isPerpetual && item.expiryDate < item.effectiveDate) {
+  if (item.effectiveDate && item.expiryDate && item.expiryDate < item.effectiveDate) {
     return "The end date must be on or after the start date.";
   }
   return null;
@@ -497,7 +494,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
             >
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-gray-900">
-                  {row.company_name}
+                  <span className="uppercase">{row.company_name}</span>
                 </p>
                 {row.message && (
                   <p className="text-destructive mt-0.5 text-xs">
@@ -783,10 +780,11 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
                     <Label htmlFor="wizard-company">Company</Label>
                     <Input
                       id="wizard-company"
+                      className="uppercase"
                       list="legacy-company-names"
                       value={selected.companyName}
                       onChange={(event) =>
-                        updateSelected({ companyName: event.target.value })
+                        updateSelected({ companyName: event.target.value.toUpperCase() })
                       }
                       placeholder="Type or choose a company"
                       aria-invalid={
@@ -795,7 +793,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
                     />
                     <datalist id="legacy-company-names">
                       {companyNames.map((company) => (
-                        <option key={company.id} value={company.company_name} />
+                        <option key={company.id} value={company.company_name.toUpperCase()} />
                       ))}
                     </datalist>
                     <p className="text-muted-foreground text-xs">
