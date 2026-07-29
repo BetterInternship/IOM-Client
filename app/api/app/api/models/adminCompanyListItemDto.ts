@@ -5,6 +5,7 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
+import type { AdminCompanyListItemDtoVerificationStatus } from "./adminCompanyListItemDtoVerificationStatus";
 
 export interface AdminCompanyListItemDto {
   id: string;
@@ -22,4 +23,5 @@ export interface AdminCompanyListItemDto {
   created_at: string;
   has_pending_review: boolean;
   is_profile_incomplete: boolean;
+  verification_status: AdminCompanyListItemDtoVerificationStatus;
 }

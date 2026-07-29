@@ -18,7 +18,9 @@ function TooltipProvider({
   );
 }
 
-function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+function Tooltip({
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
   return (
     <TooltipProvider>
       <TooltipPrimitive.Root data-slot="tooltip" {...props} />
@@ -26,7 +28,9 @@ function Tooltip({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Root
   );
 }
 
-function TooltipTrigger({ ...props }: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
+function TooltipTrigger({
+  ...props
+}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
 }
 
@@ -36,15 +40,17 @@ function TooltipContent({
   sideOffset = 0,
   children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content> & { arrowClassName?: string }) {
+}: React.ComponentProps<typeof TooltipPrimitive.Content> & {
+  arrowClassName?: string;
+}) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
         data-slot="tooltip-content"
         sideOffset={sideOffset}
         className={cn(
-          "bg-primary animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-[0.15em] px-3 py-1.5 text-xs text-balance",
-          className
+          "animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-[0.15em] bg-gray-900 px-3 py-1.5 text-xs text-balance text-white",
+          className,
         )}
         {...props}
       >
@@ -52,7 +58,7 @@ function TooltipContent({
         <TooltipPrimitive.Arrow
           width={10}
           height={5}
-          className={cn("fill-primary z-50", arrowClassName)}
+          className={cn("z-50 fill-gray-900", arrowClassName)}
         />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>

@@ -26,6 +26,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type {
   ResourceFilterGroup,
@@ -54,16 +59,36 @@ const SELECTION_CHECKBOX_CLASS =
  * instead, so "you can't pick this row" doesn't depend on noticing a
  * subtle opacity change.
  */
-function UnselectableMark() {
+function UnselectableMark({
+  className,
+  reason = "Not selectable",
+}: {
+  className?: string;
+  reason?: ReactNode;
+}) {
   return (
-    <div
-      className="flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-gray-300 bg-gray-100"
-      role="img"
-      aria-label="Not selectable"
-      title="Not selectable"
-    >
-      <X className="size-3.5 text-gray-400" strokeWidth={3} aria-hidden="true" />
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "flex size-5 shrink-0 items-center justify-center rounded-[4px] border border-gray-300 bg-gray-100",
+            className,
+          )}
+          role="img"
+          tabIndex={0}
+          aria-label="Not selectable"
+        >
+          <X
+            className="size-3.5 text-gray-400"
+            strokeWidth={3}
+            aria-hidden="true"
+          />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="right" sideOffset={6}>
+        {reason}
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -173,7 +198,15 @@ export function ResourceTable<TData>({
   contentClassName,
   listClassName,
   paginationClassName,
+  toolbarStart,
   toolbarLeading,
+  showSelectionRatio = true,
+  selectionColumnClassName,
+  rowSelectionCheckboxClassName,
+  rowSelectionUnavailableClassName,
+  getRowSelectionUnavailableReason,
+  selectionIndicatorClassName,
+  headerSelectionCheckboxClassName,
   onRowClick,
   getRowClassName,
 }: {
@@ -188,11 +221,20 @@ export function ResourceTable<TData>({
   contentClassName?: string;
   listClassName?: string;
   paginationClassName?: string;
+  toolbarStart?: ReactNode;
   toolbarLeading?: ReactNode;
+  showSelectionRatio?: boolean;
+  selectionColumnClassName?: string;
+  rowSelectionCheckboxClassName?: string;
+  rowSelectionUnavailableClassName?: string;
+  getRowSelectionUnavailableReason?: (row: TData) => ReactNode;
+  selectionIndicatorClassName?: string;
+  headerSelectionCheckboxClassName?: string;
   onRowClick?: (row: TData) => void;
   getRowClassName?: (row: TData) => string | undefined;
 }) {
-  const hasToolbar = !!toolbarLeading || !!table.search || !!table.filters;
+  const hasToolbar =
+    !!toolbarStart || !!toolbarLeading || !!table.search || !!table.filters;
   const hasRows = table.pagedRows.length > 0;
   const hasAnyData = table.dataCount > 0;
   const hasDesktopTable = !!columns?.length;
@@ -273,65 +315,90 @@ export function ResourceTable<TData>({
   return (
     <div className={cn("space-y-5", className)}>
       {hasToolbar && (
-        <div className="flex flex-wrap items-center gap-2">
-          {table.filters && (
-            <Popover
-              open={table.filters.open}
-              onOpenChange={table.filters.setOpen}
-            >
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className={cn(
-                    "relative h-11 w-11 shrink-0 border-gray-200 bg-white text-gray-600 hover:text-primary",
-                    table.filters.activeCount > 0 && "text-primary",
-                  )}
-                  aria-label="Filter results"
-                  aria-expanded={table.filters.open}
-                >
-                  <Filter />
-                  {table.filters.activeCount > 0 && (
-                    <span className="bg-primary text-primary-foreground absolute top-0 right-0 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-semibold">
-                      {table.filters.activeCount}
-                    </span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                align="start"
-                sideOffset={6}
-                className="flex max-h-[70vh] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-[0.33em] border border-gray-200 bg-white p-0 shadow-lg sm:w-[445px]"
-              >
-                <ResourceFilterPanel
-                  groups={table.filters.groups}
-                  draftValue={table.filters.draftValue}
-                  draftActiveCount={table.filters.draftActiveCount}
-                  toggleOption={table.filters.toggleDraftOption}
-                  toggleGroup={table.filters.toggleDraftGroup}
-                  clearDraft={table.filters.clearDraft}
-                  cancel={table.filters.cancel}
-                  apply={table.filters.apply}
-                />
-              </PopoverContent>
-            </Popover>
+        <div
+          className={cn(
+            "flex flex-wrap items-center gap-2",
+            toolbarStart && "min-w-0 lg:flex-nowrap",
           )}
-
-          {table.search && (
-            <div className="relative w-full max-w-xl">
-              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 z-20 h-4 w-4 -translate-y-1/2" />
-              <input
-                type="search"
-                value={table.search.value}
-                onChange={(event) => table.search?.setValue(event.target.value)}
-                placeholder={table.search.placeholder}
-                aria-label={table.search.ariaLabel}
-                className="placeholder:text-muted-foreground/60 focus:border-primary h-11 w-full rounded-[0.33em] border border-gray-200 bg-white pr-4 pl-11 text-sm outline-none transition-colors focus:ring-2 focus:ring-primary/10"
-              />
+        >
+          {toolbarStart && (
+            <div className="min-w-0 max-w-full overflow-hidden">
+              {toolbarStart}
             </div>
           )}
 
-          {toolbarLeading}
+          <div
+            className={cn(
+              "flex min-w-0 flex-1 items-center gap-2",
+              toolbarStart && "w-full justify-end lg:ml-auto lg:w-auto",
+            )}
+          >
+            {table.search && (
+              <div
+                className={cn(
+                  "relative min-w-0 flex-1",
+                  toolbarStart ? "lg:w-80 lg:flex-none" : "w-full max-w-xl",
+                )}
+              >
+                <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 z-20 h-4 w-4 -translate-y-1/2" />
+                <input
+                  type="search"
+                  value={table.search.value}
+                  onChange={(event) =>
+                    table.search?.setValue(event.target.value)
+                  }
+                  placeholder={table.search.placeholder}
+                  aria-label={table.search.ariaLabel}
+                  className="placeholder:text-muted-foreground/60 focus:border-primary h-11 w-full rounded-[0.33em] border border-gray-200 bg-white pr-4 pl-11 text-sm outline-none transition-colors focus:ring-2 focus:ring-primary/10"
+                />
+              </div>
+            )}
+
+            {table.filters && (
+              <Popover
+                open={table.filters.open}
+                onOpenChange={table.filters.setOpen}
+              >
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className={cn(
+                      "relative h-11 w-11 shrink-0 border-gray-200 bg-white text-gray-600 hover:text-primary",
+                      table.filters.activeCount > 0 && "text-primary",
+                    )}
+                    aria-label="Filter results"
+                    aria-expanded={table.filters.open}
+                  >
+                    <Filter />
+                    {table.filters.activeCount > 0 && (
+                      <span className="bg-primary text-primary-foreground absolute top-0 right-0 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-semibold">
+                        {table.filters.activeCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  sideOffset={6}
+                  className="flex max-h-[70vh] w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-[0.33em] border border-gray-200 bg-white p-0 shadow-lg sm:w-[445px]"
+                >
+                  <ResourceFilterPanel
+                    groups={table.filters.groups}
+                    draftValue={table.filters.draftValue}
+                    draftActiveCount={table.filters.draftActiveCount}
+                    toggleOption={table.filters.toggleDraftOption}
+                    toggleGroup={table.filters.toggleDraftGroup}
+                    clearDraft={table.filters.clearDraft}
+                    cancel={table.filters.cancel}
+                    apply={table.filters.apply}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
+
+            {toolbarLeading}
+          </div>
         </div>
       )}
 
@@ -347,7 +414,8 @@ export function ResourceTable<TData>({
               {showAllMatchingSelectedBanner ? (
                 <>
                   <span>
-                    All {selection!.selectableMatchingCount} matching rows are selected.
+                    All {selection!.selectableMatchingCount} matching rows are
+                    selected.
                   </span>
                   <button
                     type="button"
@@ -359,13 +427,17 @@ export function ResourceTable<TData>({
                 </>
               ) : (
                 <>
-                  <span>All {selection!.selectablePageCount} on this page are selected.</span>
+                  <span>
+                    All {selection!.selectablePageCount} on this page are
+                    selected.
+                  </span>
                   <button
                     type="button"
                     onClick={selection!.selectAllMatching}
                     className="text-primary cursor-pointer font-medium hover:underline"
                   >
-                    Select all {selection!.selectableMatchingCount} matching rows
+                    Select all {selection!.selectableMatchingCount} matching
+                    rows
                   </button>
                 </>
               )}
@@ -378,7 +450,12 @@ export function ResourceTable<TData>({
                 <thead className="bg-gray-50 text-sm font-medium text-gray-700">
                   <tr className="border-b border-gray-200">
                     {selection && (
-                      <th className="w-16 px-3 py-3">
+                      <th
+                        className={cn(
+                          "w-16 px-3 py-3",
+                          selectionColumnClassName,
+                        )}
+                      >
                         <div className="flex flex-col items-start gap-0.5">
                           <Checkbox
                             checked={headerCheckedState}
@@ -387,14 +464,21 @@ export function ResourceTable<TData>({
                                 ? selection.deselectPage()
                                 : selection.selectPage()
                             }
-                            className={SELECTION_CHECKBOX_CLASS}
+                            className={cn(
+                              SELECTION_CHECKBOX_CLASS,
+                              selectionIndicatorClassName,
+                              headerSelectionCheckboxClassName,
+                            )}
                             aria-label="Select all rows on this page"
                           />
-                          {selection.selectablePageCount < table.pagedRows.length && (
-                            <span className="text-muted-foreground text-[10px] leading-tight font-normal">
-                              {selection.selectablePageCount}/{table.pagedRows.length}
-                            </span>
-                          )}
+                          {showSelectionRatio &&
+                            selection.selectablePageCount <
+                              table.pagedRows.length && (
+                              <span className="text-muted-foreground text-[10px] leading-tight font-normal">
+                                {selection.selectablePageCount}/
+                                {table.pagedRows.length}
+                              </span>
+                            )}
                         </div>
                       </th>
                     )}
@@ -403,7 +487,8 @@ export function ResourceTable<TData>({
                 </thead>
                 <tbody>
                   {table.pagedRows.map((row) => {
-                    const rowSelectable = selection?.isRowSelectable(row) ?? true;
+                    const rowSelectable =
+                      selection?.isRowSelectable(row) ?? true;
                     return (
                       <tr
                         key={table.getRowId(row)}
@@ -416,18 +501,31 @@ export function ResourceTable<TData>({
                       >
                         {selection && (
                           <td
-                            className="px-3 py-4"
+                            className={cn(
+                              "px-3 py-4",
+                              selectionColumnClassName,
+                            )}
                             onClick={(event) => event.stopPropagation()}
                           >
                             {rowSelectable ? (
                               <Checkbox
                                 checked={selection.isSelected(row)}
                                 onCheckedChange={() => selection.toggle(row)}
-                                className={SELECTION_CHECKBOX_CLASS}
+                                className={cn(
+                                  SELECTION_CHECKBOX_CLASS,
+                                  rowSelectionCheckboxClassName,
+                                  selectionIndicatorClassName,
+                                )}
                                 aria-label="Select row"
                               />
                             ) : (
-                              <UnselectableMark />
+                              <UnselectableMark
+                                reason={getRowSelectionUnavailableReason?.(row)}
+                                className={cn(
+                                  selectionIndicatorClassName,
+                                  rowSelectionUnavailableClassName,
+                                )}
+                              />
                             )}
                           </td>
                         )}
@@ -471,11 +569,21 @@ export function ResourceTable<TData>({
                         <Checkbox
                           checked={selection.isSelected(row)}
                           onCheckedChange={() => selection.toggle(row)}
-                          className={SELECTION_CHECKBOX_CLASS}
+                          className={cn(
+                            SELECTION_CHECKBOX_CLASS,
+                            rowSelectionCheckboxClassName,
+                            selectionIndicatorClassName,
+                          )}
                           aria-label="Select row"
                         />
                       ) : (
-                        <UnselectableMark />
+                        <UnselectableMark
+                          reason={getRowSelectionUnavailableReason?.(row)}
+                          className={cn(
+                            selectionIndicatorClassName,
+                            rowSelectionUnavailableClassName,
+                          )}
+                        />
                       )}
                     </div>
                   )}

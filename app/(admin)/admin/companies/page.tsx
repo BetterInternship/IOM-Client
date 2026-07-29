@@ -1,9 +1,16 @@
 "use client";
-import { useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, ChevronDown, Loader2, Plus, Upload } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Plus,
+  Upload,
+} from "lucide-react";
 import {
   getAdminControllerListCompaniesQueryKey,
   useAdminControllerBulkCreateCompanies,
@@ -14,11 +21,15 @@ import {
   type CreateCompanyAdminDtoCompanyType,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
+import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { FileUpload } from "@/components/ui/file-upload";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
 
 import {
   Select,
@@ -42,39 +53,123 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatDateWithoutTime } from "@/lib/utils";
 
-const columns: Array<ResourceTableColumn<AdminCompanyListItemDto>> = [
+type VerificationStatus =
+  | "incomplete"
+  | "pending"
+  | "verified"
+  | "expired"
+  | "rejected";
+type CompanyStatusTab = "all" | "deactivated" | VerificationStatus;
+type CompanyListItem = AdminCompanyListItemDto & {
+  verification_status: VerificationStatus;
+};
+
+const STATUS_TABS: Array<{
+  value: CompanyStatusTab;
+  label: string;
+  activeCountClassName: string;
+}> = [
+  {
+    value: "all",
+    label: "All",
+    activeCountClassName:
+      "group-data-[state=active]:bg-primary group-data-[state=active]:text-primary-foreground",
+  },
+  {
+    value: "pending",
+    label: "Pending",
+    activeCountClassName:
+      "group-data-[state=active]:bg-primary group-data-[state=active]:text-primary-foreground",
+  },
+  {
+    value: "rejected",
+    label: "Rejected",
+    activeCountClassName:
+      "group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground",
+  },
+  {
+    value: "verified",
+    label: "Verified",
+    activeCountClassName:
+      "group-data-[state=active]:bg-supportive group-data-[state=active]:text-supportive-foreground",
+  },
+  {
+    value: "expired",
+    label: "Expired",
+    activeCountClassName:
+      "group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground",
+  },
+  {
+    value: "incomplete",
+    label: "Incomplete",
+    activeCountClassName:
+      "group-data-[state=active]:bg-gray-600 group-data-[state=active]:text-white",
+  },
+  {
+    value: "deactivated",
+    label: "Deactivated",
+    activeCountClassName:
+      "group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground",
+  },
+];
+
+function companyStatus(company: CompanyListItem): CompanyStatusTab {
+  return company.is_deactivated ? "deactivated" : company.verification_status;
+}
+
+function CompanyStatusBadge({ company }: { company: CompanyListItem }) {
+  const status = companyStatus(company);
+  if (status === "deactivated") {
+    return <PartnershipStatusBadge status="rejected" label="Deactivated" />;
+  }
+  if (status === "pending") {
+    return <PartnershipStatusBadge status="pending" label="Pending" />;
+  }
+  if (status === "rejected") {
+    return <PartnershipStatusBadge status="rejected" label="Rejected" />;
+  }
+  if (status === "verified") {
+    return <PartnershipStatusBadge status="active" label="Verified" />;
+  }
+  if (status === "expired") {
+    return <PartnershipStatusBadge status="expired" label="Expired" />;
+  }
+  return <PartnershipStatusBadge status="inactive" label="Incomplete" />;
+}
+
+const columns: Array<ResourceTableColumn<CompanyListItem>> = [
+  {
+    id: "status",
+    header: "Status",
+    width: "w-[12%]",
+    sortable: false,
+    render: (company) => <CompanyStatusBadge company={company} />,
+  },
   {
     id: "name",
     header: "Company",
-    width: "w-[45%]",
+    width: "w-[34%]",
     getSortValue: (company) => company.registered_name,
     render: (company) => (
       <div className="flex items-center gap-2 min-w-0">
-        <p className="font-medium text-gray-900">{company.registered_name}</p>
-        {company.is_deactivated ? (
-          <Badge type="destructive" strength="medium">
-            Deactivated
-          </Badge>
-        ) : company.has_pending_review ? (
-          <Badge type="warning" strength="medium">
-            Pending
-          </Badge>
-        ) : company.is_profile_incomplete ? (
-          <Badge type="default" strength="medium">
-            Incomplete
-          </Badge>
-        ) : null}
+        <TruncatedTooltip
+          align="start"
+          className="text-sm font-medium text-gray-900"
+          contentClassName="text-left"
+        >
+          {company.registered_name}
+        </TruncatedTooltip>
       </div>
     ),
   },
   {
     id: "email",
     header: "Email",
-    width: "w-[35%]",
+    width: "w-[30%]",
     getSortValue: (company) => company.email,
     render: (company) =>
       company.email ? (
-        <span className="text-muted-foreground">{company.email}</span>
+        <span className="text-muted-foreground text-sm">{company.email}</span>
       ) : (
         <Badge type="default" strength="medium">
           Record only
@@ -84,15 +179,74 @@ const columns: Array<ResourceTableColumn<AdminCompanyListItemDto>> = [
   {
     id: "joined",
     header: "Joined",
-    width: "w-[20%]",
+    width: "w-[12%]",
     getSortValue: (company) => new Date(company.created_at),
     render: (company) => (
-      <span className="text-muted-foreground">
+      <span className="text-muted-foreground text-sm">
         {formatDateWithoutTime(company.created_at)}
       </span>
     ),
   },
+  {
+    id: "open",
+    header: "",
+    width: "w-[6%]",
+    align: "right",
+    sortable: false,
+    render: (company) => (
+      <div className="text-primary flex justify-end">
+        <ChevronRight
+          className="h-5 w-5 transition-transform group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
+        <span className="sr-only">Open {company.registered_name}</span>
+      </div>
+    ),
+  },
 ];
+
+function CompanyStatusTabs({
+  companies,
+  value,
+  onValueChange,
+}: {
+  companies: CompanyListItem[];
+  value: CompanyStatusTab;
+  onValueChange: (value: CompanyStatusTab) => void;
+}) {
+  return (
+    <Tabs
+      value={value}
+      onValueChange={(nextValue) =>
+        onValueChange(nextValue as CompanyStatusTab)
+      }
+      className="block"
+    >
+      <TabsList className="h-auto max-w-full justify-start overflow-x-auto rounded-none border-0 border-b border-gray-200 bg-transparent">
+        {STATUS_TABS.map((tab) => {
+          const count = companies.filter(
+            (company) =>
+              tab.value === "all" || companyStatus(company) === tab.value,
+          ).length;
+          return (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
+            >
+              {tab.label}
+              <span
+                className={`ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 ${tab.activeCountClassName}`}
+              >
+                {count}
+              </span>
+            </TabsTrigger>
+          );
+        })}
+      </TabsList>
+    </Tabs>
+  );
+}
 
 const COMPANY_TYPES = [
   { value: "corporation", label: "Corporation" },
@@ -292,7 +446,6 @@ function BulkUploadForm({ onClose }: { onClose: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [results, setResults] = useState<any>(null);
   const [error, setError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const upload = useAdminControllerBulkCreateCompanies({
     mutation: {
@@ -351,16 +504,13 @@ function BulkUploadForm({ onClose }: { onClose: () => void }) {
       <FormError>{error}</FormError>
 
       {!results ? (
-        <div className="space-y-1.5">
-          <Label htmlFor="csv-file">CSV file</Label>
-          <Input
-            id="csv-file"
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-        </div>
+        <FileUpload
+          label="CSV file"
+          name="csv-file"
+          accept=".csv,text/csv"
+          disabled={upload.isPending}
+          onFileSelect={setFile}
+        />
       ) : (
         <div className="space-y-2">
           <p className="text-sm font-medium">Results</p>
@@ -471,11 +621,21 @@ function AddCompanyDropdown() {
 
 export default function AdminCompaniesPage() {
   const router = useRouter();
+  const [statusTab, setStatusTab] = useState<CompanyStatusTab>("all");
 
-  const { data, isLoading } = useAdminControllerListCompanies();
+  const { data, isLoading } = useAdminControllerListCompanies<{
+    companies: CompanyListItem[];
+  }>();
   const companies = data?.companies ?? [];
+  const visibleCompanies = useMemo(
+    () =>
+      statusTab === "all"
+        ? companies
+        : companies.filter((company) => companyStatus(company) === statusTab),
+    [companies, statusTab],
+  );
   const table = useResourceTable({
-    data: companies,
+    data: visibleCompanies,
     getRowId: (company) => company.id,
     columns,
     search: {
@@ -506,33 +666,34 @@ export default function AdminCompaniesPage() {
       ) : (
         <ResourceTable
           table={table}
+          columns={
+            statusTab === "all"
+              ? columns
+              : columns.filter((column) => column.id !== "status")
+          }
+          className="space-y-4 [&_td]:py-2.5"
+          toolbarStart={
+            <CompanyStatusTabs
+              companies={companies}
+              value={statusTab}
+              onValueChange={setStatusTab}
+            />
+          }
           renderMobileRow={(company) => (
             <article
-              className="cursor-pointer px-4 py-4 transition-colors hover:bg-primary/[0.035]"
+              className="cursor-pointer px-4 py-3 transition-colors hover:bg-primary/[0.035]"
               onClick={() => router.push(`/admin/companies/${company.id}`)}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-900">
+                  <p className="text-sm font-semibold text-gray-900">
                     {company.registered_name}
                   </p>
                   <p className="text-muted-foreground mt-1 break-all text-sm">
                     {company.email || "Record only"}
                   </p>
                 </div>
-                {company.is_deactivated ? (
-                  <Badge type="destructive" strength="medium">
-                    Deactivated
-                  </Badge>
-                ) : company.has_pending_review ? (
-                  <Badge type="warning" strength="medium">
-                    Pending
-                  </Badge>
-                ) : company.is_profile_incomplete ? (
-                  <Badge type="default" strength="medium">
-                    Incomplete
-                  </Badge>
-                ) : null}
+                <CompanyStatusBadge company={company} />
               </div>
               <p className="text-muted-foreground mt-3 text-xs">
                 Joined {formatDateWithoutTime(company.created_at)}

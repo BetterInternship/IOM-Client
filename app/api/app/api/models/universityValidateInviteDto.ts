@@ -6,10 +6,6 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface AdminUniversityAccountDto {
-  email: string;
-  display_name: string;
-  /** @nullable */
-  is_deactivated: boolean | null;
-  is_pending: boolean;
+export interface UniversityValidateInviteDto {
+  token: string;
 }

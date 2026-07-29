@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, EyeOff } from "lucide-react";
+import { ChevronDown, Eye, EyeOff } from "lucide-react";
 
 import { useIomModalRegistry } from "@/components/modal-registry";
 import {
@@ -9,6 +9,12 @@ import {
 } from "@/components/ui/resource-table";
 import { useResourceTable } from "@/components/ui/use-resource-table";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export interface TemplateOffer {
@@ -32,24 +38,87 @@ function TemplateAvailability({
   isPending: boolean;
   onToggle: (offer: TemplateOffer) => void;
 }) {
+  const statuses = [
+    {
+      value: "offered",
+      label: "Offered",
+      description: "Available for companies",
+      icon: Eye,
+    },
+    {
+      value: "hidden",
+      label: "Hidden",
+      description: "Not visible to companies",
+      icon: EyeOff,
+    },
+  ] as const;
+
   return (
-    <button
-      type="button"
-      className={`inline-flex h-9 min-w-24 cursor-pointer items-center justify-center gap-2 rounded-[0.33em] border px-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-        offer.is_available
-          ? "border-supportive bg-supportive text-supportive-foreground hover:bg-supportive/90"
-          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900"
-      }`}
-      onClick={() => onToggle(offer)}
-      disabled={isPending}
-    >
-      {offer.is_available ? (
-        <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-      ) : (
-        <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
-      )}
-      {offer.is_available ? "Offered" : "Hidden"}
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={`inline-flex h-9 min-w-28 cursor-pointer items-center gap-2 rounded-[0.33em] border px-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            offer.is_available
+              ? "border-supportive bg-supportive text-supportive-foreground hover:bg-supportive/90"
+              : "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900"
+          }`}
+          disabled={isPending}
+          aria-label={`Change availability for ${offer.template.name}`}
+        >
+          {offer.is_available ? (
+            <Eye className="size-4 shrink-0" aria-hidden="true" />
+          ) : (
+            <EyeOff className="size-4 shrink-0" aria-hidden="true" />
+          )}
+          <span className="flex-1 text-left">
+            {offer.is_available ? "Offered" : "Hidden"}
+          </span>
+          <ChevronDown className="size-3.5 shrink-0" aria-hidden="true" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-fit p-1">
+        {statuses.map((status) => {
+          const isSelected =
+            (status.value === "offered") === offer.is_available;
+          const StatusIcon = status.icon;
+
+          return (
+            <DropdownMenuItem
+              key={status.value}
+              className="w-full cursor-pointer items-start gap-2 rounded-[0.33em] px-2 py-1.5 text-left hover:bg-gray-50 focus:bg-gray-50"
+              onSelect={() => !isSelected && onToggle(offer)}
+              disabled={isPending}
+            >
+              <span className="flex h-4 w-3 shrink-0 items-center justify-center pt-0.5">
+                <StatusIcon
+                  className={`size-3.5 ${
+                    status.value === "offered"
+                      ? "text-supportive"
+                      : "text-gray-500"
+                  }`}
+                  aria-hidden="true"
+                />
+              </span>
+              <span>
+                <span
+                  className={`block text-sm font-semibold ${
+                    status.value === "offered"
+                      ? "text-supportive"
+                      : "text-gray-700"
+                  }`}
+                >
+                  {status.label}
+                </span>
+                <span className="mt-0.5 block text-xs leading-3 text-gray-500">
+                  {status.description}
+                </span>
+              </span>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

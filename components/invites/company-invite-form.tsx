@@ -2,11 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useMutation, useQuery } from "@tanstack/react-query";
 import { Building2, CheckCircle2, Loader2, Mail, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import {
+  useUniversityControllerListRegisteredCompanies,
+  useUniversityControllerListTemplates,
+  useUniversityControllerSendInvite,
+} from "@/app/api/app/api/endpoints/university/university";
+import type { UniversityRegisteredCompanyDto } from "@/app/api/app/api/models";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
@@ -25,18 +29,6 @@ import { MorphHeight } from "@/components/ui/morph-height";
 import { cn } from "@/lib/utils";
 
 export type CompanyInviteKind = "moa" | "listing";
-
-interface AvailableTemplate {
-  id: string;
-  template: { id: string; name: string };
-  is_available: boolean;
-}
-
-interface RegisteredCompany {
-  id: string;
-  registered_name: string;
-  email: string;
-}
 
 const inviteSteps = [
   { title: "Choose company", icon: Building2 },
@@ -77,7 +69,7 @@ export function CompanyInviteForm({
   >(null);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [selectedCompany, setSelectedCompany] =
-    useState<RegisteredCompany | null>(null);
+    useState<UniversityRegisteredCompanyDto | null>(null);
   const [companyName, setCompanyName] = useState(initialCompanyName);
   const [email, setEmail] = useState(initialEmail);
   const [templateId, setTemplateId] = useState("");
@@ -95,13 +87,8 @@ export function CompanyInviteForm({
     transitionTimer.current = setTimeout(() => setTransitioningFrom(null), 200);
   }
 
-  const { data: companiesData, isLoading: companiesLoading } = useQuery({
-    queryKey: ["university-registered-companies"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/companies")
-        .then((r) => r.data as { companies: RegisteredCompany[] }),
-  });
+  const { data: companiesData, isLoading: companiesLoading } =
+    useUniversityControllerListRegisteredCompanies();
 
   useEffect(() => {
     if (!initialCompanyId || selectedCompany) return;
@@ -111,13 +98,7 @@ export function CompanyInviteForm({
     if (company) setSelectedCompany(company);
   }, [companiesData, initialCompanyId, selectedCompany]);
 
-  const { data: templatesData } = useQuery({
-    queryKey: ["university-templates-for-invite"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/templates")
-        .then((r) => r.data as { templates: AvailableTemplate[] }),
-  });
+  const { data: templatesData } = useUniversityControllerListTemplates();
 
   const availableTemplates = (templatesData?.templates ?? []).filter(
     (t) => t.is_available,
@@ -139,29 +120,20 @@ export function CompanyInviteForm({
       ? selectedCompany?.registered_name
       : companyName.trim() || undefined;
 
-  const send = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios
-        .post("/api/university/invites", {
-          invitedEmail,
-          companyName: invitedName,
-          templateId: kind === "moa" ? templateId || undefined : undefined,
-          personalMessage: message.trim() || undefined,
-          kind,
-          legacyCompanyId: kind === "listing" ? legacyCompanyId : undefined,
-        })
-        .then((r) => r.data as { superseded: boolean; message: string }),
-    onSuccess: (res) => {
-      toast(
-        res.superseded
-          ? "Invite sent. A previous pending invite to this email was superseded."
-          : "Invite sent.",
-        toastPresets.success,
-      );
-      onSent();
-      onClose();
+  const send = useUniversityControllerSendInvite({
+    mutation: {
+      onSuccess: (res) => {
+        toast(
+          res.superseded
+            ? "Invite sent. A previous pending invite to this email was superseded."
+            : "Invite sent.",
+          toastPresets.success,
+        );
+        onSent();
+        onClose();
+      },
+      onError: (e) => setError(e.message ?? "Failed to send invitation."),
     },
-    onError: (e: Error) => setError(e.message),
   });
 
   const step1CanNext =
@@ -421,7 +393,10 @@ export function CompanyInviteForm({
                         setTemplateId(value === "company-decides" ? "" : value)
                       }
                     >
-                      <SelectTrigger id="invite-template" className="h-10 max-h-10">
+                      <SelectTrigger
+                        id="invite-template"
+                        className="h-10 max-h-10"
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -496,7 +471,18 @@ export function CompanyInviteForm({
             <Button
               onClick={() => {
                 setError("");
-                send.mutate();
+                send.mutate({
+                  data: {
+                    invitedEmail,
+                    companyName: invitedName,
+                    templateId:
+                      kind === "moa" ? templateId || undefined : undefined,
+                    personalMessage: message.trim() || undefined,
+                    kind,
+                    legacyCompanyId:
+                      kind === "listing" ? legacyCompanyId : undefined,
+                  },
+                });
               }}
               disabled={!canSend || send.isPending}
             >

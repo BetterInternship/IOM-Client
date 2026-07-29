@@ -256,8 +256,12 @@ export function RequestDialog({
   const [error, setError] = useState<string | null>(null);
   const [requestPhase, setRequestPhase] = useState<RequestPhase>("form");
 
-  const { data, isLoading } =
-    useCompanyControllerGetRequestableTemplates(universityId);
+  const { data, isLoading } = useCompanyControllerGetRequestableTemplates(
+    universityId,
+    {
+      query: { queryKey: ["university-templates-for-invite"] },
+    },
+  );
 
   const requestMoa = useCompanyControllerRequestMoa();
   const createQueuedMoa = useCompanyControllerCreateQueuedMoa();

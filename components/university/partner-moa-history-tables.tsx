@@ -1,17 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import type { PDFDocumentProxy } from "pdfjs-dist";
-import {
-  BasePdfViewer,
-  Loader as PdfLoader,
-  usePdfDocumentFromUrl,
-  usePdfPageRenderer,
-} from "@betterinternship/core/pdf-viewer";
-import { ArrowRight, Eye, FileText } from "lucide-react";
+import { useState } from "react";
+import { Loader as PdfLoader } from "@betterinternship/core/pdf-viewer";
+import { ArrowRight, Eye } from "lucide-react";
 
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import { useUniversityControllerGetMoaDetail } from "@/app/api/app/api/endpoints/university/university";
+import { DocumentPreviewPane } from "@/components/document-preview-pane";
 import type { LegacyCompanyDetail } from "@/components/legacy-companies/legacy-companies-panel";
 import { isLegacyMoaExpired } from "@/components/legacy-companies/legacy-companies-panel";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
@@ -27,7 +21,7 @@ export interface RegisteredPartnerMoa {
   id: string;
   status: string;
   created_at: string;
-  effective_date: string;
+  effective_date: string | null;
   expiry_date: string | null;
   is_expired: boolean | null;
   template: { name: string } | null;
@@ -40,117 +34,36 @@ export type PartnerPdfSelection =
   | { kind: "legacy"; url: string | null; label: string }
   | { kind: "document"; url: string; label: string };
 
-const PDF_ZOOM_STORAGE_KEY = "iom-partner-preview-zoom";
-
-function PdfPage({
-  pdfDoc,
-  pageNumber,
-  scale,
-}: {
-  pdfDoc: PDFDocumentProxy;
-  pageNumber: number;
-  scale: number;
-}) {
-  const { canvasRef } = usePdfPageRenderer(pdfDoc, pageNumber, scale);
-  return <canvas ref={canvasRef} className="block shadow-sm" />;
-}
-
-function PdfViewer({ url, label }: { url: string; label: string }) {
-  const { pdfDoc, pageCount, isLoading, error } = usePdfDocumentFromUrl(url);
-  const [scale, setScale] = useState(1);
-  const [visiblePage, setVisiblePage] = useState(1);
-
-  useEffect(() => {
-    const savedScale = Number(
-      window.localStorage.getItem(PDF_ZOOM_STORAGE_KEY),
-    );
-    if (savedScale >= 0.5 && savedScale <= 3) setScale(savedScale);
-  }, []);
-
-  const updateScale = (nextScale: number) => {
-    setScale(nextScale);
-    window.localStorage.setItem(PDF_ZOOM_STORAGE_KEY, String(nextScale));
-  };
-
-  if (error) {
-    return (
-      <div className="text-destructive flex h-full items-center justify-center px-6 text-center text-sm">
-        Failed to load PDF.
-      </div>
-    );
-  }
-  if (isLoading || !pdfDoc) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <PdfLoader />
-      </div>
-    );
-  }
-
-  return (
-    <BasePdfViewer
-      pdfDoc={pdfDoc}
-      pageCount={pageCount}
-      scale={scale}
-      onScaleChange={updateScale}
-      visiblePage={visiblePage}
-      onVisiblePageChange={setVisiblePage}
-      children={
-        <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-slate-700">
-          <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span className="max-w-64 truncate" title={label}>
-            {label}
-          </span>
-        </span>
-      }
-      renderPage={(pageNumber) => (
-        <PdfPage
-          key={pageNumber}
-          pdfDoc={pdfDoc}
-          pageNumber={pageNumber}
-          scale={scale}
-        />
-      )}
-    />
-  );
-}
-
 export function PartnerPdfPane({
   selection,
 }: {
   selection: PartnerPdfSelection;
 }) {
-  const { data, isLoading } = useQuery({
-    queryKey: [
-      "university-moa-pdf",
-      selection.kind === "registered" ? selection.moaId : null,
-    ],
-    queryFn: () =>
-      preconfiguredAxios
-        .get(
-          `/api/university/moas/${selection.kind === "registered" ? selection.moaId : ""}`,
-        )
-        .then((response) => response.data as { pdfUrl: string | null }),
-    enabled: selection.kind === "registered",
-  });
+  const { data, isLoading } = useUniversityControllerGetMoaDetail(
+    selection.kind === "registered" ? selection.moaId : null,
+  );
   const pdfUrl = selection.kind === "registered" ? data?.pdfUrl : selection.url;
-  const proxiedUrl = pdfUrl
-    ? `/gcs-proxy?url=${encodeURIComponent(pdfUrl)}`
-    : null;
-
-  return (
-    <aside className="relative h-[70vh] min-h-[520px] overflow-hidden border-l border-gray-200 bg-slate-100 lg:h-full lg:min-h-0">
-      {isLoading && selection.kind === "registered" ? (
+  if (isLoading && selection.kind === "registered") {
+    return (
+      <aside className="relative h-[70vh] min-h-[520px] overflow-hidden border-l border-gray-200 bg-slate-100 lg:h-full lg:min-h-0">
         <div className="flex h-full items-center justify-center">
           <PdfLoader />
         </div>
-      ) : proxiedUrl ? (
-        <PdfViewer url={proxiedUrl} label={selection.label} />
-      ) : (
-        <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-          PDF not available.
-        </div>
-      )}
+      </aside>
+    );
+  }
+  if (pdfUrl) {
+    return (
+      <DocumentPreviewPane
+        url={pdfUrl}
+        label={selection.label}
+        zoomStorageKey="iom-partner-preview-zoom"
+      />
+    );
+  }
+  return (
+    <aside className="relative flex h-[70vh] min-h-[520px] items-center justify-center overflow-hidden border-l border-gray-200 bg-slate-100 text-sm text-muted-foreground lg:h-full lg:min-h-0">
+      PDF not available.
     </aside>
   );
 }
@@ -290,7 +203,12 @@ export function RegisteredPartnerMoasTable({
             {moa.template?.name ?? "Template unavailable"}
           </p>
           <div className="text-muted-foreground mt-1 grid grid-cols-2 gap-3 text-xs">
-            <p>Start: {formatDateWithoutTime(moa.effective_date)}</p>
+            <p>
+              Start:{" "}
+              {moa.effective_date
+                ? formatDateWithoutTime(moa.effective_date)
+                : "—"}
+            </p>
             <p className="flex items-center gap-1">
               End:{" "}
               <MoaEndDate

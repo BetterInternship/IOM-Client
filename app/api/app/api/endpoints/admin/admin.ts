@@ -3927,8 +3927,13 @@ export const adminControllerAppendUniversityLegacyCompanyMoas = (
 ) => {
   const formData = new FormData();
   formData.append(`moas`, appendLegacyMoasDto.moas);
+  if (appendLegacyMoasDto.moaDocuments !== undefined) {
+    appendLegacyMoasDto.moaDocuments.forEach((value) =>
+      formData.append(`moaDocuments`, value),
+    );
+  }
 
-  return preconfiguredAxiosFunction<void>({
+  return preconfiguredAxiosFunction<UniversityLegacyCompanyDetailResponse>({
     url: `/api/admin/universities/${universityId}/legacy-companies/${legacyCompanyId}/moas`,
     method: "POST",
     headers: { "Content-Type": "multipart/form-data" },
@@ -3938,7 +3943,7 @@ export const adminControllerAppendUniversityLegacyCompanyMoas = (
 };
 
 export const getAdminControllerAppendUniversityLegacyCompanyMoasMutationOptions =
-  <TError = unknown, TContext = unknown>(options?: {
+  <TError = ErrorResponse, TContext = unknown>(options?: {
     mutation?: UseMutationOptions<
       Awaited<
         ReturnType<typeof adminControllerAppendUniversityLegacyCompanyMoas>
@@ -4001,10 +4006,10 @@ export type AdminControllerAppendUniversityLegacyCompanyMoasMutationResult =
 export type AdminControllerAppendUniversityLegacyCompanyMoasMutationBody =
   AppendLegacyMoasDto;
 export type AdminControllerAppendUniversityLegacyCompanyMoasMutationError =
-  unknown;
+  ErrorResponse;
 
 export const useAdminControllerAppendUniversityLegacyCompanyMoas = <
-  TError = unknown,
+  TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {

@@ -1,9 +1,16 @@
 "use client";
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
-import { preconfiguredAxios } from "@/app/api/preconfig.axios";
+import {
+  getUniversityControllerGetAccountsQueryKey,
+  useUniversityControllerCreateStaff,
+  useUniversityControllerDeactivateStaff,
+  useUniversityControllerGetAccounts,
+  useUniversityControllerReactivateStaff,
+  useUniversityControllerResendInvite,
+} from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,18 +29,17 @@ function InviteStaffForm({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [error, setError] = useState("");
 
-  const createStaff = useMutation({
-    mutationFn: () =>
-      preconfiguredAxios.post("/api/university/accounts", {
-        email,
-        display_name: name,
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["university-accounts"] });
-      toast.success("Invitation sent");
-      onClose();
+  const createStaff = useUniversityControllerCreateStaff({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getUniversityControllerGetAccountsQueryKey(),
+        });
+        toast.success("Invitation sent");
+        onClose();
+      },
+      onError: (e: Error) => setError(e.message),
     },
-    onError: (e: Error) => setError(e.message),
   });
 
   return (
@@ -42,7 +48,7 @@ function InviteStaffForm({ onClose }: { onClose: () => void }) {
       onSubmit={(e) => {
         e.preventDefault();
         setError("");
-        createStaff.mutate();
+        createStaff.mutate({ data: { email, display_name: name } });
       }}
       className="space-y-4"
     >
@@ -90,35 +96,33 @@ export default function AccountsPage() {
   const queryClient = useQueryClient();
   const { openModal, closeModal } = useModal();
 
-  const { data, isLoading: accountsLoading } = useQuery({
-    queryKey: ["university-accounts"],
-    queryFn: () =>
-      preconfiguredAxios
-        .get("/api/university/accounts")
-        .then((r) => r.data as { accounts: StaffAccount[] }),
-    enabled: !!account && isSuperadmin,
-  });
+  const { data, isLoading: accountsLoading } =
+    useUniversityControllerGetAccounts({
+      query: { enabled: !!account && isSuperadmin },
+    });
 
   const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: ["university-accounts"] });
+    queryClient.invalidateQueries({
+      queryKey: getUniversityControllerGetAccountsQueryKey(),
+    });
 
-  const deactivate = useMutation({
-    mutationFn: (id: string) =>
-      preconfiguredAxios.patch(`/api/university/accounts/${id}/deactivate`),
-    onSuccess: invalidate,
-    onError: (e: Error) => toast.error(e.message),
+  const deactivate = useUniversityControllerDeactivateStaff({
+    mutation: {
+      onSuccess: invalidate,
+      onError: (e: Error) => toast.error(e.message),
+    },
   });
-  const reactivate = useMutation({
-    mutationFn: (id: string) =>
-      preconfiguredAxios.patch(`/api/university/accounts/${id}/reactivate`),
-    onSuccess: invalidate,
-    onError: (e: Error) => toast.error(e.message),
+  const reactivate = useUniversityControllerReactivateStaff({
+    mutation: {
+      onSuccess: invalidate,
+      onError: (e: Error) => toast.error(e.message),
+    },
   });
-  const resendInvite = useMutation({
-    mutationFn: (id: string) =>
-      preconfiguredAxios.post(`/api/university/accounts/${id}/resend-invite`),
-    onSuccess: () => toast.success("Invitation resent"),
-    onError: (e: Error) => toast.error(e.message),
+  const resendInvite = useUniversityControllerResendInvite({
+    mutation: {
+      onSuccess: () => toast.success("Invitation resent"),
+      onError: (e: Error) => toast.error(e.message),
+    },
   });
 
   if (isLoading || !account) return null;
@@ -138,9 +142,9 @@ export default function AccountsPage() {
         isDeactivating={deactivate.isPending}
         isReactivating={reactivate.isPending}
         isResendingInvite={resendInvite.isPending}
-        onDeactivate={(id) => deactivate.mutate(id)}
-        onReactivate={(id) => reactivate.mutate(id)}
-        onResendInvite={(id) => resendInvite.mutate(id)}
+        onDeactivate={(accountId) => deactivate.mutate({ accountId })}
+        onReactivate={(accountId) => reactivate.mutate({ accountId })}
+        onResendInvite={(accountId) => resendInvite.mutate({ accountId })}
         toolbarActions={
           <Button
             onClick={() =>
