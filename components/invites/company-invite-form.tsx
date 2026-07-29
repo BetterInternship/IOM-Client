@@ -352,7 +352,7 @@ export function CompanyInviteForm({
                   <Building2 className="size-5" aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-gray-900">
+                  <p className="truncate text-sm font-semibold text-gray-900 uppercase">
                     {mode === "registered" && selectedCompany
                       ? selectedCompany.registered_name
                       : companyName}

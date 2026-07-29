@@ -190,7 +190,7 @@ export function LegacyCompaniesPanel({
         accessorFn: (row) => row.company_name,
         cell: ({ row }) => (
           <span className="font-medium text-gray-900">
-            {row.original.company_name}
+            <span className="uppercase">{row.original.company_name}</span>
           </span>
         ),
       },
@@ -481,7 +481,7 @@ export function LegacyCompanyDetailView({
       <div>
         <div className="flex items-start justify-between gap-3">
           <h3 className="font-semibold text-gray-900">
-            {company.company_name}
+            <span className="uppercase">{company.company_name}</span>
           </h3>
           <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
             Imported
@@ -1093,8 +1093,9 @@ export function UploadDialog({
         <div className="space-y-2">
           <Label>Company Name *</Label>
           <Input
+            className="uppercase"
             value={companyName}
-            onChange={(e) => setCompanyName(e.target.value)}
+            onChange={(e) => setCompanyName(e.target.value.toUpperCase())}
             placeholder="Acme Corp"
           />
         </div>
@@ -1727,7 +1728,7 @@ export function CsvUploadDialog({
                             : "text-red-700"
                         }
                       >
-                        {r.company_name} — {r.status.replace(/_/g, " ")}
+                        <span className="uppercase">{r.company_name}</span> — {r.status.replace(/_/g, " ")}
                       </span>
                       {r.message && (
                         <span className="text-muted-foreground ml-1">
@@ -2109,7 +2110,7 @@ company-documents/acme-mayor.pdf`}
                             : "text-red-700"
                         }
                       >
-                        {r.company_name} — {r.status.replace(/_/g, " ")}
+                        <span className="uppercase">{r.company_name}</span> — {r.status.replace(/_/g, " ")}
                       </span>
                       {r.message && (
                         <span className="text-muted-foreground ml-1">

@@ -230,7 +230,7 @@ function PartnerIdentity({
       <CompanyLogo name={name} logoUrl={logoUrl} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg leading-tight font-semibold text-gray-900">
+          <h2 className="text-lg leading-tight font-semibold text-gray-900 uppercase">
             {name}
           </h2>
           {badge}

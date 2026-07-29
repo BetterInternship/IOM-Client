@@ -69,7 +69,7 @@ export function UniversityMoaDetail({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold text-gray-900">
-                {company.registered_name}
+                <span className="uppercase">{company.registered_name}</span>
                 <span className="text-muted-foreground font-normal">
                   {" "}
                   &ndash; ({moa.template?.name})

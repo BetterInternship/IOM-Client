@@ -121,7 +121,7 @@ export function UniversityInvitesTable({
         return (
           <div className="min-w-0">
             <TruncatedTooltip className="font-medium text-gray-900">
-              {name}
+              <span className="uppercase">{name}</span>
             </TruncatedTooltip>
             {showEmail && (
               <p className="text-muted-foreground truncate text-xs">
@@ -213,7 +213,7 @@ export function UniversityInvitesTable({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <TruncatedTooltip className="text-sm font-semibold text-gray-900">
-                  {name}
+                  <span className="uppercase">{name}</span>
                 </TruncatedTooltip>
                 {showEmail && (
                   <p className="text-muted-foreground mt-0.5 truncate text-xs">
