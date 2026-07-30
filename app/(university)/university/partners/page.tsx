@@ -799,6 +799,13 @@ function PartnersContent({
     }
 
     for (const l of legacyCompanies) {
+      if (l.registered_company_id) {
+        const registered = map.get(`registered:${l.registered_company_id}`);
+        if (registered) {
+          registered.legacyEntry = l;
+          continue;
+        }
+      }
       const details = l.company_details as Record<string, unknown>;
       const contactEmail =
         typeof details.contact_email === "string" &&

@@ -596,6 +596,13 @@ export default function AdminUniversityPartnersPage() {
     }
 
     for (const l of legacyData?.legacyCompanies ?? []) {
+      if (l.registered_company_id) {
+        const registered = map.get(`registered:${l.registered_company_id}`);
+        if (registered) {
+          registered.legacyEntry = l satisfies UniversityLegacyCompanySummary;
+          continue;
+        }
+      }
       map.set(`legacy:${l.id}`, {
         id: `legacy:${l.id}`,
         displayName: l.company_name,

@@ -521,7 +521,7 @@ function BulkUploadForm({ onClose }: { onClose: () => void }) {
             </div>
             <div className="rounded bg-yellow-50 p-2 text-yellow-700">
               <p className="text-lg font-bold">
-                {results.summary.duplicate_tin}
+                {results.summary.duplicate_tin + (results.summary.duplicate_name ?? 0)}
               </p>
               <p>Duplicate</p>
             </div>
