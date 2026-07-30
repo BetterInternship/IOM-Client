@@ -53,7 +53,6 @@ import {
   CircleCheck,
   Eye,
   FileText,
-  Lightbulb,
   Loader2,
   Upload,
 } from "lucide-react";
@@ -606,42 +605,6 @@ function ProfileContent() {
                   </FileDropTarget>
                 );
               })}
-            </div>
-          </CollapsibleCardSection>
-        </CollapsibleCardGroup>
-
-        <CollapsibleCardGroup type="single" collapsible variant="grouped">
-          <CollapsibleCardSection
-            value="additional"
-            trigger={
-              <CollapsibleCardSectionTitle
-                icon={Building2}
-                title="Additional Information"
-                badge={
-                  <span className="text-muted-foreground font-normal">
-                    (Optional)
-                  </span>
-                }
-              />
-            }
-            persistentContent={
-              <div className="border-primary/20 bg-primary/5 mx-5 mb-4 flex items-center gap-3 rounded-[0.33em] border px-4 py-3 text-sm text-gray-700">
-                <span className="bg-primary/10 rounded-full p-2">
-                  <Lightbulb className="text-primary h-4 w-4" />
-                </span>
-                <p>
-                  <span className="font-semibold">Tip:</span> These details help
-                  universities learn more about your company.
-                </p>
-              </div>
-            }
-            contentClassName="px-5 pb-5"
-          >
-            <div className="space-y-4">
-              {textField("other", "description", "Description")}
-              {textField("other", "website", "Website")}
-              {textField("other", "phone", "Phone")}
-              {textField("other", "industry", "Industry")}
             </div>
           </CollapsibleCardSection>
         </CollapsibleCardGroup>
