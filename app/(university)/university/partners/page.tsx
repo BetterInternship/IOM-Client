@@ -265,11 +265,7 @@ function VerifiedDocumentDetails({
   }
   if (entries.length === 0) return null;
   return (
-    <CollapsibleCard
-      id="verified-details"
-      title="Verified details"
-      icon={<ShieldCheck className="text-supportive h-4 w-4" />}
-    >
+    <CollapsibleCard id="verified-details" title="Verified details">
       <div className="space-y-4 px-5 pb-5">
         {entries.map(([key, field]) => {
           const isDateOfIncorporation =
@@ -706,6 +702,11 @@ function PartnersContent({
     useUniversityControllerGetLegacyCompany(detailId, {
       query: { enabled: detailType === "legacy" && !!detailId },
     });
+  const { data: partnerLegacyData } =
+    useUniversityControllerGetPartnerLegacyCompany(
+      detailType === "partner" ? detailId : null,
+      { query: { enabled: detailType === "partner" && !!detailId } },
+    );
   const blacklist = (blacklistData?.blacklist ?? []) as BlacklistEntry[];
   const legacyCompanies = (legacyData?.legacyCompanies ?? [])
     .map(mapLegacyCompanySummary)
@@ -935,6 +936,27 @@ function PartnersContent({
   const company = partnerMoasData?.company ?? partnerEntry?.partnerCompany;
   const moas = partnerMoasData?.moas ?? [];
   const legacyCompany = legacyDetailData?.legacyCompany;
+  const partnerLegacyCompany = partnerLegacyData?.legacyCompany;
+  const combinedMoas = [
+    ...moas,
+    ...(partnerLegacyCompany?.moas ?? []).map((legacyMoa) => ({
+      id: `legacy:${legacyMoa.id}`,
+      status: isLegacyMoaExpired(legacyMoa.expiry_date, legacyMoa.is_perpetual)
+        ? "Expired"
+        : "Active",
+      created_at: legacyMoa.created_at,
+      effective_date: legacyMoa.effective_date,
+      expiry_date: legacyMoa.expiry_date,
+      is_expired: isLegacyMoaExpired(
+        legacyMoa.expiry_date,
+        legacyMoa.is_perpetual,
+      ),
+      template: { name: legacyMoa.filename ?? "Imported MOA" },
+      imported: true,
+      importedUrl: legacyMoa.document_url,
+      importedLabel: legacyMoa.filename,
+    })),
+  ];
   const registeredPartnerStatus = partnerEntry?.isBlacklisted
     ? "blacklisted"
     : partnerEntry?.hasActiveMoa
@@ -1239,6 +1261,18 @@ function PartnersContent({
                     status={registeredPartnerStatus}
                   />
 
+                  <CollapsibleCard
+                    id="registered-moa-history"
+                    title="MOA history"
+                    defaultOpen
+                  >
+                    <RegisteredPartnerMoasTable
+                      moas={combinedMoas}
+                      isLoading={isMoasLoading}
+                      onOpenMoa={setPdfSelection}
+                    />
+                  </CollapsibleCard>
+
                   {partnerEntry?.isBlacklisted &&
                     partnerEntry.blacklistEntry && (
                       <div className="border-destructive/30 bg-destructive/5 text-destructive space-y-1 rounded-[0.33em] border p-3 text-sm">
@@ -1278,24 +1312,6 @@ function PartnersContent({
                       onOpenDocument={openDocumentPreview}
                     />
                   )}
-
-                  <CollapsibleCard
-                    id="registered-moa-history"
-                    title="MOA history"
-                    defaultOpen
-                  >
-                    <RegisteredPartnerMoasTable
-                      moas={moas}
-                      isLoading={isMoasLoading}
-                      onOpenMoa={setPdfSelection}
-                    />
-                  </CollapsibleCard>
-
-                  <LegacyRecordsSection
-                    currentCompanyId={detailId}
-                    onOpenMoa={setPdfSelection}
-                    onOpenDocument={openDocumentPreview}
-                  />
 
                   {partnerEntry && (
                     <CollapsibleCard id="partner-actions" title="Actions">
