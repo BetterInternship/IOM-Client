@@ -267,7 +267,7 @@ function CompanySecondLine({
   );
 }
 
-function NoAccountIndicator() {
+export function NoAccountIndicator() {
   return (
     <span
       className="group/no-account text-muted-foreground inline-flex h-7 max-w-7 shrink-0 items-center gap-0 overflow-hidden rounded-full border border-gray-300 bg-white px-1.5 transition-[max-width,padding,gap] duration-200 hover:max-w-32 hover:gap-1.5 hover:px-2.5"

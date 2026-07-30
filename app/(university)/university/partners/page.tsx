@@ -83,6 +83,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   UniversityPartnersTable,
+  NoAccountIndicator,
   type UniversityBlacklistEntry as BlacklistEntry,
   type UniversityLegacyCompanySummary as LegacyCompanySummary,
   type UniversityPartnerTableRow as PartnerTableRow,
@@ -432,18 +433,7 @@ function ReadOnlyLegacyDetail({
                 ? "expired"
                 : "inactive"
           }
-          badge={
-            <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              expandIcon
-              aria-label="Imported"
-            >
-              <Archive className="h-3.5 w-3.5 shrink-0" />
-              <span className="button-label whitespace-nowrap">Imported</span>
-            </Button>
-          }
+          badge={<NoAccountIndicator />}
         />
       )}
 
