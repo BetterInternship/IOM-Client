@@ -195,7 +195,7 @@ function PartnerTabs({
         value="expired"
         className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
       >
-        Expired/None
+        Expired/No MOA
         <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground">
           {expiredCount}
         </span>
@@ -236,7 +236,13 @@ function PartnerIdentity({
         <div className="mt-1.5">
           <PartnershipStatusBadge
             status={status}
-            label={status === "active" ? "Active Partnership" : undefined}
+            label={
+              status === "active"
+                ? "Active Partnership"
+                : status === "inactive"
+                  ? "No MOA"
+                  : undefined
+            }
           />
         </div>
       </div>

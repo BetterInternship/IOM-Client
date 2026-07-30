@@ -78,7 +78,7 @@ function hasResolvableEmail(row: UniversityPartnerTableRow): boolean {
 
 function getPartnerStatus(row: UniversityPartnerTableRow) {
   if (row.isImported && row.legacyEntry) {
-    if (!row.legacyEntry.hasMoa) return "None";
+    if (!row.legacyEntry.hasMoa) return "No MOA";
     if (row.legacyEntry.hasPerpetualMoa) return "Active";
     if (
       row.legacyEntry.valid_until &&
@@ -91,7 +91,7 @@ function getPartnerStatus(row: UniversityPartnerTableRow) {
   if (row.hasActiveMoa) return "Active";
   if (row.isPartnerExpired) return "Expired";
   if (row.latestMoaStatus === "revoked") return "Revoked";
-  return row.latestMoaStatus ?? "None";
+  return row.latestMoaStatus ?? "No MOA";
 }
 
 function getPartnerStartDate(row: UniversityPartnerTableRow) {
@@ -125,7 +125,12 @@ function getPartnerEndDateLabel(row: UniversityPartnerTableRow) {
 
 function PartnerStatus({ row }: { row: UniversityPartnerTableRow }) {
   const status = getPartnerStatus(row);
-  return <PartnershipStatusBadge status={status} />;
+  return (
+    <PartnershipStatusBadge
+      status={status === "No MOA" ? "inactive" : status}
+      label={status === "No MOA" ? "No MOA" : undefined}
+    />
+  );
 }
 
 /** D5 — amber within the expiring-soon window, with days remaining appended. */
