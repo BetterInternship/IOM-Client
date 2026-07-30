@@ -63,6 +63,7 @@ import { formatDateWithoutTime, cn } from "@/lib/utils";
 import {
   Archive,
   ArrowLeft,
+  Ban,
   ChevronDown,
   ChevronRight,
   CircleAlert,
@@ -227,14 +228,13 @@ function PartnerIdentity({
   badge?: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-start gap-3">
       <CompanyLogo name={name} logoUrl={logoUrl} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <h2 className="text-lg leading-tight font-semibold text-gray-900 uppercase">
             {name}
           </h2>
-          {badge}
         </div>
         <div className="mt-1.5">
           <PartnershipStatusBadge
@@ -243,6 +243,7 @@ function PartnerIdentity({
           />
         </div>
       </div>
+      {badge && <div className="ml-auto shrink-0">{badge}</div>}
     </div>
   );
 }
@@ -1249,6 +1250,61 @@ function PartnersContent({
                     name={company?.registered_name ?? "—"}
                     logoUrl={partnerEntry?.logoUrl}
                     status={registeredPartnerStatus}
+                    badge={
+                      partnerEntry ? (
+                        partnerEntry.isBlacklisted ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            aria-label="Un-blacklist company"
+                            className="group/blacklist h-8 max-w-8 gap-0 overflow-hidden rounded-[0.33em] px-2 transition-[max-width,gap] duration-200 hover:max-w-32 hover:gap-1.5"
+                            onClick={() =>
+                              modal.confirmAction.open({
+                                title: `Remove ${partnerEntry.displayName} from the blacklist?`,
+                                description:
+                                  "This re-enables future requests from this company. Previously revoked MOAs will not be restored.",
+                                confirmLabel: "Remove",
+                                onConfirm: () =>
+                                  unblacklistMutation.mutate({
+                                    companyId: getCompanyIdForBlacklist(partnerEntry),
+                                  }),
+                              })
+                            }
+                          >
+                            <Ban className="size-3.5 shrink-0" />
+                            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-[max-width,opacity] duration-200 group-hover/blacklist:max-w-24 group-hover/blacklist:opacity-100">
+                              Un-blacklist
+                            </span>
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            scheme="destructive"
+                            size="sm"
+                            aria-label="Blacklist company"
+                            className="group/blacklist h-8 max-w-8 gap-0 overflow-hidden rounded-[0.33em] px-2 transition-[max-width,gap] duration-200 hover:max-w-32 hover:gap-1.5"
+                            onClick={() =>
+                              modal.blacklistPartner.open({
+                                companyName: partnerEntry.displayName,
+                                onBlacklist: (reason) =>
+                                  blacklistMutation.mutate({
+                                    data: {
+                                      companyId: getCompanyIdForBlacklist(partnerEntry),
+                                      reason: reason || undefined,
+                                    },
+                                  }),
+                                isPending: blacklistMutation.isPending,
+                              })
+                            }
+                          >
+                            <Ban className="size-3.5 shrink-0" />
+                            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-[max-width,opacity] duration-200 group-hover/blacklist:max-w-24 group-hover/blacklist:opacity-100">
+                              Blacklist
+                            </span>
+                          </Button>
+                        )
+                      ) : null
+                    }
                   />
 
                   <CollapsibleCard
@@ -1303,62 +1359,6 @@ function PartnersContent({
                     />
                   )}
 
-                  {partnerEntry && (
-                    <CollapsibleCard id="partner-actions" title="Actions">
-                      <div className="flex flex-col items-start justify-between gap-4 p-4 sm:flex-row sm:items-center">
-                        <p className="text-muted-foreground max-w-lg text-sm">
-                          {partnerEntry.isBlacklisted
-                            ? "Allow this company to send new partnership requests again. Previously revoked MOAs will not be restored."
-                            : "Block new requests from this company and revoke its currently active MOAs."}
-                        </p>
-                        {partnerEntry.isBlacklisted ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0"
-                            onClick={() =>
-                              modal.confirmAction.open({
-                                title: `Remove ${partnerEntry.displayName} from the blacklist?`,
-                                description:
-                                  "This re-enables future requests from this company. Previously revoked MOAs will not be restored.",
-                                confirmLabel: "Remove",
-                                onConfirm: () =>
-                                  unblacklistMutation.mutate({
-                                    companyId:
-                                      getCompanyIdForBlacklist(partnerEntry),
-                                  }),
-                              })
-                            }
-                          >
-                            Un-blacklist
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            scheme="destructive"
-                            size="sm"
-                            className="shrink-0"
-                            onClick={() =>
-                              modal.blacklistPartner.open({
-                                companyName: partnerEntry.displayName,
-                                onBlacklist: (reason) =>
-                                  blacklistMutation.mutate({
-                                    data: {
-                                      companyId:
-                                        getCompanyIdForBlacklist(partnerEntry),
-                                      reason: reason || undefined,
-                                    },
-                                  }),
-                                isPending: blacklistMutation.isPending,
-                              })
-                            }
-                          >
-                            Blacklist company
-                          </Button>
-                        )}
-                      </div>
-                    </CollapsibleCard>
-                  )}
                 </>
               )}
 
