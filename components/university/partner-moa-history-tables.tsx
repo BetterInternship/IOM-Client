@@ -275,6 +275,13 @@ export function LegacyPartnerMoasTable({
       ),
     },
     {
+      id: "imported",
+      header: "Imported",
+      width: "w-[12%]",
+      sortable: false,
+      render: () => <PartnershipStatusBadge status="imported" label="Imported" />,
+    },
+    {
       id: "document",
       header: "Document",
       width: "w-[27%]",

@@ -218,11 +218,13 @@ function PartnerIdentity({
   logoUrl,
   status,
   badge,
+  badgePlacement = "beside",
 }: {
   name: string;
   logoUrl?: string | null;
   status: string;
   badge?: ReactNode;
+  badgePlacement?: "beside" | "top-right";
 }) {
   return (
     <div className="flex items-start gap-3">
@@ -232,6 +234,7 @@ function PartnerIdentity({
           <h2 className="text-lg leading-tight font-semibold text-gray-900 uppercase">
             {name}
           </h2>
+          {badge && badgePlacement === "beside" && badge}
         </div>
         <div className="mt-1.5">
           <PartnershipStatusBadge
@@ -246,7 +249,9 @@ function PartnerIdentity({
           />
         </div>
       </div>
-      {badge && <div className="ml-auto shrink-0">{badge}</div>}
+      {badge && badgePlacement === "top-right" && (
+        <div className="ml-auto shrink-0">{badge}</div>
+      )}
     </div>
   );
 }
@@ -416,6 +421,8 @@ function ReadOnlyLegacyDetail({
         />
       )}
 
+      <div className="flex flex-col">
+      <div className="order-2">
       <CollapsibleCard id="company-details" title="Company details">
         <div className="space-y-4 px-5 pb-5">
           {detailEntries.map(([label, value]) => (
@@ -427,7 +434,9 @@ function ReadOnlyLegacyDetail({
           ))}
         </div>
       </CollapsibleCard>
+      </div>
 
+      <div className="order-3">
       <CollapsibleCard
         id="legacy-documents"
         title="Documents"
@@ -471,7 +480,9 @@ function ReadOnlyLegacyDetail({
           )}
         </div>
       </CollapsibleCard>
+      </div>
 
+      <div className="order-1">
       <CollapsibleCard
         id="legacy-moa-history"
         title={
@@ -514,6 +525,8 @@ function ReadOnlyLegacyDetail({
       >
         <LegacyPartnerMoasTable moas={company.moas} onOpenMoa={onOpenMoa} />
       </CollapsibleCard>
+      </div>
+      </div>
     </>
   );
 }
@@ -1190,6 +1203,7 @@ function PartnersContent({
                     name={company?.registered_name ?? "—"}
                     logoUrl={partnerEntry?.logoUrl}
                     status={registeredPartnerStatus}
+                    badgePlacement="top-right"
                     badge={
                       partnerEntry ? (
                         partnerEntry.isBlacklisted ? (
