@@ -14,13 +14,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
+import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
 
 export interface CompanyPartnerUniversity {
   university: {
     id: string;
     registered_name: string;
     logo_url: string | null;
-    address: string | null;
   };
   activeCount: number;
 }
@@ -39,19 +39,6 @@ const ACTIVE_MOA_RANGES: Array<{
   { value: "3-5", label: "3-5", matches: (count) => count >= 3 && count <= 5 },
   { value: "6+", label: "6+", matches: (count) => count >= 6 },
 ];
-
-export function parsePartnerStatuses(value: string | null): PartnerStatus[] {
-  return (value?.split(",") ?? []).filter(
-    (status): status is PartnerStatus =>
-      status === "active" || status === "inactive",
-  );
-}
-
-export function parseActiveMoaRanges(value: string | null): ActiveMoaRange[] {
-  return (value?.split(",") ?? []).filter((range): range is ActiveMoaRange =>
-    ACTIVE_MOA_RANGES.some((option) => option.value === range),
-  );
-}
 
 function universityInitials(name: string) {
   return name
@@ -80,6 +67,19 @@ function PartnerLogo({ partner }: { partner: CompanyPartnerUniversity }) {
         </span>
       )}
     </div>
+  );
+}
+
+export function parsePartnerStatuses(value: string | null): PartnerStatus[] {
+  return (value?.split(",") ?? []).filter(
+    (status): status is PartnerStatus =>
+      status === "active" || status === "inactive",
+  );
+}
+
+export function parseActiveMoaRanges(value: string | null): ActiveMoaRange[] {
+  return (value?.split(",") ?? []).filter((range): range is ActiveMoaRange =>
+    ACTIVE_MOA_RANGES.some((option) => option.value === range),
   );
 }
 
@@ -125,7 +125,6 @@ function PartnersTableSkeleton() {
           <Skeleton className="h-12 w-12 shrink-0" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-48 max-w-full" />
-            <Skeleton className="h-3 w-72 max-w-full" />
           </div>
           <Skeleton className="hidden h-4 w-20 md:block" />
           <Skeleton className="hidden h-4 w-12 md:block" />
@@ -180,32 +179,9 @@ export function CompanyPartnersTable({
 
   const columns: Array<ResourceTableColumn<CompanyPartnerUniversity>> = [
     {
-      id: "university",
-      header: "University",
-      width: "w-[46%]",
-      getSortValue: (partner) => partner.university.registered_name,
-      render: (partner) => (
-        <Link
-          href={partnerHref(partner)}
-          onClick={(event) => event.stopPropagation()}
-          className="flex min-w-0 items-center gap-4 text-inherit"
-        >
-          <PartnerLogo partner={partner} />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-gray-900">
-              {partner.university.registered_name}
-            </p>
-            <p className="text-muted-foreground mt-1 truncate text-sm leading-5">
-              {partner.university.address || "Address not provided"}
-            </p>
-          </div>
-        </Link>
-      ),
-    },
-    {
       id: "status",
       header: "Status",
-      width: "w-[22%]",
+      width: "w-[15%]",
       defaultSortDirection: "desc",
       getSortValue: (partner) => (partner.activeCount > 0 ? 1 : 0),
       render: (partner) => (
@@ -219,10 +195,27 @@ export function CompanyPartnersTable({
       ),
     },
     {
+      id: "university",
+      header: "University",
+      width: "w-[25%]",
+      getSortValue: (partner) => partner.university.registered_name,
+      render: (partner) => (
+        <Link
+          href={partnerHref(partner)}
+          onClick={(event) => event.stopPropagation()}
+          className="flex min-w-0 items-center gap-3 text-inherit"
+        >
+          <PartnerLogo partner={partner} />
+          <TruncatedTooltip className="text-sm font-semibold text-gray-900">
+            {partner.university.registered_name}
+          </TruncatedTooltip>
+        </Link>
+      ),
+    },
+    {
       id: "active-moas",
       header: "Active MOAs",
       width: "w-[20%]",
-      align: "center",
       defaultSortDirection: "desc",
       getSortValue: (partner) => partner.activeCount,
       render: (partner) => (
@@ -238,15 +231,15 @@ export function CompanyPartnersTable({
     {
       id: "action",
       header: <span className="sr-only">Action</span>,
-      width: "w-[12%]",
-      align: "center",
+      width: "w-[10%]",
+      align: "right",
       sortable: false,
       render: (partner) => (
         <Link
           href={partnerHref(partner)}
           onClick={(event) => event.stopPropagation()}
           aria-label={`Open ${partner.university.registered_name}`}
-          className="text-primary mx-auto inline-flex h-9 w-9 items-center justify-center"
+          className="text-primary ml-auto inline-flex h-9 w-9 items-center justify-center"
         >
           <ChevronRight
             className="h-5 w-5 transition-transform group-hover:translate-x-0.5"
@@ -266,8 +259,7 @@ export function CompanyPartnersTable({
       placeholder: "Search universities...",
       ariaLabel: "Search partner universities",
       matches: (partner, query) =>
-        partner.university.registered_name.toLowerCase().includes(query) ||
-        !!partner.university.address?.toLowerCase().includes(query),
+        partner.university.registered_name.toLowerCase().includes(query),
       onChange: (value) => {
         const current = readCurrentQuery();
         onQueryChange(value, current.statuses, current.ranges, 1);
@@ -355,25 +347,22 @@ export function CompanyPartnersTable({
           href={partnerHref(partner)}
           className="group w-full px-4 py-4 text-left transition-colors hover:bg-primary/[0.035] focus-visible:bg-primary/[0.035] focus-visible:outline-none"
         >
-          <div className="flex items-start gap-3">
-            <PartnerLogo partner={partner} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-gray-900">
-                {partner.university.registered_name}
-              </p>
-              <div className="mt-1">
-                <PartnerStatusBadge partner={partner} />
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-3">
+              <PartnerLogo partner={partner} />
+              <div className="min-w-0">
+                <TruncatedTooltip className="text-sm font-semibold text-gray-900">
+                  {partner.university.registered_name}
+                </TruncatedTooltip>
+                <div className="mt-1">
+                  <PartnerStatusBadge partner={partner} />
+                </div>
               </div>
             </div>
             <ArrowRight className="text-primary mt-3 h-4 w-4 shrink-0" />
           </div>
-          <div className="text-muted-foreground mt-3 flex items-end justify-between gap-4 pl-[60px] text-sm">
-            <p className="line-clamp-2">
-              {partner.university.address || "Address not provided"}
-            </p>
-            <span className="shrink-0">
-              <ActiveMoas partner={partner} />
-            </span>
+          <div className="mt-3 flex justify-end text-sm">
+            <ActiveMoas partner={partner} />
           </div>
         </Link>
       )}
@@ -394,7 +383,7 @@ export function CompanyPartnersTable({
           : "No university partners match your search",
         description: hasFilters
           ? "Try changing or clearing your filters."
-          : "Try another university name or address.",
+          : "Try another university name.",
         action: hasFilters ? (
           <Button
             variant="outline"
