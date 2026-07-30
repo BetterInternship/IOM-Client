@@ -130,7 +130,8 @@ export function useIomModalRegistry() {
                   ? "Invite to sign an MOA"
                   : "Invite to renew their MOA",
             panelClassName: "!w-full sm:!max-w-lg",
-            contentClassName: "max-h-[calc(100dvh-8rem)] overflow-auto px-4 pb-4",
+            contentClassName:
+              "max-h-[calc(100dvh-8rem)] overflow-auto px-4 pb-4",
           },
         ),
       close: () => closeModal("bulk-invite-companies"),
@@ -256,12 +257,11 @@ function ApprovalPendingContent({ onQueueMoa }: { onQueueMoa: () => void }) {
           <Hourglass className="size-6" aria-hidden="true" />
         </span>
         <h2 className="mt-5 text-xl font-semibold tracking-tight text-gray-950">
-          Waiting for approval
+          Pending approval
         </h2>
         <p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-6">
-          Your company profile has been submitted.
-          <br />
-          Our team is reviewing it now.
+          Your company is pending approval. Expect an email in the next 24
+          hours.
         </p>
       </div>
 
@@ -284,7 +284,7 @@ function ApprovalPendingContent({ onQueueMoa }: { onQueueMoa: () => void }) {
             <Clock className="size-4" aria-hidden="true" />
           </span>
           <p className="text-sm font-semibold text-gray-900">
-            Usually takes less than 1 business day
+            Usually takes less than 24 hours
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -298,7 +298,7 @@ function ApprovalPendingContent({ onQueueMoa }: { onQueueMoa: () => void }) {
       </div>
 
       <Button size="lg" className="mt-6 w-full" onClick={onQueueMoa}>
-        Request MOA anyway
+        Request MOA now
       </Button>
 
       <p className="text-muted-foreground mt-3 text-center text-xs">

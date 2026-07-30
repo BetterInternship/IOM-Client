@@ -44,7 +44,9 @@ export function ProfileHeader({
     );
   }
 
-  const steps = [companyInfoComplete, documentsComplete];
+  // This page is one overall setup step. It is complete only when both
+  // company information and required documents are complete.
+  const steps = [companyInfoComplete && documentsComplete];
   const remainingSteps = steps.filter((complete) => !complete).length;
 
   return (
@@ -54,8 +56,7 @@ export function ProfileHeader({
       </h1>
       <div className="w-full max-w-sm space-y-3 sm:w-80">
         <p className="text-sm font-medium text-gray-700">
-          {remainingSteps} required {remainingSteps === 1 ? "step" : "steps"}{" "}
-          remaining
+          {remainingSteps === 1 ? "One last step remaining" : "Complete"}
         </p>
         <div
           className="flex gap-1.5"

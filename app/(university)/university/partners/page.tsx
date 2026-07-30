@@ -18,7 +18,6 @@ import {
   getUniversityControllerListLegacyCompaniesQueryKey,
   getUniversityControllerListPartnersQueryKey,
   getUniversityControllerListRenewalsQueryKey,
-  useUniversityControllerAppendLegacyCompanyDocuments,
   useUniversityControllerAppendLegacyCompanyMoas,
   useUniversityControllerBlacklistCompany,
   useUniversityControllerGetBlacklist,
@@ -46,10 +45,8 @@ import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { isOutstandingMoa } from "@/lib/partner-predicates";
 import {
   LegacyCompanyDetail,
-  AddDocumentsForm,
   MoaUploadDialog,
   buildMoaRequest,
-  type DocInput,
   formatLegacyLabel,
   formatLegacyFieldLabel,
   isFilledValue,
@@ -63,6 +60,7 @@ import { formatDateWithoutTime, cn } from "@/lib/utils";
 import {
   Archive,
   ArrowLeft,
+  Ban,
   ChevronDown,
   ChevronRight,
   CircleAlert,
@@ -83,6 +81,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   UniversityPartnersTable,
+  NoAccountIndicator,
   type UniversityBlacklistEntry as BlacklistEntry,
   type UniversityLegacyCompanySummary as LegacyCompanySummary,
   type UniversityPartnerTableRow as PartnerTableRow,
@@ -196,7 +195,7 @@ function PartnerTabs({
         value="expired"
         className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
       >
-        Expired/None
+        Expired/No MOA
         <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-destructive group-data-[state=active]:text-destructive-foreground">
           {expiredCount}
         </span>
@@ -226,22 +225,28 @@ function PartnerIdentity({
   badge?: ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-start gap-3">
       <CompanyLogo name={name} logoUrl={logoUrl} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <h2 className="text-lg leading-tight font-semibold text-gray-900 uppercase">
             {name}
           </h2>
-          {badge}
         </div>
         <div className="mt-1.5">
           <PartnershipStatusBadge
             status={status}
-            label={status === "active" ? "Active Partnership" : undefined}
+            label={
+              status === "active"
+                ? "Active Partnership"
+                : status === "inactive"
+                  ? "No MOA"
+                  : undefined
+            }
           />
         </div>
       </div>
+      {badge && <div className="ml-auto shrink-0">{badge}</div>}
     </div>
   );
 }
@@ -265,11 +270,7 @@ function VerifiedDocumentDetails({
   }
   if (entries.length === 0) return null;
   return (
-    <CollapsibleCard
-      id="verified-details"
-      title="Verified details"
-      icon={<ShieldCheck className="text-supportive h-4 w-4" />}
-    >
+    <CollapsibleCard id="verified-details" title="Verified details">
       <div className="space-y-4 px-5 pb-5">
         {entries.map(([key, field]) => {
           const isDateOfIncorporation =
@@ -377,31 +378,6 @@ function ReadOnlyLegacyDetail({
       .map(([key, value]) => [formatLegacyFieldLabel(key), value] as const),
   ];
 
-  const docUploadMutation = useUniversityControllerAppendLegacyCompanyDocuments(
-    {
-      mutation: {
-        onSuccess: () => {
-          queryClient.invalidateQueries({
-            queryKey: getUniversityControllerGetLegacyCompanyQueryKey(
-              company.id,
-            ),
-          });
-          queryClient.invalidateQueries({
-            queryKey: getUniversityControllerListLegacyCompaniesQueryKey(),
-          });
-          closeModal("legacy-add-documents");
-          toast("Documents uploaded", toastPresets.success);
-        },
-        onError: (err) => {
-          toast(
-            err instanceof Error ? err.message : "Failed to upload documents",
-            toastPresets.destructive,
-          );
-        },
-      },
-    },
-  );
-
   const moaUploadMutation = useUniversityControllerAppendLegacyCompanyMoas({
     mutation: {
       onSuccess: () => {
@@ -436,18 +412,7 @@ function ReadOnlyLegacyDetail({
                 ? "expired"
                 : "inactive"
           }
-          badge={
-            <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              expandIcon
-              aria-label="Imported"
-            >
-              <Archive className="h-3.5 w-3.5 shrink-0" />
-              <span className="button-label whitespace-nowrap">Imported</span>
-            </Button>
-          }
+          badge={<NoAccountIndicator />}
         />
       )}
 
@@ -465,45 +430,7 @@ function ReadOnlyLegacyDetail({
 
       <CollapsibleCard
         id="legacy-documents"
-        title={
-          <span className="flex w-full items-center justify-between gap-3">
-            <span>Documents</span>
-            {canUpload && (
-              <Button
-                size="xs"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  openModal(
-                    "legacy-add-documents",
-                    <AddDocumentsForm
-                      isPending={docUploadMutation.isPending}
-                      onSubmit={(inputs: DocInput[]) =>
-                        docUploadMutation.mutate({
-                          legacyCompanyId: company.id,
-                          data: {
-                            companyDocuments: inputs.map(({ file }) => file),
-                            documentTypes: JSON.stringify(
-                              inputs.map(({ type }) => type || "other"),
-                            ),
-                          },
-                        })
-                      }
-                      onClose={() => closeModal("legacy-add-documents")}
-                    />,
-                    {
-                      title: "Add documents",
-                      description:
-                        "Upload additional company documents (PDF, max 7MB each).",
-                      panelClassName: "!w-full sm:!max-w-md",
-                    },
-                  );
-                }}
-              >
-                <Upload className="h-3.5 w-3.5" /> Add
-              </Button>
-            )}
-          </span>
-        }
+        title="Documents"
         defaultOpen={false}
       >
         <div>
@@ -706,6 +633,11 @@ function PartnersContent({
     useUniversityControllerGetLegacyCompany(detailId, {
       query: { enabled: detailType === "legacy" && !!detailId },
     });
+  const { data: partnerLegacyData } =
+    useUniversityControllerGetPartnerLegacyCompany(
+      detailType === "partner" ? detailId : null,
+      { query: { enabled: detailType === "partner" && !!detailId } },
+    );
   const blacklist = (blacklistData?.blacklist ?? []) as BlacklistEntry[];
   const legacyCompanies = (legacyData?.legacyCompanies ?? [])
     .map(mapLegacyCompanySummary)
@@ -935,6 +867,27 @@ function PartnersContent({
   const company = partnerMoasData?.company ?? partnerEntry?.partnerCompany;
   const moas = partnerMoasData?.moas ?? [];
   const legacyCompany = legacyDetailData?.legacyCompany;
+  const partnerLegacyCompany = partnerLegacyData?.legacyCompany;
+  const combinedMoas = [
+    ...moas,
+    ...(partnerLegacyCompany?.moas ?? []).map((legacyMoa) => ({
+      id: `legacy:${legacyMoa.id}`,
+      status: isLegacyMoaExpired(legacyMoa.expiry_date, legacyMoa.is_perpetual)
+        ? "Expired"
+        : "Active",
+      created_at: legacyMoa.created_at,
+      effective_date: legacyMoa.effective_date,
+      expiry_date: legacyMoa.expiry_date,
+      is_expired: isLegacyMoaExpired(
+        legacyMoa.expiry_date,
+        legacyMoa.is_perpetual,
+      ),
+      template: { name: legacyMoa.filename ?? "Imported MOA" },
+      imported: true,
+      importedUrl: legacyMoa.document_url,
+      importedLabel: legacyMoa.filename,
+    })),
+  ];
   const registeredPartnerStatus = partnerEntry?.isBlacklisted
     ? "blacklisted"
     : partnerEntry?.hasActiveMoa
@@ -1237,7 +1190,74 @@ function PartnersContent({
                     name={company?.registered_name ?? "—"}
                     logoUrl={partnerEntry?.logoUrl}
                     status={registeredPartnerStatus}
+                    badge={
+                      partnerEntry ? (
+                        partnerEntry.isBlacklisted ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            aria-label="Un-blacklist company"
+                            className="group/blacklist h-8 max-w-8 gap-0 overflow-hidden rounded-[0.33em] px-2 transition-[max-width,gap] duration-200 hover:max-w-32 hover:gap-1.5"
+                            onClick={() =>
+                              modal.confirmAction.open({
+                                title: `Remove ${partnerEntry.displayName} from the blacklist?`,
+                                description:
+                                  "This re-enables future requests from this company. Previously revoked MOAs will not be restored.",
+                                confirmLabel: "Remove",
+                                onConfirm: () =>
+                                  unblacklistMutation.mutate({
+                                    companyId: getCompanyIdForBlacklist(partnerEntry),
+                                  }),
+                              })
+                            }
+                          >
+                            <Ban className="size-3.5 shrink-0" />
+                            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-[max-width,opacity] duration-200 group-hover/blacklist:max-w-24 group-hover/blacklist:opacity-100">
+                              Un-blacklist
+                            </span>
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            scheme="destructive"
+                            size="sm"
+                            aria-label="Blacklist company"
+                            className="group/blacklist h-8 max-w-8 gap-0 overflow-hidden rounded-[0.33em] px-2 transition-[max-width,gap] duration-200 hover:max-w-32 hover:gap-1.5"
+                            onClick={() =>
+                              modal.blacklistPartner.open({
+                                companyName: partnerEntry.displayName,
+                                onBlacklist: (reason) =>
+                                  blacklistMutation.mutate({
+                                    data: {
+                                      companyId: getCompanyIdForBlacklist(partnerEntry),
+                                      reason: reason || undefined,
+                                    },
+                                  }),
+                                isPending: blacklistMutation.isPending,
+                              })
+                            }
+                          >
+                            <Ban className="size-3.5 shrink-0" />
+                            <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 transition-[max-width,opacity] duration-200 group-hover/blacklist:max-w-24 group-hover/blacklist:opacity-100">
+                              Blacklist
+                            </span>
+                          </Button>
+                        )
+                      ) : null
+                    }
                   />
+
+                  <CollapsibleCard
+                    id="registered-moa-history"
+                    title="MOA history"
+                    defaultOpen
+                  >
+                    <RegisteredPartnerMoasTable
+                      moas={combinedMoas}
+                      isLoading={isMoasLoading}
+                      onOpenMoa={setPdfSelection}
+                    />
+                  </CollapsibleCard>
 
                   {partnerEntry?.isBlacklisted &&
                     partnerEntry.blacklistEntry && (
@@ -1279,80 +1299,6 @@ function PartnersContent({
                     />
                   )}
 
-                  <CollapsibleCard
-                    id="registered-moa-history"
-                    title="MOA history"
-                    defaultOpen
-                  >
-                    <RegisteredPartnerMoasTable
-                      moas={moas}
-                      isLoading={isMoasLoading}
-                      onOpenMoa={setPdfSelection}
-                    />
-                  </CollapsibleCard>
-
-                  <LegacyRecordsSection
-                    currentCompanyId={detailId}
-                    onOpenMoa={setPdfSelection}
-                    onOpenDocument={openDocumentPreview}
-                  />
-
-                  {partnerEntry && (
-                    <CollapsibleCard id="partner-actions" title="Actions">
-                      <div className="flex flex-col items-start justify-between gap-4 p-4 sm:flex-row sm:items-center">
-                        <p className="text-muted-foreground max-w-lg text-sm">
-                          {partnerEntry.isBlacklisted
-                            ? "Allow this company to send new partnership requests again. Previously revoked MOAs will not be restored."
-                            : "Block new requests from this company and revoke its currently active MOAs."}
-                        </p>
-                        {partnerEntry.isBlacklisted ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="shrink-0"
-                            onClick={() =>
-                              modal.confirmAction.open({
-                                title: `Remove ${partnerEntry.displayName} from the blacklist?`,
-                                description:
-                                  "This re-enables future requests from this company. Previously revoked MOAs will not be restored.",
-                                confirmLabel: "Remove",
-                                onConfirm: () =>
-                                  unblacklistMutation.mutate({
-                                    companyId:
-                                      getCompanyIdForBlacklist(partnerEntry),
-                                  }),
-                              })
-                            }
-                          >
-                            Un-blacklist
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            scheme="destructive"
-                            size="sm"
-                            className="shrink-0"
-                            onClick={() =>
-                              modal.blacklistPartner.open({
-                                companyName: partnerEntry.displayName,
-                                onBlacklist: (reason) =>
-                                  blacklistMutation.mutate({
-                                    data: {
-                                      companyId:
-                                        getCompanyIdForBlacklist(partnerEntry),
-                                      reason: reason || undefined,
-                                    },
-                                  }),
-                                isPending: blacklistMutation.isPending,
-                              })
-                            }
-                          >
-                            Blacklist company
-                          </Button>
-                        )}
-                      </div>
-                    </CollapsibleCard>
-                  )}
                 </>
               )}
 

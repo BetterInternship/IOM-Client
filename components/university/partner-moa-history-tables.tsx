@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/resource-table";
 import { useResourceTable } from "@/components/ui/use-resource-table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
 import { formatDateWithoutTime } from "@/lib/utils";
 
 export interface RegisteredPartnerMoa {
@@ -25,6 +26,9 @@ export interface RegisteredPartnerMoa {
   expiry_date: string | null;
   is_expired: boolean | null;
   template: { name: string } | null;
+  imported?: boolean;
+  importedUrl?: string | null;
+  importedLabel?: string | null;
 }
 
 type LegacyMoa = LegacyCompanyDetail["moas"][number];
@@ -102,7 +106,7 @@ export function RegisteredPartnerMoasTable({
     {
       id: "status",
       header: "Status",
-      width: "w-[17%]",
+      width: "w-[10%]",
       getSortValue: (moa) => (moa.is_expired ? "expired" : moa.status),
       render: (moa) => (
         <PartnershipStatusBadge
@@ -111,14 +115,26 @@ export function RegisteredPartnerMoasTable({
       ),
     },
     {
+      id: "imported",
+      header: "Imported",
+      width: "w-[12%]",
+      getSortValue: (moa) => (moa.imported ? "yes" : "no"),
+      render: (moa) =>
+        moa.imported ? (
+          <PartnershipStatusBadge status="imported" label="Imported" />
+        ) : (
+          <span className="text-muted-foreground text-sm">—</span>
+        ),
+    },
+    {
       id: "template",
       header: "Template",
-      width: "w-[25%]",
+      width: "w-[28%]",
       getSortValue: (moa) => moa.template?.name ?? "",
       render: (moa) => (
-        <span className="text-sm text-gray-700">
+        <TruncatedTooltip className="block max-w-[220px] text-sm text-gray-700">
           {moa.template?.name ?? "—"}
-        </span>
+        </TruncatedTooltip>
       ),
     },
     {
@@ -176,11 +192,11 @@ export function RegisteredPartnerMoasTable({
   if (isLoading) return <Skeleton className="h-52 w-full" />;
 
   const openMoa = (moa: RegisteredPartnerMoa) =>
-    onOpenMoa({
-      kind: "registered",
-      moaId: moa.id,
-      label: `${moa.template?.name ?? "MOA document"}.pdf`,
-    });
+    onOpenMoa(
+      moa.imported
+        ? { kind: "legacy", url: moa.importedUrl ?? null, label: moa.importedLabel ?? "MOA document" }
+        : { kind: "registered", moaId: moa.id, label: `${moa.template?.name ?? "MOA document"}.pdf` },
+    );
 
   return (
     <ResourceTable
@@ -197,9 +213,12 @@ export function RegisteredPartnerMoasTable({
             <PartnershipStatusBadge
               status={moa.is_expired ? "Expired" : moa.status}
             />
+            {moa.imported && (
+              <PartnershipStatusBadge status="imported" label="Imported" />
+            )}
             <ArrowRight className="text-primary mt-1 h-4 w-4" />
           </div>
-          <p className="mt-2 text-sm font-medium text-gray-900">
+          <p className="mt-2 max-w-[min(70vw,28rem)] truncate text-sm font-medium text-gray-900" title={moa.template?.name ?? "Template unavailable"}>
             {moa.template?.name ?? "Template unavailable"}
           </p>
           <div className="text-muted-foreground mt-1 grid grid-cols-2 gap-3 text-xs">
