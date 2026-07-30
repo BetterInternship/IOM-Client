@@ -18,7 +18,6 @@ import {
   getUniversityControllerListLegacyCompaniesQueryKey,
   getUniversityControllerListPartnersQueryKey,
   getUniversityControllerListRenewalsQueryKey,
-  useUniversityControllerAppendLegacyCompanyDocuments,
   useUniversityControllerAppendLegacyCompanyMoas,
   useUniversityControllerBlacklistCompany,
   useUniversityControllerGetBlacklist,
@@ -46,10 +45,8 @@ import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { isOutstandingMoa } from "@/lib/partner-predicates";
 import {
   LegacyCompanyDetail,
-  AddDocumentsForm,
   MoaUploadDialog,
   buildMoaRequest,
-  type DocInput,
   formatLegacyLabel,
   formatLegacyFieldLabel,
   isFilledValue,
@@ -375,31 +372,6 @@ function ReadOnlyLegacyDetail({
       .map(([key, value]) => [formatLegacyFieldLabel(key), value] as const),
   ];
 
-  const docUploadMutation = useUniversityControllerAppendLegacyCompanyDocuments(
-    {
-      mutation: {
-        onSuccess: () => {
-          queryClient.invalidateQueries({
-            queryKey: getUniversityControllerGetLegacyCompanyQueryKey(
-              company.id,
-            ),
-          });
-          queryClient.invalidateQueries({
-            queryKey: getUniversityControllerListLegacyCompaniesQueryKey(),
-          });
-          closeModal("legacy-add-documents");
-          toast("Documents uploaded", toastPresets.success);
-        },
-        onError: (err) => {
-          toast(
-            err instanceof Error ? err.message : "Failed to upload documents",
-            toastPresets.destructive,
-          );
-        },
-      },
-    },
-  );
-
   const moaUploadMutation = useUniversityControllerAppendLegacyCompanyMoas({
     mutation: {
       onSuccess: () => {
@@ -452,45 +424,7 @@ function ReadOnlyLegacyDetail({
 
       <CollapsibleCard
         id="legacy-documents"
-        title={
-          <span className="flex w-full items-center justify-between gap-3">
-            <span>Documents</span>
-            {canUpload && (
-              <Button
-                size="xs"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  openModal(
-                    "legacy-add-documents",
-                    <AddDocumentsForm
-                      isPending={docUploadMutation.isPending}
-                      onSubmit={(inputs: DocInput[]) =>
-                        docUploadMutation.mutate({
-                          legacyCompanyId: company.id,
-                          data: {
-                            companyDocuments: inputs.map(({ file }) => file),
-                            documentTypes: JSON.stringify(
-                              inputs.map(({ type }) => type || "other"),
-                            ),
-                          },
-                        })
-                      }
-                      onClose={() => closeModal("legacy-add-documents")}
-                    />,
-                    {
-                      title: "Add documents",
-                      description:
-                        "Upload additional company documents (PDF, max 7MB each).",
-                      panelClassName: "!w-full sm:!max-w-md",
-                    },
-                  );
-                }}
-              >
-                <Upload className="h-3.5 w-3.5" /> Add
-              </Button>
-            )}
-          </span>
-        }
+        title="Documents"
         defaultOpen={false}
       >
         <div>
