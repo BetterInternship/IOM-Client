@@ -150,6 +150,31 @@ function parseSigningDate(text: string, corroborationText = text) {
   );
 }
 
+function parseAgreementStartDate(text: string) {
+  const dayFirst = new RegExp(
+    `entered\\s+into\\s+this\\s+(${OCR_DAY_PATTERN})(?:st|nd|rd|th)?\\s+day\\s+of\\s+(${MONTH_PATTERN})[,\\s.-]*(${OCR_YEAR_PATTERN})`,
+    "i",
+  ).exec(text);
+  if (dayFirst) {
+    return isoDate(
+      parseOcrNumber(dayFirst[3]),
+      MONTHS[dayFirst[2].toLowerCase()],
+      parseOcrNumber(dayFirst[1]),
+    );
+  }
+
+  const monthFirst = new RegExp(
+    `entered\\s+into\\s+this\\s+(${MONTH_PATTERN})[\\s.]+(${OCR_DAY_PATTERN})(?:st|nd|rd|th)?[,\\s.-]*(${OCR_YEAR_PATTERN})`,
+    "i",
+  ).exec(text);
+  if (!monthFirst) return null;
+  return isoDate(
+    parseOcrNumber(monthFirst[3]),
+    MONTHS[monthFirst[1].toLowerCase()],
+    parseOcrNumber(monthFirst[2]),
+  );
+}
+
 function enhanceAcknowledgmentScan(canvas: HTMLCanvasElement) {
   const context = canvas.getContext("2d", { alpha: false });
   if (!context) return;
@@ -575,10 +600,12 @@ export async function extractLegacyMoaFields(
         pageTexts.map((page) => page.text).join("\n"),
     );
     const isExplicitlyNonPerpetual = /nonperp/i.test(file.name);
-    const effectiveDate = parseSigningDate(
-      acknowledgmentDateText,
-      pageTexts.map((page) => page.text).join("\n"),
-    );
+    const effectiveDate =
+      parseAgreementStartDate(firstPageText) ??
+      parseSigningDate(
+        acknowledgmentDateText,
+        pageTexts.map((page) => page.text).join("\n"),
+      );
     const explicitExpiryDate =
       parseExplicitEndDate(normalizedEffectivity) ??
       parseMonthRangeExpiry(normalizedEffectivity);
