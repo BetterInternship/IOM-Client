@@ -1,5 +1,6 @@
 import { PSM, type Worker } from "tesseract.js";
 import { loadPdfFromFile } from "@betterinternship/core/pdf-viewer";
+import wordsToNumber from "words-to-number";
 
 export type LegacyMoaOcrResult = {
   companyName: string | null;
@@ -237,6 +238,81 @@ function parseExplicitEndDate(text: string) {
   );
 }
 
+function parseTermNumber(value: string) {
+  const numeral = /\d{1,2}/.exec(value);
+  if (numeral) return Number(numeral[0]);
+
+  const result = wordsToNumber.fast(value);
+  return result.status === "success" &&
+    typeof result.value === "number" &&
+    Number.isFinite(result.value)
+    ? result.value
+    : Number.NaN;
+}
+
+function parseTermDuration(text: string) {
+  const numberWord =
+    "zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand";
+  const value =
+    `(?:\\d{1,2}|(?:${numberWord})(?:[-\\s](?:${numberWord})){0,3}(?:\\s*\\(\\s*\\d{1,2}\\s*\\))?)`;
+  const durations = new RegExp(`\\b(${value})\\s+(years?|months?)\\b`, "gi");
+  const matches: Array<{
+    years: number;
+    months: number;
+    score: number;
+    index: number;
+  }> = [];
+
+  for (const match of text.matchAll(durations)) {
+    const amount = parseTermNumber(match[1]);
+    if (!amount || amount > 50) continue;
+
+    const index = match.index ?? 0;
+    const context = text
+      .slice(Math.max(0, index - 160), index + match[0].length + 100)
+      .toLowerCase();
+    let score = 0;
+    if (/\b(?:term|validity|period)\b/.test(context)) score += 10;
+    if (/force and effect|remain(?:s)? effective|shall be valid/.test(context)) {
+      score += 6;
+    }
+    if (/\b(?:agreement|memorandum|moa)\b/.test(context)) score += 4;
+    if (/from (?:the )?(?:date of )?(?:signing|execution|effectivity)/.test(context)) {
+      score += 6;
+    }
+    if (score === 0) continue;
+
+    matches.push({
+      years: /^year/i.test(match[2]) ? amount : 0,
+      months: /^month/i.test(match[2]) ? amount : 0,
+      score,
+      index,
+    });
+  }
+
+  return matches.sort((a, b) => b.score - a.score || a.index - b.index)[0] ?? null;
+}
+
+function addTermToDate(
+  effectiveDate: string,
+  term: { years: number; months: number },
+) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(effectiveDate);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const target = new Date(
+    Date.UTC(year + term.years, month - 1 + term.months, 1),
+  );
+  const targetYear = target.getUTCFullYear();
+  const targetMonth = target.getUTCMonth() + 1;
+  const lastDay = new Date(Date.UTC(targetYear, targetMonth, 0)).getUTCDate();
+
+  return isoDate(targetYear, targetMonth, Math.min(day, lastDay));
+}
+
 function companyFromFilename(filename: string) {
   const parts = filename
     .replace(/\.pdf$/i, "")
@@ -354,10 +430,10 @@ function normalizeHeadingText(text: string) {
 function hasEffectivityHeading(text: string) {
   const normalized = normalizeHeadingText(text);
   return (
-    /SECT(?:I|1|L)ON\s*(?:7|VII)\s*[:.-]?\s*EFFECT(?:I|1|L)V(?:I|1|L)TY(?:\s*&|\s+AND)?\s*TERM(?:I|1|L)NAT(?:I|1|L)ON/.test(
+    /SECT(?:I|1|L)ON\s*(?:\d+|[IVXLCDM]+)\s*[:.-]?\s*EFFECT(?:I|1|L)V(?:I|1|L)TY(?:\s*&|\s+AND)?\s*TERM(?:I|1|L)NAT(?:I|1|L)ON/.test(
       normalized,
     ) ||
-    /ART(?:I|1|L)CLE\s*(?:9|IX)\s*[:.-]?\s*EFFECT(?:I|1|L)V(?:I|1|L)TY/.test(
+    /(?:SECT(?:I|1|L)ON|ART(?:I|1|L)CLE)\s*(?:\d+|[IVXLCDM]+)\s*[:.-]?\s*(?:TERM|DURATION|VALIDITY|EFFECT(?:I|1|L)V(?:I|1|L)TY)/.test(
       normalized,
     )
   );
@@ -506,16 +582,23 @@ export async function extractLegacyMoaFields(
       /right to pre-terminate/i.test(normalizedEffectivity);
     const hasPerpetualLanguage =
       remainsUntilRevoked || (startsUponSigning && hasIndefiniteTerm);
-    const expiryDate =
+    const effectiveDate = parseSigningDate(
+      acknowledgmentDateText,
+      pageTexts.map((page) => page.text).join("\n"),
+    );
+    const explicitExpiryDate =
       parseExplicitEndDate(normalizedEffectivity) ??
       parseMonthRangeExpiry(normalizedEffectivity);
+    const termDuration = parseTermDuration(normalizedEffectivity);
+    const expiryDate =
+      explicitExpiryDate ??
+      (effectiveDate && termDuration
+        ? addTermToDate(effectiveDate, termDuration)
+        : null);
 
     return {
       companyName: companyFromText(firstPageText, file.name),
-      effectiveDate: parseSigningDate(
-        acknowledgmentDateText,
-        pageTexts.map((page) => page.text).join("\n"),
-      ),
+      effectiveDate,
       expiryDate: hasPerpetualLanguage ? null : expiryDate,
       isPerpetual: isExplicitlyNonPerpetual
         ? false
