@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useModal } from "@/app/providers/modal-provider";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { createWorker, type Worker as TesseractWorker } from "tesseract.js";
 import {
@@ -231,6 +232,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
   const ocrQueueRef = useRef(Promise.resolve());
   const activeOcrItemRef = useRef<string | null>(null);
   const historyGuardRef = useRef<{ id: string; url: string } | null>(null);
+  const { openModal, closeModal } = useModal();
   const queryClient = useQueryClient();
   const [items, setItems] = useState<ImportItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -332,6 +334,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
       }) as Promise<BulkResult>;
     },
     onSuccess: (data) => {
+      closeModal("legacy-company-importing", { skipOnClose: true });
       setResult(data);
       queryClient.invalidateQueries({
         queryKey: getUniversityControllerListLegacyCompaniesQueryKey(),
@@ -341,6 +344,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
       });
     },
     onError: () => {
+      closeModal("legacy-company-importing", { skipOnClose: true });
       toast(
         "Import failed. Your workspace has been kept so you can try again.",
         toastPresets.destructive,
@@ -548,6 +552,31 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
     onBack();
   };
 
+  const startImport = () => {
+    if (commit.isPending || invalidItems.length > 0) return;
+
+    openModal(
+      "legacy-company-importing",
+      <div className="flex flex-col items-center gap-3 py-8 text-center">
+        <Loader2 className="text-primary size-7 animate-spin" />
+        <p className="text-sm font-medium text-gray-900">
+          Importing your MOAs...
+        </p>
+        <p className="text-muted-foreground text-sm">
+          Please keep this page open while we save your documents.
+        </p>
+      </div>,
+      {
+        title: "Importing MOAs",
+        allowBackdropClick: false,
+        closeOnEsc: false,
+        hasClose: false,
+        panelClassName: "sm:!max-w-md",
+      },
+    );
+    commit.mutate();
+  };
+
   if (result) {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
@@ -631,7 +660,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
             </p>
             <Button
               disabled={invalidItems.length > 0 || commit.isPending}
-              onClick={() => commit.mutate()}
+              onClick={startImport}
             >
               {commit.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -968,13 +997,30 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
                   <Button
                     type="button"
                     className="w-full"
-                    disabled={selectedIndex >= items.length - 1}
-                    onClick={() =>
-                      setSelectedId(items[selectedIndex + 1]?.id ?? selected.id)
+                    disabled={
+                      commit.isPending ||
+                      (selectedIndex >= items.length - 1 &&
+                        invalidItems.length > 0)
                     }
+                    onClick={() => {
+                      if (selectedIndex >= items.length - 1) {
+                        startImport();
+                        return;
+                      }
+                      setSelectedId(items[selectedIndex + 1]?.id ?? selected.id);
+                    }}
                   >
-                    Save and next
-                    <ChevronRight className="size-4" />
+                    {selectedIndex >= items.length - 1 ? (
+                      <>
+                        Import MOAs
+                        <Upload className="size-4" />
+                      </>
+                    ) : (
+                      <>
+                        Save and next
+                        <ChevronRight className="size-4" />
+                      </>
+                    )}
                   </Button>
                 </div>
               </>
