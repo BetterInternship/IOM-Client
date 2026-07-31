@@ -337,6 +337,20 @@ function legalNameFromPartyParagraph(paragraph: string) {
   const boundary = descriptor.exec(value);
   if (boundary?.index) return value.slice(0, boundary.index).trim();
 
+  // Party descriptions almost always start after the company name's first
+  // descriptive comma. Preserve legal suffixes that are conventionally
+  // written as a separate comma-delimited part of the company name.
+  const comma = value.indexOf(",");
+  if (comma > 0) {
+    const suffix = value
+      .slice(comma + 1)
+      .match(
+        /^\s*((?:incorporated|inc\.?|corporation|corp\.?|company|co\.?|limited|ltd\.?|llc|l\.l\.c\.?|llp|l\.l\.p\.?|plc|p\.l\.c\.?))(?=\s|,|$)/i,
+      )?.[1];
+    const legalName = `${value.slice(0, comma)}${suffix ? `, ${suffix}` : ""}`.trim();
+    if (legalName.length >= 2 && legalName.length <= 140) return legalName;
+  }
+
   const firstLine = paragraph
     .split(/\n/)
     .map((line) => line.trim())
