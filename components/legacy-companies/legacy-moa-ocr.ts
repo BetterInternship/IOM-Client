@@ -151,6 +151,18 @@ function parseSigningDate(text: string, corroborationText = text) {
 }
 
 function parseAgreementStartDate(text: string) {
+  const directDayFirst = new RegExp(
+    `entered\\s+into\\s+this\\s+(${OCR_DAY_PATTERN})(?:st|nd|rd|th)?[\\s.-]+(${MONTH_PATTERN})[,\\s.-]*(${OCR_YEAR_PATTERN})`,
+    "i",
+  ).exec(text);
+  if (directDayFirst) {
+    return isoDate(
+      parseOcrNumber(directDayFirst[3]),
+      MONTHS[directDayFirst[2].toLowerCase()],
+      parseOcrNumber(directDayFirst[1]),
+    );
+  }
+
   const dayFirst = new RegExp(
     `entered\\s+into\\s+this\\s+(${OCR_DAY_PATTERN})(?:st|nd|rd|th)?\\s+day\\s+of\\s+(${MONTH_PATTERN})[,\\s.-]*(${OCR_YEAR_PATTERN})`,
     "i",
@@ -526,10 +538,7 @@ export async function extractLegacyMoaFields(
       pageNumbers.push(page);
     }
 
-    let foundEffectivity = false;
-    let foundAcknowledgment = false;
     for (const [index, pageNumber] of pageNumbers.entries()) {
-      if (index > 1 && foundEffectivity && foundAcknowledgment) break;
       onPage?.(index + 1, pageNumbers.length);
       const page = await pdf.getPage(pageNumber);
       const isFirstPage = pageNumber === 1;
@@ -552,13 +561,12 @@ export async function extractLegacyMoaFields(
           worker,
           canvas,
         ).catch(() => null);
-        foundAcknowledgment = true;
       }
 
       const contentCanvas = cropCanvas(
         canvas,
         isFirstPage
-          ? { left: 0.07, top: 0.02, width: 0.88, height: 0.66 }
+          ? { left: 0.07, top: 0.02, width: 0.88, height: 0.94 }
           : { left: 0.07, top: 0.01, width: 0.88, height: 0.98 },
       );
       const result = await worker.recognize(contentCanvas, {
@@ -572,8 +580,6 @@ export async function extractLegacyMoaFields(
         );
       }
       pageTexts.push({ pageNumber, text, dateText });
-      foundEffectivity ||= hasEffectivityHeading(text);
-      foundAcknowledgment ||= looksLikeAcknowledgment;
       page.cleanup();
     }
 

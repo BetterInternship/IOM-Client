@@ -179,7 +179,11 @@ function LocalPdfPreview({
 
 function itemError(item: ImportItem): string | null {
   if (!item.companyName.trim()) return "Choose or enter a company name.";
-  if (item.effectiveDate && item.expiryDate && item.expiryDate < item.effectiveDate) {
+  if (
+    item.effectiveDate &&
+    item.expiryDate &&
+    item.expiryDate < item.effectiveDate
+  ) {
     return "The end date must be on or after the start date.";
   }
   return null;
@@ -272,11 +276,10 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
   useEffect(() => {
     if (!hasUnsavedWork) return;
 
-    const guard =
-      historyGuardRef.current ?? {
-        id: crypto.randomUUID(),
-        url: window.location.href,
-      };
+    const guard = historyGuardRef.current ?? {
+      id: crypto.randomUUID(),
+      url: window.location.href,
+    };
     historyGuardRef.current = guard;
     if (window.history.state?.importWizardGuard !== guard.id) {
       window.history.pushState(
@@ -287,9 +290,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
     }
 
     const handleBrowserNavigation = () => {
-      const shouldLeave = window.confirm(
-        UNSAVED_WORK_WARNING,
-      );
+      const shouldLeave = window.confirm(UNSAVED_WORK_WARNING);
       if (shouldLeave) {
         window.removeEventListener("popstate", handleBrowserNavigation);
         window.history.back();
@@ -541,12 +542,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
   };
 
   const leaveWorkspace = () => {
-    if (
-      items.length > 0 &&
-      !window.confirm(
-        UNSAVED_WORK_WARNING,
-      )
-    ) {
+    if (items.length > 0 && !window.confirm(UNSAVED_WORK_WARNING)) {
       return;
     }
     onBack();
@@ -892,7 +888,9 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
                       list="legacy-company-names"
                       value={selected.companyName}
                       onChange={(event) =>
-                        updateSelected({ companyName: event.target.value.toUpperCase() })
+                        updateSelected({
+                          companyName: event.target.value.toUpperCase(),
+                        })
                       }
                       placeholder="Type or choose a company"
                       aria-invalid={
@@ -901,7 +899,10 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
                     />
                     <datalist id="legacy-company-names">
                       {companyNames.map((company) => (
-                        <option key={company.id} value={company.company_name.toUpperCase()} />
+                        <option
+                          key={company.id}
+                          value={company.company_name.toUpperCase()}
+                        />
                       ))}
                     </datalist>
                     <p className="text-muted-foreground text-xs">
@@ -954,7 +955,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
                               disabled={!selected.effectiveDate}
                               onClick={() => {
                                 const expiryDate = addYearsToDate(
-                                  selected.effectiveDate,
+                                  selected.expiryDate || selected.effectiveDate,
                                   years,
                                 );
                                 if (expiryDate) updateSelected({ expiryDate });
@@ -1007,7 +1008,9 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
                         startImport();
                         return;
                       }
-                      setSelectedId(items[selectedIndex + 1]?.id ?? selected.id);
+                      setSelectedId(
+                        items[selectedIndex + 1]?.id ?? selected.id,
+                      );
                     }}
                   >
                     {selectedIndex >= items.length - 1 ? (
