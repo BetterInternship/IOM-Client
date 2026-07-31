@@ -41,6 +41,8 @@ import { extractLegacyMoaFields } from "./legacy-moa-ocr";
 
 const MAX_PDF_BYTES = 7 * 1024 * 1024;
 const MAX_FILES = 20;
+const UNSAVED_WORK_WARNING =
+  "Leave this import workspace? Your selected PDFs and assignments have not been saved.";
 
 type ImportItem = {
   id: string;
@@ -228,6 +230,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
   const ocrWorkerRef = useRef<Promise<TesseractWorker> | null>(null);
   const ocrQueueRef = useRef(Promise.resolve());
   const activeOcrItemRef = useRef<string | null>(null);
+  const historyGuardRef = useRef<{ id: string; url: string } | null>(null);
   const queryClient = useQueryClient();
   const [items, setItems] = useState<ImportItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -242,6 +245,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
     ? items.findIndex((item) => item.id === selected.id)
     : -1;
   const invalidItems = items.filter((item) => itemError(item));
+  const hasUnsavedWork = items.length > 0 && !result;
 
   useEffect(() => {
     return () => {
@@ -252,7 +256,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
   }, []);
 
   useEffect(() => {
-    if (items.length === 0 || result) return;
+    if (!hasUnsavedWork) return;
 
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
@@ -261,7 +265,56 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
 
     window.addEventListener("beforeunload", warnBeforeUnload);
     return () => window.removeEventListener("beforeunload", warnBeforeUnload);
-  }, [items.length, result]);
+  }, [hasUnsavedWork]);
+
+  useEffect(() => {
+    if (!hasUnsavedWork) return;
+
+    const guard =
+      historyGuardRef.current ?? {
+        id: crypto.randomUUID(),
+        url: window.location.href,
+      };
+    historyGuardRef.current = guard;
+    if (window.history.state?.importWizardGuard !== guard.id) {
+      window.history.pushState(
+        { ...(window.history.state ?? {}), importWizardGuard: guard.id },
+        "",
+        guard.url,
+      );
+    }
+
+    const handleBrowserNavigation = () => {
+      const shouldLeave = window.confirm(
+        UNSAVED_WORK_WARNING,
+      );
+      if (shouldLeave) {
+        window.removeEventListener("popstate", handleBrowserNavigation);
+        window.history.back();
+        return;
+      }
+
+      window.history.pushState(
+        { ...(window.history.state ?? {}), importWizardGuard: guard.id },
+        "",
+        guard.url,
+      );
+    };
+
+    window.addEventListener("popstate", handleBrowserNavigation);
+    return () =>
+      window.removeEventListener("popstate", handleBrowserNavigation);
+  }, [hasUnsavedWork]);
+
+  useEffect(() => {
+    if (hasUnsavedWork || !historyGuardRef.current) return;
+
+    const guard = historyGuardRef.current;
+    historyGuardRef.current = null;
+    if (window.history.state?.importWizardGuard === guard.id) {
+      window.history.back();
+    }
+  }, [hasUnsavedWork]);
 
   const commit = useMutation({
     mutationFn: async () => {
@@ -487,7 +540,7 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
     if (
       items.length > 0 &&
       !window.confirm(
-        "Leave this import workspace? Your selected PDFs and assignments have not been saved.",
+        UNSAVED_WORK_WARNING,
       )
     ) {
       return;
