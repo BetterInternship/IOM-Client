@@ -567,11 +567,19 @@ export async function extractLegacyMoaFields(
       effectivityText ?? fallbackEffectivityText,
     );
     const isExplicitlyNonPerpetual = /nonperp/i.test(file.name);
+    const effectiveDate = parseSigningDate(
+      acknowledgmentDateText,
+      pageTexts.map((page) => page.text).join("\n"),
+    );
+    const explicitExpiryDate =
+      parseExplicitEndDate(normalizedEffectivity) ??
+      parseMonthRangeExpiry(normalizedEffectivity);
+    const termDuration = parseTermDuration(normalizedEffectivity);
     const startsUponSigning = /take[s]? effect (?:upon|on) signing/i.test(
       normalizedEffectivity,
     );
-    const remainsUntilRevoked =
-      /(?:shall\s+)?remain in (?:full )?force and effect unless revoke(?:d)?/i.test(
+    const remainsInForceUnlessTerminated =
+      /(?:shall\s+be\s+and\s+)?remain(?:s)?\s+in\s+(?:full\s+)?force\s+and\s+effect(?:\s+(?:unless|until)\b|\s*$)/i.test(
         normalizedEffectivity,
       );
     const hasIndefiniteTerm =
@@ -581,15 +589,10 @@ export async function extractLegacyMoaFields(
       ) ||
       /right to pre-terminate/i.test(normalizedEffectivity);
     const hasPerpetualLanguage =
-      remainsUntilRevoked || (startsUponSigning && hasIndefiniteTerm);
-    const effectiveDate = parseSigningDate(
-      acknowledgmentDateText,
-      pageTexts.map((page) => page.text).join("\n"),
-    );
-    const explicitExpiryDate =
-      parseExplicitEndDate(normalizedEffectivity) ??
-      parseMonthRangeExpiry(normalizedEffectivity);
-    const termDuration = parseTermDuration(normalizedEffectivity);
+      !explicitExpiryDate &&
+      !termDuration &&
+      (remainsInForceUnlessTerminated ||
+        (startsUponSigning && hasIndefiniteTerm));
     const expiryDate =
       explicitExpiryDate ??
       (effectiveDate && termDuration
