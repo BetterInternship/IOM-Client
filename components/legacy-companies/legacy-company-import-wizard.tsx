@@ -251,6 +251,18 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (items.length === 0 || result) return;
+
+    const warnBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [items.length, result]);
+
   const commit = useMutation({
     mutationFn: async () => {
       return universityControllerBulkCreateLegacyCompaniesFromWizard({
