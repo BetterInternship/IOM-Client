@@ -175,6 +175,18 @@ function parseAgreementStartDate(text: string) {
     );
   }
 
+  const monthYear = new RegExp(
+    `entered\\s+into\\s+this\\s+(${MONTH_PATTERN})[,\\s.-]+(${OCR_YEAR_PATTERN})`,
+    "i",
+  ).exec(text);
+  if (monthYear) {
+    return isoDate(
+      parseOcrNumber(monthYear[2]),
+      MONTHS[monthYear[1].toLowerCase()],
+      1,
+    );
+  }
+
   const monthFirst = new RegExp(
     `entered\\s+into\\s+this\\s+(${MONTH_PATTERN})[\\s.]+(${OCR_DAY_PATTERN})(?:st|nd|rd|th)?[,\\s.-]*(${OCR_YEAR_PATTERN})`,
     "i",
@@ -267,11 +279,23 @@ function parseExplicitEndDate(text: string) {
     `\\b(?:to|through|until|expires?(?:\\s+on)?|ending(?:\\s+on)?)\\s+(\\d{1,2})(?:st|nd|rd|th)?[\\s.-]+(${MONTH_PATTERN})[,\\s.-]+(20\\d{2})\\b`,
     "i",
   ).exec(text);
-  if (!dayFirst) return null;
+  if (dayFirst) {
+    return isoDate(
+      Number(dayFirst[3]),
+      MONTHS[dayFirst[2].toLowerCase()],
+      Number(dayFirst[1]),
+    );
+  }
+
+  const monthYear = new RegExp(
+    `\\b(?:to|through|until|expires?(?:\\s+on)?|ending(?:\\s+on)?)\\s+(${MONTH_PATTERN})[,\\s.-]+(20\\d{2})\\b`,
+    "i",
+  ).exec(text);
+  if (!monthYear) return null;
   return isoDate(
-    Number(dayFirst[3]),
-    MONTHS[dayFirst[2].toLowerCase()],
-    Number(dayFirst[1]),
+    Number(monthYear[2]),
+    MONTHS[monthYear[1].toLowerCase()],
+    1,
   );
 }
 
