@@ -182,6 +182,20 @@ function itemError(item: ImportItem): string | null {
   return null;
 }
 
+function addYearsToDate(date: string, years: number) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (!match) return null;
+
+  const year = Number(match[1]) + years;
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+
+  return `${year}-${String(month).padStart(2, "0")}-${String(
+    Math.min(day, lastDay),
+  ).padStart(2, "0")}`;
+}
+
 function newImportItem(file: File): ImportItem {
   return {
     id: crypto.randomUUID(),
@@ -833,7 +847,30 @@ export function LegacyCompanyImportWizard({ onBack }: { onBack: () => void }) {
                   </div>
                   {!selected.isPerpetual && (
                     <div className="space-y-2">
-                      <Label>End date</Label>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <Label>End date</Label>
+                        <div className="flex items-center gap-1.5">
+                          {[1, 3].map((years) => (
+                            <Button
+                              key={years}
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              disabled={!selected.effectiveDate}
+                              onClick={() => {
+                                const expiryDate = addYearsToDate(
+                                  selected.effectiveDate,
+                                  years,
+                                );
+                                if (expiryDate) updateSelected({ expiryDate });
+                              }}
+                            >
+                              +{years} {years === 1 ? "year" : "years"}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
                       <DatePicker
                         id="wizard-expiry-date"
                         value={selected.expiryDate}

@@ -16,6 +16,9 @@ import { cn } from "@/lib/utils";
 interface FileUploadProps {
   label: string;
   name: string;
+  className?: string;
+  labelClassName?: string;
+  dropzoneClassName?: string;
   accept?: string;
   multiple?: boolean;
   required?: boolean;
@@ -34,6 +37,9 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
     {
       label,
       name,
+      className,
+      labelClassName,
+      dropzoneClassName,
       accept,
       multiple,
       required,
@@ -84,10 +90,13 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
     }
 
     return (
-      <div className="grid gap-1">
+      <div className={cn("grid gap-1", className)}>
         <Label
           htmlFor={id}
-          className="text-muted-foreground text-xs font-normal"
+          className={cn(
+            "text-muted-foreground text-xs font-normal",
+            labelClassName,
+          )}
         >
           {label}
           {required && <span className="text-red-500"> *</span>}
@@ -103,6 +112,7 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
             "hover:bg-muted text-muted-foreground hover:cursor-pointer",
             isDragging && "border-primary bg-primary/5 ring-2 ring-primary/15",
             disabled && "cursor-not-allowed opacity-60",
+            dropzoneClassName,
           )}
           aria-label={label}
         >

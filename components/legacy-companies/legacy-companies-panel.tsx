@@ -37,9 +37,11 @@ import {
   ChevronDown,
   CircleCheck,
   Eye,
+  Info,
   Loader2,
   Plus,
   Upload,
+  UsersRound,
   X,
 } from "lucide-react";
 import type {
@@ -253,10 +255,24 @@ export function LegacyCompaniesPanel({
                         onClose={() => closeModal("legacy-upload")}
                       />,
                       {
-                        title: "Add Legacy Company",
-                        description:
-                          "Create a legacy company record. You can add MOAs now or later from the company detail view.",
-                        panelClassName: "!w-full sm:!max-w-2xl",
+                        title: (
+                          <div className="flex items-center gap-4">
+                            <div className="bg-primary/10 flex h-14 w-14 shrink-0 items-center justify-center rounded-xl">
+                              <UsersRound className="text-primary h-7 w-7" />
+                            </div>
+                            <div>
+                              <h2 className="text-2xl leading-tight font-semibold tracking-tight">
+                                Add Partner
+                              </h2>
+                              <p className="text-muted-foreground mt-1 text-sm font-normal">
+                                Add a partner and their MOA record.
+                              </p>
+                            </div>
+                          </div>
+                        ),
+                        headerClassName: "px-6 py-5",
+                        panelClassName: "!w-full sm:!max-w-3xl",
+                        contentClassName: "px-6 pb-5",
                       },
                     )
                   }
@@ -1030,15 +1046,6 @@ export function UploadDialog({
   const queryClient = useQueryClient();
   const [companyName, setCompanyName] = useState("");
   const [moas, setMoas] = useState<MoaRecordInput[]>([createEmptyMoaRecord()]);
-  const [tin, setTin] = useState("");
-  const [companyType, setCompanyType] = useState("");
-  const [registeredAddress, setRegisteredAddress] = useState("");
-  const [contactPerson, setContactPerson] = useState("");
-  const [contactEmail, setContactEmail] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [companyDocInputs, setCompanyDocInputs] = useState<
-    { id: string; file: File; type: string }[]
-  >([]);
 
   const updateMoa = (id: string, patch: Partial<MoaRecordInput>) => {
     setMoas((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
@@ -1054,18 +1061,6 @@ export function UploadDialog({
       return createRequest({
         company_name: companyName,
         ...moaRequest,
-        tin: tin || undefined,
-        company_type: companyType || undefined,
-        registered_address: registeredAddress || undefined,
-        contact_person: contactPerson || undefined,
-        contact_email: contactEmail || undefined,
-        contact_phone: contactPhone || undefined,
-        companyDocuments: companyDocInputs.length
-          ? companyDocInputs.map(({ file }) => file)
-          : undefined,
-        documentTypes: companyDocInputs.length
-          ? JSON.stringify(companyDocInputs.map(({ type }) => type || "other"))
-          : undefined,
       });
     },
     onSuccess: () => {
@@ -1088,270 +1083,117 @@ export function UploadDialog({
   const isValid = !!companyName.trim() && !incompleteMoa;
 
   return (
-    <>
-      <div className="max-h-[65vh] space-y-4 overflow-y-auto">
-        <div className="space-y-2">
-          <Label>Company Name *</Label>
+    <div className="-mx-6">
+      <div className="max-h-[calc(90vh-11rem)] overflow-y-auto px-6 pb-7">
+        <div className="space-y-2 pt-2">
+          <Label className="text-sm font-semibold">
+            Company Name<span className="text-red-500">*</span>
+          </Label>
           <Input
-            className="uppercase"
+            className="text-sm uppercase"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value.toUpperCase())}
-            placeholder="Acme Corp"
+            placeholder="Enter company name"
           />
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-          <Label>MOA Records (optional)</Label>
-            <Button
-              size="xs"
-              variant="outline"
-              onClick={() =>
-                setMoas((prev) => [...prev, createEmptyMoaRecord()])
-              }
-            >
-              <Plus /> Add MOA
-            </Button>
-          </div>
-          {moas.map((moa, index) => (
-            <div
-              key={moa.id}
-              className="rounded-[0.33em] border border-gray-200 p-3"
-            >
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-medium text-gray-500">
-                  MOA {index + 1}
-                </p>
+        <div className="mt-7 ">
+          <div className="space-y-7">
+            {moas.map((moa, index) => (
+              <div
+                key={moa.id}
+                className="bg-muted/25 rounded-[0.33em] border border-gray-200 p-5"
+              >
                 {moas.length > 1 && (
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    scheme="destructive"
-                    onClick={() => removeMoa(moa.id)}
-                  >
-                    Remove
-                  </Button>
+                  <div className="mb-4 flex items-center justify-between">
+                    <p className="text-sm font-semibold text-gray-700">
+                      MOA {index + 1}
+                    </p>
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      scheme="destructive"
+                      onClick={() => removeMoa(moa.id)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 )}
-              </div>
-              <div className="mb-2 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id={`perpetual-${moa.id}`}
-                  className="h-4 w-4"
-                  checked={moa.isPerpetual}
-                  onChange={(e) =>
-                    updateMoa(moa.id, {
-                      isPerpetual: e.target.checked,
-                      expiryDate: "",
-                    })
-                  }
-                />
-                <Label
-                  htmlFor={`perpetual-${moa.id}`}
-                  className="text-xs cursor-pointer"
-                >
-                  Perpetual MOA
-                </Label>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Effective Date *</Label>
-                  <DatePicker
-                    className="h-8"
-                    value={moa.effectiveDate}
-                    onChange={(value) =>
-                      updateMoa(moa.id, { effectiveDate: value })
-                    }
-                  />
+
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">
+                      Effective Date<span className="text-red-500">*</span>
+                    </Label>
+                    <DatePicker
+                      value={moa.effectiveDate}
+                      onChange={(value) =>
+                        updateMoa(moa.id, { effectiveDate: value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold">
+                      Expiry Date<span className="text-red-500">*</span>
+                    </Label>
+                    <DatePicker
+                      value={moa.expiryDate}
+                      disabled={moa.isPerpetual}
+                      onChange={(value) =>
+                        updateMoa(moa.id, { expiryDate: value })
+                      }
+                    />
+                    <div className="flex items-center gap-3 pt-3">
+                      <input
+                        type="checkbox"
+                        id={`perpetual-${moa.id}`}
+                        className="h-5 w-5 rounded border-gray-300 accent-primary"
+                        checked={moa.isPerpetual}
+                        onChange={(e) =>
+                          updateMoa(moa.id, {
+                            isPerpetual: e.target.checked,
+                            expiryDate: "",
+                          })
+                        }
+                      />
+                      <Label
+                        htmlFor={`perpetual-${moa.id}`}
+                        className="cursor-pointer text-sm font-medium"
+                      >
+                        Perpetual MOA
+                      </Label>
+                      <Info className="text-muted-foreground h-4 w-4" />
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">
-                    {moa.isPerpetual ? "N/A" : "Expiry Date *"}
-                  </Label>
-                  <DatePicker
-                    className="h-8"
-                    value={moa.expiryDate}
-                    disabled={moa.isPerpetual}
-                    onChange={(value) =>
-                      updateMoa(moa.id, { expiryDate: value })
-                    }
-                  />
-                </div>
-              </div>
-              <div className="mt-2">
+
                 <FileUpload
-                  label="MOA Document (PDF, optional, max 7MB)"
+                  className="mt-6 gap-2"
+                  labelClassName="text-foreground text-sm font-semibold"
+                  dropzoneClassName="min-h-28 justify-center border-dashed text-center"
+                  label="MOA Document (PDF, max 7MB)"
                   name={`moa-document-${moa.id}`}
                   accept=".pdf,application/pdf"
-                  onFileSelect={(file) => {
-                    updateMoa(moa.id, { file, name: file?.name || "" });
-                  }}
+                  placeholder="Drag & drop your file here or click to upload"
+                  onFileSelect={(file) =>
+                    updateMoa(moa.id, { file, name: file?.name || "" })
+                  }
                 />
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+
+          <Button
+            className="mt-6"
+            variant="outline"
+            onClick={() => setMoas((prev) => [...prev, createEmptyMoaRecord()])}
+          >
+            <Plus /> Add another MOA
+          </Button>
         </div>
-
-        <details className="group">
-          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-gray-900">
-            Company details (optional)
-          </summary>
-          <div className="mt-3 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">TIN</Label>
-                <Input
-                  className="h-8"
-                  value={tin}
-                  onChange={(e) => setTin(e.target.value)}
-                  placeholder="123-456-789"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Company Type</Label>
-                <Select
-                  value={companyType || undefined}
-                  onValueChange={setCompanyType}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue placeholder="Select a type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COMPANY_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Registered Address</Label>
-              <Input
-                className="h-8"
-                value={registeredAddress}
-                onChange={(e) => setRegisteredAddress(e.target.value)}
-                placeholder="Makati City"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Contact Person</Label>
-                <Input
-                  className="h-8"
-                  value={contactPerson}
-                  onChange={(e) => setContactPerson(e.target.value)}
-                  placeholder="Juan Dela Cruz"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Contact Email</Label>
-                <Input
-                  type="email"
-                  className="h-8"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  placeholder="juan@example.com"
-                />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Contact Phone</Label>
-              <Input
-                className="h-8"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                placeholder="09171234567"
-              />
-            </div>
-          </div>
-        </details>
-
-        <details className="group">
-          <summary className="cursor-pointer text-sm font-medium text-muted-foreground hover:text-gray-900">
-            Company documents (optional)
-          </summary>
-          <div className="mt-3 space-y-3">
-            <div className="space-y-3">
-              <FileUpload
-                label="Company Documents (PDF, optional, max 7MB each, max 10)"
-                name="company-documents"
-                multiple
-                accept=".pdf,application/pdf"
-                placeholder="Click to upload PDF files"
-                onFilesSelect={(files) => {
-                  const newInputs = files.map((f) => ({
-                    id: crypto.randomUUID(),
-                    file: f,
-                    type: "other",
-                  }));
-                  setCompanyDocInputs((prev) => [...prev, ...newInputs]);
-                }}
-              />
-              {companyDocInputs.length > 0 && (
-                <div className="space-y-3">
-                  {companyDocInputs.map((input) => (
-                    <div
-                      key={input.id}
-                      className="rounded-[0.33em] border border-gray-200 p-3"
-                    >
-                      <div className="mb-2 flex items-center justify-between">
-                        <p className="text-xs font-medium text-gray-500">
-                          Document
-                        </p>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          scheme="destructive"
-                          onClick={() =>
-                            setCompanyDocInputs((prev) =>
-                              prev.filter((i) => i.id !== input.id),
-                            )
-                          }
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="space-y-1">
-                          <Label className="text-xs">Type</Label>
-                          <Select
-                            value={input.type}
-                            onValueChange={(val) =>
-                              setCompanyDocInputs((prev) =>
-                                prev.map((i) =>
-                                  i.id === input.id ? { ...i, type: val } : i,
-                                ),
-                              )
-                            }
-                          >
-                            <SelectTrigger className="h-8">
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {DOCUMENT_TYPE_OPTIONS.map((opt) => (
-                                <SelectItem
-                                  key={opt.value}
-                                  value={opt.value}
-                                  className="text-xs"
-                                >
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </details>
       </div>
-      <div className="flex justify-end gap-2 pt-4">
+
+      <div className="flex justify-end gap-3 border-t border-gray-200 px-6 pt-5">
         <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
@@ -1362,10 +1204,10 @@ export function UploadDialog({
           {mutation.isPending && (
             <Loader2 className="mr-1 h-4 w-4 animate-spin" />
           )}
-          Save
+          Save Partner
         </Button>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -1728,7 +1570,8 @@ export function CsvUploadDialog({
                             : "text-red-700"
                         }
                       >
-                        <span className="uppercase">{r.company_name}</span> — {r.status.replace(/_/g, " ")}
+                        <span className="uppercase">{r.company_name}</span> —{" "}
+                        {r.status.replace(/_/g, " ")}
                       </span>
                       {r.message && (
                         <span className="text-muted-foreground ml-1">
@@ -2110,7 +1953,8 @@ company-documents/acme-mayor.pdf`}
                             : "text-red-700"
                         }
                       >
-                        <span className="uppercase">{r.company_name}</span> — {r.status.replace(/_/g, " ")}
+                        <span className="uppercase">{r.company_name}</span> —{" "}
+                        {r.status.replace(/_/g, " ")}
                       </span>
                       {r.message && (
                         <span className="text-muted-foreground ml-1">

@@ -137,13 +137,15 @@ export function UniversityTemplatesTable({
   isLoading,
   isPending,
   onToggle,
+  onPreview,
 }: {
   offers: TemplateOffer[];
   isLoading: boolean;
   isPending: boolean;
   onToggle: (templateId: string, isAvailable: boolean) => Promise<unknown>;
+  onPreview: (template: TemplateOffer["template"]) => void;
 }) {
-  const { confirmAction, previewTemplate } = useIomModalRegistry();
+  const { confirmAction } = useIomModalRegistry();
 
   const handleToggle = (offer: TemplateOffer) => {
     const isHidingLastOfferedTemplate =
@@ -232,7 +234,7 @@ export function UniversityTemplatesTable({
       render: (offer) => (
         <Button
           variant="outline"
-          onClick={() => previewTemplate.open(offer.template)}
+          onClick={() => onPreview(offer.template)}
         >
           <Eye className="mr-1 h-3.5 w-3.5" /> Preview
         </Button>
@@ -288,7 +290,7 @@ export function UniversityTemplatesTable({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => previewTemplate.open(offer.template)}
+              onClick={() => onPreview(offer.template)}
             >
               <Eye className="h-3.5 w-3.5" /> Preview
             </Button>
