@@ -505,22 +505,15 @@ export async function extractLegacyMoaFields(
       if (!context) throw new Error("Could not prepare a canvas for OCR");
       await page.render({ canvasContext: context, viewport }).promise;
 
-      // The final page is the acknowledgment in this template family. A
-      // focused sparse-text pass is much faster than OCRing the full page and
-      // then OCRing the date area again.
+      // The final page often contains both the acknowledgment and the final
+      // term clause, so retain its full text in addition to the date crop.
+      let dateText: string | null = null;
       if (isLastPage && !isFirstPage) {
-        const dateText = await recognizeAcknowledgmentDate(
+        dateText = await recognizeAcknowledgmentDate(
           worker,
           canvas,
         ).catch(() => null);
-        pageTexts.push({
-          pageNumber,
-          text: dateText ?? "",
-          dateText,
-        });
         foundAcknowledgment = true;
-        page.cleanup();
-        continue;
       }
 
       const contentCanvas = cropCanvas(
@@ -534,8 +527,7 @@ export async function extractLegacyMoaFields(
       });
       const text = result.data.text;
       const looksLikeAcknowledgment = hasAcknowledgmentHeading(text);
-      let dateText: string | null = null;
-      if (looksLikeAcknowledgment) {
+      if (looksLikeAcknowledgment && !dateText) {
         dateText = await recognizeAcknowledgmentDate(worker, canvas).catch(
           () => null,
         );
@@ -564,7 +556,9 @@ export async function extractLegacyMoaFields(
       .map((page) => page.text)
       .join("\n");
     const normalizedEffectivity = normalizeBlock(
-      effectivityText ?? fallbackEffectivityText,
+      effectivityText ||
+        fallbackEffectivityText ||
+        pageTexts.map((page) => page.text).join("\n"),
     );
     const isExplicitlyNonPerpetual = /nonperp/i.test(file.name);
     const effectiveDate = parseSigningDate(
@@ -578,8 +572,12 @@ export async function extractLegacyMoaFields(
     const startsUponSigning = /take[s]? effect (?:upon|on) signing/i.test(
       normalizedEffectivity,
     );
-    const remainsInForceUnlessTerminated =
-      /(?:shall\s+be\s+and\s+)?remain(?:s)?\s+in\s+(?:full\s+)?force\s+and\s+effect(?:\s+(?:unless|until)\b|\s*$)/i.test(
+    const forceAndEffect =
+      /(?:f(?:u|v|w)[il1]{2}\s+)?force\s+(?:and|&)\s+effect/i.test(
+        normalizedEffectivity,
+      );
+    const hasTerminationQualifier =
+      /(?:unless|until|subject to)\b|\b(?:terminated|revoked|pre-terminate)/i.test(
         normalizedEffectivity,
       );
     const hasIndefiniteTerm =
@@ -591,7 +589,7 @@ export async function extractLegacyMoaFields(
     const hasPerpetualLanguage =
       !explicitExpiryDate &&
       !termDuration &&
-      (remainsInForceUnlessTerminated ||
+      ((forceAndEffect && hasTerminationQualifier) ||
         (startsUponSigning && hasIndefiniteTerm));
     const expiryDate =
       explicitExpiryDate ??
