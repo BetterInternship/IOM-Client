@@ -617,13 +617,13 @@ function ProfileContent() {
         <AnimatePresence>
           {(incomplete || isEditing) && (
             <motion.div
-              className="flex w-full items-center justify-center fixed inset-x-0 bottom-4"
+              className="flex w-full items-center justify-center fixed inset-x-0 bottom-4 px-4"
               {...blurTransition}
             >
               <div className="flex gap-2 items-center justify-center bg-white py-4 px-8 rounded-[0.33em] shadow-2xl border">
                 <span className="pr-8 text-sm font-medium flex items-center gap-2">
                   <PenBox />
-                  Editing profile
+                  Editing
                 </span>
                 {!incomplete && (
                   <Button
