@@ -30,16 +30,9 @@ export function ProfileHeader({
     return (
       <div className="flex items-start justify-between gap-4">
         <PageHeader title={companyName} />
-        {isEditing ? (
-          <Button onClick={onSave} disabled={isSaveDisabled}>
-            {isSaving && <Loader2 className="animate-spin" />}
-            Save changes
-          </Button>
-        ) : (
-          <Button variant="outline" onClick={onEdit}>
-            <Pencil /> Edit
-          </Button>
-        )}
+        <Button variant="outline" onClick={onEdit} disabled={isEditing}>
+          <Pencil /> Edit{isEditing && "ing"}
+        </Button>
       </div>
     );
   }

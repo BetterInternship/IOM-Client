@@ -54,10 +54,13 @@ import {
   Eye,
   FileText,
   Loader2,
+  PenBox,
   Upload,
 } from "lucide-react";
 import { DocumentPreview } from "./document-preview";
 import { ProfileHeader } from "./profile-header";
+import { AnimatePresence, motion } from "framer-motion";
+import { useBlurTransition } from "@/components/animata/blur";
 
 type SectionKey = "company" | "documents" | "other";
 
@@ -218,6 +221,8 @@ function ProfileContent() {
       },
     },
   });
+
+  const blurTransition = useBlurTransition();
 
   if (isLoading || !company) return null;
 
@@ -609,35 +614,46 @@ function ProfileContent() {
           </CollapsibleCardSection>
         </CollapsibleCardGroup>
 
-        {(incomplete || isEditing) && (
-          <div className="flex justify-end gap-2">
-            {!incomplete && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  form.reset();
-                  setIsEditing(false);
-                }}
-                disabled={save.isPending}
-              >
-                Cancel
-              </Button>
-            )}
-            <Button
-              onClick={() => attemptSave("company")}
-              disabled={
-                save.isPending ||
-                uploadDoc.isPending ||
-                (incomplete && !documentsComplete) ||
-                !form.formState.isValid ||
-                (!incomplete && !form.formState.isDirty)
-              }
+        <AnimatePresence>
+          {(incomplete || isEditing) && (
+            <motion.div
+              className="flex w-full items-center justify-center fixed inset-x-0 bottom-4"
+              {...blurTransition}
             >
-              {save.isPending && <Loader2 className="animate-spin" />}
-              Save changes
-            </Button>
-          </div>
-        )}
+              <div className="flex gap-2 items-center justify-center bg-white py-4 px-8 rounded-[0.33em] shadow-2xl border">
+                <span className="pr-8 text-sm font-medium flex items-center gap-2">
+                  <PenBox />
+                  Editing profile
+                </span>
+                {!incomplete && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      form.reset();
+                      setIsEditing(false);
+                    }}
+                    disabled={save.isPending}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  onClick={() => attemptSave("company")}
+                  disabled={
+                    save.isPending ||
+                    uploadDoc.isPending ||
+                    (incomplete && !documentsComplete) ||
+                    !form.formState.isValid ||
+                    (!incomplete && !form.formState.isDirty)
+                  }
+                >
+                  {save.isPending && <Loader2 className="animate-spin" />}
+                  Save changes
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </PageContainer>
     </div>
   );
