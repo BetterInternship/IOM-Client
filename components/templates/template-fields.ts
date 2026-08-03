@@ -77,6 +77,13 @@ export const FIELD_GROUPS: CatalogGroup[] = [
   {
     label: "University",
     fields: [
+      {
+        key: "university_name",
+        label: "University name",
+        type: "text",
+        defaultW: TEXT_W,
+        defaultH: TEXT_H,
+      },
       { key: "university_signatory_name", label: "Signatory name", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
       { key: "university_signatory_title", label: "Signatory title", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
       { key: "university_signatory_signature", label: "Signatory signature", type: "signature", defaultW: SIG_W, defaultH: SIG_H },
