@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUniversityControllerMe } from "@/app/api";
 
@@ -35,8 +35,16 @@ const UniversityProfileContext = createContext<UniversityProfileCtx>({
   isSetupComplete: false,
 });
 
+type UniversitySetupFields = {
+  registered_name: string | null | undefined;
+  address: string | null | undefined;
+  rep_name: string | null | undefined;
+  rep_title: string | null | undefined;
+  rep_signature_url: string | null | undefined;
+};
+
 export function isUniversitySetupComplete(
-  university: UniversityAccount["university"] | null | undefined,
+  university: UniversitySetupFields | null | undefined,
 ) {
   return Boolean(
     university?.registered_name?.trim() &&
@@ -69,30 +77,40 @@ export function UniversityProfileProvider({
     pathname.startsWith("/university/accept-invite") ||
     pathname === "/login" ||
     pathname === "/accept-invite";
-  const onProfilePage =
-    pathname.startsWith("/university/profile") || pathname === "/profile";
-  const loginRedirect = pathname.startsWith("/university/")
-    ? "/university/login"
-    : "/login";
+  const onCompleteProfilePage =
+    pathname.startsWith("/university/complete-profile") ||
+    pathname === "/complete-profile";
+  const loginRedirect = "/login";
   const account = (data?.account as UniversityAccount) ?? null;
   const isSuperadmin = account?.role === "superadmin";
   const isSetupComplete = isUniversitySetupComplete(account?.university);
-  if (isError && !onAuthPage) {
-    router.replace(loginRedirect);
-  }
+  const completeProfileRedirect = "/complete-profile";
 
-  if (
-    !onAuthPage &&
-    !onProfilePage &&
-    !isError &&
-    !isLoading &&
-    isSuperadmin &&
-    !isSetupComplete
-  ) {
-    router.replace(
-      pathname.startsWith("/university/") ? "/university/profile" : "/profile",
-    );
-  }
+  useEffect(() => {
+    if (isError && !onAuthPage) router.replace(loginRedirect);
+  }, [isError, loginRedirect, onAuthPage, router]);
+
+  useEffect(() => {
+    if (
+      !onAuthPage &&
+      !onCompleteProfilePage &&
+      !isError &&
+      !isLoading &&
+      isSuperadmin &&
+      !isSetupComplete
+    ) {
+      router.replace(completeProfileRedirect);
+    }
+  }, [
+    completeProfileRedirect,
+    isError,
+    isLoading,
+    isSetupComplete,
+    isSuperadmin,
+    onAuthPage,
+    onCompleteProfilePage,
+    router,
+  ]);
 
   return (
     <UniversityProfileContext.Provider

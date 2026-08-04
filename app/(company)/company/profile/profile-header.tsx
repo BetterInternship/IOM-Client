@@ -12,6 +12,7 @@ type ProfileHeaderProps = {
   isSaveDisabled: boolean;
   isSaving: boolean;
   onEdit: () => void;
+  onCancel: () => void;
   onSave: () => void;
 };
 
@@ -24,15 +25,28 @@ export function ProfileHeader({
   isSaveDisabled,
   isSaving,
   onEdit,
+  onCancel,
   onSave,
 }: ProfileHeaderProps) {
   if (!isSetupMode) {
     return (
       <div className="flex items-start justify-between gap-4">
         <PageHeader title={companyName} />
-        <Button variant="outline" onClick={onEdit} disabled={isEditing}>
-          <Pencil /> Edit{isEditing && "ing"}
-        </Button>
+        {isEditing ? (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onCancel} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button onClick={onSave} disabled={isSaveDisabled}>
+              {isSaving && <Loader2 className="animate-spin" />}
+              Save changes
+            </Button>
+          </div>
+        ) : (
+          <Button variant="outline" onClick={onEdit}>
+            <Pencil /> Edit
+          </Button>
+        )}
       </div>
     );
   }

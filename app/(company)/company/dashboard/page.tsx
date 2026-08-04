@@ -81,7 +81,7 @@ function VerificationBanner({
             </p>
           </div>
           <Button asChild size="lg">
-            <Link href="/profile">Complete your profile</Link>
+            <Link href="/complete-profile">Complete your profile</Link>
           </Button>
         </Card>
       </div>
@@ -348,7 +348,10 @@ function CompanyDashboardContent() {
           if (invite.template) params.set("template_id", invite.template.id);
           const href = `/company/dashboard?${params}`;
           return (
-            <Card className="flex-row items-start gap-3 border-primary/30 bg-primary/5 px-5 py-4" key={invite.id}>
+            <Card
+              className="flex-row items-start gap-3 border-primary/30 bg-primary/5 px-5 py-4"
+              key={invite.id}
+            >
               <Mail className="text-primary h-5 w-5" aria-hidden="true" />
               <div className="w-full flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-2">

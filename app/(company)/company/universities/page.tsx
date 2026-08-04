@@ -27,6 +27,8 @@ function UniversityDirectoryContent() {
   const verified = verification?.status === "verified";
   const status = verification?.status;
   const canRequestMoa = verified || status === "pending";
+  const profileHref =
+    status === "incomplete" ? "/complete-profile" : "/profile";
   const { openModal, closeModal } = useModal();
   const { approvalPending } = useIomModalRegistry();
   const showApprovalPending = searchParams.get("approval_pending") === "1";
@@ -97,7 +99,7 @@ function UniversityDirectoryContent() {
               : status === "expired"
                 ? "Your company verification has expired. Please re-upload your documents to request re-review."
                 : "Your company is pending verification by the platform team. You can queue MOA requests once your profile is complete."}{" "}
-          <Link href="/profile" className="text-primary underline">
+          <Link href={profileHref} className="text-primary underline">
             Go to your profile
           </Link>
           .

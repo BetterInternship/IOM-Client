@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getUniversityControllerMeQueryOptions,
@@ -15,7 +15,6 @@ import { Loader2 } from "lucide-react";
 
 function AcceptInviteForm() {
   const router = useRouter();
-  const pathname = usePathname();
   const params = useSearchParams();
   const queryClient = useQueryClient();
   const token = params.get("token") ?? "";
@@ -36,11 +35,10 @@ function AcceptInviteForm() {
           ...getUniversityControllerMeQueryOptions(),
           staleTime: 0,
         });
-        const prefix = pathname.startsWith("/university/") ? "/university" : "";
         router.replace(
           profile.account.role === "superadmin"
-            ? `${prefix}/profile`
-            : `${prefix}/partners`,
+            ? "/complete-profile"
+            : "/partners",
         );
       },
       onError: (e: Error) => setError(e.message),
