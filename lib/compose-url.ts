@@ -89,8 +89,11 @@ export interface InviteMessageInput {
   kind: "moa" | "listing";
   universityName: string;
   companyName?: string | null;
-  repName?: string | null;
-  repTitle?: string | null;
+  // Whoever is actually sending this email — distinct from the university's
+  // MOA representative (rep_name/rep_title), who only ever signs documents
+  // and may not be the person composing invites at all.
+  accountHolderName?: string | null;
+  accountHolderTitle?: string | null;
   personalMessage?: string | null;
   inviteLink: string;
 }
@@ -124,7 +127,8 @@ export function buildInviteClosingIntro(kind: "moa" | "listing"): string {
 // and arguably shouldn't: a branded card undercuts the "a person at the
 // university wrote this" effect manual send is buying).
 export function buildInviteBody(input: InviteMessageInput): string {
-  const hasRep = !!input.repName && !!input.repTitle;
+  const hasAccountHolder =
+    !!input.accountHolderName && !!input.accountHolderTitle;
 
   const paragraphs = [buildInviteGreeting(input.companyName)];
 
@@ -134,12 +138,14 @@ export function buildInviteBody(input: InviteMessageInput): string {
     `${buildInviteClosingIntro(input.kind)}\n${input.inviteLink}`,
   );
 
-  if (hasRep) {
+  if (hasAccountHolder) {
     const universityName = input.universityName || "the university";
     // Blank paragraph in place of the old "valid for 7 days" line — keeps
     // the extra breathing room before the sign-off without the text.
     paragraphs.push("");
-    paragraphs.push(`${input.repName}\n${input.repTitle}, ${universityName}`);
+    paragraphs.push(
+      `${input.accountHolderName}\n${input.accountHolderTitle}, ${universityName}`,
+    );
   }
 
   return paragraphs.join("\n\n");

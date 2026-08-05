@@ -11,4 +11,6 @@ export interface PatchUniversityProfileDto {
   address?: string;
   rep_name?: string;
   rep_title?: string;
+  account_holder_name?: string;
+  account_holder_title?: string;
 }

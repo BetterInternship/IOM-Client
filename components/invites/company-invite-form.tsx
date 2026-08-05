@@ -362,8 +362,8 @@ export function CompanyInviteForm({
             kind,
             universityName,
             companyName: invitedName ?? null,
-            repName: account?.university.rep_name ?? null,
-            repTitle: account?.university.rep_title ?? null,
+            accountHolderName: account?.university.account_holder_name ?? null,
+            accountHolderTitle: account?.university.account_holder_title ?? null,
             personalMessage: message.trim() || null,
             inviteLink: res.inviteLink,
           }),
@@ -768,13 +768,15 @@ export function CompanyInviteForm({
                   <p className="whitespace-pre-line">
                     {buildInviteClosingIntro(kind)} <span className="italic">(invite link)</span>
                   </p>
-                  {!!account?.university.rep_name && !!account?.university.rep_title && (
-                    <p className="mt-4">
-                      {account.university.rep_name}
-                      <br />
-                      {account.university.rep_title}, {universityName || "the university"}
-                    </p>
-                  )}
+                  {!!account?.university.account_holder_name &&
+                    !!account?.university.account_holder_title && (
+                      <p className="mt-4">
+                        {account.university.account_holder_name}
+                        <br />
+                        {account.university.account_holder_title},{" "}
+                        {universityName || "the university"}
+                      </p>
+                    )}
                 </div>
               </div>
               <p className="text-muted-foreground text-right text-xs">
