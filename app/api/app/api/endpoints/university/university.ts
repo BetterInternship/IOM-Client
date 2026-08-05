@@ -1950,7 +1950,9 @@ export const universityControllerCreateLegacyCompany = (
     `company_name`,
     universityControllerCreateLegacyCompanyBody.company_name,
   );
-  formData.append(`moas`, universityControllerCreateLegacyCompanyBody.moas);
+  if (universityControllerCreateLegacyCompanyBody.moas !== undefined) {
+    formData.append(`moas`, universityControllerCreateLegacyCompanyBody.moas);
+  }
   if (universityControllerCreateLegacyCompanyBody.tin !== undefined) {
     formData.append(`tin`, universityControllerCreateLegacyCompanyBody.tin);
   }
@@ -4402,6 +4404,84 @@ export function useUniversityControllerListInvitesSuspense<
   return query;
 }
 
+export const universityControllerCancelInvite = (
+  id: string | undefined | null,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<BaseResponse>({
+    url: `/api/university/invites/${id}/cancel`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getUniversityControllerCancelInviteMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+    TError,
+    { id: string | undefined | null },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+  TError,
+  { id: string | undefined | null },
+  TContext
+> => {
+  const mutationKey = ["universityControllerCancelInvite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+    { id: string | undefined | null }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return universityControllerCancelInvite(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityControllerCancelInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerCancelInvite>>
+>;
+
+export type UniversityControllerCancelInviteMutationError = ErrorResponse;
+
+export const useUniversityControllerCancelInvite = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+      TError,
+      { id: string | undefined | null },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+  TError,
+  { id: string | undefined | null },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerCancelInviteMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export const universityControllerBulkInvite = (
   bulkInviteDto: BulkInviteDto,
   signal?: AbortSignal,

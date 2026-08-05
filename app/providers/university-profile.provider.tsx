@@ -18,6 +18,8 @@ interface UniversityAccount {
     rep_name: string | null;
     rep_title: string | null;
     rep_signature_url: string | null;
+    account_holder_name: string | null;
+    account_holder_title: string | null;
   };
 }
 

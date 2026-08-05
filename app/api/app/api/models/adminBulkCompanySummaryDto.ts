@@ -9,6 +9,7 @@
 export interface AdminBulkCompanySummaryDto {
   created: number;
   duplicate_tin: number;
+  duplicate_name: number;
   invalid: number;
   failed: number;
 }

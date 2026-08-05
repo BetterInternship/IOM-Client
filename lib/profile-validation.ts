@@ -25,6 +25,11 @@ export const universityProfileSchema = z.object({
   address: z.string().trim().min(1, "Address is required."),
   rep_name: z.string().trim().min(1, "Representative name is required."),
   rep_title: z.string().trim().min(1, "Representative title is required."),
+  // Optional — whoever is actually sending mail from the account, distinct
+  // from rep_name/rep_title (the MOA signatory). Used only to sign off the
+  // manual invite email.
+  account_holder_name: z.string().trim(),
+  account_holder_title: z.string().trim(),
 });
 
 export type CompanyProfileDraft = z.infer<typeof companyProfileSchema>;

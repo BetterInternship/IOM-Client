@@ -19,4 +19,8 @@ export interface UniversityDto {
   rep_title: string | null;
   /** @nullable */
   rep_signature_url: string | null;
+  /** @nullable */
+  account_holder_name: string | null;
+  /** @nullable */
+  account_holder_title: string | null;
 }

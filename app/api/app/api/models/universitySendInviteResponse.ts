@@ -10,4 +10,6 @@ export interface UniversitySendInviteResponse {
   success: boolean;
   message?: string;
   superseded: boolean;
+  inviteId: string;
+  inviteLink: string;
 }
