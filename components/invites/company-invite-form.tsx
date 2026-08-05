@@ -16,10 +16,10 @@ import {
   universityControllerCancelInvite,
   useUniversityControllerListRegisteredCompanies,
   useUniversityControllerListTemplates,
+  useUniversityControllerMe,
   useUniversityControllerSendInvite,
 } from "@/app/api/app/api/endpoints/university/university";
 import type { UniversityRegisteredCompanyDto } from "@/app/api/app/api/models";
-import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,8 @@ import { MorphHeight } from "@/components/ui/morph-height";
 import {
   buildComposeUrl,
   buildInviteBody,
+  buildInviteClosingIntro,
+  buildInviteGreeting,
   buildInviteSubject,
   INVITE_CC_EMAIL,
   loadInviteDraft,
@@ -179,7 +181,15 @@ export function CompanyInviteForm({
   const [error, setError] = useState("");
   const [provider, setProvider] = useState<ComposeProvider>("gmail");
 
-  const { account } = useUniversityProfile();
+  // Not useUniversityProfile() — this form only ever renders inside a
+  // modal, and the modal system's portal (app/providers/modal-provider.tsx)
+  // renders as a sibling of the (university) route group's own provider
+  // tree, not a descendant of it, so UniversityProfileContext never reaches
+  // in here (silently resolving to its default `account: null`). Reading
+  // the query directly sidesteps that — QueryClientProvider sits above
+  // ModalProvider at the root, so this hits the same cached `me` result.
+  const { data: meData } = useUniversityControllerMe();
+  const account = meData?.account;
   const universityName = account?.university.registered_name ?? "";
 
   // D7/D8 — prefill the welcome-message draft and remembered provider once
@@ -313,7 +323,8 @@ export function CompanyInviteForm({
   const canSend =
     !!invitedEmail &&
     (mode === "new" || !!selectedCompany) &&
-    (kind !== "moa" || availableTemplates.length > 0);
+    (kind !== "moa" || availableTemplates.length > 0) &&
+    !!message.trim();
 
   return (
     <div className="space-y-4">
@@ -534,9 +545,6 @@ export function CompanyInviteForm({
                   </p>
                 </div>
               </div>
-              <p className="text-muted-foreground text-xs">
-                {`We'll open a prefilled email in your own ${PROVIDER_LABEL[provider]} — review it and hit send from there. We'll CC ${INVITE_CC_EMAIL} so we keep a copy.`}
-              </p>
             </div>
 
             {kind === "moa" ? (
@@ -592,16 +600,44 @@ export function CompanyInviteForm({
             ) : null}
 
             <div className="space-y-2">
-              <Label htmlFor="invite-message">Welcome message (optional)</Label>
-              <Textarea
-                id="invite-message"
-                rows={4}
-                className="min-h-28 resize-none"
-                placeholder="Add a note to the company..."
-                maxLength={500}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-              />
+              <Label htmlFor="invite-message">Your message to the company</Label>
+              {/* Joined preview — the greeting and closing lines are fixed
+                  copy the coordinator can't edit, shown here so the
+                  textarea's contents aren't a surprise once the email is
+                  actually open in Gmail/Outlook. One rounded container,
+                  overflow-hidden so only the outer top/bottom corners
+                  round; each piece inside stays square and is divided by a
+                  border so it still reads as three connected sections. */}
+              <div className="focus-within:border-gray-500 overflow-hidden rounded-[0.33em] border border-gray-300">
+                <div className="border-b border-gray-200 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-400">
+                  {buildInviteGreeting(invitedName)}
+                </div>
+                <Textarea
+                  id="invite-message"
+                  rows={4}
+                  className="min-h-28 resize-none rounded-none border-0 shadow-none focus:border-0"
+                  placeholder={
+                    kind === "moa"
+                      ? "We'd like to establish an internship partnership with your company."
+                      : "We're inviting your company to post internship opportunities for our students."
+                  }
+                  maxLength={500}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                />
+                <div className="border-t border-gray-200 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-400">
+                  <p className="whitespace-pre-line">
+                    {buildInviteClosingIntro(kind)} <span className="italic">(invite link)</span>
+                  </p>
+                  {!!account?.university.rep_name && !!account?.university.rep_title && (
+                    <p className="mt-4">
+                      {account.university.rep_name}
+                      <br />
+                      {account.university.rep_title}, {universityName || "the university"}
+                    </p>
+                  )}
+                </div>
+              </div>
               <p className="text-muted-foreground text-right text-xs">
                 {message.length}/500
               </p>

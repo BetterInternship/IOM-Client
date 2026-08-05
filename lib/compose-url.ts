@@ -95,47 +95,51 @@ export interface InviteMessageInput {
   inviteLink: string;
 }
 
-// §8 — subject line by kind.
+// §8 — subject line by kind. Falls back if the profile's registered_name
+// is somehow blank, rather than rendering a bare leading em dash.
 export function buildInviteSubject(
   input: Pick<InviteMessageInput, "kind" | "universityName">,
 ): string {
+  const name = input.universityName || "Our University";
   return input.kind === "moa"
-    ? `${input.universityName}: Internship Partnership`
-    : `${input.universityName}: Invitation to Post Internship Listings`;
+    ? `${name} — internship partnership`
+    : `${name} — invitation to post internship listings`;
 }
 
-function buildIntro(input: InviteMessageInput, hasRep: boolean): string {
-  if (input.kind === "moa") {
-    // Hard-gated server-side (company-invite.service.ts sendInvite) —
-    // rep_name/rep_title are guaranteed present for a moa-kind invite.
-    return `I'm ${input.repName}, ${input.repTitle} at ${input.universityName}. We'd like to establish an internship partnership with your company. We handle our MOAs through BetterInternship, so I've set up an invitation for you there.`;
-  }
-  if (hasRep) {
-    return `I'm ${input.repName}, ${input.repTitle} at ${input.universityName}. We'd like to invite your company to post internship listings on BetterInternship.`;
-  }
-  // listing-kind only: rep_name/rep_title aren't gated, so this drops the
-  // first-person framing entirely when they're absent (plan §8).
-  return `${input.universityName} would like to invite your company to post internship listings on BetterInternship.`;
+// The greeting and closing are fixed, uneditable copy — the coordinator
+// only writes the paragraph in between. Exported so the invite form can
+// render the exact same text as a static preview around the message
+// textarea, instead of it being a surprise once the email is opened.
+export function buildInviteGreeting(companyName?: string | null): string {
+  return companyName ? `Hi ${companyName},` : "Hello,";
+}
+
+export function buildInviteClosingIntro(kind: "moa" | "listing"): string {
+  return kind === "moa"
+    ? "You can review the partnership agreement and get started here:"
+    : "Students will see your listings on BetterInternship.\nPost them through:";
 }
 
 // §8 — plain text (the templates' HTML can't survive a `body` URL param,
 // and arguably shouldn't: a branded card undercuts the "a person at the
 // university wrote this" effect manual send is buying).
 export function buildInviteBody(input: InviteMessageInput): string {
-  const greeting = input.companyName ? `Hi ${input.companyName},` : "Hello,";
   const hasRep = !!input.repName && !!input.repTitle;
 
-  const paragraphs = [greeting, buildIntro(input, hasRep)];
+  const paragraphs = [buildInviteGreeting(input.companyName)];
 
   if (input.personalMessage) paragraphs.push(input.personalMessage);
 
   paragraphs.push(
-    `You can review the details and get started here:\n${input.inviteLink}`,
+    `${buildInviteClosingIntro(input.kind)}\n${input.inviteLink}`,
   );
-  paragraphs.push("This link is valid for 7 days.");
 
   if (hasRep) {
-    paragraphs.push(`${input.repName}\n${input.repTitle}, ${input.universityName}`);
+    const universityName = input.universityName || "the university";
+    // Blank paragraph in place of the old "valid for 7 days" line — keeps
+    // the extra breathing room before the sign-off without the text.
+    paragraphs.push("");
+    paragraphs.push(`${input.repName}\n${input.repTitle}, ${universityName}`);
   }
 
   return paragraphs.join("\n\n");
