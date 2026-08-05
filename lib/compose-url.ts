@@ -59,12 +59,12 @@ export function buildComposeUrl(
   provider: ComposeProvider,
   input: ComposeMailInput,
 ): string {
-  const to = encodeURIComponent(input.to);
-  const cc = input.cc ? encodeURIComponent(input.cc) : null;
   const subject = encodeURIComponent(input.subject);
   const body = encodeURIComponent(input.body);
 
   if (provider === "gmail") {
+    const to = encodeURIComponent(input.to);
+    const cc = input.cc ? encodeURIComponent(input.cc) : null;
     const params = [
       "view=cm",
       "fs=1",
@@ -76,12 +76,12 @@ export function buildComposeUrl(
     return `https://mail.google.com/mail/?${params.join("&")}`;
   }
 
-  const params = [
-    `to=${to}`,
-    cc ? `cc=${cc}` : null,
-    `subject=${subject}`,
-    `body=${body}`,
-  ].filter((p): p is string => p !== null);
+  // Outlook's deeplink compose endpoint doesn't reliably honor `cc=` — fold
+  // it into `to` as a second recipient instead, comma-separated.
+  const to = encodeURIComponent(
+    input.cc ? `${input.to},${input.cc}` : input.to,
+  );
+  const params = [`to=${to}`, `subject=${subject}`, `body=${body}`];
   return `https://outlook.office.com/mail/deeplink/compose?${params.join("&")}`;
 }
 
