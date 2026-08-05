@@ -18,7 +18,15 @@ interface UniversityAccount {
     rep_name: string | null;
     rep_title: string | null;
     rep_signature_url: string | null;
+    signatories: UniversitySignatoryFields[] | null;
   };
+}
+
+interface UniversitySignatoryFields {
+  id: string;
+  name: string;
+  title: string;
+  signatureUrl?: string;
 }
 
 interface UniversityProfileCtx {
@@ -41,17 +49,32 @@ type UniversitySetupFields = {
   rep_name: string | null | undefined;
   rep_title: string | null | undefined;
   rep_signature_url: string | null | undefined;
+  signatories: UniversitySignatoryFields[] | null | undefined;
 };
+
+const MIN_SIGNATORIES = 2;
+const MAX_SIGNATORIES = 5;
 
 export function isUniversitySetupComplete(
   university: UniversitySetupFields | null | undefined,
 ) {
+  const signatories = Array.isArray(university?.signatories)
+    ? university!.signatories
+    : [];
+  const signatoriesComplete =
+    signatories.length >= MIN_SIGNATORIES &&
+    signatories.length <= MAX_SIGNATORIES &&
+    signatories.every(
+      (s) =>
+        !!s?.id &&
+        !!s?.name?.trim() &&
+        !!s?.title?.trim() &&
+        !!s?.signatureUrl?.trim(),
+    );
   return Boolean(
     university?.registered_name?.trim() &&
     university.address?.trim() &&
-    university.rep_name?.trim() &&
-    university.rep_title?.trim() &&
-    university.rep_signature_url,
+    signatoriesComplete,
   );
 }
 

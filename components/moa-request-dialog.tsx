@@ -10,6 +10,7 @@ import {
   usePdfPageRenderer,
 } from "@betterinternship/core/pdf-viewer";
 import {
+  type CompanyControllerRequestMoaBody,
   type CompanyPendingInvitesResponse,
   getCompanyControllerListMoasQueryKey,
   getCompanyControllerListPendingInvitesQueryKey,
@@ -124,6 +125,72 @@ interface Template {
   name: string;
   description: string | null;
   term_months: number | null;
+  field_schema?: unknown;
+}
+
+interface CompanySignerRequirements {
+  name: boolean;
+  title: boolean;
+  signature: boolean;
+}
+
+interface CompanySignatoryRequirements {
+  signer1: CompanySignerRequirements;
+  signer2: CompanySignerRequirements;
+}
+
+const SIGNER_1_KEYS = {
+  name: ["company_signatory_name", "company_rep_name"],
+  title: ["company_signatory_title", "company_rep_title"],
+  signature: ["company_signatory_signature", "company_rep_signature"],
+};
+
+const SIGNER_2_KEYS = {
+  name: ["company_signatory_2_name"],
+  title: ["company_signatory_2_title"],
+  signature: ["company_signatory_2_signature"],
+};
+
+/** Exactly which company signatory properties the template's flat fields need. */
+function deriveCompanySignatoryRequirements(
+  fieldSchema: unknown,
+): CompanySignatoryRequirements {
+  if (!Array.isArray(fieldSchema)) {
+    return {
+      signer1: { name: false, title: false, signature: false },
+      signer2: { name: false, title: false, signature: false },
+    };
+  }
+  const fields = new Set(
+    (fieldSchema as Array<{ field?: string }>)
+      .map((e) => e?.field)
+      .filter((f): f is string => typeof f === "string"),
+  );
+  const has = (keys: string[]) => keys.some((k) => fields.has(k));
+  const signer1 = {
+    name: has(SIGNER_1_KEYS.name),
+    title: has(SIGNER_1_KEYS.title),
+    signature: has(SIGNER_1_KEYS.signature),
+  };
+  const signer2 = {
+    name: has(SIGNER_2_KEYS.name),
+    title: has(SIGNER_2_KEYS.title),
+    signature: has(SIGNER_2_KEYS.signature),
+  };
+  if (
+    signer1.name ||
+    signer1.title ||
+    signer1.signature ||
+    signer2.name ||
+    signer2.title ||
+    signer2.signature
+  ) {
+    return { signer1, signer2 };
+  }
+  return {
+    signer1: { name: false, title: false, signature: false },
+    signer2: { name: false, title: false, signature: false },
+  };
 }
 
 type ApiError = {
@@ -253,6 +320,11 @@ export function RequestDialog({
   const [sigMode, setSigMode] = useState<MoaSignatureMode>("type");
   const [sigText, setSigText] = useState("");
   const [sigFile, setSigFile] = useState<File | null>(null);
+  const [rep2Name, setRep2Name] = useState("");
+  const [rep2Title, setRep2Title] = useState("");
+  const [sig2Mode, setSig2Mode] = useState<MoaSignatureMode>("type");
+  const [sig2Text, setSig2Text] = useState("");
+  const [sig2File, setSig2File] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requestPhase, setRequestPhase] = useState<RequestPhase>("form");
 
@@ -335,14 +407,22 @@ export function RequestDialog({
   const submitRequest = () => {
     setError(null);
     setRequestPhase("issuing");
-    const requestData = {
+    const requestData: CompanyControllerRequestMoaBody = {
       universityId,
       templateId: selectedTemplate!,
       repName,
       repTitle,
-      ...(sigMode !== "type" && sigFile
-        ? { signature: sigFile }
-        : { repSignatureText: sigText }),
+      ...(signerRequirements.signer1.signature
+        ? sigMode !== "type" && sigFile
+          ? { signature: sigFile }
+          : { repSignatureText: sigText }
+        : {}),
+      ...(signer2Required ? { rep2Name, rep2Title } : {}),
+      ...(signer2Required && signerRequirements.signer2.signature
+        ? sig2Mode !== "type" && sig2File
+          ? { signature2: sig2File }
+          : { rep2SignatureText: sig2Text }
+        : {}),
       ...(inviteId ? { invite_id: inviteId } : {}),
     };
 
@@ -362,8 +442,26 @@ export function RequestDialog({
 
   const templates = data?.templates ?? [];
   const universityName = data?.university?.registered_name ?? "";
+  const selectedTemplateData = templates.find((t) => t.id === selectedTemplate);
+  const signerRequirements = deriveCompanySignatoryRequirements(
+    selectedTemplateData?.field_schema,
+  );
   const sigReady = sigMode === "type" ? !!sigText.trim() : !!sigFile;
-  const step2Ready = !!repName.trim() && !!repTitle.trim() && sigReady;
+  const sig2Ready = sig2Mode === "type" ? !!sig2Text.trim() : !!sig2File;
+  const signer1Ready =
+    (!signerRequirements.signer1.name || !!repName.trim()) &&
+    (!signerRequirements.signer1.title || !!repTitle.trim()) &&
+    (!signerRequirements.signer1.signature || sigReady);
+  const signer2Required =
+    signerRequirements.signer2.name ||
+    signerRequirements.signer2.title ||
+    signerRequirements.signer2.signature;
+  const signer2Ready =
+    !signer2Required ||
+    ((!signerRequirements.signer2.name || !!rep2Name.trim()) &&
+      (!signerRequirements.signer2.title || !!rep2Title.trim()) &&
+      (!signerRequirements.signer2.signature || sig2Ready));
+  const step2Ready = signer1Ready && signer2Ready;
   const currentStepIndex = step - 1;
 
   if (requestPhase === "issuing") {
@@ -458,33 +556,79 @@ export function RequestDialog({
       </div>
     ) : (
       <div className="space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="rep-name">Representative name</Label>
-          <Input
-            id="rep-name"
-            value={repName}
-            onChange={(e) => setRepName(e.target.value)}
-            placeholder="Full name"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="rep-title">Representative title</Label>
-          <Input
-            id="rep-title"
-            value={repTitle}
-            onChange={(e) => setRepTitle(e.target.value)}
-            placeholder="e.g. CEO, HR Manager"
-          />
-        </div>
+        {signerRequirements.signer1.name && (
+          <div className="space-y-1.5">
+            <Label htmlFor="rep-name">Representative name</Label>
+            <Input
+              id="rep-name"
+              value={repName}
+              onChange={(e) => setRepName(e.target.value)}
+              placeholder="Full name"
+            />
+          </div>
+        )}
+        {signerRequirements.signer1.title && (
+          <div className="space-y-1.5">
+            <Label htmlFor="rep-title">Representative title</Label>
+            <Input
+              id="rep-title"
+              value={repTitle}
+              onChange={(e) => setRepTitle(e.target.value)}
+              placeholder="e.g. CEO, HR Manager"
+            />
+          </div>
+        )}
 
-        <MoaSignatureInput
-          mode={sigMode}
-          onModeChange={setSigMode}
-          text={sigText}
-          onTextChange={setSigText}
-          file={sigFile}
-          onFileChange={setSigFile}
-        />
+        {signerRequirements.signer1.signature && (
+          <MoaSignatureInput
+            mode={sigMode}
+            onModeChange={setSigMode}
+            text={sigText}
+            onTextChange={setSigText}
+            file={sigFile}
+            onFileChange={setSigFile}
+          />
+        )}
+
+        {signer2Required && (
+          <div className="space-y-3 rounded-[0.33em] border border-gray-200 bg-gray-50/60 p-3">
+            <p className="text-sm font-semibold text-gray-900">
+              Representative 2
+            </p>
+            {signerRequirements.signer2.name && (
+              <div className="space-y-1.5">
+                <Label htmlFor="rep2-name">Representative name</Label>
+                <Input
+                  id="rep2-name"
+                  value={rep2Name}
+                  onChange={(e) => setRep2Name(e.target.value)}
+                  placeholder="Full name"
+                />
+              </div>
+            )}
+            {signerRequirements.signer2.title && (
+              <div className="space-y-1.5">
+                <Label htmlFor="rep2-title">Representative title</Label>
+                <Input
+                  id="rep2-title"
+                  value={rep2Title}
+                  onChange={(e) => setRep2Title(e.target.value)}
+                  placeholder="e.g. CEO, HR Manager"
+                />
+              </div>
+            )}
+            {signerRequirements.signer2.signature && (
+              <MoaSignatureInput
+                mode={sig2Mode}
+                onModeChange={setSig2Mode}
+                text={sig2Text}
+                onTextChange={setSig2Text}
+                file={sig2File}
+                onFileChange={setSig2File}
+              />
+            )}
+          </div>
+        )}
 
         <p className="text-muted-foreground text-sm">
           These details will appear on the MOA document. They are not stored

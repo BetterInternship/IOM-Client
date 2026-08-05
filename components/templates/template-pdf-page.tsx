@@ -37,6 +37,8 @@ export interface TemplatePdfPageProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onDropField: (fieldKey: string, page: number, xPt: number, yPt: number) => void;
+  /** drop a whole signatory slot (array of field keys) at a point */
+  onDropSlot?: (keys: string[], page: number, xPt: number, yPt: number) => void;
   onChange: (id: string, patch: Patch) => void;
 }
 
@@ -50,6 +52,7 @@ export function TemplatePdfPage({
   selectedId,
   onSelect,
   onDropField,
+  onDropSlot,
   onChange,
 }: TemplatePdfPageProps) {
   const { canvasRef, pageReady } = usePdfPageRenderer(pdf, pageNumber, scale);
@@ -64,11 +67,23 @@ export function TemplatePdfPage({
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     const key = e.dataTransfer.getData("field");
-    if (!key) return;
+    const slot = e.dataTransfer.getData("slot");
+    if (!key && !slot) return;
     const rect = overlayRef.current?.getBoundingClientRect();
     if (!rect) return;
     const xPt = (e.clientX - rect.left) / scale;
     const yPt = (e.clientY - rect.top) / scale;
+    if (slot) {
+      try {
+        const keys = JSON.parse(slot);
+        if (Array.isArray(keys) && keys.length) {
+          onDropSlot?.(keys, pageNumber, xPt, yPt);
+          return;
+        }
+      } catch {
+        /* ignore malformed slot payload */
+      }
+    }
     onDropField(key, pageNumber, xPt, yPt);
   };
 

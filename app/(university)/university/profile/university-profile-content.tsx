@@ -2,7 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import {
@@ -35,25 +35,30 @@ import { DetailField } from "@/components/ui/detail-field";
 import { FileDropTarget } from "@/components/ui/use-file-drop";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   Building2,
   Camera,
   ImageIcon,
   Loader2,
   Pencil,
+  Plus,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   universityProfileSchema,
   type UniversityProfileDraft,
+  type UniversitySignatoryDraft,
 } from "@/lib/profile-validation";
 
-type SectionKey = "university" | "representative";
+type SectionKey = "university" | "signatories";
 type EditingState = SectionKey | "all";
 
 const SECTION_FIELDS: Record<SectionKey, (keyof UniversityProfileDraft)[]> = {
   university: ["registered_name", "address"],
-  representative: ["rep_name", "rep_title"],
+  signatories: ["signatories"],
 };
 
 interface UniversityProfile {
@@ -63,10 +68,22 @@ interface UniversityProfile {
   rep_title: string | null;
   rep_signature_url: string | null;
   logo_url: string | null;
-  [key: string]: string | null;
+  signatories: UniversitySignatoryDraft[] | null;
+  [key: string]: string | string[] | UniversitySignatoryDraft[] | null;
 }
 
 type UniversityProfileMode = "setup" | "profile";
+
+const newSignatoryId = () => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 export function UniversityProfileContent({
   mode,
@@ -86,13 +103,21 @@ export function UniversityProfileContent({
     defaultValues: {
       registered_name: "",
       address: "",
-      rep_name: "",
-      rep_title: "",
+      signatories: [
+        { id: newSignatoryId(), name: "", title: "" },
+        { id: newSignatoryId(), name: "", title: "" },
+      ],
     },
   });
-  const [signatureMode, setSignatureMode] =
-    useState<MoaSignatureMode>("upload");
-  const [signatureFile, setSignatureFile] = useState<File | null>(null);
+  const { fields, append, remove, move } = useFieldArray({
+    control: form.control,
+    name: "signatories",
+    keyName: "formRowId",
+  });
+  const [pendingSigs, setPendingSigs] = useState<Record<string, File>>({});
+  const [sigModes, setSigModes] = useState<Record<string, MoaSignatureMode>>(
+    {},
+  );
   const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
 
   const { data, isLoading: profileLoading } = useUniversityControllerGetProfile(
@@ -103,7 +128,16 @@ export function UniversityProfileContent({
 
   const uni = data?.university as UniversityProfile | undefined;
   const displayLogoUrl = logoPreviewUrl ?? uni?.logo_url ?? null;
-  const displaySigUrl = uni?.rep_signature_url ?? null;
+
+  const signatoriesComplete = (list: UniversitySignatoryDraft[]) =>
+    list.length >= 2 &&
+    list.length <= 5 &&
+    list.every(
+      (s) =>
+        s.name.trim() &&
+        s.title.trim() &&
+        (s.signatureUrl?.trim() || !!pendingSigs[s.id]),
+    );
 
   const save = useMutation({
     mutationFn: async () => {
@@ -113,13 +147,27 @@ export function UniversityProfileContent({
           completedSetup: false,
         };
       const values = form.getValues();
+      const signatories = values.signatories.map((s) => ({
+        id: s.id,
+        name: s.name,
+        title: s.title,
+        ...(s.signatureUrl ? { signatureUrl: s.signatureUrl } : {}),
+      }));
+      const missingSignature = signatories.find(
+        (s) => !s.signatureUrl?.trim() && !pendingSigs[s.id],
+      );
+      if (missingSignature) {
+        throw new Error(
+          `Add a signature for "${
+            missingSignature.name.trim() || "this signatory"
+          }" before saving.`,
+        );
+      }
       const completedSetup = Boolean(
         isSetupMode &&
         values.registered_name.trim() &&
         values.address.trim() &&
-        values.rep_name.trim() &&
-        values.rep_title.trim() &&
-        (uni?.rep_signature_url || signatureFile),
+        signatoriesComplete(signatories),
       );
       const keys = isSetupMode
         ? (Object.keys(
@@ -133,8 +181,24 @@ export function UniversityProfileContent({
       const payload = Object.fromEntries(keys.map((key) => [key, values[key]]));
       const response = await universityControllerPatchProfile(payload);
 
-      if (signatureFile) {
-        await universityControllerUploadSignature({ file: signatureFile });
+      const uploaded: string[] = [];
+      for (const [id, file] of Object.entries(pendingSigs)) {
+        try {
+          await universityControllerUploadSignature(id, { file });
+          uploaded.push(id);
+        } catch (e) {
+          setPendingSigs((prev) => {
+            const next = { ...prev };
+            for (const done of uploaded) delete next[done];
+            return next;
+          });
+          const signatory = signatories.find((s) => s.id === id);
+          const label = signatory?.name.trim() || "a signatory";
+          const message = e instanceof Error ? e.message : "unknown error";
+          throw new Error(
+            `Could not upload the signature for "${label}". ${message}`,
+          );
+        }
       }
 
       return { response, completedSetup };
@@ -149,7 +213,7 @@ export function UniversityProfileContent({
           queryKey: getUniversityControllerMeQueryKey(),
         }),
       ]);
-      setSignatureFile(null);
+      setPendingSigs({});
       cancelEdit();
       if (completedSetup) {
         router.replace("/templates?setup_complete=1");
@@ -186,12 +250,15 @@ export function UniversityProfileContent({
   const persistedInstitutionComplete = Boolean(
     uni?.registered_name?.trim() && uni.address?.trim(),
   );
-  const persistedRepresentativeDetailsComplete = Boolean(
-    uni?.rep_name?.trim() && uni.rep_title?.trim(),
-  );
-  const persistedRepresentativeComplete = Boolean(
-    persistedRepresentativeDetailsComplete && uni?.rep_signature_url,
-  );
+  const persistedSignatories = Array.isArray(uni?.signatories)
+    ? uni!.signatories
+    : [];
+  const persistedSignatoriesComplete =
+    persistedSignatories.length >= 2 &&
+    persistedSignatories.length <= 5 &&
+    persistedSignatories.every(
+      (s) => s?.name?.trim() && s?.title?.trim() && s?.signatureUrl?.trim(),
+    );
   const setupComplete = isUniversitySetupComplete(uni);
   const isSetupRoute = mode === "setup";
   const isSetupMode = isSetupRoute && isSuperadmin;
@@ -199,15 +266,9 @@ export function UniversityProfileContent({
   const institutionComplete = isSetupMode
     ? Boolean(liveValues.registered_name.trim() && liveValues.address.trim())
     : persistedInstitutionComplete;
-  const representativeDetailsComplete = isSetupMode
-    ? Boolean(liveValues.rep_name.trim() && liveValues.rep_title.trim())
-    : persistedRepresentativeDetailsComplete;
   const representativeComplete = isSetupMode
-    ? Boolean(
-        representativeDetailsComplete &&
-        (uni?.rep_signature_url || signatureFile),
-      )
-    : persistedRepresentativeComplete;
+    ? signatoriesComplete(liveValues.signatories ?? [])
+    : persistedSignatoriesComplete;
 
   useEffect(() => {
     if (!uni || !isSetupMode || setupComplete || editing) return;
@@ -217,15 +278,8 @@ export function UniversityProfileContent({
       return;
     }
 
-    startEdit("representative", ["rep_name", "rep_title"]);
-  }, [
-    editing,
-    institutionComplete,
-    representativeDetailsComplete,
-    isSetupMode,
-    setupComplete,
-    uni,
-  ]);
+    startEdit("signatories", ["signatories"]);
+  }, [editing, institutionComplete, isSetupMode, setupComplete, uni]);
 
   useEffect(() => {
     if (
@@ -259,22 +313,26 @@ export function UniversityProfileContent({
     return `${uni?.[key] ?? ""}`;
   }
   function startEdit(section: EditingState, keys: string[]) {
-    const seed: Record<string, string> = {};
-    (Object.keys(universityProfileSchema.shape) as string[]).forEach(
-      (k) => (seed[k] = persisted(k)),
-    );
-    form.reset(seed as UniversityProfileDraft);
+    const seed = {
+      registered_name: uni?.registered_name ?? "",
+      address: uni?.address ?? "",
+      signatories:
+        Array.isArray(uni?.signatories) && uni!.signatories.length
+          ? uni!.signatories.map((s) => ({ ...s }))
+          : [
+              { id: newSignatoryId(), name: "", title: "" },
+              { id: newSignatoryId(), name: "", title: "" },
+            ],
+    };
+    form.reset(seed);
     void form.trigger(keys as (keyof UniversityProfileDraft)[]);
     setEditing(section);
   }
   function cancelEdit() {
     setEditing(null);
-    setSignatureFile(null);
+    setPendingSigs({});
     form.reset();
   }
-
-  const signatoryComplete =
-    uni?.rep_name && uni?.rep_title && uni?.rep_signature_url;
 
   function fieldError(field: string) {
     return form.formState.errors[field as keyof UniversityProfileDraft]
@@ -314,6 +372,9 @@ export function UniversityProfileContent({
       </DetailField>
     );
   };
+
+  const editingSignatories =
+    isSetupMode || editing === "all" || editing === "signatories";
 
   return (
     <div className="relative isolate min-h-screen flex-1 bg-slate-50/70">
@@ -401,7 +462,9 @@ export function UniversityProfileContent({
                     disabled={
                       save.isPending ||
                       !form.formState.isValid ||
-                      (!form.formState.isDirty && !signatureFile)
+                      !signatoriesComplete(liveValues.signatories ?? []) ||
+                      (!form.formState.isDirty &&
+                        !Object.keys(pendingSigs).length)
                     }
                   >
                     {save.isPending && <Loader2 className="animate-spin" />}
@@ -421,19 +484,20 @@ export function UniversityProfileContent({
           </div>
         )}
 
-        {!isSetupMode && !signatoryComplete && isSuperadmin && (
+        {!isSetupMode && !persistedSignatoriesComplete && isSuperadmin && (
           <div className="border-warning/30 bg-warning/10 flex items-start gap-3 rounded-[0.33em] border p-4 text-sm">
             <AlertTriangle className="text-warning mt-0.5 h-4 w-4 flex-shrink-0" />
             <p className="text-gray-700">
-              Complete the representative details (name, title, and signature
-              image) before you can offer MOA templates to companies.
+              Complete the signatory details (name, title, and signature image
+              for at least two signatories) before you can offer MOA templates
+              to companies.
             </p>
           </div>
         )}
 
         <CollapsibleCardGroup
           type="multiple"
-          defaultValue={["university", "representative"]}
+          defaultValue={["university", "signatories"]}
           variant={isSetupMode ? "separate" : "grouped"}
         >
           {/* 1 — University Details */}
@@ -454,15 +518,13 @@ export function UniversityProfileContent({
             {textField("university", "address", "Address (used in MOAs)")}
           </CollapsibleCardSection>
 
-          {/* 2 — Representative Details */}
+          {/* 2 — Signatories */}
           <CollapsibleCardSection
-            value="representative"
+            value="signatories"
             trigger={
               <CollapsibleCardSectionTitle
                 icon={UserRound}
-                title={
-                  isSetupMode ? "MOA Representative" : "Representative Details"
-                }
+                title={isSetupMode ? "MOA Signatories" : "Signatory Details"}
                 requiredComplete={
                   isSetupMode ? representativeComplete : undefined
                 }
@@ -471,36 +533,190 @@ export function UniversityProfileContent({
             contentClassName="space-y-4 px-5 pb-5"
           >
             <p className="text-muted-foreground text-xs">
-              The representative&apos;s details will be used on all approved
-              MOAs.
+              Add 2 to 5 signatories. Their details and signatures will be used
+              on all approved MOAs, in this order.
             </p>
-            {textField("representative", "rep_name", "Signatory name")}
-            {textField("representative", "rep_title", "Signatory title")}
 
-            {displaySigUrl && (
-              <div className="rounded-[0.33em] border border-blue-100 bg-white p-4">
-                <p className="text-muted-foreground mb-2 text-xs font-medium">
-                  Current signature
-                </p>
-                <img
-                  src={displaySigUrl}
-                  alt="Signature"
-                  className="h-16 max-w-xs object-contain"
-                />
-              </div>
-            )}
-
-            {isSuperadmin && (isSetupMode || editing === "all") && (
+            {!editingSignatories ? (
               <div className="space-y-3">
-                <MoaSignatureInput
-                  mode={signatureMode}
-                  onModeChange={setSignatureMode}
-                  text=""
-                  onTextChange={() => undefined}
-                  file={signatureFile}
-                  onFileChange={setSignatureFile}
-                  modes={["upload", "draw"]}
-                />
+                {persistedSignatories.length === 0 && (
+                  <p className="text-muted-foreground text-sm">Not set</p>
+                )}
+                {persistedSignatories.map((s, index) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-3 rounded-[0.33em] border border-gray-200 bg-white p-3"
+                  >
+                    <span className="text-muted-foreground w-6 text-center text-xs font-semibold">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-gray-900">
+                        {s.name || "—"}
+                      </p>
+                      <p className="text-muted-foreground truncate text-xs">
+                        {s.title || "No title"}
+                      </p>
+                    </div>
+                    {s.signatureUrl ? (
+                      <img
+                        src={s.signatureUrl}
+                        alt="Signature"
+                        className="h-10 max-w-24 object-contain"
+                      />
+                    ) : (
+                      <span className="text-muted-foreground text-xs">
+                        No signature
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {fields.map((field, index) => {
+                  const isComplete =
+                    field.name.trim() &&
+                    field.title.trim() &&
+                    (field.signatureUrl?.trim() || !!pendingSigs[field.id]);
+                  return (
+                    <div
+                      key={field.formRowId}
+                      className="space-y-3 rounded-[0.33em] border border-gray-200 bg-white p-4"
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-gray-900">
+                          Signatory {index + 1}
+                        </p>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={index === 0}
+                            onClick={() => move(index, index - 1)}
+                          >
+                            <ArrowUp />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={index === fields.length - 1}
+                            onClick={() => move(index, index + 1)}
+                          >
+                            <ArrowDown />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            scheme="destructive"
+                            disabled={fields.length <= 2}
+                            onClick={() => remove(index)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Signatory name</Label>
+                          <Input
+                            aria-invalid={
+                              !!form.formState.errors.signatories?.[index]?.name
+                            }
+                            {...form.register(`signatories.${index}.name`)}
+                          />
+                          {form.formState.errors.signatories?.[index]?.name && (
+                            <p className="text-destructive text-xs">
+                              {
+                                form.formState.errors.signatories?.[index]?.name
+                                  ?.message
+                              }
+                            </p>
+                          )}
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Signatory title</Label>
+                          <Input
+                            aria-invalid={
+                              !!form.formState.errors.signatories?.[index]
+                                ?.title
+                            }
+                            {...form.register(`signatories.${index}.title`)}
+                          />
+                          {form.formState.errors.signatories?.[index]
+                            ?.title && (
+                            <p className="text-destructive text-xs">
+                              {
+                                form.formState.errors.signatories?.[index]
+                                  ?.title?.message
+                              }
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {field.signatureUrl && !pendingSigs[field.id] && (
+                        <div className="rounded-[0.33em] border border-blue-100 bg-blue-50/40 p-3">
+                          <p className="text-muted-foreground mb-1 text-xs font-medium">
+                            Current signature
+                          </p>
+                          <img
+                            src={field.signatureUrl}
+                            alt="Signature"
+                            className="h-14 max-w-xs object-contain"
+                          />
+                        </div>
+                      )}
+
+                      <MoaSignatureInput
+                        mode={sigModes[field.id] ?? "upload"}
+                        onModeChange={(m) =>
+                          setSigModes((prev) => ({ ...prev, [field.id]: m }))
+                        }
+                        text=""
+                        onTextChange={() => undefined}
+                        file={pendingSigs[field.id] ?? null}
+                        onFileChange={(file) =>
+                          setPendingSigs((prev) => {
+                            const next = { ...prev };
+                            if (file) next[field.id] = file;
+                            else delete next[field.id];
+                            return next;
+                          })
+                        }
+                        modes={["upload", "draw"]}
+                      />
+
+                      {isComplete && (
+                        <p className="text-emerald-600 text-xs">
+                          This signatory is complete.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {fields.length < 5 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      append({
+                        id: newSignatoryId(),
+                        name: "",
+                        title: "",
+                      })
+                    }
+                  >
+                    <Plus /> Add signatory
+                  </Button>
+                )}
+                {fields.length >= 5 && (
+                  <p className="text-muted-foreground text-xs">
+                    Maximum of 5 signatories reached.
+                  </p>
+                )}
               </div>
             )}
           </CollapsibleCardSection>
@@ -519,7 +735,7 @@ export function UniversityProfileContent({
               disabled={
                 save.isPending ||
                 !form.formState.isValid ||
-                (!displaySigUrl && !signatureFile)
+                !signatoriesComplete(liveValues.signatories ?? [])
               }
             >
               {save.isPending && <Loader2 className="animate-spin" />}

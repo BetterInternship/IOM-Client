@@ -38,15 +38,22 @@ import {
 import { TemplatePdfPage } from "./template-pdf-page";
 import {
   FIELD_BY_KEY,
-  FIELD_GROUPS,
+  FIELD_CATEGORIES,
   fieldLabel,
   fromFieldSchema,
   newPlacementId,
   toFieldSchema,
   type AlignH,
   type AlignV,
+  type CatalogField,
   type Placement,
 } from "./template-fields";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const MAX_PDF_BYTES = 7 * 1024 * 1024;
 const MIN_SCALE = 0.5;
@@ -155,6 +162,71 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
     setSelectedId(p.id);
   };
 
+  // "Add complete slot": places every field of a signatory group as ordinary flat
+  // placements stacked near the top of the current page. The admin then moves/resizes
+  // each box normally. No persisted parent/group is created.
+  const handleAddSlot = (fields: CatalogField[], pageNum: number) => {
+    if (!dims || fields.length === 0) return;
+    const GAP = 8;
+    let y = 40;
+    const created = fields.map((f) => {
+      const x = clamp((dims.w - f.defaultW) / 2, 0, Math.max(0, dims.w - f.defaultW));
+      y = clamp(y, 0, Math.max(0, dims.h - f.defaultH));
+      const p: Placement = {
+        id: newPlacementId(),
+        field: f.key,
+        type: f.type,
+        page: pageNum,
+        x,
+        y,
+        w: f.defaultW,
+        h: f.defaultH,
+        align_h: f.type === "signature" ? "center" : "left",
+        align_v: f.type === "signature" ? "bottom" : "top",
+      };
+      y += f.defaultH + GAP;
+      return p;
+    });
+    setPlacements((ps) => [...ps, ...created]);
+    setSelectedId(created[created.length - 1].id);
+  };
+
+  // Drop a whole signatory slot (array of field keys) anchored at the drop point.
+  const handleDropSlot = (
+    keys: string[],
+    dropPage: number,
+    xPt: number,
+    yPt: number,
+  ) => {
+    if (!dims || keys.length === 0) return;
+    const GAP = 8;
+    let y = yPt;
+    const created = keys
+      .map((key) => {
+        const f = FIELD_BY_KEY[key];
+        if (!f) return null;
+        const x = clamp(xPt, 0, Math.max(0, dims.w - f.defaultW));
+        y = clamp(y, 0, Math.max(0, dims.h - f.defaultH));
+        const p: Placement = {
+          id: newPlacementId(),
+          field: key,
+          type: f.type,
+          page: dropPage,
+          x,
+          y,
+          w: f.defaultW,
+          h: f.defaultH,
+          align_h: f.type === "signature" ? "center" : "left",
+          align_v: f.type === "signature" ? "bottom" : "top",
+        };
+        y += f.defaultH + GAP;
+        return p;
+      })
+      .filter((p): p is Placement => p !== null);
+    setPlacements((ps) => [...ps, ...created]);
+    setSelectedId(created[created.length - 1]?.id ?? null);
+  };
+
   // Delete-key removes the selected box (unless typing in a form field).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -238,9 +310,9 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
     !patchTemplate.isPending;
 
   return (
-    <div className="flex flex-col gap-4 p-4 lg:flex-row">
+    <div className="flex flex-col gap-4 p-4 lg:h-[calc(100vh-5rem)] lg:flex-row lg:overflow-hidden">
       {/* ── PDF canvas ─────────────────────────────────────────────────────── */}
-      <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* toolbar */}
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Button
@@ -299,7 +371,7 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
           )}
         </div>
 
-        <div className="flex max-h-[calc(100vh-9rem)] min-h-[24rem] items-start justify-center overflow-auto rounded-[0.33em] border border-gray-300 bg-gray-100 p-6">
+        <div className="flex min-h-[24rem] flex-1 items-start justify-center overflow-auto rounded-[0.33em] border border-gray-300 bg-gray-100 p-6">
           {mode === "new" && !file ? (
             <UploadPrompt onPick={onPickFile} />
           ) : isLoading ? (
@@ -319,18 +391,16 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
               selectedId={selectedId}
               onSelect={setSelectedId}
               onDropField={handleDropField}
+              onDropSlot={handleDropSlot}
               onChange={updatePlacement}
             />
           ) : null}
         </div>
-        <p className="text-muted-foreground mt-2 text-xs">
-          Drag a field from the palette onto the page. Drag a placed box to move it, or its corner
-          to resize. Select a box and press Delete to remove it.
-        </p>
       </div>
 
       {/* ── Sidebar ────────────────────────────────────────────────────────── */}
-      <aside className="w-full space-y-5 lg:w-80 lg:flex-shrink-0 lg:self-start">
+      <aside className="flex w-full flex-col gap-4 lg:w-80 lg:flex-shrink-0 lg:overflow-hidden">
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto lg:pr-1">
         <section className="space-y-3 rounded-[0.33em] border border-gray-300 bg-white p-4">
           <h2 className="text-sm font-semibold text-gray-900">Template details</h2>
           <div className="space-y-1.5">
@@ -352,76 +422,111 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
               className="min-h-16 text-sm"
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tmpl-term">Term (months)</Label>
-            <Input
-              id="tmpl-term"
-              type="number"
-              min={1}
-              value={termMonths}
-              disabled={isPerpetual}
-              onChange={(e) => setTermMonths(parseInt(e.target.value, 10) || 0)}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="tmpl-perpetual"
-              className="h-4 w-4"
-              checked={isPerpetual}
-              onChange={(e) => setIsPerpetual(e.target.checked)}
-            />
-            <Label htmlFor="tmpl-perpetual" className="text-xs cursor-pointer">
-              Perpetual (no expiry)
-            </Label>
+          <div className="grid grid-cols-2 items-end gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="tmpl-term">Term (months)</Label>
+              <Input
+                id="tmpl-term"
+                type="number"
+                min={1}
+                value={termMonths}
+                disabled={isPerpetual}
+                onChange={(e) => setTermMonths(parseInt(e.target.value, 10) || 0)}
+              />
+            </div>
+            <div className="flex h-9 items-center gap-2 pb-1">
+              <input
+                type="checkbox"
+                id="tmpl-perpetual"
+                className="h-4 w-4"
+                checked={isPerpetual}
+                onChange={(e) => setIsPerpetual(e.target.checked)}
+              />
+              <Label htmlFor="tmpl-perpetual" className="text-xs cursor-pointer">
+                Perpetual
+              </Label>
+            </div>
           </div>
           {isPerpetual && hasExpiryField && (
             <p className="text-destructive text-xs">
               Remove the Expiry date field — this template is perpetual.
             </p>
           )}
-          {mode === "edit" && (
-            <p className="text-muted-foreground text-xs">
-              The PDF can’t be replaced when editing. To use a different file, create a new template.
-            </p>
-          )}
         </section>
 
         {/* Field palette */}
         <section className="space-y-3 rounded-[0.33em] border border-gray-300 bg-white p-4">
-          <h2 className="text-sm font-semibold text-gray-900">Fields</h2>
-          <p className="text-muted-foreground text-xs">Drag onto the page to place.</p>
-          {FIELD_GROUPS.map((group) => (
-            <div key={group.label} className="space-y-1.5">
-              <p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
-                {group.label}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {group.fields
-                  .filter((f) => !isPerpetual || f.key !== "expiry_date")
-                  .map((f) => (
-                  <span
-                    key={f.key}
-                    draggable={ready}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData("field", f.key);
-                      e.dataTransfer.effectAllowed = "copy";
-                    }}
-                    className={
-                      "cursor-grab rounded-[0.33em] border px-2 py-1 text-[11px] active:cursor-grabbing " +
-                      (f.type === "signature"
-                        ? "border-blue-300 bg-blue-50 text-blue-700"
-                        : "border-gray-300 bg-gray-50 text-gray-700") +
-                      (ready ? "" : " pointer-events-none opacity-50")
-                    }
-                    title={f.key}
-                  >
-                    {f.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
+          <h2 className="text-sm font-semibold text-gray-900">
+            Fields ({placements.length} field{placements.length === 1 ? "" : "s"} placed)
+          </h2>
+          <Accordion
+            type="multiple"
+            defaultValue={FIELD_CATEGORIES.map((c) => c.label)}
+          >
+            {FIELD_CATEGORIES.map((category) => (
+              <AccordionItem key={category.label} value={category.label}>
+                <AccordionTrigger className="py-2 text-sm font-semibold text-gray-900">
+                  {category.label}
+                </AccordionTrigger>
+                <AccordionContent className="pb-2">
+                  <div className="space-y-3">
+                    {category.groups.map((group) => (
+                      <div key={group.label} className="space-y-1.5">
+                        <p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
+                          {group.label}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {group.fields
+                            .filter((f) => !isPerpetual || f.key !== "expiry_date")
+                            .map((f) => (
+                            <span
+                              key={f.key}
+                              draggable={ready}
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData("field", f.key);
+                                e.dataTransfer.effectAllowed = "copy";
+                              }}
+                              className={
+                                "cursor-grab rounded-[0.33em] border px-2 py-1 text-[11px] active:cursor-grabbing " +
+                                (f.type === "signature"
+                                  ? "border-blue-300 bg-blue-50 text-blue-700"
+                                  : "border-gray-300 bg-gray-50 text-gray-700") +
+                                (ready ? "" : " pointer-events-none opacity-50")
+                              }
+                              title={f.key}
+                            >
+                              {f.label}
+                            </span>
+                          ))}
+                        </div>
+                        {group.slot && (
+                          <span
+                            draggable={ready}
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData(
+                                "slot",
+                                JSON.stringify(group.fields.map((f) => f.key)),
+                              );
+                              e.dataTransfer.effectAllowed = "copy";
+                            }}
+                            onClick={() => handleAddSlot(group.fields, page)}
+                            className={
+                              "cursor-grab rounded-[0.33em] border px-2 py-1 text-[11px] active:cursor-grabbing " +
+                              "border-emerald-300 bg-emerald-50 text-emerald-700" +
+                              (ready ? "" : " pointer-events-none opacity-50")
+                            }
+                            title="Complete slot"
+                          >
+                            Complete slot
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </section>
 
         {/* Selected field properties */}
@@ -518,13 +623,14 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
           </section>
         )}
 
-        <Button className="w-full" disabled={!canSave} onClick={() => save.mutate()}>
-          {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-          {mode === "new" ? "Create template" : "Save changes"}
-        </Button>
-        <p className="text-muted-foreground text-center text-xs">
-          {placements.length} field{placements.length === 1 ? "" : "s"} placed
-        </p>
+        </div>
+
+        <div className="shrink-0 space-y-2 lg:border-t lg:border-gray-200 lg:pt-3">
+          <Button className="w-full" disabled={!canSave} onClick={() => save.mutate()}>
+            {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+            {mode === "new" ? "Create template" : "Save changes"}
+          </Button>
+        </div>
       </aside>
     </div>
   );

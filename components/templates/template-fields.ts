@@ -26,6 +26,14 @@ export interface CatalogField {
 export interface CatalogGroup {
   label: string;
   fields: CatalogField[];
+  /** when true, the editor offers an "Add complete slot" action that places every field in the group */
+  slot?: boolean;
+}
+
+/** Top-level palette category rendered as a collapsible section. */
+export interface CatalogCategory {
+  label: string;
+  groups: CatalogGroup[];
 }
 
 /** A placed field box in the editor. Coordinates are PDF points, top-left origin. */
@@ -62,48 +70,94 @@ const SMALL_W = 64;
 const SIG_W = 150;
 const SIG_H = 40;
 
-export const FIELD_GROUPS: CatalogGroup[] = [
+/** Builds one signatory/representative group: name, title, signature.
+ *  `label` is the group header; `short` is the abbreviated chip prefix. */
+const signerGroup = (
+  label: string,
+  short: string,
+  nameKey: string,
+  titleKey: string,
+  sigKey: string,
+): CatalogGroup => ({
+  label,
+  slot: true,
+  fields: [
+    { key: nameKey, label: `${short} name`, type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+    { key: titleKey, label: `${short} title`, type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+    { key: sigKey, label: `${short} signature`, type: "signature", defaultW: SIG_W, defaultH: SIG_H },
+  ],
+});
+
+const COMPANY_DETAILS: CatalogGroup = {
+  label: "Details",
+  fields: [
+    { key: "company_legal_name", label: "Legal name", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+    { key: "company_type", label: "Company type", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+    { key: "company_address", label: "Address", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+  ],
+};
+
+const UNIVERSITY_DETAILS: CatalogGroup = {
+  label: "Details",
+  fields: [
+    { key: "university_name", label: "University name", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+    { key: "place", label: "Place (school address)", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+  ],
+};
+
+const DATES_GROUP: CatalogGroup = {
+  label: "Dates",
+  fields: [
+    { key: "effective_date", label: "Effective date (full)", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+    { key: "day", label: "Day", type: "text", defaultW: SMALL_W, defaultH: TEXT_H },
+    { key: "month", label: "Month", type: "text", defaultW: SMALL_W + 20, defaultH: TEXT_H },
+    { key: "year", label: "Year", type: "text", defaultW: SMALL_W, defaultH: TEXT_H },
+    { key: "expiry_date", label: "Expiry date (full)", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+  ],
+};
+
+/** Palette layout: collapsible categories, each containing field groups. */
+export const FIELD_CATEGORIES: CatalogCategory[] = [
   {
     label: "Company",
-    fields: [
-      { key: "company_legal_name", label: "Legal name", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-      { key: "company_type", label: "Company type", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-      { key: "company_address", label: "Address", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-      { key: "company_rep_name", label: "Representative name", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-      { key: "company_rep_title", label: "Representative title", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-      { key: "company_rep_signature", label: "Representative signature", type: "signature", defaultW: SIG_W, defaultH: SIG_H },
+    groups: [
+      COMPANY_DETAILS,
+      signerGroup("Company signatory 1", "CS 1", "company_signatory_name", "company_signatory_title", "company_signatory_signature"),
+      signerGroup("Company signatory 2", "CS 2", "company_signatory_2_name", "company_signatory_2_title", "company_signatory_2_signature"),
     ],
   },
   {
     label: "University",
-    fields: [
-      {
-        key: "university_name",
-        label: "University name",
-        type: "text",
-        defaultW: TEXT_W,
-        defaultH: TEXT_H,
-      },
-      { key: "university_signatory_name", label: "Signatory name", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-      { key: "university_signatory_title", label: "Signatory title", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-      { key: "university_signatory_signature", label: "Signatory signature", type: "signature", defaultW: SIG_W, defaultH: SIG_H },
-      { key: "place", label: "Place (school address)", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+    groups: [
+      UNIVERSITY_DETAILS,
+      signerGroup("University signatory 1", "US 1", "university_signatory_name", "university_signatory_title", "university_signatory_signature"),
+      signerGroup("University signatory 2", "US 2", "university_signatory_2_name", "university_signatory_2_title", "university_signatory_2_signature"),
+      signerGroup("University signatory 3", "US 3", "university_signatory_3_name", "university_signatory_3_title", "university_signatory_3_signature"),
+      signerGroup("University signatory 4", "US 4", "university_signatory_4_name", "university_signatory_4_title", "university_signatory_4_signature"),
+      signerGroup("University signatory 5", "US 5", "university_signatory_5_name", "university_signatory_5_title", "university_signatory_5_signature"),
     ],
   },
   {
-    label: "Dates",
-    fields: [
-      { key: "effective_date", label: "Effective date (full)", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-      { key: "day", label: "Day", type: "text", defaultW: SMALL_W, defaultH: TEXT_H },
-      { key: "month", label: "Month", type: "text", defaultW: SMALL_W + 20, defaultH: TEXT_H },
-      { key: "year", label: "Year", type: "text", defaultW: SMALL_W, defaultH: TEXT_H },
-      { key: "expiry_date", label: "Expiry date (full)", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-    ],
+    label: "Others",
+    groups: [DATES_GROUP],
   },
 ];
 
+export const FIELD_GROUPS: CatalogGroup[] = FIELD_CATEGORIES.flatMap(
+  (category) => category.groups,
+);
+
+/** Legacy company field keys that still appear on existing templates. Kept in
+ *  FIELD_BY_KEY so they render with a proper label/type when loaded, but they are
+ *  not offered in the palette. The server still resolves them for signatory 1. */
+const LEGACY_FIELDS: CatalogField[] = [
+  { key: "company_rep_name", label: "Signatory 1 name", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+  { key: "company_rep_title", label: "Signatory 1 title", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+  { key: "company_rep_signature", label: "Signatory 1 signature", type: "signature", defaultW: SIG_W, defaultH: SIG_H },
+];
+
 export const FIELD_BY_KEY: Record<string, CatalogField> = Object.fromEntries(
-  FIELD_GROUPS.flatMap((g) => g.fields).map((f) => [f.key, f]),
+  [...FIELD_GROUPS.flatMap((g) => g.fields), ...LEGACY_FIELDS].map((f) => [f.key, f]),
 );
 
 export function fieldLabel(key: string): string {
