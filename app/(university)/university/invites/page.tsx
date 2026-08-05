@@ -33,6 +33,7 @@ function mapInviteStatus(status: string): CompanyInvite["status"] {
     case "accepted":
     case "expired":
     case "used_waiting":
+    case "cancelled":
       return status;
     default:
       return "pending";
@@ -214,6 +215,7 @@ export default function InvitesPage() {
             invites={moaInvites}
             isLoading={isLoading}
             toolbarStart={inviteTabs}
+            onChanged={() => refetch()}
           />
         </TabsContent>
         <TabsContent value="renewals">
@@ -228,6 +230,7 @@ export default function InvitesPage() {
             invites={listingInvites}
             isLoading={isLoading}
             toolbarStart={inviteTabs}
+            onChanged={() => refetch()}
           />
         </TabsContent>
       </Tabs>

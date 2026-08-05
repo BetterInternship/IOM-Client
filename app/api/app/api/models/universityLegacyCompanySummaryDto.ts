@@ -15,4 +15,6 @@ export interface UniversityLegacyCompanySummaryDto {
   documentCount: number;
   /** @nullable */
   valid_until: string | null;
+  /** @nullable */
+  registered_company_id: string | null;
 }

@@ -2,18 +2,33 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Building2, CheckCircle2, Loader2, Mail, X } from "lucide-react";
+import {
+  Building2,
+  CheckCircle2,
+  ChevronDown,
+  Loader2,
+  Mail,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import {
+  universityControllerCancelInvite,
   useUniversityControllerListRegisteredCompanies,
   useUniversityControllerListTemplates,
   useUniversityControllerSendInvite,
 } from "@/app/api/app/api/endpoints/university/university";
 import type { UniversityRegisteredCompanyDto } from "@/app/api/app/api/models";
+import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +41,15 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { MorphHeight } from "@/components/ui/morph-height";
+import {
+  buildComposeUrl,
+  buildInviteBody,
+  buildInviteSubject,
+  INVITE_CC_EMAIL,
+  loadInviteDraft,
+  saveInviteDraft,
+  type ComposeProvider,
+} from "@/lib/compose-url";
 import { cn } from "@/lib/utils";
 
 export type CompanyInviteKind = "moa" | "listing";
@@ -34,6 +58,84 @@ const inviteSteps = [
   { title: "Choose company", icon: Building2 },
   { title: "Invitation details", icon: Mail },
 ];
+
+const PROVIDER_LABEL: Record<ComposeProvider, string> = {
+  gmail: "Gmail",
+  outlook: "Outlook",
+};
+
+// The invite row is created the instant the button is pressed, but "sent"
+// can't be observed — only the coordinator's own mailbox knows that. Rather
+// than claim success immediately, this waits for a signal that they've
+// actually been away (the compose tab stealing focus, then giving it back)
+// before showing the confirmation — so it's there waiting for them exactly
+// when they return, with a cancel option in case they back out instead of
+// sending. A capped fallback timer covers the case where focus never
+// visibly changes (e.g. the popup was blocked or the OS window manager
+// doesn't report visibility changes).
+function scheduleSendConfirmation({
+  companyLabel,
+  inviteId,
+  superseded,
+  onCancelled,
+}: {
+  companyLabel: string;
+  inviteId: string;
+  superseded: boolean;
+  onCancelled: () => void;
+}) {
+  let shown = false;
+  let fallback: ReturnType<typeof setTimeout> | undefined;
+
+  const onVisible = () => {
+    if (document.visibilityState === "visible") show();
+  };
+
+  function show() {
+    if (shown) return;
+    shown = true;
+    document.removeEventListener("visibilitychange", onVisible);
+    if (fallback) clearTimeout(fallback);
+
+    toast.custom(
+      (id) => (
+        <div className="flex items-start gap-3 rounded-[0.33em] bg-[#059669] px-4 py-3 text-sm text-white shadow-lg">
+          <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          <div className="flex-1">
+            <p>
+              {`Invite sent to ${companyLabel}.`}
+              {superseded &&
+                " A previous pending invite to this email was superseded."}
+            </p>
+            <button
+              type="button"
+              className="mt-1 cursor-pointer font-semibold underline underline-offset-2 hover:no-underline"
+              onClick={async () => {
+                toast.dismiss(id);
+                try {
+                  await universityControllerCancelInvite(inviteId);
+                  toast("Invite cancelled", toastPresets.success);
+                  onCancelled();
+                } catch (e) {
+                  toast(
+                    (e as Error).message ?? "Failed to cancel invite.",
+                    toastPresets.destructive,
+                  );
+                }
+              }}
+            >
+              Never sent it? Cancel invite
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: 20000 },
+    );
+  }
+
+  document.addEventListener("visibilitychange", onVisible);
+  fallback = setTimeout(show, 20000);
+}
 
 export function CompanyInviteForm({
   onClose,
@@ -75,6 +177,28 @@ export function CompanyInviteForm({
   const [templateId, setTemplateId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [provider, setProvider] = useState<ComposeProvider>("gmail");
+
+  const { account } = useUniversityProfile();
+  const universityName = account?.university.registered_name ?? "";
+
+  // D7/D8 — prefill the welcome-message draft and remembered provider once
+  // the account is known. Runs once per fresh modal mount.
+  useEffect(() => {
+    if (!account?.id) return;
+    const draft = loadInviteDraft(account.id);
+    if (!draft) return;
+    if (draft.welcomeMessage) setMessage(draft.welcomeMessage);
+    if (draft.provider) setProvider(draft.provider);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account?.id]);
+
+  function selectProvider(next: ComposeProvider) {
+    setProvider(next);
+    if (account?.id) {
+      saveInviteDraft(account.id, { provider: next, welcomeMessage: message });
+    }
+  }
 
   // D9 — kind is fixed for the form's lifetime (see prop doc above).
   const kind: CompanyInviteKind = initialKind ?? "moa";
@@ -123,18 +247,64 @@ export function CompanyInviteForm({
   const send = useUniversityControllerSendInvite({
     mutation: {
       onSuccess: (res) => {
-        toast(
-          res.superseded
-            ? "Invite sent. A previous pending invite to this email was superseded."
-            : "Invite sent.",
-          toastPresets.success,
+        const composeUrl = buildComposeUrl(provider, {
+          to: invitedEmail,
+          cc: INVITE_CC_EMAIL,
+          subject: buildInviteSubject({ kind, universityName }),
+          body: buildInviteBody({
+            kind,
+            universityName,
+            companyName: invitedName ?? null,
+            repName: account?.university.rep_name ?? null,
+            repTitle: account?.university.rep_title ?? null,
+            personalMessage: message.trim() || null,
+            inviteLink: res.inviteLink,
+          }),
+        });
+        const composeWindow = window.open(
+          composeUrl,
+          "_blank",
+          "noopener,noreferrer",
         );
+
         onSent();
         onClose();
+
+        if (!composeWindow) {
+          toast(
+            `Your browser blocked the ${PROVIDER_LABEL[provider]} window — use "Re-open compose" from the Invites tab to try again.`,
+            toastPresets.alert,
+          );
+          return;
+        }
+
+        scheduleSendConfirmation({
+          companyLabel: invitedName || invitedEmail,
+          inviteId: res.inviteId,
+          superseded: res.superseded,
+          onCancelled: onSent,
+        });
       },
       onError: (e) => setError(e.message ?? "Failed to send invitation."),
     },
   });
+
+  function handleSend() {
+    setError("");
+    if (account?.id) {
+      saveInviteDraft(account.id, { provider, welcomeMessage: message });
+    }
+    send.mutate({
+      data: {
+        invitedEmail,
+        companyName: invitedName,
+        templateId: kind === "moa" ? templateId || undefined : undefined,
+        personalMessage: message.trim() || undefined,
+        kind,
+        legacyCompanyId: kind === "listing" ? legacyCompanyId : undefined,
+      },
+    });
+  }
 
   const step1CanNext =
     mode === "registered"
@@ -364,6 +534,9 @@ export function CompanyInviteForm({
                   </p>
                 </div>
               </div>
+              <p className="text-muted-foreground text-xs">
+                {`We'll open a prefilled email in your own ${PROVIDER_LABEL[provider]} — review it and hit send from there. We'll CC ${INVITE_CC_EMAIL} so we keep a copy.`}
+              </p>
             </div>
 
             {kind === "moa" ? (
@@ -468,27 +641,44 @@ export function CompanyInviteForm({
                 Back
               </Button>
             )}
-            <Button
-              onClick={() => {
-                setError("");
-                send.mutate({
-                  data: {
-                    invitedEmail,
-                    companyName: invitedName,
-                    templateId:
-                      kind === "moa" ? templateId || undefined : undefined,
-                    personalMessage: message.trim() || undefined,
-                    kind,
-                    legacyCompanyId:
-                      kind === "listing" ? legacyCompanyId : undefined,
-                  },
-                });
-              }}
-              disabled={!canSend || send.isPending}
-            >
-              {send.isPending && <Loader2 className="animate-spin" />}
-              {send.isPending ? "Sending..." : "Send invitation"}
-            </Button>
+            <div className="flex">
+              <Button
+                className="rounded-r-none"
+                onClick={handleSend}
+                disabled={!canSend || send.isPending}
+              >
+                {send.isPending && <Loader2 className="animate-spin" />}
+                {send.isPending
+                  ? "Sending..."
+                  : `Invite with ${PROVIDER_LABEL[provider]}`}
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    className="rounded-l-none border-l border-white/25 px-2"
+                    disabled={send.isPending}
+                    aria-label="Choose email provider"
+                  >
+                    <ChevronDown className="size-4" aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onSelect={() => selectProvider("gmail")}
+                  >
+                    Gmail
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onSelect={() => selectProvider("outlook")}
+                  >
+                    Outlook
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </>
         )}
       </div>

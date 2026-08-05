@@ -2,10 +2,13 @@
 
 import type { ReactNode } from "react";
 
+import { useUniversityProfile } from "@/app/providers/university-profile.provider";
+import { useUniversityControllerCancelInvite } from "@/app/api";
 import {
   ResourceTable,
   type ResourceTableColumn,
 } from "@/components/ui/resource-table";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useResourceTable,
@@ -13,7 +16,16 @@ import {
 } from "@/components/ui/use-resource-table";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
+import { toastPresets } from "@/components/sonner-toaster";
+import {
+  buildComposeUrl,
+  buildInviteBody,
+  buildInviteSubject,
+  loadInviteDraft,
+  INVITE_CC_EMAIL,
+} from "@/lib/compose-url";
 import { formatDateWithoutTime } from "@/lib/utils";
+import { toast } from "sonner";
 
 export interface CompanyInvite {
   id: string;
@@ -22,11 +34,12 @@ export interface CompanyInvite {
   template_id: string | null;
   template_name: string | null;
   personal_message: string | null;
-  status: "pending" | "accepted" | "expired" | "used_waiting";
+  status: "pending" | "accepted" | "expired" | "used_waiting" | "cancelled";
   kind: "moa" | "listing";
   created_at: string;
   expires_at: string;
   registered_company: { registered_name: string } | null;
+  inviteLink: string | null;
 }
 
 function InviteStatusBadge({ status }: { status: CompanyInvite["status"] }) {
@@ -43,6 +56,13 @@ function InviteStatusBadge({ status }: { status: CompanyInvite["status"] }) {
   if (status === "expired") {
     return <PartnershipStatusBadge status="expired" label="Expired" />;
   }
+  if (status === "cancelled") {
+    return (
+      <span className="bg-gray-100 text-muted-foreground inline-flex max-w-full items-center rounded-full px-2.5 py-1.5 text-sm leading-tight font-semibold whitespace-normal">
+        Cancelled
+      </span>
+    );
+  }
   return <PartnershipStatusBadge status="inactive" label="Pending" />;
 }
 
@@ -51,6 +71,7 @@ const INVITE_STATUS_LABELS: Record<CompanyInvite["status"], string> = {
   accepted: "Accepted",
   expired: "Expired",
   used_waiting: "Registered — awaiting MOA",
+  cancelled: "Cancelled",
 };
 
 function resolveDisplayName(invite: CompanyInvite): string {
@@ -65,6 +86,80 @@ function resolveDisplayName(invite: CompanyInvite): string {
       : registeredName;
   }
   return invite.company_name ?? invite.invited_email;
+}
+
+// §6.3 — per-row actions on pending invites only: Cancel (the D4 escape
+// hatch) and Re-open compose (the path back for a coordinator who closed
+// the terminal step before clicking through). Re-open compose rebuilds the
+// same subject/body the invite form would have, from the row's own stored
+// personal_message and the university's profile — no extra network call.
+function InviteActions({
+  invite,
+  onCancelled,
+}: {
+  invite: CompanyInvite;
+  onCancelled: () => void;
+}) {
+  const { account } = useUniversityProfile();
+
+  const cancelInvite = useUniversityControllerCancelInvite({
+    mutation: {
+      onSuccess: () => {
+        toast("Invite cancelled", toastPresets.success);
+        onCancelled();
+      },
+      onError: (e) =>
+        toast(
+          e.message ?? "Failed to cancel invite.",
+          toastPresets.destructive,
+        ),
+    },
+  });
+
+  if (invite.status !== "pending") return null;
+
+  const universityName = account?.university.registered_name ?? "";
+  const provider = account?.id
+    ? (loadInviteDraft(account.id)?.provider ?? "gmail")
+    : "gmail";
+
+  const composeUrl = invite.inviteLink
+    ? buildComposeUrl(provider, {
+        to: invite.invited_email,
+        cc: INVITE_CC_EMAIL,
+        subject: buildInviteSubject({ kind: invite.kind, universityName }),
+        body: buildInviteBody({
+          kind: invite.kind,
+          universityName,
+          companyName: invite.company_name,
+          repName: account?.university.rep_name ?? null,
+          repTitle: account?.university.rep_title ?? null,
+          personalMessage: invite.personal_message,
+          inviteLink: invite.inviteLink,
+        }),
+      })
+    : null;
+
+  return (
+    <div className="flex items-center justify-end gap-2">
+      {composeUrl && (
+        <Button variant="outline" size="sm" asChild>
+          <a href={composeUrl} target="_blank" rel="noopener noreferrer">
+            Re-open compose
+          </a>
+        </Button>
+      )}
+      <Button
+        variant="outline"
+        scheme="destructive"
+        size="sm"
+        onClick={() => cancelInvite.mutate({ id: invite.id })}
+        disabled={cancelInvite.isPending}
+      >
+        Cancel
+      </Button>
+    </div>
+  );
 }
 
 function InvitesTableSkeleton({ toolbarStart }: { toolbarStart?: ReactNode }) {
@@ -89,10 +184,12 @@ export function UniversityInvitesTable({
   invites,
   isLoading,
   toolbarStart,
+  onChanged,
 }: {
   invites: CompanyInvite[];
   isLoading: boolean;
   toolbarStart?: ReactNode;
+  onChanged: () => void;
 }) {
   const statusOptions = Array.from(
     new Set(invites.map((invite) => invite.status)),
@@ -106,14 +203,14 @@ export function UniversityInvitesTable({
     {
       id: "status",
       header: "Status",
-      width: "w-[12%]",
+      width: "w-[10%]",
       getSortValue: (invite) => invite.status,
       render: (invite) => <InviteStatusBadge status={invite.status} />,
     },
     {
       id: "company",
       header: "Company",
-      width: "w-[32%]",
+      width: "w-[26%]",
       getSortValue: resolveDisplayName,
       render: (invite) => {
         const name = resolveDisplayName(invite);
@@ -135,7 +232,7 @@ export function UniversityInvitesTable({
     {
       id: "template",
       header: "Template",
-      width: "w-[23%]",
+      width: "w-[18%]",
       getSortValue: (invite) => invite.template_name ?? "",
       render: (invite) => (
         <span className="text-muted-foreground">
@@ -146,7 +243,7 @@ export function UniversityInvitesTable({
     {
       id: "sent",
       header: "Sent",
-      width: "w-[15%]",
+      width: "w-[12%]",
       defaultSortDirection: "desc",
       getSortValue: (invite) => invite.created_at,
       render: (invite) => (
@@ -158,12 +255,22 @@ export function UniversityInvitesTable({
     {
       id: "expires",
       header: "Expires",
-      width: "w-[16%]",
+      width: "w-[12%]",
       getSortValue: (invite) => invite.expires_at,
       render: (invite) => (
         <span className="text-muted-foreground">
           {formatDateWithoutTime(invite.expires_at)}
         </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: <span className="sr-only">Actions</span>,
+      width: "w-[22%]",
+      align: "right",
+      sortable: false,
+      render: (invite) => (
+        <InviteActions invite={invite} onCancelled={onChanged} />
       ),
     },
   ];
