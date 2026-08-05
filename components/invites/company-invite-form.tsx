@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import {
+  AlertTriangle,
   Building2,
   CheckCircle2,
   ChevronDown,
@@ -20,6 +22,7 @@ import {
   useUniversityControllerSendInvite,
 } from "@/app/api/app/api/endpoints/university/university";
 import type { UniversityRegisteredCompanyDto } from "@/app/api/app/api/models";
+import { useModal } from "@/app/providers/modal-provider";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { Button } from "@/components/ui/button";
@@ -70,22 +73,25 @@ const PROVIDER_LABEL: Record<ComposeProvider, string> = {
 // can't be observed — only the coordinator's own mailbox knows that. Rather
 // than claim success immediately, this waits for a signal that they've
 // actually been away (the compose tab stealing focus, then giving it back)
-// before showing the confirmation — so it's there waiting for them exactly
-// when they return, with a cancel option in case they back out instead of
-// sending. A capped fallback timer covers the case where focus never
-// visibly changes (e.g. the popup was blocked or the OS window manager
-// doesn't report visibility changes).
-function scheduleSendConfirmation({
-  companyLabel,
-  inviteId,
-  superseded,
-  onCancelled,
-}: {
-  companyLabel: string;
-  inviteId: string;
-  superseded: boolean;
-  onCancelled: () => void;
-}) {
+// before revealing the confirmation — so it's there waiting for them,
+// as a modal rather than a toast, exactly when they return: something
+// that stays up until they act on it instead of expiring while they were
+// away composing. A capped fallback timer covers the case where focus
+// never visibly changes (e.g. the popup was blocked or the OS window
+// manager doesn't report visibility changes).
+// The invite-company modal (this form's own) closes via onClose() right
+// before these fire. Opening a new modal in the same tick races the shared
+// registry's AnimatePresence exit-tracking (app/providers/modal-provider.tsx)
+// — the new modal can mount and then get swept away almost immediately by
+// bookkeeping meant for the one that just closed. The same class of glitch
+// is worked around the same way elsewhere in this app (see the setTimeout
+// before closeModal in app/(company)/company/moas/[moaId]/page.tsx) — give
+// the exit animation a moment to finish first.
+function openAfterModalCloses(open: () => void) {
+  setTimeout(open, 300);
+}
+
+function scheduleSendConfirmation(reveal: () => void) {
   let shown = false;
   let fallback: ReturnType<typeof setTimeout> | undefined;
 
@@ -98,45 +104,134 @@ function scheduleSendConfirmation({
     shown = true;
     document.removeEventListener("visibilitychange", onVisible);
     if (fallback) clearTimeout(fallback);
-
-    toast.custom(
-      (id) => (
-        <div className="flex items-start gap-3 rounded-[0.33em] bg-[#059669] px-4 py-3 text-sm text-white shadow-lg">
-          <CheckCircle2 className="mt-0.5 size-5 shrink-0" aria-hidden="true" />
-          <div className="flex-1">
-            <p>
-              {`Invite sent to ${companyLabel}.`}
-              {superseded &&
-                " A previous pending invite to this email was superseded."}
-            </p>
-            <button
-              type="button"
-              className="mt-1 cursor-pointer font-semibold underline underline-offset-2 hover:no-underline"
-              onClick={async () => {
-                toast.dismiss(id);
-                try {
-                  await universityControllerCancelInvite(inviteId);
-                  toast("Invite cancelled", toastPresets.success);
-                  onCancelled();
-                } catch (e) {
-                  toast(
-                    (e as Error).message ?? "Failed to cancel invite.",
-                    toastPresets.destructive,
-                  );
-                }
-              }}
-            >
-              Never sent it? Cancel invite
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: 20000 },
-    );
+    reveal();
   }
 
   document.addEventListener("visibilitychange", onVisible);
   fallback = setTimeout(show, 20000);
+}
+
+function InviteBlockedContent({
+  provider,
+  onClose,
+}: {
+  provider: string;
+  onClose: () => void;
+}) {
+  return (
+    <div>
+      <div className="text-center">
+        <span className="bg-warning/10 text-warning mx-auto flex size-20 items-center justify-center rounded-full">
+          <AlertTriangle className="size-10" aria-hidden="true" />
+        </span>
+        <h2 className="mt-5 text-xl font-semibold tracking-tight text-gray-950">
+          Compose window blocked
+        </h2>
+        <p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-6">
+          {`Your browser blocked the ${provider} window. Use "Re-open compose" from the Invites tab to try again.`}
+        </p>
+      </div>
+
+      <Button size="lg" className="mt-6 w-full" onClick={onClose}>
+        Got it
+      </Button>
+    </div>
+  );
+}
+
+function InviteSendConfirmationContent({
+  companyLabel,
+  inviteId,
+  superseded,
+  onCancelled,
+  onClose,
+}: {
+  companyLabel: string;
+  inviteId: string;
+  superseded: boolean;
+  onCancelled: () => void;
+  onClose: () => void;
+}) {
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+
+  const handleCancel = async () => {
+    setIsCancelling(true);
+    try {
+      await universityControllerCancelInvite(inviteId);
+      toast("Invite cancelled", toastPresets.success);
+      onCancelled();
+      onClose();
+    } catch (e) {
+      toast(
+        (e as Error).message ?? "Failed to cancel invite.",
+        toastPresets.destructive,
+      );
+      setIsCancelling(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="text-center">
+        <span className="bg-supportive/10 text-supportive mx-auto flex size-20 items-center justify-center rounded-full">
+          <CheckCircle2 className="size-10" aria-hidden="true" />
+        </span>
+        <h2 className="mt-5 text-xl font-semibold tracking-tight text-gray-950">
+          Invite sent
+        </h2>
+        <p
+          className="text-muted-foreground mx-auto mt-2 max-w-sm truncate text-sm leading-6"
+          title={companyLabel}
+        >
+          {`Sent to ${companyLabel}.`}
+        </p>
+        {superseded && (
+          <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-sm leading-6">
+            A previous pending invite to this email was superseded.
+          </p>
+        )}
+      </div>
+
+      <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
+        <button
+          type="button"
+          onClick={() => setConfirmingCancel((v) => !v)}
+          aria-expanded={confirmingCancel}
+          className="text-muted-foreground hover:text-destructive cursor-pointer text-sm hover:underline"
+        >
+          Never sent it? Cancel invite
+        </button>
+        <div className="flex items-center gap-2">
+          <AnimatePresence initial={false}>
+            {confirmingCancel && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: "auto", opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="overflow-hidden"
+              >
+                <Button
+                  variant="outline"
+                  scheme="destructive"
+                  className="whitespace-nowrap"
+                  onClick={handleCancel}
+                  disabled={isCancelling}
+                >
+                  {isCancelling && <Loader2 className="animate-spin" />}
+                  {isCancelling ? "Cancelling..." : "Yes, cancel this invite"}
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <Button variant="outline" onClick={onClose}>
+            Done
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function CompanyInviteForm({
@@ -191,6 +286,8 @@ export function CompanyInviteForm({
   const { data: meData } = useUniversityControllerMe();
   const account = meData?.account;
   const universityName = account?.university.registered_name ?? "";
+
+  const { openModal, closeModal } = useModal();
 
   // D7/D8 — prefill the welcome-message draft and remembered provider once
   // the account is known. Runs once per fresh modal mount.
@@ -271,29 +368,71 @@ export function CompanyInviteForm({
             inviteLink: res.inviteLink,
           }),
         });
-        const composeWindow = window.open(
-          composeUrl,
-          "_blank",
-          "noopener,noreferrer",
-        );
+        // Passing "noopener"/"noreferrer" as window features makes
+        // window.open() always return null per spec — whether or not the
+        // popup actually opened — so that can't double as the blocked-
+        // popup check below. Sever window.opener by hand instead (same
+        // tabnabbing protection `rel="noopener"` gives an <a>), which
+        // leaves the returned handle meaningful.
+        const composeWindow = window.open(composeUrl, "_blank");
+        if (composeWindow) composeWindow.opener = null;
 
         onSent();
         onClose();
 
         if (!composeWindow) {
-          toast(
-            `Your browser blocked the ${PROVIDER_LABEL[provider]} window — use "Re-open compose" from the Invites tab to try again.`,
-            toastPresets.alert,
+          openAfterModalCloses(() =>
+            openModal(
+              "invite-blocked",
+              <InviteBlockedContent
+                provider={PROVIDER_LABEL[provider]}
+                onClose={() => closeModal("invite-blocked")}
+              />,
+              {
+                // No title — InviteBlockedContent renders its own centered
+                // heading below the icon, matching universityProfileComplete/
+                // approvalPending's layout below.
+                panelClassName: "!w-full sm:!max-w-xl",
+                headerClassName: "pb-0",
+                contentClassName: "px-6 pb-6 sm:px-8 sm:pb-7",
+                // The click that refocuses the tab/window (Alt-Tab into it,
+                // click the taskbar entry, etc.) can land on the page as a
+                // real click the instant this backdrop mounts, dismissing
+                // it before the coordinator ever sees it. The header close
+                // button and "Got it" are still there for an intentional
+                // dismiss.
+                allowBackdropClick: false,
+              },
+            ),
           );
           return;
         }
 
-        scheduleSendConfirmation({
-          companyLabel: invitedName || invitedEmail,
-          inviteId: res.inviteId,
-          superseded: res.superseded,
-          onCancelled: onSent,
-        });
+        scheduleSendConfirmation(() =>
+          openAfterModalCloses(() =>
+            openModal(
+              "invite-send-confirmation",
+              <InviteSendConfirmationContent
+                companyLabel={invitedName || invitedEmail}
+                inviteId={res.inviteId}
+                superseded={res.superseded}
+                onCancelled={onSent}
+                onClose={() => closeModal("invite-send-confirmation")}
+              />,
+              {
+                // No title — InviteSendConfirmationContent renders its own
+                // centered heading below the icon.
+                panelClassName: "!w-full sm:!max-w-xl",
+                headerClassName: "pb-0",
+                contentClassName: "px-6 pb-6 sm:px-8 sm:pb-7",
+                // Same reasoning as invite-blocked above — this one in
+                // particular opens right as the coordinator refocuses the
+                // tab, which is exactly when a stray click is most likely.
+                allowBackdropClick: false,
+              },
+            ),
+          ),
+        );
       },
       onError: (e) => setError(e.message ?? "Failed to send invitation."),
     },

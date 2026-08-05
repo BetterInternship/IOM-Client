@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -43,6 +43,14 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     Record<string, ActiveModalRegistryEntry>
   >({});
   const [portalActive, setPortalActive] = useState(false);
+  // Always-current mirror of activeModalRegistry for onExitComplete below —
+  // that callback can fire long after it was created (a background tab's
+  // rAF-driven exit animation is paused while hidden and only resumes on
+  // refocus), so the render it closed over can be stale by the time it
+  // runs. Mutating a ref during render like this is safe as long as it's
+  // never read during render itself, only from callbacks/effects.
+  const activeModalRegistryRef = useRef(activeModalRegistry);
+  activeModalRegistryRef.current = activeModalRegistry;
 
   const openModal = useCallback<OpenModalCallback>((name, content, opts = {}) => {
     setActiveModalRegistry((m) => ({ ...m, [name]: { contentNode: content, options: opts } }));
@@ -99,7 +107,14 @@ export function ModalProvider({ children }: { children: React.ReactNode }) {
     return createPortal(
       <AnimatePresence
         onExitComplete={() => {
-          if (Object.keys(activeModalRegistry).length === 0) setPortalActive(false);
+          // A stale "the registry was empty" snapshot here would
+          // unconditionally drop portalActive and tear down the whole
+          // portal — including a new modal opened since this callback was
+          // created — so this reads the ref rather than the closed-over
+          // activeModalRegistry from whichever render created it.
+          if (Object.keys(activeModalRegistryRef.current).length === 0) {
+            setPortalActive(false);
+          }
         }}
       >
         {entries.map(([name, { contentNode, options }]) => (
