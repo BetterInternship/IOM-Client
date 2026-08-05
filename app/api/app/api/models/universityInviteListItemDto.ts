@@ -25,6 +25,4 @@ export interface UniversityInviteListItemDto {
   expires_at: string;
   /** @nullable */
   registered_company: UniversityInviteListItemDtoRegisteredCompany;
-  /** @nullable */
-  inviteLink: string | null;
 }

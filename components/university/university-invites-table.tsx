@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 
-import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import { useUniversityControllerCancelInvite } from "@/app/api";
 import {
   ResourceTable,
@@ -17,13 +16,6 @@ import {
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
 import { toastPresets } from "@/components/sonner-toaster";
-import {
-  buildComposeUrl,
-  buildInviteBody,
-  buildInviteSubject,
-  loadInviteDraft,
-  INVITE_CC_EMAIL,
-} from "@/lib/compose-url";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -39,7 +31,6 @@ export interface CompanyInvite {
   created_at: string;
   expires_at: string;
   registered_company: { registered_name: string } | null;
-  inviteLink: string | null;
 }
 
 function InviteStatusBadge({ status }: { status: CompanyInvite["status"] }) {
@@ -88,11 +79,9 @@ function resolveDisplayName(invite: CompanyInvite): string {
   return invite.company_name ?? invite.invited_email;
 }
 
-// §6.3 — per-row actions on pending invites only: Cancel (the D4 escape
-// hatch) and Re-open compose (the path back for a coordinator who closed
-// the terminal step before clicking through). Re-open compose rebuilds the
-// same subject/body the invite form would have, from the row's own stored
-// personal_message and the university's profile — no extra network call.
+// §6.3 — the D4 escape hatch: Cancel on pending rows only. No re-send
+// action — every invite is presumed sent the moment it's created (D3), so
+// there's nothing to resend; it's already sitting in the recipient's inbox.
 function InviteActions({
   invite,
   onCancelled,
@@ -100,8 +89,6 @@ function InviteActions({
   invite: CompanyInvite;
   onCancelled: () => void;
 }) {
-  const { account } = useUniversityProfile();
-
   const cancelInvite = useUniversityControllerCancelInvite({
     mutation: {
       onSuccess: () => {
@@ -118,37 +105,8 @@ function InviteActions({
 
   if (invite.status !== "pending") return null;
 
-  const universityName = account?.university.registered_name ?? "";
-  const provider = account?.id
-    ? (loadInviteDraft(account.id)?.provider ?? "gmail")
-    : "gmail";
-
-  const composeUrl = invite.inviteLink
-    ? buildComposeUrl(provider, {
-        to: invite.invited_email,
-        cc: INVITE_CC_EMAIL,
-        subject: buildInviteSubject({ kind: invite.kind, universityName }),
-        body: buildInviteBody({
-          kind: invite.kind,
-          universityName,
-          companyName: invite.company_name,
-          repName: account?.university.rep_name ?? null,
-          repTitle: account?.university.rep_title ?? null,
-          personalMessage: invite.personal_message,
-          inviteLink: invite.inviteLink,
-        }),
-      })
-    : null;
-
   return (
     <div className="flex items-center justify-end gap-2">
-      {composeUrl && (
-        <Button variant="outline" size="sm" asChild>
-          <a href={composeUrl} target="_blank" rel="noopener noreferrer">
-            Re-open compose
-          </a>
-        </Button>
-      )}
       <Button
         variant="outline"
         scheme="destructive"
@@ -210,7 +168,7 @@ export function UniversityInvitesTable({
     {
       id: "company",
       header: "Company",
-      width: "w-[26%]",
+      width: "w-[34%]",
       getSortValue: resolveDisplayName,
       render: (invite) => {
         const name = resolveDisplayName(invite);
@@ -266,7 +224,7 @@ export function UniversityInvitesTable({
     {
       id: "actions",
       header: <span className="sr-only">Actions</span>,
-      width: "w-[22%]",
+      width: "w-[14%]",
       align: "right",
       sortable: false,
       render: (invite) => (
