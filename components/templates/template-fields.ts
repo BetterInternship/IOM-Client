@@ -57,6 +57,8 @@ export interface Placement {
   align_v: AlignV;
   /** fixed admin-provided value; rendered as-is and not asked on the company form */
   value?: string;
+  /** wrap long text within the box (sent to the PDF engine) */
+  wrap?: boolean;
 }
 
 /** The persisted shape (one entry of `moa_templates.field_schema`). */
@@ -72,6 +74,8 @@ export interface FieldSchemaEntry {
   align_v: AlignV;
   /** fixed admin-provided value; rendered as-is and not asked on the company form */
   value?: string;
+  /** wrap long text within the box (sent to the PDF engine) */
+  wrap?: boolean;
 }
 
 const TEXT_W = 180;
@@ -201,7 +205,7 @@ export const ptToPx = (pt: number, scale: number) => pt * scale;
 
 // ── (de)serialization between editor Placements and persisted field_schema ─────
 export function toFieldSchema(placements: Placement[]): FieldSchemaEntry[] {
-  return placements.map(({ field, type, x, y, w, h, page, align_h, align_v, value }) => ({
+  return placements.map(({ field, type, x, y, w, h, page, align_h, align_v, value, wrap }) => ({
     field,
     type,
     x: Math.round(x * 100) / 100,
@@ -212,6 +216,7 @@ export function toFieldSchema(placements: Placement[]): FieldSchemaEntry[] {
     align_h,
     align_v,
     ...(value?.trim() ? { value: value.trim() } : {}),
+    ...(wrap ? { wrap: true } : {}),
   }));
 }
 
@@ -236,6 +241,7 @@ export function fromFieldSchema(raw: unknown): Placement[] {
         ...(typeof e.value === "string" && e.value.trim() !== ""
           ? { value: e.value.trim() }
           : {}),
+        ...(e.wrap ? { wrap: true } : {}),
       };
     });
 }

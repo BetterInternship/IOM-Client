@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -553,7 +554,19 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
                 onChange={(e) => updatePlacement(selected.id, { value: e.target.value })}
                 placeholder={selected.type === "signature" ? "e.g. BetterInternship" : "Fixed text on the PDF"}
               />
-              
+              <p className="text-muted-foreground text-[11px] leading-snug">
+                Shown on the PDF as-is. The company won't be asked to fill this field.
+              </p>
+              <div className="flex items-center justify-between pt-1">
+                <Label className="text-xs cursor-pointer" htmlFor="wrap-toggle">
+                  Wrap text
+                </Label>
+                <Switch
+                  id="wrap-toggle"
+                  checked={!!selected.wrap}
+                  onCheckedChange={(c) => updatePlacement(selected.id, { wrap: c })}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
