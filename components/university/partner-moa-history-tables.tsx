@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader as PdfLoader } from "@betterinternship/core/pdf-viewer";
-import { ArrowRight, Eye } from "lucide-react";
+import { ArrowRight, Download, Eye, Loader2 } from "lucide-react";
 
 import { useUniversityControllerGetMoaDetail } from "@/app/api/app/api/endpoints/university/university";
 import { DocumentPreviewPane } from "@/components/document-preview-pane";
@@ -16,7 +16,7 @@ import {
 import { useResourceTable } from "@/components/ui/use-resource-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
-import { formatDateWithoutTime } from "@/lib/utils";
+import { cn, formatDateWithoutTime } from "@/lib/utils";
 
 export interface RegisteredPartnerMoa {
   id: string;
@@ -93,6 +93,73 @@ function MoaEndDate({
   );
 }
 
+function withPdfExtension(name: string) {
+  return name.toLowerCase().endsWith(".pdf") ? name : `${name}.pdf`;
+}
+
+type DownloadMoaButtonProps =
+  | { moaId: string; pdfUrl?: never; label: string }
+  | { moaId?: never; pdfUrl: string | null | undefined; label: string };
+
+function DownloadMoaButton({
+  className,
+  ...props
+}: DownloadMoaButtonProps & { className?: string }) {
+  const { label } = props;
+  const pdfUrl = "pdfUrl" in props ? props.pdfUrl : undefined;
+  const moaId = "moaId" in props ? props.moaId : undefined;
+  const [shouldFetch, setShouldFetch] = useState(false);
+  const { data, isLoading } = useUniversityControllerGetMoaDetail(
+    shouldFetch && moaId ? moaId : null,
+  );
+  const resolvedUrl = pdfUrl ?? data?.pdfUrl ?? null;
+  const proxiedUrl = resolvedUrl
+    ? `/gcs-proxy?url=${encodeURIComponent(resolvedUrl)}`
+    : null;
+
+  useEffect(() => {
+    if (proxiedUrl && shouldFetch) {
+      setShouldFetch(false);
+      const anchor = document.createElement("a");
+      anchor.href = proxiedUrl;
+      anchor.download = label;
+      anchor.rel = "noopener";
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    }
+  }, [proxiedUrl, shouldFetch, label]);
+
+  if (!moaId && !pdfUrl) return null;
+
+  return (
+    <a
+      href={proxiedUrl ?? undefined}
+      download={label}
+      aria-label={`Download ${label}`}
+      title="Download MOA"
+      onClick={(event) => {
+        event.stopPropagation();
+        if (!proxiedUrl) {
+          event.preventDefault();
+          setShouldFetch(true);
+        }
+      }}
+      className={cn(
+        "text-muted-foreground hover:text-primary inline-flex size-7 items-center justify-center rounded-md transition-colors",
+        isLoading && "pointer-events-none",
+        className,
+      )}
+    >
+      {isLoading ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+      ) : (
+        <Download className="size-4" aria-hidden="true" />
+      )}
+    </a>
+  );
+}
+
 export function RegisteredPartnerMoasTable({
   moas,
   isLoading,
@@ -129,7 +196,7 @@ export function RegisteredPartnerMoasTable({
     {
       id: "template",
       header: "Template",
-      width: "w-[28%]",
+      width: "w-[25%]",
       getSortValue: (moa) => moa.template?.name ?? "",
       render: (moa) => (
         <TruncatedTooltip className="block max-w-[220px] text-sm text-gray-700">
@@ -140,7 +207,7 @@ export function RegisteredPartnerMoasTable({
     {
       id: "requested",
       header: "Requested",
-      width: "w-[16%]",
+      width: "w-[14%]",
       defaultSortDirection: "desc",
       getSortValue: (moa) => moa.created_at,
       render: (moa) => (
@@ -152,7 +219,7 @@ export function RegisteredPartnerMoasTable({
     {
       id: "start-date",
       header: "Start Date",
-      width: "w-[16%]",
+      width: "w-[14%]",
       getSortValue: (moa) => moa.effective_date,
       render: (moa) => (
         <span className="text-muted-foreground text-sm">
@@ -163,7 +230,7 @@ export function RegisteredPartnerMoasTable({
     {
       id: "end-date",
       header: "End Date",
-      width: "w-[20%]",
+      width: "w-[13%]",
       getSortValue: (moa) => moa.expiry_date ?? "",
       render: (moa) => (
         <MoaEndDate
@@ -171,6 +238,25 @@ export function RegisteredPartnerMoasTable({
           isPerpetual={!!moa.effective_date && !moa.expiry_date}
         />
       ),
+    },
+    {
+      id: "download",
+      header: <span className="sr-only">Download</span>,
+      width: "w-[6%]",
+      align: "right",
+      sortable: false,
+      render: (moa) =>
+        moa.imported ? (
+          <DownloadMoaButton
+            pdfUrl={moa.importedUrl}
+            label={withPdfExtension(moa.importedLabel ?? "MOA document")}
+          />
+        ) : (
+          <DownloadMoaButton
+            moaId={moa.id}
+            label={withPdfExtension(moa.template?.name ?? "MOA document")}
+          />
+        ),
     },
     {
       id: "action",
@@ -204,39 +290,54 @@ export function RegisteredPartnerMoasTable({
       className="[&_table]:min-w-[760px] [&_td]:py-2.5"
       onRowClick={openMoa}
       renderMobileRow={(moa) => (
-        <button
-          type="button"
-          onClick={() => openMoa(moa)}
-          className="w-full px-4 py-3 text-left hover:bg-primary/[0.035]"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <PartnershipStatusBadge
-              status={moa.is_expired ? "Expired" : moa.status}
-            />
-            {moa.imported && (
-              <PartnershipStatusBadge status="imported" label="Imported" />
-            )}
-            <ArrowRight className="text-primary mt-1 h-4 w-4" />
-          </div>
-          <p className="mt-2 max-w-[min(70vw,28rem)] truncate text-sm font-medium text-gray-900" title={moa.template?.name ?? "Template unavailable"}>
-            {moa.template?.name ?? "Template unavailable"}
-          </p>
-          <div className="text-muted-foreground mt-1 grid grid-cols-2 gap-3 text-xs">
-            <p>
-              Start:{" "}
-              {moa.effective_date
-                ? formatDateWithoutTime(moa.effective_date)
-                : "—"}
-            </p>
-            <p className="flex items-center gap-1">
-              End:{" "}
-              <MoaEndDate
-                expiryDate={moa.expiry_date}
-                isPerpetual={!moa.expiry_date}
+        <div className="flex w-full items-center">
+          <button
+            type="button"
+            onClick={() => openMoa(moa)}
+            className="min-w-0 flex-1 px-4 py-3 text-left hover:bg-primary/[0.035]"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <PartnershipStatusBadge
+                status={moa.is_expired ? "Expired" : moa.status}
               />
+              {moa.imported && (
+                <PartnershipStatusBadge status="imported" label="Imported" />
+              )}
+              <ArrowRight className="text-primary mt-1 h-4 w-4" />
+            </div>
+            <p className="mt-2 max-w-[min(70vw,28rem)] truncate text-sm font-medium text-gray-900" title={moa.template?.name ?? "Template unavailable"}>
+              {moa.template?.name ?? "Template unavailable"}
             </p>
+            <div className="text-muted-foreground mt-1 grid grid-cols-2 gap-3 text-xs">
+              <p>
+                Start:{" "}
+                {moa.effective_date
+                  ? formatDateWithoutTime(moa.effective_date)
+                  : "—"}
+              </p>
+              <p className="flex items-center gap-1">
+                End:{" "}
+                <MoaEndDate
+                  expiryDate={moa.expiry_date}
+                  isPerpetual={!moa.expiry_date}
+                />
+              </p>
+            </div>
+          </button>
+          <div className="shrink-0 pr-4">
+            {moa.imported ? (
+              <DownloadMoaButton
+                pdfUrl={moa.importedUrl}
+                label={withPdfExtension(moa.importedLabel ?? "MOA document")}
+              />
+            ) : (
+              <DownloadMoaButton
+                moaId={moa.id}
+                label={withPdfExtension(moa.template?.name ?? "MOA document")}
+              />
+            )}
           </div>
-        </button>
+        </div>
       )}
       emptyState={{
         title: "No MOA history",
@@ -259,7 +360,7 @@ export function LegacyPartnerMoasTable({
     {
       id: "status",
       header: "Status",
-      width: "w-[17%]",
+      width: "w-[13%]",
       getSortValue: (moa) =>
         isLegacyMoaExpired(moa.expiry_date, moa.is_perpetual)
           ? "expired"
@@ -284,7 +385,7 @@ export function LegacyPartnerMoasTable({
     {
       id: "document",
       header: "Document",
-      width: "w-[27%]",
+      width: "w-[22%]",
       getSortValue: (moa) => moa.filename ?? "",
       render: (moa) =>
         moa.document_url ? (
@@ -299,7 +400,7 @@ export function LegacyPartnerMoasTable({
     {
       id: "created",
       header: "Created",
-      width: "w-[16%]",
+      width: "w-[14%]",
       defaultSortDirection: "desc",
       getSortValue: (moa) => moa.created_at,
       render: (moa) => (
@@ -311,7 +412,7 @@ export function LegacyPartnerMoasTable({
     {
       id: "start-date",
       header: "Start Date",
-      width: "w-[16%]",
+      width: "w-[14%]",
       getSortValue: (moa) => moa.effective_date,
       render: (moa) => (
         <span className="text-muted-foreground text-sm">
@@ -322,12 +423,25 @@ export function LegacyPartnerMoasTable({
     {
       id: "end-date",
       header: "End Date",
-      width: "w-[18%]",
+      width: "w-[13%]",
       getSortValue: (moa) => moa.expiry_date ?? "",
       render: (moa) => (
         <MoaEndDate
           expiryDate={moa.expiry_date}
           isPerpetual={!!moa.is_perpetual}
+        />
+      ),
+    },
+    {
+      id: "download",
+      header: <span className="sr-only">Download</span>,
+      width: "w-[6%]",
+      align: "right",
+      sortable: false,
+      render: (moa) => (
+        <DownloadMoaButton
+          pdfUrl={moa.document_url}
+          label={withPdfExtension(moa.filename ?? "MOA document")}
         />
       ),
     },
@@ -360,40 +474,48 @@ export function LegacyPartnerMoasTable({
       className="[&_table]:min-w-[760px] [&_td]:py-2.5"
       onRowClick={openMoa}
       renderMobileRow={(moa) => (
-        <button
-          type="button"
-          onClick={() => openMoa(moa)}
-          className="w-full px-4 py-3 text-left hover:bg-primary/[0.035]"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <PartnershipStatusBadge
-              status={
-                isLegacyMoaExpired(moa.expiry_date, moa.is_perpetual)
-                  ? "Expired"
-                  : "Active"
-              }
-            />
-            <ArrowRight className="text-primary mt-1 h-4 w-4" />
-          </div>
-          <p className="mt-2 text-sm font-medium text-gray-900">
-            {moa.filename ?? "MOA Document"}
-          </p>
-          <div className="text-muted-foreground mt-1 grid grid-cols-2 gap-3 text-xs">
-            <p>
-              Start:{" "}
-              {moa.effective_date
-                ? formatDateWithoutTime(moa.effective_date)
-                : "—"}
-            </p>
-            <p className="flex items-center gap-1">
-              End:{" "}
-              <MoaEndDate
-                expiryDate={moa.expiry_date}
-                isPerpetual={!!moa.is_perpetual}
+        <div className="flex w-full items-center">
+          <button
+            type="button"
+            onClick={() => openMoa(moa)}
+            className="min-w-0 flex-1 px-4 py-3 text-left hover:bg-primary/[0.035]"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <PartnershipStatusBadge
+                status={
+                  isLegacyMoaExpired(moa.expiry_date, moa.is_perpetual)
+                    ? "Expired"
+                    : "Active"
+                }
               />
+              <ArrowRight className="text-primary mt-1 h-4 w-4" />
+            </div>
+            <p className="mt-2 text-sm font-medium text-gray-900">
+              {moa.filename ?? "MOA Document"}
             </p>
+            <div className="text-muted-foreground mt-1 grid grid-cols-2 gap-3 text-xs">
+              <p>
+                Start:{" "}
+                {moa.effective_date
+                  ? formatDateWithoutTime(moa.effective_date)
+                  : "—"}
+              </p>
+              <p className="flex items-center gap-1">
+                End:{" "}
+                <MoaEndDate
+                  expiryDate={moa.expiry_date}
+                  isPerpetual={!!moa.is_perpetual}
+                />
+              </p>
+            </div>
+          </button>
+          <div className="shrink-0 pr-4">
+            <DownloadMoaButton
+              pdfUrl={moa.document_url}
+              label={withPdfExtension(moa.filename ?? "MOA document")}
+            />
           </div>
-        </button>
+        </div>
       )}
       emptyState={{
         title: "No MOA history",

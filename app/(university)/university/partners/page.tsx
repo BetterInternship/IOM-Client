@@ -47,9 +47,6 @@ import {
   LegacyCompanyDetail,
   MoaUploadDialog,
   buildMoaRequest,
-  formatLegacyLabel,
-  formatLegacyFieldLabel,
-  isFilledValue,
   isLegacyMoaExpired,
   normalizeBulkUploadResult,
   UploadDialog,
@@ -65,6 +62,7 @@ import {
   ChevronRight,
   CircleAlert,
   CircleCheck,
+  Download,
   FileText,
   GripVertical,
   Plus,
@@ -308,6 +306,9 @@ function DocumentsSection({
       <div>
         {DOC_TYPES_LIST.map(([type, label]) => {
           const doc = documents.find((d) => d.type === type);
+          const proxiedUrl = doc?.url
+            ? `/gcs-proxy?url=${encodeURIComponent(doc.url)}`
+            : null;
           return (
             <div
               key={type}
@@ -332,6 +333,18 @@ function DocumentsSection({
                   )}
                 </div>
               </div>
+              {doc?.url && (
+                <a
+                  href={proxiedUrl!}
+                  download={doc.filename}
+                  aria-label={`Download ${doc.filename}`}
+                  title="Download"
+                  onClick={(event) => event.stopPropagation()}
+                  className="text-muted-foreground hover:text-primary inline-flex size-7 shrink-0 items-center justify-center rounded-md transition-colors"
+                >
+                  <Download className="size-4" aria-hidden="true" />
+                </a>
+              )}
             </div>
           );
         })}
@@ -342,13 +355,11 @@ function DocumentsSection({
 
 function ReadOnlyLegacyDetail({
   company,
-  onPreviewDoc,
   onOpenMoa,
   showHeader = true,
   canUpload = false,
 }: {
   company: LegacyCompanyDetail;
-  onPreviewDoc: (url: string, title: string) => void;
   onOpenMoa: (selection: PartnerPdfSelection) => void;
   showHeader?: boolean;
   canUpload?: boolean;
@@ -356,32 +367,11 @@ function ReadOnlyLegacyDetail({
   const queryClient = useQueryClient();
   const { openModal, closeModal } = useModal();
   const details = company.company_details as Record<string, unknown>;
-  const companyType =
-    typeof details.company_type === "string" ? details.company_type : null;
   const logoUrl =
     typeof details.logo_url === "string" ? details.logo_url : null;
   const hasActiveMoa = company.moas.some(
     (moa) => !isLegacyMoaExpired(moa.expiry_date, moa.is_perpetual),
   );
-  const standardDetailKeys = [
-    "company_type",
-    "tin",
-    "registered_address",
-    "contact_person",
-    "contact_email",
-    "contact_phone",
-  ];
-  const detailEntries = [
-    ...standardDetailKeys.map(
-      (key) => [formatLegacyFieldLabel(key), details[key]] as const,
-    ),
-    ...Object.entries(details)
-      .filter(
-        ([key, value]) =>
-          !standardDetailKeys.includes(key) && isFilledValue(value),
-      )
-      .map(([key, value]) => [formatLegacyFieldLabel(key), value] as const),
-  ];
 
   const moaUploadMutation = useUniversityControllerAppendLegacyCompanyMoas({
     mutation: {
@@ -422,66 +412,6 @@ function ReadOnlyLegacyDetail({
       )}
 
       <div className="flex flex-col">
-      <div className="order-2">
-      <CollapsibleCard id="company-details" title="Company details">
-        <div className="space-y-4 px-5 pb-5">
-          {detailEntries.map(([label, value]) => (
-            <DetailField key={label} label={label}>
-              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
-                {isFilledValue(value) ? String(value) : "—"}
-              </p>
-            </DetailField>
-          ))}
-        </div>
-      </CollapsibleCard>
-      </div>
-
-      <div className="order-3">
-      <CollapsibleCard
-        id="legacy-documents"
-        title="Documents"
-        defaultOpen={false}
-      >
-        <div>
-          {company.company_documents.length === 0 ? (
-            <p className="text-muted-foreground px-4 py-3 text-sm">
-              No documents.
-            </p>
-          ) : (
-            company.company_documents.map((doc) => (
-              <div
-                key={doc.id}
-                className={cn(
-                  "flex flex-row items-center px-4 duration-200",
-                  doc.url && "hover:cursor-pointer hover:bg-gray-50",
-                )}
-                onClick={() => doc.url && onPreviewDoc(doc.url, doc.filename)}
-              >
-                <CircleCheck className="text-supportive flex-shrink-0" />
-                <div className="flex flex-1 items-center gap-3 rounded-[0.16em] px-3 py-2.5">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800">
-                      {doc.type === "other"
-                        ? "Company document"
-                        : formatLegacyLabel(doc.type)}
-                    </p>
-                    <p className="text-muted-foreground mt-0.5 truncate text-xs">
-                      {doc.filename}
-                    </p>
-                    {doc.expiry_date && (
-                      <p className="text-muted-foreground mt-0.5 text-xs">
-                        Expires {formatDateWithoutTime(doc.expiry_date)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </CollapsibleCard>
-      </div>
-
       <div className="order-1">
       <CollapsibleCard
         id="legacy-moa-history"
@@ -534,11 +464,9 @@ function ReadOnlyLegacyDetail({
 function LegacyRecordsSection({
   currentCompanyId: companyId,
   onOpenMoa,
-  onOpenDocument,
 }: {
   currentCompanyId: string | null;
   onOpenMoa: (selection: PartnerPdfSelection) => void;
-  onOpenDocument: (url: string, label: string) => void;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -582,7 +510,6 @@ function LegacyRecordsSection({
             <ReadOnlyLegacyDetail
               company={company}
               onOpenMoa={onOpenMoa}
-              onPreviewDoc={(url, title) => onOpenDocument(url, title)}
               showHeader={false}
             />
           )}
@@ -1345,9 +1272,6 @@ function PartnersContent({
                       company={legacyCompany}
                       canUpload
                       onOpenMoa={setPdfSelection}
-                      onPreviewDoc={(url, title) =>
-                        openDocumentPreview(url, title)
-                      }
                     />
                   ) : (
                     <p className="text-muted-foreground text-sm">
