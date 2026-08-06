@@ -1,7 +1,8 @@
 "use client";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUniversityControllerMe } from "@/app/api";
+import { universitySignatoriesComplete } from "@/lib/profile-validation";
 
 interface UniversityAccount {
   id: string;
@@ -15,10 +16,19 @@ interface UniversityAccount {
     registered_name: string;
     logo_url: string | null;
     address: string | null;
-    rep_name: string | null;
-    rep_title: string | null;
-    rep_signature_url: string | null;
+    signatories: UniversitySignatoryFields[] | null;
+    account_holder_name: string | null;
+    account_holder_title: string | null;
   };
+}
+interface UniversitySignatoryFields {
+  id: string;
+  name: string;
+  title: string;
+  signatureUrl?: string;
+  signatureText?: string;
+  signatureType?: string;
+  email?: string;
 }
 
 interface UniversityProfileCtx {
@@ -35,15 +45,22 @@ const UniversityProfileContext = createContext<UniversityProfileCtx>({
   isSetupComplete: false,
 });
 
+type UniversitySetupFields = {
+  registered_name: string | null | undefined;
+  address: string | null | undefined;
+  signatories: UniversitySignatoryFields[] | null | undefined;
+};
+
 export function isUniversitySetupComplete(
-  university: UniversityAccount["university"] | null | undefined,
+  university: UniversitySetupFields | null | undefined,
 ) {
+  const signatoriesComplete = universitySignatoriesComplete(
+    university?.signatories,
+  );
   return Boolean(
     university?.registered_name?.trim() &&
     university.address?.trim() &&
-    university.rep_name?.trim() &&
-    university.rep_title?.trim() &&
-    university.rep_signature_url,
+    signatoriesComplete,
   );
 }
 
@@ -69,30 +86,40 @@ export function UniversityProfileProvider({
     pathname.startsWith("/university/accept-invite") ||
     pathname === "/login" ||
     pathname === "/accept-invite";
-  const onProfilePage =
-    pathname.startsWith("/university/profile") || pathname === "/profile";
-  const loginRedirect = pathname.startsWith("/university/")
-    ? "/university/login"
-    : "/login";
+  const onCompleteProfilePage =
+    pathname.startsWith("/university/complete-profile") ||
+    pathname === "/complete-profile";
+  const loginRedirect = "/login";
   const account = (data?.account as UniversityAccount) ?? null;
   const isSuperadmin = account?.role === "superadmin";
   const isSetupComplete = isUniversitySetupComplete(account?.university);
-  if (isError && !onAuthPage) {
-    router.replace(loginRedirect);
-  }
+  const completeProfileRedirect = "/complete-profile";
 
-  if (
-    !onAuthPage &&
-    !onProfilePage &&
-    !isError &&
-    !isLoading &&
-    isSuperadmin &&
-    !isSetupComplete
-  ) {
-    router.replace(
-      pathname.startsWith("/university/") ? "/university/profile" : "/profile",
-    );
-  }
+  useEffect(() => {
+    if (isError && !onAuthPage) router.replace(loginRedirect);
+  }, [isError, loginRedirect, onAuthPage, router]);
+
+  useEffect(() => {
+    if (
+      !onAuthPage &&
+      !onCompleteProfilePage &&
+      !isError &&
+      !isLoading &&
+      isSuperadmin &&
+      !isSetupComplete
+    ) {
+      router.replace(completeProfileRedirect);
+    }
+  }, [
+    completeProfileRedirect,
+    isError,
+    isLoading,
+    isSetupComplete,
+    isSuperadmin,
+    onAuthPage,
+    onCompleteProfilePage,
+    router,
+  ]);
 
   return (
     <UniversityProfileContext.Provider

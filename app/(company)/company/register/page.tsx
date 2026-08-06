@@ -35,7 +35,7 @@ interface InvitePeek {
 }
 
 const CAREER_UNREACHABLE_MESSAGE =
-  "Your account is ready, but we couldn't reach BetterInternship just now — use the \"Post a listing\" button below to continue.";
+  'Your account is ready, but we couldn\'t reach BetterInternship just now — use the "Post a listing" button below to continue.';
 
 function RegistrationLoader({ step, active }: { step: Step; active: boolean }) {
   const progress = step === "identity" ? "w-1/2" : "w-full";
@@ -213,7 +213,7 @@ function RegisterPageContent() {
           if (data.template_id) params.set("invite_template", data.template_id);
           if (invitePeek?.invite_id)
             params.set("invite_id", invitePeek.invite_id);
-          router.replace(`/company/profile?${params}`);
+          router.replace(`/complete-profile?${params}`);
         } else {
           router.replace("/company/dashboard");
         }

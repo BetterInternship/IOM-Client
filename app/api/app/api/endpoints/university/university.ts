@@ -751,6 +751,7 @@ export const useUniversityControllerUploadLogo = <
   return useMutation(mutationOptions, queryClient);
 };
 export const universityControllerUploadSignature = (
+  signatoryId: string | undefined | null,
   universityControllerUploadSignatureBody: UniversityControllerUploadSignatureBody,
   signal?: AbortSignal,
 ) => {
@@ -758,7 +759,7 @@ export const universityControllerUploadSignature = (
   formData.append(`file`, universityControllerUploadSignatureBody.file);
 
   return preconfiguredAxiosFunction<UniversityUploadSignatureResponse>({
-    url: `/api/university/profile/signature`,
+    url: `/api/university/profile/signatories/${signatoryId}/signature`,
     method: "POST",
     headers: { "Content-Type": "multipart/form-data" },
     data: formData,
@@ -773,13 +774,19 @@ export const getUniversityControllerUploadSignatureMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof universityControllerUploadSignature>>,
     TError,
-    { data: UniversityControllerUploadSignatureBody },
+    {
+      signatoryId: string | undefined | null;
+      data: UniversityControllerUploadSignatureBody;
+    },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof universityControllerUploadSignature>>,
   TError,
-  { data: UniversityControllerUploadSignatureBody },
+  {
+    signatoryId: string | undefined | null;
+    data: UniversityControllerUploadSignatureBody;
+  },
   TContext
 > => {
   const mutationKey = ["universityControllerUploadSignature"];
@@ -793,11 +800,14 @@ export const getUniversityControllerUploadSignatureMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof universityControllerUploadSignature>>,
-    { data: UniversityControllerUploadSignatureBody }
+    {
+      signatoryId: string | undefined | null;
+      data: UniversityControllerUploadSignatureBody;
+    }
   > = (props) => {
-    const { data } = props ?? {};
+    const { signatoryId, data } = props ?? {};
 
-    return universityControllerUploadSignature(data);
+    return universityControllerUploadSignature(signatoryId, data);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -818,7 +828,10 @@ export const useUniversityControllerUploadSignature = <
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof universityControllerUploadSignature>>,
       TError,
-      { data: UniversityControllerUploadSignatureBody },
+      {
+        signatoryId: string | undefined | null;
+        data: UniversityControllerUploadSignatureBody;
+      },
       TContext
     >;
   },
@@ -826,7 +839,10 @@ export const useUniversityControllerUploadSignature = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof universityControllerUploadSignature>>,
   TError,
-  { data: UniversityControllerUploadSignatureBody },
+  {
+    signatoryId: string | undefined | null;
+    data: UniversityControllerUploadSignatureBody;
+  },
   TContext
 > => {
   const mutationOptions =
@@ -1950,7 +1966,9 @@ export const universityControllerCreateLegacyCompany = (
     `company_name`,
     universityControllerCreateLegacyCompanyBody.company_name,
   );
-  formData.append(`moas`, universityControllerCreateLegacyCompanyBody.moas);
+  if (universityControllerCreateLegacyCompanyBody.moas !== undefined) {
+    formData.append(`moas`, universityControllerCreateLegacyCompanyBody.moas);
+  }
   if (universityControllerCreateLegacyCompanyBody.tin !== undefined) {
     formData.append(`tin`, universityControllerCreateLegacyCompanyBody.tin);
   }
@@ -4402,6 +4420,84 @@ export function useUniversityControllerListInvitesSuspense<
   return query;
 }
 
+export const universityControllerCancelInvite = (
+  id: string | undefined | null,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<BaseResponse>({
+    url: `/api/university/invites/${id}/cancel`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getUniversityControllerCancelInviteMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+    TError,
+    { id: string | undefined | null },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+  TError,
+  { id: string | undefined | null },
+  TContext
+> => {
+  const mutationKey = ["universityControllerCancelInvite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+    { id: string | undefined | null }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return universityControllerCancelInvite(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityControllerCancelInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerCancelInvite>>
+>;
+
+export type UniversityControllerCancelInviteMutationError = ErrorResponse;
+
+export const useUniversityControllerCancelInvite = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+      TError,
+      { id: string | undefined | null },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+  TError,
+  { id: string | undefined | null },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerCancelInviteMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export const universityControllerBulkInvite = (
   bulkInviteDto: BulkInviteDto,
   signal?: AbortSignal,

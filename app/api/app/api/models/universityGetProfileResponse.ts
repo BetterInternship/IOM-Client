@@ -11,4 +11,5 @@ export interface UniversityGetProfileResponse {
   success: boolean;
   message?: string;
   university: UniversityDto;
+  accountEmails: string[];
 }

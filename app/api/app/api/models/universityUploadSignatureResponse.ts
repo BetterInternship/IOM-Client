@@ -5,11 +5,13 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
+import type { UniversitySignatoryDto } from "./universitySignatoryDto";
 import type { UniversityDto } from "./universityDto";
 
 export interface UniversityUploadSignatureResponse {
   success: boolean;
   message?: string;
-  rep_signature_url: string;
+  /** @nullable */
+  signatories: UniversitySignatoryDto[] | null;
   university: UniversityDto;
 }

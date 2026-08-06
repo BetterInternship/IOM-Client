@@ -6,10 +6,12 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface AdminBulkCompanySummaryDto {
-  created: number;
-  duplicate_tin: number;
-  duplicate_name: number;
-  invalid: number;
-  failed: number;
+export interface UniversitySignatoryDto {
+  id: string;
+  name: string;
+  title: string;
+  signatureUrl?: string;
+  signatureText?: string;
+  signatureType?: string;
+  email?: string;
 }

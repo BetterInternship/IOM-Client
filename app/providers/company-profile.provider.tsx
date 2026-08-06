@@ -1,7 +1,10 @@
 "use client";
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useCompanyControllerMe, useCompanyControllerGetVerification } from "@/app/api";
+import {
+  useCompanyControllerMe,
+  useCompanyControllerGetVerification,
+} from "@/app/api";
 
 interface CompanyProfile {
   id: string;
@@ -19,13 +22,21 @@ interface CompanyProfileCtx {
   isLoading: boolean;
 }
 
-const CompanyProfileContext = createContext<CompanyProfileCtx>({ company: null, isLoading: true });
+const CompanyProfileContext = createContext<CompanyProfileCtx>({
+  company: null,
+  isLoading: true,
+});
 
 export function useCompanyProfile() {
   return useContext(CompanyProfileContext);
 }
 
-export type VerificationStatus = "incomplete" | "pending" | "verified" | "expired" | "rejected";
+export type VerificationStatus =
+  | "incomplete"
+  | "pending"
+  | "verified"
+  | "expired"
+  | "rejected";
 
 export interface CompanyVerification {
   status: VerificationStatus;
@@ -41,7 +52,11 @@ export function useCompanyVerification(enabled = true) {
   return { data: data as CompanyVerification | undefined, ...rest };
 }
 
-export function CompanyProfileProvider({ children }: { children: React.ReactNode }) {
+export function CompanyProfileProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -56,20 +71,45 @@ export function CompanyProfileProvider({ children }: { children: React.ReactNode
     pathname.startsWith("/company/register") ||
     pathname === "/login" ||
     pathname.startsWith("/register");
-  const onProfilePage = pathname.startsWith("/company/profile");
-  const loginRedirect = pathname.startsWith("/company/") ? "/company/login" : "/login";
-  if (isError && !onAuthPage) {
-    router.replace(loginRedirect);
-  }
+  const onCompleteProfilePage =
+    pathname.startsWith("/company/complete-profile") ||
+    pathname === "/complete-profile";
+  const loginRedirect = "/login";
+  const completeProfileRedirect = "/complete-profile";
 
-  // Profile-completeness gate: redirect to profile if not yet filled in.
-  const { data: verification } = useCompanyVerification(!onAuthPage && !isError && !isLoading);
-  if (!onAuthPage && !onProfilePage && !isError && !isLoading && verification?.status === "incomplete") {
-    router.replace("/company/profile");
-  }
+  // Profile-completeness gate: keep initial setup separate from profile management.
+  const { data: verification } = useCompanyVerification(
+    !onAuthPage && !isError && !isLoading,
+  );
+
+  useEffect(() => {
+    if (isError && !onAuthPage) router.replace(loginRedirect);
+  }, [isError, loginRedirect, onAuthPage, router]);
+
+  useEffect(() => {
+    if (
+      !onAuthPage &&
+      !onCompleteProfilePage &&
+      !isError &&
+      !isLoading &&
+      verification?.status === "incomplete"
+    ) {
+      router.replace(completeProfileRedirect);
+    }
+  }, [
+    completeProfileRedirect,
+    isError,
+    isLoading,
+    onAuthPage,
+    onCompleteProfilePage,
+    router,
+    verification?.status,
+  ]);
 
   return (
-    <CompanyProfileContext.Provider value={{ company: (data?.company as CompanyProfile) ?? null, isLoading }}>
+    <CompanyProfileContext.Provider
+      value={{ company: (data?.company as CompanyProfile) ?? null, isLoading }}
+    >
       {children}
     </CompanyProfileContext.Provider>
   );

@@ -113,18 +113,29 @@ function InvitePageContent() {
     { query: { enabled: !!token, retry: false } },
   );
   const inviteData = data as unknown as InviteData | undefined;
+  // §5.6 — a cancelled invite's token resolves to a distinguishable
+  // INVITE_WITHDRAWN error carrying its own message, rather than the
+  // generic expired/bogus-token copy.
+  const apiError = error as ApiError | null;
+  const isWithdrawn = apiError?.code === "INVITE_WITHDRAWN";
 
   if (!token || (!isLoading && (error || !inviteData))) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
         <div className="space-y-2 rounded-lg border border-slate-200 bg-white px-8 py-7 text-center shadow-lg backdrop-blur-sm">
           <p className="text-lg font-semibold text-slate-950">
-            {!token ? "Invalid invite link" : "Invite not found"}
+            {!token
+              ? "Invalid invite link"
+              : isWithdrawn
+                ? "Invitation withdrawn"
+                : "Invite not found"}
           </p>
           <p className="text-muted-foreground text-sm">
             {!token
               ? "This invite link is missing required information."
-              : "This invite link may have expired or already been used."}
+              : isWithdrawn
+                ? apiError!.message
+                : "This invite link may have expired or already been used."}
           </p>
         </div>
       </div>

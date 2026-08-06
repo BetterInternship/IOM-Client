@@ -8,7 +8,7 @@
 
 export type UniversityControllerCreateLegacyCompanyBody = {
   company_name: string;
-  moas: string;
+  moas?: string;
   tin?: string;
   company_type?: string;
   registered_address?: string;
