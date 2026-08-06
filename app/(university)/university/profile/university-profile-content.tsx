@@ -19,6 +19,7 @@ import {
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { SignatoryCard } from "@/components/signatory-card";
+import { SignatoryEmailInput } from "@/components/signatory-email-input";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,6 +130,9 @@ export function UniversityProfileContent({
   );
 
   const uni = data?.university as UniversityProfile | undefined;
+  const accountEmails = Array.isArray(data?.accountEmails)
+    ? data.accountEmails
+    : [];
   const displayLogoUrl = logoPreviewUrl ?? uni?.logo_url ?? null;
 
   const signatoriesComplete = (list: UniversitySignatoryDraft[]) =>
@@ -160,6 +164,7 @@ export function UniversityProfileContent({
               signatureType: "text" as const,
             }
           : {}),
+        ...(s.email?.trim() ? { email: s.email.trim() } : {}),
       }));
       const missingSignature = signatories.find(
         (s) =>
@@ -564,6 +569,11 @@ export function UniversityProfileContent({
                       <p className="text-muted-foreground truncate text-xs">
                         {s.title || "No title"}
                       </p>
+                      {s.email?.trim() && (
+                        <p className="text-muted-foreground truncate text-xs">
+                          {s.email}
+                        </p>
+                      )}
                     </div>
                     {s.signatureUrl ? (
                       <img
@@ -666,6 +676,19 @@ export function UniversityProfileContent({
                           )}
                         </div>
                       </div>
+
+                      <SignatoryEmailInput
+                        id={`signatory-${index}-email`}
+                        value={field.email ?? ""}
+                        onChange={(v) =>
+                          form.setValue(`signatories.${index}.email`, v)
+                        }
+                        suggestions={accountEmails}
+                        error={
+                          form.formState.errors.signatories?.[index]?.email
+                            ?.message
+                        }
+                      />
 
                       {!pendingSigs[field.id] &&
                         (field.signatureUrl?.trim() ||

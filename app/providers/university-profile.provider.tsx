@@ -30,6 +30,7 @@ interface UniversitySignatoryFields {
   signatureUrl?: string;
   signatureText?: string;
   signatureType?: string;
+  email?: string;
 }
 
 interface UniversityProfileCtx {

@@ -40,6 +40,14 @@ const signatoryEntrySchema = z.object({
   signatureUrl: z.string().optional(),
   signatureText: z.string().optional(),
   signatureType: z.enum(["text", "image"]).optional(),
+  email: z
+    .string()
+    .trim()
+    .refine(
+      (value) => !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+      "Enter a valid email address.",
+    )
+    .optional(),
 });
 
 export const universityProfileSchema = z.object({
@@ -82,6 +90,7 @@ export function universitySignatoriesComplete(
         title?: string;
         signatureUrl?: string;
         signatureText?: string;
+        email?: string;
       }[]
     | null
     | undefined,
