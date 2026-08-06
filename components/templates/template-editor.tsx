@@ -546,6 +546,16 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
             </div>
             <p className="text-muted-foreground font-mono text-[11px]">{selected.field}</p>
 
+            <div className="space-y-1">
+              <Label className="text-xs">Prefill value</Label>
+              <Input
+                value={selected.value ?? ""}
+                onChange={(e) => updatePlacement(selected.id, { value: e.target.value })}
+                placeholder={selected.type === "signature" ? "e.g. BetterInternship" : "Fixed text on the PDF"}
+              />
+              
+            </div>
+
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">Page</Label>

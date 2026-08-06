@@ -55,6 +55,8 @@ export interface Placement {
   h: number;
   align_h: AlignH;
   align_v: AlignV;
+  /** fixed admin-provided value; rendered as-is and not asked on the company form */
+  value?: string;
 }
 
 /** The persisted shape (one entry of `moa_templates.field_schema`). */
@@ -68,6 +70,8 @@ export interface FieldSchemaEntry {
   page: number;
   align_h: AlignH;
   align_v: AlignV;
+  /** fixed admin-provided value; rendered as-is and not asked on the company form */
+  value?: string;
 }
 
 const TEXT_W = 180;
@@ -197,7 +201,7 @@ export const ptToPx = (pt: number, scale: number) => pt * scale;
 
 // ── (de)serialization between editor Placements and persisted field_schema ─────
 export function toFieldSchema(placements: Placement[]): FieldSchemaEntry[] {
-  return placements.map(({ field, type, x, y, w, h, page, align_h, align_v }) => ({
+  return placements.map(({ field, type, x, y, w, h, page, align_h, align_v, value }) => ({
     field,
     type,
     x: Math.round(x * 100) / 100,
@@ -207,6 +211,7 @@ export function toFieldSchema(placements: Placement[]): FieldSchemaEntry[] {
     page,
     align_h,
     align_v,
+    ...(value?.trim() ? { value: value.trim() } : {}),
   }));
 }
 
@@ -228,6 +233,9 @@ export function fromFieldSchema(raw: unknown): Placement[] {
         h: Number(e.h) || TEXT_H,
         align_h: (["left", "center", "right"].includes(String(e.align_h)) ? e.align_h : "left") as AlignH,
         align_v: (["top", "middle", "bottom"].includes(String(e.align_v)) ? e.align_v : "top") as AlignV,
+        ...(typeof e.value === "string" && e.value.trim() !== ""
+          ? { value: e.value.trim() }
+          : {}),
       };
     });
 }

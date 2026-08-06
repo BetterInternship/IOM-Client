@@ -380,9 +380,15 @@ export function RequestDialog({
   const templates = data?.templates ?? [];
   const universityName = data?.university?.registered_name ?? "";
   const selectedTemplateData = templates.find((t) => t.id === selectedTemplate);
-  const signerRequirements = deriveCompanySignatoryRequirements(
-    selectedTemplateData?.field_schema,
-  );
+  // Prefilled fields (fixed admin values) are rendered from the template and
+  // are never asked on the company form, so they don't drive requirements.
+  const activeFields = Array.isArray(selectedTemplateData?.field_schema)
+    ? selectedTemplateData.field_schema.filter(
+        (e: { field?: string; value?: unknown }) =>
+          !(typeof e?.value === "string" && e.value.trim() !== ""),
+      )
+    : selectedTemplateData?.field_schema;
+  const signerRequirements = deriveCompanySignatoryRequirements(activeFields);
   const sigReady = sigMode === "type" ? !!sigText.trim() : !!sigFile;
   const sig2Ready = sig2Mode === "type" ? !!sig2Text.trim() : !!sig2File;
   const signer1Ready =
