@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SignatoryCard } from "@/components/signatory-card";
 import { FormError } from "@/components/auth-shell";
 import {
   MoaSignatureInput,
@@ -495,30 +496,47 @@ export function RequestDialog({
         {(signerRequirements.signer1.name ||
           signerRequirements.signer1.title ||
           signerRequirements.signer1.signature) && (
-          <div className="space-y-3 rounded-[0.33em] border border-gray-200 bg-gray-50/60 p-3">
-            <p className="text-sm font-semibold text-gray-900">
-              Representative 1
-            </p>
-            {signerRequirements.signer1.name && (
-              <div className="space-y-1.5">
-                <Label htmlFor="rep-name">Representative name</Label>
-                <Input
-                  id="rep-name"
-                  value={repName}
-                  onChange={(e) => setRepName(e.target.value)}
-                  placeholder="Full name"
-                />
-              </div>
-            )}
-            {signerRequirements.signer1.title && (
-              <div className="space-y-1.5">
-                <Label htmlFor="rep-title">Representative title</Label>
-                <Input
-                  id="rep-title"
-                  value={repTitle}
-                  onChange={(e) => setRepTitle(e.target.value)}
-                  placeholder="e.g. CEO, HR Manager"
-                />
+          <SignatoryCard
+            title="Representative 1"
+            complete={signer1Ready}
+            completeLabel="This representative is complete."
+          >
+            {(signerRequirements.signer1.name ||
+              signerRequirements.signer1.title) && (
+              <div
+                className={cn(
+                  "grid gap-3",
+                  signerRequirements.signer1.name &&
+                    signerRequirements.signer1.title &&
+                    "sm:grid-cols-2",
+                )}
+              >
+                {signerRequirements.signer1.name && (
+                  <div className="space-y-1">
+                    <Label className="text-xs" htmlFor="rep-name">
+                      Representative name
+                    </Label>
+                    <Input
+                      id="rep-name"
+                      value={repName}
+                      onChange={(e) => setRepName(e.target.value)}
+                      placeholder="Full name"
+                    />
+                  </div>
+                )}
+                {signerRequirements.signer1.title && (
+                  <div className="space-y-1">
+                    <Label className="text-xs" htmlFor="rep-title">
+                      Representative title
+                    </Label>
+                    <Input
+                      id="rep-title"
+                      value={repTitle}
+                      onChange={(e) => setRepTitle(e.target.value)}
+                      placeholder="e.g. CEO, HR Manager"
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -532,36 +550,54 @@ export function RequestDialog({
                 onFileChange={setSigFile}
               />
             )}
-          </div>
+          </SignatoryCard>
         )}
 
         {signer2Required && (
-          <div className="space-y-3 rounded-[0.33em] border border-gray-200 bg-gray-50/60 p-3">
-            <p className="text-sm font-semibold text-gray-900">
-              Representative 2
-            </p>
-            {signerRequirements.signer2.name && (
-              <div className="space-y-1.5">
-                <Label htmlFor="rep2-name">Representative name</Label>
-                <Input
-                  id="rep2-name"
-                  value={rep2Name}
-                  onChange={(e) => setRep2Name(e.target.value)}
-                  placeholder="Full name"
-                />
+          <SignatoryCard
+            title="Representative 2"
+            complete={signer2Ready}
+            completeLabel="This representative is complete."
+          >
+            {(signerRequirements.signer2.name ||
+              signerRequirements.signer2.title) && (
+              <div
+                className={cn(
+                  "grid gap-3",
+                  signerRequirements.signer2.name &&
+                    signerRequirements.signer2.title &&
+                    "sm:grid-cols-2",
+                )}
+              >
+                {signerRequirements.signer2.name && (
+                  <div className="space-y-1">
+                    <Label className="text-xs" htmlFor="rep2-name">
+                      Representative name
+                    </Label>
+                    <Input
+                      id="rep2-name"
+                      value={rep2Name}
+                      onChange={(e) => setRep2Name(e.target.value)}
+                      placeholder="Full name"
+                    />
+                  </div>
+                )}
+                {signerRequirements.signer2.title && (
+                  <div className="space-y-1">
+                    <Label className="text-xs" htmlFor="rep2-title">
+                      Representative title
+                    </Label>
+                    <Input
+                      id="rep2-title"
+                      value={rep2Title}
+                      onChange={(e) => setRep2Title(e.target.value)}
+                      placeholder="e.g. CEO, HR Manager"
+                    />
+                  </div>
+                )}
               </div>
             )}
-            {signerRequirements.signer2.title && (
-              <div className="space-y-1.5">
-                <Label htmlFor="rep2-title">Representative title</Label>
-                <Input
-                  id="rep2-title"
-                  value={rep2Title}
-                  onChange={(e) => setRep2Title(e.target.value)}
-                  placeholder="e.g. CEO, HR Manager"
-                />
-              </div>
-            )}
+
             {signerRequirements.signer2.signature && (
               <MoaSignatureInput
                 mode={sig2Mode}
@@ -572,7 +608,7 @@ export function RequestDialog({
                 onFileChange={setSig2File}
               />
             )}
-          </div>
+          </SignatoryCard>
         )}
 
         <p className="text-muted-foreground text-sm">

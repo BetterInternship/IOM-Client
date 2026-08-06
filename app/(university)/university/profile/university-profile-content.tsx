@@ -18,6 +18,7 @@ import {
   useUniversityControllerUploadLogo,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
+import { SignatoryCard } from "@/components/signatory-card";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -585,21 +586,19 @@ export function UniversityProfileContent({
             ) : (
               <div className="space-y-4">
                 {fields.map((field, index) => {
-                  const isComplete =
+                  const isComplete = Boolean(
                     field.name.trim() &&
                     field.title.trim() &&
                     (field.signatureUrl?.trim() ||
                       !!pendingSigs[field.id] ||
-                      !!field.signatureText?.trim());
+                      !!field.signatureText?.trim()),
+                  );
                   return (
-                    <div
+                    <SignatoryCard
                       key={field.formRowId}
-                      className="space-y-3 rounded-[0.33em] border border-gray-200 bg-white p-4"
-                    >
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-gray-900">
-                          Signatory {index + 1}
-                        </p>
+                      title={`Signatory ${index + 1}`}
+                      complete={isComplete}
+                      actions={
                         <div className="flex items-center gap-1">
                           <Button
                             variant="ghost"
@@ -627,8 +626,8 @@ export function UniversityProfileContent({
                             <Trash2 />
                           </Button>
                         </div>
-                      </div>
-
+                      }
+                    >
                       <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-1">
                           <Label className="text-xs">Signatory name</Label>
@@ -726,13 +725,7 @@ export function UniversityProfileContent({
                         }
                         modes={["type", "upload", "draw"]}
                       />
-
-                      {isComplete && (
-                        <p className="text-emerald-600 text-xs">
-                          This signatory is complete.
-                        </p>
-                      )}
-                    </div>
+                    </SignatoryCard>
                   );
                 })}
 
