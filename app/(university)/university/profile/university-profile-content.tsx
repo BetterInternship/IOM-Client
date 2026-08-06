@@ -49,6 +49,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   universityProfileSchema,
+  universitySignatoriesComplete,
   type UniversityProfileDraft,
   type UniversitySignatoryDraft,
 } from "@/lib/profile-validation";
@@ -130,13 +131,13 @@ export function UniversityProfileContent({
   const displayLogoUrl = logoPreviewUrl ?? uni?.logo_url ?? null;
 
   const signatoriesComplete = (list: UniversitySignatoryDraft[]) =>
-    list.length >= 2 &&
-    list.length <= 5 &&
-    list.every(
-      (s) =>
-        s.name.trim() &&
-        s.title.trim() &&
-        (s.signatureUrl?.trim() || !!pendingSigs[s.id]),
+    universitySignatoriesComplete(
+      list.map((s) => ({
+        ...s,
+        // A pending upload counts as a signature while still in edit mode.
+        signatureUrl:
+          s.signatureUrl?.trim() || (pendingSigs[s.id] ? "pending" : undefined),
+      })),
     );
 
   const save = useMutation({
@@ -254,11 +255,7 @@ export function UniversityProfileContent({
     ? uni!.signatories
     : [];
   const persistedSignatoriesComplete =
-    persistedSignatories.length >= 2 &&
-    persistedSignatories.length <= 5 &&
-    persistedSignatories.every(
-      (s) => s?.name?.trim() && s?.title?.trim() && s?.signatureUrl?.trim(),
-    );
+    universitySignatoriesComplete(persistedSignatories);
   const setupComplete = isUniversitySetupComplete(uni);
   const isSetupRoute = mode === "setup";
   const isSetupMode = isSetupRoute && isSuperadmin;

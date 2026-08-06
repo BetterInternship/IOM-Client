@@ -9,6 +9,7 @@ import {
   usePdfDocumentFromUrl,
   usePdfPageRenderer,
 } from "@betterinternship/core/pdf-viewer";
+import { deriveCompanySignatoryRequirements } from "@betterinternship/core/partners/forms";
 import {
   type CompanyControllerRequestMoaBody,
   type CompanyPendingInvitesResponse,
@@ -126,71 +127,6 @@ interface Template {
   description: string | null;
   term_months: number | null;
   field_schema?: unknown;
-}
-
-interface CompanySignerRequirements {
-  name: boolean;
-  title: boolean;
-  signature: boolean;
-}
-
-interface CompanySignatoryRequirements {
-  signer1: CompanySignerRequirements;
-  signer2: CompanySignerRequirements;
-}
-
-const SIGNER_1_KEYS = {
-  name: ["company_signatory_name", "company_rep_name"],
-  title: ["company_signatory_title", "company_rep_title"],
-  signature: ["company_signatory_signature", "company_rep_signature"],
-};
-
-const SIGNER_2_KEYS = {
-  name: ["company_signatory_2_name"],
-  title: ["company_signatory_2_title"],
-  signature: ["company_signatory_2_signature"],
-};
-
-/** Exactly which company signatory properties the template's flat fields need. */
-function deriveCompanySignatoryRequirements(
-  fieldSchema: unknown,
-): CompanySignatoryRequirements {
-  if (!Array.isArray(fieldSchema)) {
-    return {
-      signer1: { name: false, title: false, signature: false },
-      signer2: { name: false, title: false, signature: false },
-    };
-  }
-  const fields = new Set(
-    (fieldSchema as Array<{ field?: string }>)
-      .map((e) => e?.field)
-      .filter((f): f is string => typeof f === "string"),
-  );
-  const has = (keys: string[]) => keys.some((k) => fields.has(k));
-  const signer1 = {
-    name: has(SIGNER_1_KEYS.name),
-    title: has(SIGNER_1_KEYS.title),
-    signature: has(SIGNER_1_KEYS.signature),
-  };
-  const signer2 = {
-    name: has(SIGNER_2_KEYS.name),
-    title: has(SIGNER_2_KEYS.title),
-    signature: has(SIGNER_2_KEYS.signature),
-  };
-  if (
-    signer1.name ||
-    signer1.title ||
-    signer1.signature ||
-    signer2.name ||
-    signer2.title ||
-    signer2.signature
-  ) {
-    return { signer1, signer2 };
-  }
-  return {
-    signer1: { name: false, title: false, signature: false },
-    signer2: { name: false, title: false, signature: false },
-  };
 }
 
 type ApiError = {

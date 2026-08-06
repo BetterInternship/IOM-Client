@@ -10,6 +10,12 @@
 // editor simply captures `points = cssPixels / scale` and stores the page's
 // intrinsic point size as `page_w` / `page_h`.
 
+import {
+  signerFieldKeys,
+  MAX_COMPANY_SIGNATORIES,
+  MAX_UNIVERSITY_SIGNATORIES,
+} from "@betterinternship/core/partners/forms";
+
 export type FieldType = "text" | "signature";
 export type AlignH = "left" | "center" | "right";
 export type AlignV = "top" | "middle" | "bottom";
@@ -88,6 +94,31 @@ const signerGroup = (
   ],
 });
 
+/** The palette groups for each signer slot, derived from the shared key contract. */
+const COMPANY_SIGNER_GROUPS: CatalogGroup[] = Array.from(
+  { length: MAX_COMPANY_SIGNATORIES },
+  (_, i) =>
+    signerGroup(
+      `Company signatory ${i + 1}`,
+      `CS ${i + 1}`,
+      signerFieldKeys("company", i, "name")[0],
+      signerFieldKeys("company", i, "title")[0],
+      signerFieldKeys("company", i, "signature")[0],
+    ),
+);
+
+const UNIVERSITY_SIGNER_GROUPS: CatalogGroup[] = Array.from(
+  { length: MAX_UNIVERSITY_SIGNATORIES },
+  (_, i) =>
+    signerGroup(
+      `University signatory ${i + 1}`,
+      `US ${i + 1}`,
+      signerFieldKeys("university", i, "name")[0],
+      signerFieldKeys("university", i, "title")[0],
+      signerFieldKeys("university", i, "signature")[0],
+    ),
+);
+
 const COMPANY_DETAILS: CatalogGroup = {
   label: "Details",
   fields: [
@@ -120,22 +151,11 @@ const DATES_GROUP: CatalogGroup = {
 export const FIELD_CATEGORIES: CatalogCategory[] = [
   {
     label: "Company",
-    groups: [
-      COMPANY_DETAILS,
-      signerGroup("Company signatory 1", "CS 1", "company_signatory_name", "company_signatory_title", "company_signatory_signature"),
-      signerGroup("Company signatory 2", "CS 2", "company_signatory_2_name", "company_signatory_2_title", "company_signatory_2_signature"),
-    ],
+    groups: [COMPANY_DETAILS, ...COMPANY_SIGNER_GROUPS],
   },
   {
     label: "University",
-    groups: [
-      UNIVERSITY_DETAILS,
-      signerGroup("University signatory 1", "US 1", "university_signatory_name", "university_signatory_title", "university_signatory_signature"),
-      signerGroup("University signatory 2", "US 2", "university_signatory_2_name", "university_signatory_2_title", "university_signatory_2_signature"),
-      signerGroup("University signatory 3", "US 3", "university_signatory_3_name", "university_signatory_3_title", "university_signatory_3_signature"),
-      signerGroup("University signatory 4", "US 4", "university_signatory_4_name", "university_signatory_4_title", "university_signatory_4_signature"),
-      signerGroup("University signatory 5", "US 5", "university_signatory_5_name", "university_signatory_5_title", "university_signatory_5_signature"),
-    ],
+    groups: [UNIVERSITY_DETAILS, ...UNIVERSITY_SIGNER_GROUPS],
   },
   {
     label: "Others",
@@ -149,11 +169,12 @@ export const FIELD_GROUPS: CatalogGroup[] = FIELD_CATEGORIES.flatMap(
 
 /** Legacy company field keys that still appear on existing templates. Kept in
  *  FIELD_BY_KEY so they render with a proper label/type when loaded, but they are
- *  not offered in the palette. The server still resolves them for signatory 1. */
+ *  not offered in the palette. The server still resolves them for signatory 1.
+ *  Derived from the shared key contract (`company_rep_*` = signer-1 aliases). */
 const LEGACY_FIELDS: CatalogField[] = [
-  { key: "company_rep_name", label: "Signatory 1 name", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-  { key: "company_rep_title", label: "Signatory 1 title", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
-  { key: "company_rep_signature", label: "Signatory 1 signature", type: "signature", defaultW: SIG_W, defaultH: SIG_H },
+  { key: signerFieldKeys("company", 0, "name")[1], label: "Signatory 1 name", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+  { key: signerFieldKeys("company", 0, "title")[1], label: "Signatory 1 title", type: "text", defaultW: TEXT_W, defaultH: TEXT_H },
+  { key: signerFieldKeys("company", 0, "signature")[1], label: "Signatory 1 signature", type: "signature", defaultW: SIG_W, defaultH: SIG_H },
 ];
 
 export const FIELD_BY_KEY: Record<string, CatalogField> = Object.fromEntries(

@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUniversityControllerMe } from "@/app/api";
+import { universitySignatoriesComplete } from "@/lib/profile-validation";
 
 interface UniversityAccount {
   id: string;
@@ -52,25 +53,12 @@ type UniversitySetupFields = {
   signatories: UniversitySignatoryFields[] | null | undefined;
 };
 
-const MIN_SIGNATORIES = 2;
-const MAX_SIGNATORIES = 5;
-
 export function isUniversitySetupComplete(
   university: UniversitySetupFields | null | undefined,
 ) {
-  const signatories = Array.isArray(university?.signatories)
-    ? university!.signatories
-    : [];
-  const signatoriesComplete =
-    signatories.length >= MIN_SIGNATORIES &&
-    signatories.length <= MAX_SIGNATORIES &&
-    signatories.every(
-      (s) =>
-        !!s?.id &&
-        !!s?.name?.trim() &&
-        !!s?.title?.trim() &&
-        !!s?.signatureUrl?.trim(),
-    );
+  const signatoriesComplete = universitySignatoriesComplete(
+    university?.signatories,
+  );
   return Boolean(
     university?.registered_name?.trim() &&
     university.address?.trim() &&

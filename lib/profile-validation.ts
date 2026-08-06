@@ -1,4 +1,8 @@
 import { z } from "zod";
+import { MAX_UNIVERSITY_SIGNATORIES } from "@betterinternship/core/partners/forms";
+
+export const MIN_SIGNATORIES = 2;
+export const MAX_SIGNATORIES = MAX_UNIVERSITY_SIGNATORIES;
 
 const optionalUrl = z
   .string()
@@ -41,8 +45,11 @@ export const universityProfileSchema = z.object({
   address: z.string().trim().min(1, "Address is required."),
   signatories: z
     .array(signatoryEntrySchema)
-    .min(2, "At least two signatories are required.")
-    .max(5, "At most five signatories are allowed.")
+    .min(
+      MIN_SIGNATORIES,
+      `At least ${MIN_SIGNATORIES} signatories are required.`,
+    )
+    .max(MAX_SIGNATORIES, `At most ${MAX_SIGNATORIES} signatories are allowed.`)
     .superRefine((list, ctx) => {
       const seen = new Set<string>();
       list.forEach((entry, index) => {
@@ -57,6 +64,33 @@ export const universityProfileSchema = z.object({
       });
     }),
 });
+
+/**
+ * Completeness predicate shared by the university profile provider and the
+ * profile/setup UI: 2-5 signatories, each with an id, nonblank name/title, and
+ * a signature URL. Live form editing may still accept pending uploads (see the
+ * setup page's `signatoriesComplete`), but this is the persisted-data gate.
+ */
+export function universitySignatoriesComplete(
+  signatories:
+    | { id?: string; name?: string; title?: string; signatureUrl?: string }[]
+    | null
+    | undefined,
+): boolean {
+  const list = Array.isArray(signatories) ? signatories : [];
+  return (
+    list.length >= MIN_SIGNATORIES &&
+    list.length <= MAX_SIGNATORIES &&
+    list.every(
+      (s) =>
+        !!s &&
+        !!s.id &&
+        !!s.name?.trim() &&
+        !!s.title?.trim() &&
+        !!s.signatureUrl?.trim(),
+    )
+  );
+}
 
 export type CompanyProfileDraft = z.infer<typeof companyProfileSchema>;
 export type UniversityProfileDraft = z.infer<typeof universityProfileSchema>;
