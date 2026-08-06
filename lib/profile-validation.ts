@@ -76,8 +76,8 @@ export const universityProfileSchema = z.object({
   // Optional — whoever is actually sending mail from the account, distinct
   // from the MOA signatories (which live in the `signatories` array). Used only
   // to sign off the manual invite email.
-  account_holder_name: z.string().trim(),
-  account_holder_title: z.string().trim(),
+  account_holder_name: z.string().trim().optional(),
+  account_holder_title: z.string().trim().optional(),
 });
 
 /**

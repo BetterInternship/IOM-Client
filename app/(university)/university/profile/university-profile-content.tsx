@@ -101,12 +101,15 @@ export function UniversityProfileContent({
   const setupCompletionRedirectRef = useRef(false);
 
   const [editing, setEditing] = useState<EditingState | null>(null);
+  const seedRef = useRef<string | null>(null);
   const form = useForm<UniversityProfileDraft>({
     resolver: zodResolver(universityProfileSchema),
     mode: "onChange",
     defaultValues: {
       registered_name: "",
       address: "",
+      account_holder_name: "",
+      account_holder_title: "",
       signatories: [
         { id: newSignatoryId(), name: "", title: "" },
         { id: newSignatoryId(), name: "", title: "" },
@@ -276,6 +279,10 @@ export function UniversityProfileContent({
   const isSetupRoute = mode === "setup";
   const isSetupMode = isSetupRoute && isSuperadmin;
   const liveValues = form.watch();
+  const formIsValid = universityProfileSchema.safeParse(liveValues).success;
+  const hasChanges =
+    seedRef.current !== null &&
+    JSON.stringify(liveValues) !== seedRef.current;
   const institutionComplete = isSetupMode
     ? Boolean(liveValues.registered_name.trim() && liveValues.address.trim())
     : persistedInstitutionComplete;
@@ -329,6 +336,8 @@ export function UniversityProfileContent({
     const seed = {
       registered_name: uni?.registered_name ?? "",
       address: uni?.address ?? "",
+      account_holder_name: uni?.account_holder_name ?? "",
+      account_holder_title: uni?.account_holder_title ?? "",
       signatories:
         Array.isArray(uni?.signatories) && uni!.signatories.length
           ? uni!.signatories.map((s) => ({ ...s }))
@@ -337,6 +346,7 @@ export function UniversityProfileContent({
               { id: newSignatoryId(), name: "", title: "" },
             ],
     };
+    seedRef.current = JSON.stringify(seed);
     form.reset(seed);
     void form.trigger(keys as (keyof UniversityProfileDraft)[]);
     setEditing(section);
@@ -344,6 +354,7 @@ export function UniversityProfileContent({
   function cancelEdit() {
     setEditing(null);
     setPendingSigs({});
+    seedRef.current = null;
     form.reset();
   }
 
@@ -474,10 +485,9 @@ export function UniversityProfileContent({
                     }}
                     disabled={
                       save.isPending ||
-                      !form.formState.isValid ||
+                      !formIsValid ||
                       !signatoriesComplete(liveValues.signatories ?? []) ||
-                      (!form.formState.isDirty &&
-                        !Object.keys(pendingSigs).length)
+                      (!hasChanges && !Object.keys(pendingSigs).length)
                     }
                   >
                     {save.isPending && <Loader2 className="animate-spin" />}
@@ -680,9 +690,11 @@ export function UniversityProfileContent({
 
                       <SignatoryEmailInput
                         id={`signatory-${index}-email`}
-                        value={field.email ?? ""}
+                        value={liveValues.signatories?.[index]?.email ?? ""}
                         onChange={(v) =>
-                          form.setValue(`signatories.${index}.email`, v)
+                          form.setValue(`signatories.${index}.email`, v, {
+                            shouldDirty: true,
+                          })
                         }
                         suggestions={accountEmails}
                         error={
@@ -691,31 +703,12 @@ export function UniversityProfileContent({
                         }
                       />
 
-                      {!pendingSigs[field.id] &&
-                        (field.signatureUrl?.trim() ||
-                          field.signatureText?.trim()) && (
-                          <div className="rounded-[0.33em] border border-blue-100 bg-blue-50/40 p-3">
-                            <p className="text-muted-foreground mb-1 text-xs font-medium">
-                              Current signature
-                            </p>
-                            {field.signatureUrl?.trim() ? (
-                              <img
-                                src={field.signatureUrl}
-                                alt="Signature"
-                                className="h-14 max-w-xs object-contain"
-                              />
-                            ) : (
-                              <p className="font-serif text-lg italic text-gray-900">
-                                {field.signatureText}
-                              </p>
-                            )}
-                          </div>
-                        )}
-
                       <MoaSignatureInput
                         mode={
                           sigModes[field.id] ??
-                          (field.signatureText?.trim() ? "type" : "upload")
+                          (liveValues.signatories?.[index]?.signatureText?.trim()
+                            ? "type"
+                            : "upload")
                         }
                         onModeChange={(m) => {
                           setSigModes((prev) => ({
@@ -726,17 +719,21 @@ export function UniversityProfileContent({
                             form.setValue(
                               `signatories.${index}.signatureUrl`,
                               "",
+                              { shouldDirty: true },
                             );
                           } else {
                             form.setValue(
                               `signatories.${index}.signatureText`,
                               "",
+                              { shouldDirty: true },
                             );
                           }
                         }}
-                        text={field.signatureText ?? ""}
+                        text={liveValues.signatories?.[index]?.signatureText ?? ""}
                         onTextChange={(t) =>
-                          form.setValue(`signatories.${index}.signatureText`, t)
+                          form.setValue(`signatories.${index}.signatureText`, t, {
+                            shouldDirty: true,
+                          })
                         }
                         file={pendingSigs[field.id] ?? null}
                         onFileChange={(file) =>
@@ -814,7 +811,7 @@ export function UniversityProfileContent({
               }}
               disabled={
                 save.isPending ||
-                !form.formState.isValid ||
+                !formIsValid ||
                 !signatoriesComplete(liveValues.signatories ?? [])
               }
             >
