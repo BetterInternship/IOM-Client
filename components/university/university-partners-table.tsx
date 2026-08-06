@@ -197,13 +197,6 @@ function PartnerLink({
   );
 }
 
-function relativeDays(iso: string): string {
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "1d ago";
-  return `${days}d ago`;
-}
-
 const SECOND_LINE_TRANSITION = { duration: 0.15 } satisfies Transition;
 // Matches the easing modal-provider.tsx uses for its fade-exit panels.
 const BULK_BAR_TRANSITION = {
@@ -234,11 +227,11 @@ function CompanySecondLine({
 }) {
   const showCannotInvite =
     isBulkSelecting && row.isImported && !row.contactEmail;
-  const renewalRequestedAt = showCannotInvite
-    ? null
-    : row.lastRenewalRequestedAt;
 
-  if (!showCannotInvite && !renewalRequestedAt) return null;
+  // §6.1: the "Renewal requested" chip is fed by lastRenewalRequestedAt,
+  // which only ever comes from the now-hidden bulk-renew flow — hidden here
+  // too so historical rows from before this change don't surface it.
+  if (!showCannotInvite) return null;
 
   return (
     <div className="mt-0.5 h-4">
@@ -253,18 +246,6 @@ function CompanySecondLine({
             className="text-muted-foreground truncate text-xs"
           >
             Cannot invite (missing email)
-          </motion.p>
-        )}
-        {renewalRequestedAt && (
-          <motion.p
-            key="renewal"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={SECOND_LINE_TRANSITION}
-            className="text-muted-foreground truncate text-xs"
-          >
-            Renewal requested · {relativeDays(renewalRequestedAt)}
           </motion.p>
         )}
       </AnimatePresence>

@@ -16,13 +16,11 @@ interface UniversityAccount {
     registered_name: string;
     logo_url: string | null;
     address: string | null;
-    rep_name: string | null;
-    rep_title: string | null;
-    rep_signature_url: string | null;
     signatories: UniversitySignatoryFields[] | null;
+    account_holder_name: string | null;
+    account_holder_title: string | null;
   };
 }
-
 interface UniversitySignatoryFields {
   id: string;
   name: string;
@@ -50,9 +48,6 @@ const UniversityProfileContext = createContext<UniversityProfileCtx>({
 type UniversitySetupFields = {
   registered_name: string | null | undefined;
   address: string | null | undefined;
-  rep_name: string | null | undefined;
-  rep_title: string | null | undefined;
-  rep_signature_url: string | null | undefined;
   signatories: UniversitySignatoryFields[] | null | undefined;
 };
 

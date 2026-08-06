@@ -43,6 +43,7 @@ import {
   Camera,
   ImageIcon,
   Loader2,
+  Mail,
   Pencil,
   Plus,
   Trash2,
@@ -56,20 +57,20 @@ import {
   type UniversitySignatoryDraft,
 } from "@/lib/profile-validation";
 
-type SectionKey = "university" | "signatories";
+type SectionKey = "university" | "signatories" | "accountHolder";
 type EditingState = SectionKey | "all";
 
 const SECTION_FIELDS: Record<SectionKey, (keyof UniversityProfileDraft)[]> = {
   university: ["registered_name", "address"],
   signatories: ["signatories"],
+  accountHolder: ["account_holder_name", "account_holder_title"],
 };
 
 interface UniversityProfile {
   registered_name: string | null;
   address: string | null;
-  rep_name: string | null;
-  rep_title: string | null;
-  rep_signature_url: string | null;
+  account_holder_name: string | null;
+  account_holder_title: string | null;
   logo_url: string | null;
   signatories: UniversitySignatoryDraft[] | null;
   [key: string]: string | string[] | UniversitySignatoryDraft[] | null;
@@ -775,6 +776,30 @@ export function UniversityProfileContent({
               </div>
             )}
           </CollapsibleCardSection>
+
+          {/* 3 — Account Holder (not part of MOA setup — governs only the
+              manual invite email's sign-off, so it's kept off the setup
+              wizard entirely and only shown on the regular profile page). */}
+          {!isSetupMode && (
+            <CollapsibleCardSection
+              value="accountHolder"
+              trigger={
+                <CollapsibleCardSectionTitle
+                  icon={Mail}
+                  title="Account Holder"
+                />
+              }
+              contentClassName="space-y-4 px-5 pb-5"
+            >
+              <p className="text-muted-foreground text-xs">
+                Used to sign off invite emails sent to companies — this is
+                whoever&apos;s actually sending the email, separate from the MOA
+                representative above.
+              </p>
+              {textField("accountHolder", "account_holder_name", "Name")}
+              {textField("accountHolder", "account_holder_title", "Title")}
+            </CollapsibleCardSection>
+          )}
         </CollapsibleCardGroup>
 
         {isSetupMode && editing && (
