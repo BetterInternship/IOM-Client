@@ -1969,12 +1969,28 @@ export const companyControllerRequestMoa = (
   const formData = new FormData();
   formData.append(`universityId`, companyControllerRequestMoaBody.universityId);
   formData.append(`templateId`, companyControllerRequestMoaBody.templateId);
-  formData.append(`repName`, companyControllerRequestMoaBody.repName);
-  formData.append(`repTitle`, companyControllerRequestMoaBody.repTitle);
+  if (companyControllerRequestMoaBody.repName !== undefined) {
+    formData.append(`repName`, companyControllerRequestMoaBody.repName);
+  }
+  if (companyControllerRequestMoaBody.repTitle !== undefined) {
+    formData.append(`repTitle`, companyControllerRequestMoaBody.repTitle);
+  }
   if (companyControllerRequestMoaBody.repSignatureText !== undefined) {
     formData.append(
       `repSignatureText`,
       companyControllerRequestMoaBody.repSignatureText,
+    );
+  }
+  if (companyControllerRequestMoaBody.rep2Name !== undefined) {
+    formData.append(`rep2Name`, companyControllerRequestMoaBody.rep2Name);
+  }
+  if (companyControllerRequestMoaBody.rep2Title !== undefined) {
+    formData.append(`rep2Title`, companyControllerRequestMoaBody.rep2Title);
+  }
+  if (companyControllerRequestMoaBody.rep2SignatureText !== undefined) {
+    formData.append(
+      `rep2SignatureText`,
+      companyControllerRequestMoaBody.rep2SignatureText,
     );
   }
   if (companyControllerRequestMoaBody.invite_id !== undefined) {
@@ -1982,6 +1998,9 @@ export const companyControllerRequestMoa = (
   }
   if (companyControllerRequestMoaBody.signature !== undefined) {
     formData.append(`signature`, companyControllerRequestMoaBody.signature);
+  }
+  if (companyControllerRequestMoaBody.signature2 !== undefined) {
+    formData.append(`signature2`, companyControllerRequestMoaBody.signature2);
   }
 
   return preconfiguredAxiosFunction<CompanyRequestMoaResponse>({
@@ -2983,12 +3002,31 @@ export const companyControllerCreateQueuedMoa = (
     `templateId`,
     companyControllerCreateQueuedMoaBody.templateId,
   );
-  formData.append(`repName`, companyControllerCreateQueuedMoaBody.repName);
-  formData.append(`repTitle`, companyControllerCreateQueuedMoaBody.repTitle);
+  if (companyControllerCreateQueuedMoaBody.repName !== undefined) {
+    formData.append(`repName`, companyControllerCreateQueuedMoaBody.repName);
+  }
+  if (companyControllerCreateQueuedMoaBody.repTitle !== undefined) {
+    formData.append(`repTitle`, companyControllerCreateQueuedMoaBody.repTitle);
+  }
   if (companyControllerCreateQueuedMoaBody.repSignatureText !== undefined) {
     formData.append(
       `repSignatureText`,
       companyControllerCreateQueuedMoaBody.repSignatureText,
+    );
+  }
+  if (companyControllerCreateQueuedMoaBody.rep2Name !== undefined) {
+    formData.append(`rep2Name`, companyControllerCreateQueuedMoaBody.rep2Name);
+  }
+  if (companyControllerCreateQueuedMoaBody.rep2Title !== undefined) {
+    formData.append(
+      `rep2Title`,
+      companyControllerCreateQueuedMoaBody.rep2Title,
+    );
+  }
+  if (companyControllerCreateQueuedMoaBody.rep2SignatureText !== undefined) {
+    formData.append(
+      `rep2SignatureText`,
+      companyControllerCreateQueuedMoaBody.rep2SignatureText,
     );
   }
   if (companyControllerCreateQueuedMoaBody.invite_id !== undefined) {
@@ -3001,6 +3039,12 @@ export const companyControllerCreateQueuedMoa = (
     formData.append(
       `signature`,
       companyControllerCreateQueuedMoaBody.signature,
+    );
+  }
+  if (companyControllerCreateQueuedMoaBody.signature2 !== undefined) {
+    formData.append(
+      `signature2`,
+      companyControllerCreateQueuedMoaBody.signature2,
     );
   }
 

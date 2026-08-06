@@ -250,6 +250,7 @@ export * from "./universityRenewalListItemDtoStatus";
 export * from "./universityRenewalsResponse";
 export * from "./universityResetDto";
 export * from "./universitySendInviteResponse";
+export * from "./universitySignatoryDto";
 export * from "./universityStaffAccountDto";
 export * from "./universityStaffAccountDtoRole";
 export * from "./universityTemplateDto";

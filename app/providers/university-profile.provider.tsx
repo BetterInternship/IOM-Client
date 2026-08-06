@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useUniversityControllerMe } from "@/app/api";
+import { universitySignatoriesComplete } from "@/lib/profile-validation";
 
 interface UniversityAccount {
   id: string;
@@ -15,12 +16,19 @@ interface UniversityAccount {
     registered_name: string;
     logo_url: string | null;
     address: string | null;
-    rep_name: string | null;
-    rep_title: string | null;
-    rep_signature_url: string | null;
+    signatories: UniversitySignatoryFields[] | null;
     account_holder_name: string | null;
     account_holder_title: string | null;
   };
+}
+interface UniversitySignatoryFields {
+  id: string;
+  name: string;
+  title: string;
+  signatureUrl?: string;
+  signatureText?: string;
+  signatureType?: string;
+  email?: string;
 }
 
 interface UniversityProfileCtx {
@@ -40,20 +48,19 @@ const UniversityProfileContext = createContext<UniversityProfileCtx>({
 type UniversitySetupFields = {
   registered_name: string | null | undefined;
   address: string | null | undefined;
-  rep_name: string | null | undefined;
-  rep_title: string | null | undefined;
-  rep_signature_url: string | null | undefined;
+  signatories: UniversitySignatoryFields[] | null | undefined;
 };
 
 export function isUniversitySetupComplete(
   university: UniversitySetupFields | null | undefined,
 ) {
+  const signatoriesComplete = universitySignatoriesComplete(
+    university?.signatories,
+  );
   return Boolean(
     university?.registered_name?.trim() &&
     university.address?.trim() &&
-    university.rep_name?.trim() &&
-    university.rep_title?.trim() &&
-    university.rep_signature_url,
+    signatoriesComplete,
   );
 }
 

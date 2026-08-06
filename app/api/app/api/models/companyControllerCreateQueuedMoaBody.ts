@@ -9,9 +9,13 @@
 export type CompanyControllerCreateQueuedMoaBody = {
   universityId: string;
   templateId: string;
-  repName: string;
-  repTitle: string;
+  repName?: string;
+  repTitle?: string;
   repSignatureText?: string;
+  rep2Name?: string;
+  rep2Title?: string;
+  rep2SignatureText?: string;
   invite_id?: string;
   signature?: Blob;
+  signature2?: Blob;
 };

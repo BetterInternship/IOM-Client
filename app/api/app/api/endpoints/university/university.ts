@@ -751,6 +751,7 @@ export const useUniversityControllerUploadLogo = <
   return useMutation(mutationOptions, queryClient);
 };
 export const universityControllerUploadSignature = (
+  signatoryId: string | undefined | null,
   universityControllerUploadSignatureBody: UniversityControllerUploadSignatureBody,
   signal?: AbortSignal,
 ) => {
@@ -758,7 +759,7 @@ export const universityControllerUploadSignature = (
   formData.append(`file`, universityControllerUploadSignatureBody.file);
 
   return preconfiguredAxiosFunction<UniversityUploadSignatureResponse>({
-    url: `/api/university/profile/signature`,
+    url: `/api/university/profile/signatories/${signatoryId}/signature`,
     method: "POST",
     headers: { "Content-Type": "multipart/form-data" },
     data: formData,
@@ -773,13 +774,19 @@ export const getUniversityControllerUploadSignatureMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof universityControllerUploadSignature>>,
     TError,
-    { data: UniversityControllerUploadSignatureBody },
+    {
+      signatoryId: string | undefined | null;
+      data: UniversityControllerUploadSignatureBody;
+    },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof universityControllerUploadSignature>>,
   TError,
-  { data: UniversityControllerUploadSignatureBody },
+  {
+    signatoryId: string | undefined | null;
+    data: UniversityControllerUploadSignatureBody;
+  },
   TContext
 > => {
   const mutationKey = ["universityControllerUploadSignature"];
@@ -793,11 +800,14 @@ export const getUniversityControllerUploadSignatureMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof universityControllerUploadSignature>>,
-    { data: UniversityControllerUploadSignatureBody }
+    {
+      signatoryId: string | undefined | null;
+      data: UniversityControllerUploadSignatureBody;
+    }
   > = (props) => {
-    const { data } = props ?? {};
+    const { signatoryId, data } = props ?? {};
 
-    return universityControllerUploadSignature(data);
+    return universityControllerUploadSignature(signatoryId, data);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -818,7 +828,10 @@ export const useUniversityControllerUploadSignature = <
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof universityControllerUploadSignature>>,
       TError,
-      { data: UniversityControllerUploadSignatureBody },
+      {
+        signatoryId: string | undefined | null;
+        data: UniversityControllerUploadSignatureBody;
+      },
       TContext
     >;
   },
@@ -826,7 +839,10 @@ export const useUniversityControllerUploadSignature = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof universityControllerUploadSignature>>,
   TError,
-  { data: UniversityControllerUploadSignatureBody },
+  {
+    signatoryId: string | undefined | null;
+    data: UniversityControllerUploadSignatureBody;
+  },
   TContext
 > => {
   const mutationOptions =
