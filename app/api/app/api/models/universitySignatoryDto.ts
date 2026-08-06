@@ -11,4 +11,6 @@ export interface UniversitySignatoryDto {
   name: string;
   title: string;
   signatureUrl?: string;
+  signatureText?: string;
+  signatureType?: string;
 }

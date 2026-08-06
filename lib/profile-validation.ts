@@ -38,6 +38,8 @@ const signatoryEntrySchema = z.object({
   name: z.string().trim().min(1, "Signatory name is required."),
   title: z.string().trim().min(1, "Signatory title is required."),
   signatureUrl: z.string().optional(),
+  signatureText: z.string().optional(),
+  signatureType: z.enum(["text", "image"]).optional(),
 });
 
 export const universityProfileSchema = z.object({
@@ -68,12 +70,19 @@ export const universityProfileSchema = z.object({
 /**
  * Completeness predicate shared by the university profile provider and the
  * profile/setup UI: 2-5 signatories, each with an id, nonblank name/title, and
- * a signature URL. Live form editing may still accept pending uploads (see the
- * setup page's `signatoriesComplete`), but this is the persisted-data gate.
+ * a signature (image URL or typed text). Live form editing may still accept
+ * pending uploads (see the setup page's `signatoriesComplete`), but this is the
+ * persisted-data gate.
  */
 export function universitySignatoriesComplete(
   signatories:
-    | { id?: string; name?: string; title?: string; signatureUrl?: string }[]
+    | {
+        id?: string;
+        name?: string;
+        title?: string;
+        signatureUrl?: string;
+        signatureText?: string;
+      }[]
     | null
     | undefined,
 ): boolean {
@@ -87,7 +96,7 @@ export function universitySignatoriesComplete(
         !!s.id &&
         !!s.name?.trim() &&
         !!s.title?.trim() &&
-        !!s.signatureUrl?.trim(),
+        (!!s.signatureUrl?.trim() || !!s.signatureText?.trim()),
     )
   );
 }

@@ -153,9 +153,18 @@ export function UniversityProfileContent({
         name: s.name,
         title: s.title,
         ...(s.signatureUrl ? { signatureUrl: s.signatureUrl } : {}),
+        ...(s.signatureText?.trim()
+          ? {
+              signatureText: s.signatureText.trim(),
+              signatureType: "text" as const,
+            }
+          : {}),
       }));
       const missingSignature = signatories.find(
-        (s) => !s.signatureUrl?.trim() && !pendingSigs[s.id],
+        (s) =>
+          !s.signatureUrl?.trim() &&
+          !s.signatureText?.trim() &&
+          !pendingSigs[s.id],
       );
       if (missingSignature) {
         throw new Error(
@@ -561,6 +570,10 @@ export function UniversityProfileContent({
                         alt="Signature"
                         className="h-10 max-w-24 object-contain"
                       />
+                    ) : s.signatureText?.trim() ? (
+                      <span className="text-muted-foreground max-w-24 truncate font-serif text-sm italic">
+                        {s.signatureText}
+                      </span>
                     ) : (
                       <span className="text-muted-foreground text-xs">
                         No signature
@@ -575,7 +588,9 @@ export function UniversityProfileContent({
                   const isComplete =
                     field.name.trim() &&
                     field.title.trim() &&
-                    (field.signatureUrl?.trim() || !!pendingSigs[field.id]);
+                    (field.signatureUrl?.trim() ||
+                      !!pendingSigs[field.id] ||
+                      !!field.signatureText?.trim());
                   return (
                     <div
                       key={field.formRowId}
@@ -653,26 +668,53 @@ export function UniversityProfileContent({
                         </div>
                       </div>
 
-                      {field.signatureUrl && !pendingSigs[field.id] && (
-                        <div className="rounded-[0.33em] border border-blue-100 bg-blue-50/40 p-3">
-                          <p className="text-muted-foreground mb-1 text-xs font-medium">
-                            Current signature
-                          </p>
-                          <img
-                            src={field.signatureUrl}
-                            alt="Signature"
-                            className="h-14 max-w-xs object-contain"
-                          />
-                        </div>
-                      )}
+                      {!pendingSigs[field.id] &&
+                        (field.signatureUrl?.trim() ||
+                          field.signatureText?.trim()) && (
+                          <div className="rounded-[0.33em] border border-blue-100 bg-blue-50/40 p-3">
+                            <p className="text-muted-foreground mb-1 text-xs font-medium">
+                              Current signature
+                            </p>
+                            {field.signatureUrl?.trim() ? (
+                              <img
+                                src={field.signatureUrl}
+                                alt="Signature"
+                                className="h-14 max-w-xs object-contain"
+                              />
+                            ) : (
+                              <p className="font-serif text-lg italic text-gray-900">
+                                {field.signatureText}
+                              </p>
+                            )}
+                          </div>
+                        )}
 
                       <MoaSignatureInput
-                        mode={sigModes[field.id] ?? "upload"}
-                        onModeChange={(m) =>
-                          setSigModes((prev) => ({ ...prev, [field.id]: m }))
+                        mode={
+                          sigModes[field.id] ??
+                          (field.signatureText?.trim() ? "type" : "upload")
                         }
-                        text=""
-                        onTextChange={() => undefined}
+                        onModeChange={(m) => {
+                          setSigModes((prev) => ({
+                            ...prev,
+                            [field.id]: m,
+                          }));
+                          if (m === "type") {
+                            form.setValue(
+                              `signatories.${index}.signatureUrl`,
+                              "",
+                            );
+                          } else {
+                            form.setValue(
+                              `signatories.${index}.signatureText`,
+                              "",
+                            );
+                          }
+                        }}
+                        text={field.signatureText ?? ""}
+                        onTextChange={(t) =>
+                          form.setValue(`signatories.${index}.signatureText`, t)
+                        }
                         file={pendingSigs[field.id] ?? null}
                         onFileChange={(file) =>
                           setPendingSigs((prev) => {
@@ -682,7 +724,7 @@ export function UniversityProfileContent({
                             return next;
                           })
                         }
-                        modes={["upload", "draw"]}
+                        modes={["type", "upload", "draw"]}
                       />
 
                       {isComplete && (

@@ -393,6 +393,7 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
               onDropField={handleDropField}
               onDropSlot={handleDropSlot}
               onChange={updatePlacement}
+              onDelete={deletePlacement}
             />
           ) : null}
         </div>

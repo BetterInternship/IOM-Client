@@ -28,6 +28,8 @@ interface UniversitySignatoryFields {
   name: string;
   title: string;
   signatureUrl?: string;
+  signatureText?: string;
+  signatureType?: string;
 }
 
 interface UniversityProfileCtx {

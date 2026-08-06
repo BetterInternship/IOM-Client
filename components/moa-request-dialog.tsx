@@ -492,38 +492,47 @@ export function RequestDialog({
       </div>
     ) : (
       <div className="space-y-4">
-        {signerRequirements.signer1.name && (
-          <div className="space-y-1.5">
-            <Label htmlFor="rep-name">Representative name</Label>
-            <Input
-              id="rep-name"
-              value={repName}
-              onChange={(e) => setRepName(e.target.value)}
-              placeholder="Full name"
-            />
-          </div>
-        )}
-        {signerRequirements.signer1.title && (
-          <div className="space-y-1.5">
-            <Label htmlFor="rep-title">Representative title</Label>
-            <Input
-              id="rep-title"
-              value={repTitle}
-              onChange={(e) => setRepTitle(e.target.value)}
-              placeholder="e.g. CEO, HR Manager"
-            />
-          </div>
-        )}
+        {(signerRequirements.signer1.name ||
+          signerRequirements.signer1.title ||
+          signerRequirements.signer1.signature) && (
+          <div className="space-y-3 rounded-[0.33em] border border-gray-200 bg-gray-50/60 p-3">
+            <p className="text-sm font-semibold text-gray-900">
+              Representative 1
+            </p>
+            {signerRequirements.signer1.name && (
+              <div className="space-y-1.5">
+                <Label htmlFor="rep-name">Representative name</Label>
+                <Input
+                  id="rep-name"
+                  value={repName}
+                  onChange={(e) => setRepName(e.target.value)}
+                  placeholder="Full name"
+                />
+              </div>
+            )}
+            {signerRequirements.signer1.title && (
+              <div className="space-y-1.5">
+                <Label htmlFor="rep-title">Representative title</Label>
+                <Input
+                  id="rep-title"
+                  value={repTitle}
+                  onChange={(e) => setRepTitle(e.target.value)}
+                  placeholder="e.g. CEO, HR Manager"
+                />
+              </div>
+            )}
 
-        {signerRequirements.signer1.signature && (
-          <MoaSignatureInput
-            mode={sigMode}
-            onModeChange={setSigMode}
-            text={sigText}
-            onTextChange={setSigText}
-            file={sigFile}
-            onFileChange={setSigFile}
-          />
+            {signerRequirements.signer1.signature && (
+              <MoaSignatureInput
+                mode={sigMode}
+                onModeChange={setSigMode}
+                text={sigText}
+                onTextChange={setSigText}
+                file={sigFile}
+                onFileChange={setSigFile}
+              />
+            )}
+          </div>
         )}
 
         {signer2Required && (
