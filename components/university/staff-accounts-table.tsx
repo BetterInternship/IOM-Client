@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/resource-table";
 import { useResourceTable } from "@/components/ui/use-resource-table";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -40,6 +41,15 @@ function canActOn(viewerIsSuperadmin: boolean, targetRole: StaffAccount["role"])
   if (targetRole === "superadmin") return false;
   if (!viewerIsSuperadmin && targetRole === "admin") return false;
   return true;
+}
+
+function RoleTag({ role }: { role: StaffAccount["role"] }) {
+  if (role === "staff") return null;
+  return (
+    <Badge type={role === "superadmin" ? "primary" : "default"}>
+      {ROLE_LABEL[role]}
+    </Badge>
+  );
 }
 
 function AccountStatus({ account }: { account: StaffAccount }) {
@@ -231,8 +241,11 @@ export function StaffAccountsTable({
       width: "w-[20%]",
       getSortValue: (account) => account.display_name,
       render: (account) => (
-        <span className="font-medium text-gray-900">
-          {account.display_name}
+        <span className="flex items-center gap-2">
+          <span className="font-medium text-gray-900">
+            {account.display_name}
+          </span>
+          <RoleTag role={account.role} />
         </span>
       ),
     },
@@ -314,9 +327,12 @@ export function StaffAccountsTable({
         <article className="px-4 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-gray-900">
-                {account.display_name}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="truncate text-sm font-semibold text-gray-900">
+                  {account.display_name}
+                </p>
+                <RoleTag role={account.role} />
+              </div>
               <p className="text-muted-foreground mt-1 break-all text-sm">
                 {account.email}
               </p>
