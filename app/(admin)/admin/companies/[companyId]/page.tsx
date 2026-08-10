@@ -21,7 +21,7 @@ import { PageContainer } from "@/components/page-header";
 import { CompanyLogo } from "@/components/company-logo";
 import { DocumentPreviewPane } from "@/components/document-preview-pane";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {

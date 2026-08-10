@@ -8,7 +8,7 @@ import {
 } from "@/components/university/bulk-invite-sheet";
 import type { BulkInviteAction } from "@/components/university/university-partners-table";
 import { TemplatePreviewContent } from "@/components/moa-request-dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,

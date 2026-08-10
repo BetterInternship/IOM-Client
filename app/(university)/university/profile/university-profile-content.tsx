@@ -21,7 +21,7 @@ import { PageContainer, PageHeader } from "@/components/page-header";
 import { SignatoryCard } from "@/components/signatory-card";
 import { SignatoryEmailInput } from "@/components/signatory-email-input";
 import { toastPresets } from "@/components/sonner-toaster";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -281,8 +281,7 @@ export function UniversityProfileContent({
   const liveValues = form.watch();
   const formIsValid = universityProfileSchema.safeParse(liveValues).success;
   const hasChanges =
-    seedRef.current !== null &&
-    JSON.stringify(liveValues) !== seedRef.current;
+    seedRef.current !== null && JSON.stringify(liveValues) !== seedRef.current;
   const institutionComplete = isSetupMode
     ? Boolean(liveValues.registered_name.trim() && liveValues.address.trim())
     : persistedInstitutionComplete;
@@ -706,7 +705,9 @@ export function UniversityProfileContent({
                       <MoaSignatureInput
                         mode={
                           sigModes[field.id] ??
-                          (liveValues.signatories?.[index]?.signatureText?.trim()
+                          (liveValues.signatories?.[
+                            index
+                          ]?.signatureText?.trim()
                             ? "type"
                             : "upload")
                         }
@@ -729,11 +730,17 @@ export function UniversityProfileContent({
                             );
                           }
                         }}
-                        text={liveValues.signatories?.[index]?.signatureText ?? ""}
+                        text={
+                          liveValues.signatories?.[index]?.signatureText ?? ""
+                        }
                         onTextChange={(t) =>
-                          form.setValue(`signatories.${index}.signatureText`, t, {
-                            shouldDirty: true,
-                          })
+                          form.setValue(
+                            `signatories.${index}.signatureText`,
+                            t,
+                            {
+                              shouldDirty: true,
+                            },
+                          )
                         }
                         file={pendingSigs[field.id] ?? null}
                         onFileChange={(file) =>

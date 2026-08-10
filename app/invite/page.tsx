@@ -22,19 +22,17 @@ import type { ApiError } from "@/app/api/preconfig.axios";
 import { getCareerHireUrl } from "@/components/career-listing-cta";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { toastPresets } from "@/components/sonner-toaster";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { formatDateWithoutTime } from "@/lib/utils";
 
 const CAREER_UNREACHABLE_MESSAGE =
-  "Your account is ready, but we couldn't reach BetterInternship just now — use the \"Post a listing\" button on your dashboard to continue.";
+  'Your account is ready, but we couldn\'t reach BetterInternship just now — use the "Post a listing" button on your dashboard to continue.';
 
 interface InviteData {
   email: string;
   company_name: string | null;
   email_status:
-    | "not_registered"
-    | "registered_unverified"
-    | "registered_verified";
+    "not_registered" | "registered_unverified" | "registered_verified";
   university: {
     id: string;
     registered_name: string;

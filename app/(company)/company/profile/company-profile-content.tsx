@@ -25,7 +25,7 @@ import {
   type CompanyProfileDraft,
 } from "@/lib/profile-validation";
 import { PageContainer } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { FileDropTarget } from "@/components/ui/use-file-drop";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

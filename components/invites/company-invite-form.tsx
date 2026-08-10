@@ -25,7 +25,7 @@ import type { UniversityRegisteredCompanyDto } from "@/app/api/app/api/models";
 import { useModal } from "@/app/providers/modal-provider";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Autocomplete } from "@/components/ui/autocomplete";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -363,7 +363,8 @@ export function CompanyInviteForm({
             universityName,
             companyName: invitedName ?? null,
             accountHolderName: account?.university.account_holder_name ?? null,
-            accountHolderTitle: account?.university.account_holder_title ?? null,
+            accountHolderTitle:
+              account?.university.account_holder_title ?? null,
             personalMessage: message.trim() || null,
             inviteLink: res.inviteLink,
           }),
@@ -739,7 +740,9 @@ export function CompanyInviteForm({
             ) : null}
 
             <div className="space-y-2">
-              <Label htmlFor="invite-message">Your message to the company</Label>
+              <Label htmlFor="invite-message">
+                Your message to the company
+              </Label>
               {/* Joined preview — the greeting and closing lines are fixed
                   copy the coordinator can't edit, shown here so the
                   textarea's contents aren't a surprise once the email is
@@ -766,7 +769,8 @@ export function CompanyInviteForm({
                 />
                 <div className="border-t border-gray-200 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-400">
                   <p className="whitespace-pre-line">
-                    {buildInviteClosingIntro(kind)} <span className="italic">(invite link)</span>
+                    {buildInviteClosingIntro(kind)}{" "}
+                    <span className="italic">(invite link)</span>
                   </p>
                   {!!account?.university.account_holder_name &&
                     !!account?.university.account_holder_title && (

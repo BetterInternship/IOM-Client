@@ -11,7 +11,7 @@ import {
   useResourceTable,
   type ResourceFilterValue,
 } from "@/components/ui/use-resource-table";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";

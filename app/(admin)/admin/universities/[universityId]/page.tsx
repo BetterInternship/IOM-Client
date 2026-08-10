@@ -25,7 +25,7 @@ import {
   useAdminControllerListUniversityLegacyCompanies,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Card } from "@/components/ui/card";
 import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { DetailField } from "@/components/ui/detail-field";

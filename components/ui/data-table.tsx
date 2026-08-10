@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   DropdownMenu,
@@ -46,7 +46,11 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 /**
  * Reusable table shell used by registry screens.
@@ -141,7 +145,8 @@ function TruncatedCellValue({
 function getCellTooltipText(value: unknown) {
   if (value == null) return undefined;
   if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "number" || typeof value === "boolean")
+    return String(value);
   return undefined;
 }
 
@@ -185,25 +190,34 @@ export function DataTable<TData, TValue>({
   onRowClick,
   getRowClassName,
 }: DataTableProps<TData, TValue>) {
-  const columnSizingStorageKey = React.useMemo(() => `data-table:${id}:column-sizing`, [id]);
+  const columnSizingStorageKey = React.useMemo(
+    () => `data-table:${id}:column-sizing`,
+    [id],
+  );
 
   const [sorting, setSorting] = React.useState<SortingState>(() => {
     if (!sortingStorageKey) return initialSorting ?? [];
 
     return readStoredState(sortingStorageKey, initialSorting ?? []);
   });
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
-  const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(() =>
-    readStoredState(columnSizingStorageKey, {})
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    [],
   );
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
-  const [rowSelection, setRowSelection] = React.useState({} as Record<string, boolean>);
+  const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>(
+    () => readStoredState(columnSizingStorageKey, {}),
+  );
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState(
+    {} as Record<string, boolean>,
+  );
   const [globalFilter, setGlobalFilter] = React.useState("");
 
   const handleSortingChange = React.useCallback(
     (updater: Updater<SortingState>) => {
       setSorting((currentSorting) => {
-        const nextSorting = typeof updater === "function" ? updater(currentSorting) : updater;
+        const nextSorting =
+          typeof updater === "function" ? updater(currentSorting) : updater;
 
         if (sortingStorageKey) {
           writeStoredState(sortingStorageKey, nextSorting);
@@ -212,18 +226,19 @@ export function DataTable<TData, TValue>({
         return nextSorting;
       });
     },
-    [sortingStorageKey]
+    [sortingStorageKey],
   );
 
   const handleColumnSizingChange = React.useCallback(
     (updater: Updater<ColumnSizingState>) => {
       setColumnSizing((currentSizing) => {
-        const nextSizing = typeof updater === "function" ? updater(currentSizing) : updater;
+        const nextSizing =
+          typeof updater === "function" ? updater(currentSizing) : updater;
         writeStoredState(columnSizingStorageKey, nextSizing);
         return nextSizing;
       });
     },
-    [columnSizingStorageKey]
+    [columnSizingStorageKey],
   );
 
   React.useEffect(() => {
@@ -280,7 +295,9 @@ export function DataTable<TData, TValue>({
   }, [searchKey]);
 
   // Allow user to pick a single column to search. Default to first provided searchKey
-  const [selectedSearchKey, setSelectedSearchKey] = React.useState<string>(searchKeys[0] ?? "");
+  const [selectedSearchKey, setSelectedSearchKey] = React.useState<string>(
+    searchKeys[0] ?? "",
+  );
 
   React.useEffect(() => {
     if (searchKeys.length) {
@@ -289,7 +306,9 @@ export function DataTable<TData, TValue>({
     }
 
     // If no searchKey prop provided, default to first filterable column when table is ready
-    const first = table.getAllLeafColumns().find((c) => c.getCanFilter() !== false);
+    const first = table
+      .getAllLeafColumns()
+      .find((c) => c.getCanFilter() !== false);
     if (first) setSelectedSearchKey(first.id);
   }, [JSON.stringify(searchKeys), table]);
 
@@ -300,7 +319,9 @@ export function DataTable<TData, TValue>({
   const filteredRowCount = table.getFilteredRowModel().rows.length;
   // Keep index column width in px so tableWidthPx can be an exact sum — no
   // leftover space for table-fixed to redistribute into this column.
-  const INDEX_COL_W = showRowNumbers ? Math.max(52, String(Math.max(filteredRowCount, 1)).length * 10 + 32) : 0;
+  const INDEX_COL_W = showRowNumbers
+    ? Math.max(52, String(Math.max(filteredRowCount, 1)).length * 10 + 32)
+    : 0;
   const indexColumnStyle: React.CSSProperties = {
     width: INDEX_COL_W,
     minWidth: INDEX_COL_W,
@@ -308,10 +329,15 @@ export function DataTable<TData, TValue>({
   };
   const extraWidthPx = (enableRowSelection ? 42 : 0) + INDEX_COL_W;
   const tableMinWidthPx =
-    table.getVisibleLeafColumns().reduce((sum, col) => sum + (col.columnDef.minSize ?? 80), 0) +
+    table
+      .getVisibleLeafColumns()
+      .reduce((sum, col) => sum + (col.columnDef.minSize ?? 80), 0) +
     extraWidthPx;
   // Exact sum of all columns — avoids distributing leftover space to the index column.
-  const tableWidthPx = Math.max(tableMinWidthPx, table.getTotalSize() + extraWidthPx);
+  const tableWidthPx = Math.max(
+    tableMinWidthPx,
+    table.getTotalSize() + extraWidthPx,
+  );
   const { pageIndex, pageSize } = table.getState().pagination;
 
   return (
@@ -338,7 +364,9 @@ export function DataTable<TData, TValue>({
                       key={column.id}
                       className="capitalize"
                       checked={column.getIsVisible()}
-                      onCheckedChange={(checked) => column.toggleVisibility(!!checked)}
+                      onCheckedChange={(checked) =>
+                        column.toggleVisibility(!!checked)
+                      }
                     >
                       {String(column.columnDef.header ?? column.id)}
                     </DropdownMenuCheckboxItem>
@@ -363,254 +391,282 @@ export function DataTable<TData, TValue>({
 
       {/* Table + Pagination */}
       <div className="flex flex-col">
-      <div className="min-h-0 flex-1 rounded-[0.1em] border border-gray-200 [&_[data-slot=table-container]]:h-full [&_[data-slot=table-container]]:overflow-auto">
-        {showRowNumbers && (
-          <>
-            <div
-              className="pointer-events-none absolute top-0 left-0 z-[25] h-10 w-16 bg-gradient-to-r from-gray-200 to-transparent"
-            />
-            <div
-              className="pointer-events-none absolute top-10 bottom-0 z-[5] w-px bg-gray-200"
-              style={{ left: INDEX_COL_W - 1 }}
-            />
-          </>
-        )}
-        <Table
-          className="table-fixed"
-          style={{ minWidth: `${tableMinWidthPx}px`, width: `max(100%, ${tableWidthPx}px)` }}
-        >
-          <colgroup>
-            {showRowNumbers && <col style={indexColumnStyle} />}
-            {enableRowSelection && <col style={{ width: 42, minWidth: 42, maxWidth: 42 }} />}
-            {table.getVisibleLeafColumns().map((column) => (
-              <col key={column.id} style={{ width: column.getSize() }} />
-            ))}
-            {/* filler col: absorbs leftover space so the index column stays fixed */}
-            <col />
-          </colgroup>
-          <TableHeader className="[&_tr]:border-b-0">
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent">
-                {showRowNumbers && (
-                  <TableHead
-                    className="sticky top-0 left-0 z-30 bg-gray-100 pr-2 text-right text-gray-600 shadow-[inset_-2px_0_0_theme(colors.gray.300),inset_0_-2px_0_theme(colors.gray.300)]"
-                    style={indexColumnStyle}
-                  ></TableHead>
-                )}
-                {enableRowSelection && (
-                  <TableHead className="sticky top-0 z-20 w-[42px] bg-gray-100 shadow-[inset_0_-2px_0_theme(colors.gray.300)]">
-                    <Checkbox
-                      checked={
-                        table.getIsAllPageRowsSelected() ||
-                        (table.getIsSomePageRowsSelected() && "indeterminate")
-                      }
-                      onCheckedChange={(val) => table.toggleAllPageRowsSelected(!!val)}
-                      aria-label="Select all"
-                    />
-                  </TableHead>
-                )}
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className={cn(
-                      "group font-heading sticky top-0 z-20 max-w-0 bg-gray-100 tracking-tight text-gray-600 shadow-[inset_0_-2px_0_theme(colors.gray.300)] transition-colors duration-300",
-                      header.column.getCanSort() && "cursor-pointer select-none hover:bg-gray-200",
-                      header.column.getIsSorted() && "bg-gray-50 hover:bg-gray-200"
-                    )}
-                    style={{ width: header.getSize() }}
-                  >
-                    {header.isPlaceholder ? null : (
-                      <div
-                        className="flex min-w-0 items-center justify-between gap-2"
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        <div className="flex min-w-0 items-center gap-1">
-                          <span
-                            className={cn(
-                              "font-semibold min-w-0 truncate rounded px-1.5 py-0.5 transition-colors duration-300",
-                              header.column.getIsSorted() && "text-primary"
-                            )}
-                          >
-                            {flexRender(header.column.columnDef.header, header.getContext())}
-                          </span>
-                          {header.column.getCanSort() && !header.column.getIsSorted() && (
-                            <ChevronsUpDown className="text-muted-foreground/40 mt-0.5 h-4 w-4 shrink-0" />
-                          )}
-                          {header.column.getIsSorted() === "asc" && (
-                            <ChevronUp className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
-                          )}
-                          {header.column.getIsSorted() === "desc" && (
-                            <ChevronDown className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
-                          )}
-                        </div>
-                        <span
-                          className={cn(
-                            "bg-primary/85 mr-2 h-3 w-3 shrink-0 rounded-full transition-all duration-300 ease-out",
-                            header.column.getIsSorted()
-                              ? "scale-100 opacity-100"
-                              : "scale-50 opacity-0"
-                          )}
-                          aria-hidden="true"
-                        />
-                      </div>
-                    )}
-                    {header.column.getCanResize() && (
-                      <div
-                        className="absolute top-0 right-0 z-30 h-full w-3 translate-x-1/2 cursor-col-resize touch-none select-none"
-                        onClick={(event) => event.stopPropagation()}
-                        onMouseDown={(event) => {
-                          event.stopPropagation();
-                          header.getResizeHandler()(event);
-                        }}
-                        onTouchStart={(event) => {
-                          event.stopPropagation();
-                          header.getResizeHandler()(event);
-                        }}
-                        role="separator"
-                        aria-orientation="vertical"
-                        aria-label={`Resize ${String(header.column.columnDef.header ?? header.column.id)} column`}
-                      >
-                        <span
-                          className={cn(
-                            "bg-primary/70 absolute top-2 bottom-2 left-1/2 w-0.5 -translate-x-1/2 rounded-full opacity-0 transition-opacity group-hover:opacity-60 hover:opacity-100",
-                            header.column.getIsResizing() && "opacity-100"
-                          )}
-                        />
-                      </div>
-                    )}
-                  </TableHead>
-                ))}
-                <TableHead className="sticky top-0 z-20 bg-gray-100 shadow-[inset_0_-2px_0_theme(colors.gray.300)]" />
-              </TableRow>
-            ))}
-          </TableHeader>
-
-          <TableBody className="[&_tr:last-child]:!border-b">
-            {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row, rowIndex) => {
-                const rowCustomClass = getRowClassName?.(row.original, rowIndex);
-                const defaultRowBg = rowIndex % 2 === 0 ? "bg-white" : "bg-muted/40";
-                const stickyBg = row.getIsSelected()
-                  ? "bg-muted"
-                  : rowCustomClass
-                    ? rowCustomClass
-                    : rowIndex % 2 === 0
-                      ? "bg-white"
-                      : "bg-gray-50";
-                return (
-                <TableRow
-                  className={cn(
-                    "group hover:bg-primary/10",
-                    rowCustomClass ?? defaultRowBg,
-                    onRowClick && "cursor-pointer"
-                  )}
-                  key={row.id}
-                  data-state={row.getIsSelected() ? "selected" : undefined}
-                  onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-                >
+        <div className="min-h-0 flex-1 rounded-[0.1em] border border-gray-200 [&_[data-slot=table-container]]:h-full [&_[data-slot=table-container]]:overflow-auto">
+          {showRowNumbers && (
+            <>
+              <div className="pointer-events-none absolute top-0 left-0 z-[25] h-10 w-16 bg-gradient-to-r from-gray-200 to-transparent" />
+              <div
+                className="pointer-events-none absolute top-10 bottom-0 z-[5] w-px bg-gray-200"
+                style={{ left: INDEX_COL_W - 1 }}
+              />
+            </>
+          )}
+          <Table
+            className="table-fixed"
+            style={{
+              minWidth: `${tableMinWidthPx}px`,
+              width: `max(100%, ${tableWidthPx}px)`,
+            }}
+          >
+            <colgroup>
+              {showRowNumbers && <col style={indexColumnStyle} />}
+              {enableRowSelection && (
+                <col style={{ width: 42, minWidth: 42, maxWidth: 42 }} />
+              )}
+              {table.getVisibleLeafColumns().map((column) => (
+                <col key={column.id} style={{ width: column.getSize() }} />
+              ))}
+              {/* filler col: absorbs leftover space so the index column stays fixed */}
+              <col />
+            </colgroup>
+            <TableHeader className="[&_tr]:border-b-0">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent">
                   {showRowNumbers && (
-                    <TableCell
-                      className={cn(
-                        "text-muted-foreground sticky left-0 z-10 pr-2 text-right font-medium shadow-[inset_-2px_0_0_theme(colors.gray.200)]",
-                        stickyBg
-                      )}
+                    <TableHead
+                      className="sticky top-0 left-0 z-30 bg-gray-100 pr-2 text-right text-gray-600 shadow-[inset_-2px_0_0_theme(colors.gray.300),inset_0_-2px_0_theme(colors.gray.300)]"
                       style={indexColumnStyle}
-                    >
-                      <span
-                        className="absolute top-1/2 left-1.5 ml-1 h-2.5 w-2.5 -translate-y-1/2 scale-50 rounded-full bg-gray-400 opacity-0 transition-all duration-300 ease-out group-hover:scale-100 group-hover:opacity-100"
-                        aria-hidden="true"
-                      />
-                      <span>{pageIndex * pageSize + rowIndex + 1}</span>
-                    </TableCell>
+                    ></TableHead>
                   )}
                   {enableRowSelection && (
-                    <TableCell className="w-[42px]">
+                    <TableHead className="sticky top-0 z-20 w-[42px] bg-gray-100 shadow-[inset_0_-2px_0_theme(colors.gray.300)]">
                       <Checkbox
-                        checked={row.getIsSelected()}
-                        onCheckedChange={(val) => row.toggleSelected(!!val)}
-                        aria-label="Select row"
+                        checked={
+                          table.getIsAllPageRowsSelected() ||
+                          (table.getIsSomePageRowsSelected() && "indeterminate")
+                        }
+                        onCheckedChange={(val) =>
+                          table.toggleAllPageRowsSelected(!!val)
+                        }
+                        aria-label="Select all"
                       />
-                    </TableCell>
+                    </TableHead>
                   )}
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="max-w-0"
-                      style={{ width: cell.column.getSize() }}
+                  {headerGroup.headers.map((header) => (
+                    <TableHead
+                      key={header.id}
+                      className={cn(
+                        "group font-heading sticky top-0 z-20 max-w-0 bg-gray-100 tracking-tight text-gray-600 shadow-[inset_0_-2px_0_theme(colors.gray.300)] transition-colors duration-300",
+                        header.column.getCanSort() &&
+                          "cursor-pointer select-none hover:bg-gray-200",
+                        header.column.getIsSorted() &&
+                          "bg-gray-50 hover:bg-gray-200",
+                      )}
+                      style={{ width: header.getSize() }}
                     >
-                      <TruncatedCellValue tooltip={getCellTooltipText(cell.getValue())}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TruncatedCellValue>
-                    </TableCell>
+                      {header.isPlaceholder ? null : (
+                        <div
+                          className="flex min-w-0 items-center justify-between gap-2"
+                          onClick={header.column.getToggleSortingHandler()}
+                        >
+                          <div className="flex min-w-0 items-center gap-1">
+                            <span
+                              className={cn(
+                                "font-semibold min-w-0 truncate rounded px-1.5 py-0.5 transition-colors duration-300",
+                                header.column.getIsSorted() && "text-primary",
+                              )}
+                            >
+                              {flexRender(
+                                header.column.columnDef.header,
+                                header.getContext(),
+                              )}
+                            </span>
+                            {header.column.getCanSort() &&
+                              !header.column.getIsSorted() && (
+                                <ChevronsUpDown className="text-muted-foreground/40 mt-0.5 h-4 w-4 shrink-0" />
+                              )}
+                            {header.column.getIsSorted() === "asc" && (
+                              <ChevronUp className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                            )}
+                            {header.column.getIsSorted() === "desc" && (
+                              <ChevronDown className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+                            )}
+                          </div>
+                          <span
+                            className={cn(
+                              "bg-primary/85 mr-2 h-3 w-3 shrink-0 rounded-full transition-all duration-300 ease-out",
+                              header.column.getIsSorted()
+                                ? "scale-100 opacity-100"
+                                : "scale-50 opacity-0",
+                            )}
+                            aria-hidden="true"
+                          />
+                        </div>
+                      )}
+                      {header.column.getCanResize() && (
+                        <div
+                          className="absolute top-0 right-0 z-30 h-full w-3 translate-x-1/2 cursor-col-resize touch-none select-none"
+                          onClick={(event) => event.stopPropagation()}
+                          onMouseDown={(event) => {
+                            event.stopPropagation();
+                            header.getResizeHandler()(event);
+                          }}
+                          onTouchStart={(event) => {
+                            event.stopPropagation();
+                            header.getResizeHandler()(event);
+                          }}
+                          role="separator"
+                          aria-orientation="vertical"
+                          aria-label={`Resize ${String(header.column.columnDef.header ?? header.column.id)} column`}
+                        >
+                          <span
+                            className={cn(
+                              "bg-primary/70 absolute top-2 bottom-2 left-1/2 w-0.5 -translate-x-1/2 rounded-full opacity-0 transition-opacity group-hover:opacity-60 hover:opacity-100",
+                              header.column.getIsResizing() && "opacity-100",
+                            )}
+                          />
+                        </div>
+                      )}
+                    </TableHead>
                   ))}
-                  <TableCell className="p-0" />
+                  <TableHead className="sticky top-0 z-20 bg-gray-100 shadow-[inset_0_-2px_0_theme(colors.gray.300)]" />
                 </TableRow>
-                );
-              })
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={table.getVisibleLeafColumns().length + (enableRowSelection ? 1 : 0) + 2}
-                  className="h-24 px-1.5 text-center"
-                >
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableHeader>
 
-      {/* Pagination */}
-      <div className="z-10 flex shrink-0 flex-col items-center justify-between gap-1 border-t bg-white py-1 sm:flex-row">
-        <div className="text-muted-foreground px-1.5 text-sm">
-          {table.getFilteredRowModel().rows.length}{" "}
-          {table.getFilteredRowModel().rows.length === 1 ? rowLabelSingular : rowLabelPlural}
+            <TableBody className="[&_tr:last-child]:!border-b">
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map((row, rowIndex) => {
+                  const rowCustomClass = getRowClassName?.(
+                    row.original,
+                    rowIndex,
+                  );
+                  const defaultRowBg =
+                    rowIndex % 2 === 0 ? "bg-white" : "bg-muted/40";
+                  const stickyBg = row.getIsSelected()
+                    ? "bg-muted"
+                    : rowCustomClass
+                      ? rowCustomClass
+                      : rowIndex % 2 === 0
+                        ? "bg-white"
+                        : "bg-gray-50";
+                  return (
+                    <TableRow
+                      className={cn(
+                        "group hover:bg-primary/10",
+                        rowCustomClass ?? defaultRowBg,
+                        onRowClick && "cursor-pointer",
+                      )}
+                      key={row.id}
+                      data-state={row.getIsSelected() ? "selected" : undefined}
+                      onClick={
+                        onRowClick ? () => onRowClick(row.original) : undefined
+                      }
+                    >
+                      {showRowNumbers && (
+                        <TableCell
+                          className={cn(
+                            "text-muted-foreground sticky left-0 z-10 pr-2 text-right font-medium shadow-[inset_-2px_0_0_theme(colors.gray.200)]",
+                            stickyBg,
+                          )}
+                          style={indexColumnStyle}
+                        >
+                          <span
+                            className="absolute top-1/2 left-1.5 ml-1 h-2.5 w-2.5 -translate-y-1/2 scale-50 rounded-full bg-gray-400 opacity-0 transition-all duration-300 ease-out group-hover:scale-100 group-hover:opacity-100"
+                            aria-hidden="true"
+                          />
+                          <span>{pageIndex * pageSize + rowIndex + 1}</span>
+                        </TableCell>
+                      )}
+                      {enableRowSelection && (
+                        <TableCell className="w-[42px]">
+                          <Checkbox
+                            checked={row.getIsSelected()}
+                            onCheckedChange={(val) => row.toggleSelected(!!val)}
+                            aria-label="Select row"
+                          />
+                        </TableCell>
+                      )}
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className="max-w-0"
+                          style={{ width: cell.column.getSize() }}
+                        >
+                          <TruncatedCellValue
+                            tooltip={getCellTooltipText(cell.getValue())}
+                          >
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </TruncatedCellValue>
+                        </TableCell>
+                      ))}
+                      <TableCell className="p-0" />
+                    </TableRow>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell
+                    colSpan={
+                      table.getVisibleLeafColumns().length +
+                      (enableRowSelection ? 1 : 0) +
+                      2
+                    }
+                    className="h-24 px-1.5 text-center"
+                  >
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
 
-        {table.getPageCount() > 1 && (
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="px-1 text-sm">
-                Page {table.getState().pagination.pageIndex + 1} {""}
-                of {table.getPageCount()}
-              </span>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
+        {/* Pagination */}
+        <div className="z-10 flex shrink-0 flex-col items-center justify-between gap-1 border-t bg-white py-1 sm:flex-row">
+          <div className="text-muted-foreground px-1.5 text-sm">
+            {table.getFilteredRowModel().rows.length}{" "}
+            {table.getFilteredRowModel().rows.length === 1
+              ? rowLabelSingular
+              : rowLabelPlural}
           </div>
-        )}
-      </div>
+
+          {table.getPageCount() > 1 && (
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => table.setPageIndex(0)}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-1 text-sm">
+                  Page {table.getState().pagination.pageIndex + 1} {""}
+                  of {table.getPageCount()}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                  disabled={!table.getCanNextPage()}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

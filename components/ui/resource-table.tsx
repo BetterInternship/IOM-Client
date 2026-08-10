@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Popover,

@@ -19,7 +19,7 @@ import {
 } from "@/app/api/app/api/endpoints/university/university";
 import type { UniversityBulkInviteResponse } from "@/app/api/app/api/models";
 import { toastPresets } from "@/components/sonner-toaster";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -76,7 +76,9 @@ function IssueList({ title, issues }: { title: string; issues: IssueEcho[] }) {
               key={`${issue.companyId ?? issue.legacyCompanyId ?? index}`}
               className="px-3 py-2 text-sm"
             >
-              <p className="font-medium text-gray-800 uppercase">{issue.displayName}</p>
+              <p className="font-medium text-gray-800 uppercase">
+                {issue.displayName}
+              </p>
               <p className="text-muted-foreground text-xs">{issue.reason}</p>
             </li>
           ))}
@@ -280,9 +282,12 @@ export function BulkInviteSheet({
             <div className="rounded-[0.33em] border border-gray-200 p-3 text-sm text-gray-700">
               {preflightData.collapsed.map((group, index) => (
                 <p key={index} className={cn(index > 0 && "mt-1")}>
-                  <span className="uppercase">{group.targets.map((t) => t.displayName).join(" and ")}</span> share
-                  the email <span className="font-medium">{group.email}</span> —
-                  only one invite will be sent.
+                  <span className="uppercase">
+                    {group.targets.map((t) => t.displayName).join(" and ")}
+                  </span>{" "}
+                  share the email{" "}
+                  <span className="font-medium">{group.email}</span> — only one
+                  invite will be sent.
                 </p>
               ))}
             </div>

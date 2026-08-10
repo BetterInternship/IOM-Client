@@ -7,7 +7,7 @@ import type { UniversityMoaDetailResponse } from "@/app/api";
 import { useModal } from "@/app/providers/modal-provider";
 import { PageContainer } from "@/components/page-header";
 import { MoaStatusBadge } from "@/components/status-badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDateWithoutTime } from "@/lib/utils";

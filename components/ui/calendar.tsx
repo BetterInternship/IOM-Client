@@ -9,7 +9,7 @@ import {
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@betterinternship/components";
 
 function Calendar({
   className,
@@ -31,7 +31,10 @@ function Calendar({
       )}
       classNames={{
         root: cn("w-fit", defaultClassNames.root),
-        months: cn("relative flex flex-col gap-4 sm:flex-row", defaultClassNames.months),
+        months: cn(
+          "relative flex flex-col gap-4 sm:flex-row",
+          defaultClassNames.months,
+        ),
         month: cn("flex w-full flex-col gap-4", defaultClassNames.month),
         nav: cn(
           "pointer-events-none absolute inset-x-0 top-0 flex w-full items-center justify-between gap-1",
@@ -74,8 +77,14 @@ function Calendar({
           defaultClassNames.weekday,
         ),
         week: cn("mt-2 flex w-full", defaultClassNames.week),
-        day: cn("relative h-9 w-9 p-0 text-center text-sm", defaultClassNames.day),
-        today: cn("rounded-md bg-accent text-accent-foreground", defaultClassNames.today),
+        day: cn(
+          "relative h-9 w-9 p-0 text-center text-sm",
+          defaultClassNames.day,
+        ),
+        today: cn(
+          "rounded-md bg-accent text-accent-foreground",
+          defaultClassNames.today,
+        ),
         outside: cn(
           "text-muted-foreground opacity-50",
           defaultClassNames.outside,

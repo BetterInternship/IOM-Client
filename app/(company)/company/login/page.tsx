@@ -10,7 +10,7 @@ import {
   companyControllerClaimInvite,
 } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Autocomplete } from "@/components/ui/autocomplete";

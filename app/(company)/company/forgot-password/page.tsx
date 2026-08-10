@@ -1,9 +1,12 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { useCompanyAuthControllerList, useCompanyAuthControllerForgot } from "@/app/api";
+import {
+  useCompanyAuthControllerList,
+  useCompanyAuthControllerForgot,
+} from "@/app/api";
 import { AuthShell, FormError, FormSuccess } from "@/components/auth-shell";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Label } from "@/components/ui/label";
 import { Autocomplete } from "@/components/ui/autocomplete";
 import { Loader2 } from "lucide-react";
@@ -21,19 +24,23 @@ export default function CompanyForgotPasswordPage() {
   const [error, setError] = useState("");
 
   const { data: companyListResponse } = useCompanyAuthControllerList();
-  const companyList = (companyListResponse?.companies ?? []) as CompanyListItem[];
+  const companyList = (companyListResponse?.companies ??
+    []) as CompanyListItem[];
 
-  const options = companyList.map((c) => ({ id: c.id, name: c.registered_name }));
+  const options = companyList.map((c) => ({
+    id: c.id,
+    name: c.registered_name,
+  }));
   const selectedCompany = companyList.find((c) => c.id === selectedId) ?? null;
 
   const forgot = useCompanyAuthControllerForgot({
     mutation: {
-    onSuccess: (data) => {
-      setCensoredEmail(data.censoredEmail);
-      setSent(true);
-      setError("");
-    },
-    onError: (e: Error) => setError(e.message),
+      onSuccess: (data) => {
+        setCensoredEmail(data.censoredEmail);
+        setSent(true);
+        setError("");
+      },
+      onError: (e: Error) => setError(e.message),
     },
   });
 
@@ -76,9 +83,13 @@ export default function CompanyForgotPasswordPage() {
                 inputClassName="rounded-b-none"
               />
               <div className="flex items-center gap-2 rounded-b-[0.33em] border border-t-0 border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm">
-                <span className="text-muted-foreground text-xs font-medium">TIN</span>
+                <span className="text-muted-foreground text-xs font-medium">
+                  TIN
+                </span>
                 <span className="font-mono text-gray-800">
-                  {selectedCompany?.censored_tin ?? <span className="text-muted-foreground">—</span>}
+                  {selectedCompany?.censored_tin ?? (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </span>
               </div>
             </div>

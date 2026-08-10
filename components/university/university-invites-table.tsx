@@ -7,7 +7,7 @@ import {
   ResourceTable,
   type ResourceTableColumn,
 } from "@/components/ui/resource-table";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   useResourceTable,

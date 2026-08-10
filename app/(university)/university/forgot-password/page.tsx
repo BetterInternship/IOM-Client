@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useUniversityAuthControllerForgot } from "@/app/api";
 import { AuthShell, FormError, FormSuccess } from "@/components/auth-shell";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
@@ -15,11 +15,11 @@ export default function UniversityForgotPasswordPage() {
 
   const forgot = useUniversityAuthControllerForgot({
     mutation: {
-    onSuccess: () => {
-      setSent(true);
-      setError("");
-    },
-    onError: (e: Error) => setError(e.message),
+      onSuccess: () => {
+        setSent(true);
+        setError("");
+      },
+      onError: (e: Error) => setError(e.message),
     },
   });
 

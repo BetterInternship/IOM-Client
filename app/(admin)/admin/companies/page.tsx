@@ -23,7 +23,7 @@ import {
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { FileUpload } from "@/components/ui/file-upload";
@@ -54,11 +54,7 @@ import {
 import { formatDateWithoutTime } from "@/lib/utils";
 
 type VerificationStatus =
-  | "incomplete"
-  | "pending"
-  | "verified"
-  | "expired"
-  | "rejected";
+  "incomplete" | "pending" | "verified" | "expired" | "rejected";
 type CompanyStatusTab = "all" | "deactivated" | VerificationStatus;
 type CompanyListItem = AdminCompanyListItemDto & {
   verification_status: VerificationStatus;
@@ -324,8 +320,7 @@ function CreateCompanyForm({ onClose }: { onClose: () => void }) {
               registered_name: form.registered_name,
               tin: form.tin || undefined,
               company_type: (form.company_type || undefined) as
-                | CreateCompanyAdminDtoCompanyType
-                | undefined,
+                CreateCompanyAdminDtoCompanyType | undefined,
               registered_address: form.registered_address || undefined,
             },
           });
@@ -521,7 +516,8 @@ function BulkUploadForm({ onClose }: { onClose: () => void }) {
             </div>
             <div className="rounded bg-yellow-50 p-2 text-yellow-700">
               <p className="text-lg font-bold">
-                {results.summary.duplicate_tin + (results.summary.duplicate_name ?? 0)}
+                {results.summary.duplicate_tin +
+                  (results.summary.duplicate_name ?? 0)}
               </p>
               <p>Duplicate</p>
             </div>

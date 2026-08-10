@@ -17,7 +17,7 @@ import {
   universityControllerBulkCreateLegacyCompaniesFromWizard,
   useUniversityControllerListLegacyCompanies,
 } from "@/app/api";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";

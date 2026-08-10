@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowUpRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Badge } from "@/components/ui/badge";
 import {
   useCompanyControllerCareerLinkStatus,
@@ -21,7 +21,8 @@ export function getCareerHireUrl(): string {
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
     if (host.startsWith("dev.")) return "https://hire.dev.betterinternship.com";
-    if (host.endsWith(".betterinternship.com")) return "https://hire.betterinternship.com";
+    if (host.endsWith(".betterinternship.com"))
+      return "https://hire.betterinternship.com";
   }
   return "http://hire.localhost:3000";
 }
@@ -78,7 +79,11 @@ export function CareerListingCta() {
       },
       onError: (e: Error) => {
         const error = e as ApiError;
-        if (error.code === "EMAIL_MANAGES_OTHER_EMPLOYER" && error.email && error.autoLinkToken) {
+        if (
+          error.code === "EMAIL_MANAGES_OTHER_EMPLOYER" &&
+          error.email &&
+          error.autoLinkToken
+        ) {
           const url = new URL("/login", getCareerHireUrl());
           url.searchParams.set("email", error.email);
           url.searchParams.set("auto_link", error.autoLinkToken);
@@ -93,7 +98,9 @@ export function CareerListingCta() {
         if (error.code === "NO_EMAIL") {
           setConflictCode(error.code);
         } else {
-          toast.error(error.message || "Could not start BetterInternship listing setup.");
+          toast.error(
+            error.message || "Could not start BetterInternship listing setup.",
+          );
         }
       },
     },
@@ -127,7 +134,10 @@ export function CareerListingCta() {
             marketplace
           </p>
           {!linkStatusLoading && (
-            <Badge type={linked ? "supportive" : "warning"} className="flex-shrink-0">
+            <Badge
+              type={linked ? "supportive" : "warning"}
+              className="flex-shrink-0"
+            >
               {linked ? "Linked" : "Not Linked"}
             </Badge>
           )}

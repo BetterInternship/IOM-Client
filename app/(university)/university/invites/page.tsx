@@ -7,7 +7,7 @@ import {
   useUniversityControllerListTemplates,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   DropdownMenu,

@@ -8,7 +8,7 @@ import {
   useAdminControllerListTemplates,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Badge } from "@/components/ui/badge";
 import {
   ResourceTable,

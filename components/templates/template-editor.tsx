@@ -13,7 +13,7 @@ import {
   useAdminControllerCreateTemplate,
   useAdminControllerPatchTemplate,
 } from "@/app/api/app/api/endpoints/admin/admin";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -74,9 +74,14 @@ export interface TemplateEditorProps {
   initial?: TemplateEditorInitial;
 }
 
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(v, hi));
+const clamp = (v: number, lo: number, hi: number) =>
+  Math.max(lo, Math.min(v, hi));
 
-export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProps) {
+export function TemplateEditor({
+  mode,
+  templateId,
+  initial,
+}: TemplateEditorProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const createTemplate = useAdminControllerCreateTemplate();
@@ -85,8 +90,12 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [termMonths, setTermMonths] = useState<number>(initial?.term_months ?? 12);
-  const [isPerpetual, setIsPerpetual] = useState(mode === "edit" && initial?.term_months === null);
+  const [termMonths, setTermMonths] = useState<number>(
+    initial?.term_months ?? 12,
+  );
+  const [isPerpetual, setIsPerpetual] = useState(
+    mode === "edit" && initial?.term_months === null,
+  );
   const [placements, setPlacements] = useState<Placement[]>(() =>
     initial ? fromFieldSchema(initial.field_schema) : [],
   );
@@ -98,12 +107,14 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
   // Load PDF: from the uploaded File (new) or via a same-origin proxy of the signed URL (edit).
   // The proxy avoids CORS: pdfjs uses fetch() which triggers preflight; GCS signed URLs have no
   // Access-Control-Allow-Origin header, so we proxy through Next.js server-side instead.
-  const proxyUrl = mode === "edit" && initial?.pdfUrl
-    ? `/gcs-proxy?url=${encodeURIComponent(initial.pdfUrl)}`
-    : null;
+  const proxyUrl =
+    mode === "edit" && initial?.pdfUrl
+      ? `/gcs-proxy?url=${encodeURIComponent(initial.pdfUrl)}`
+      : null;
   const fromFile = usePdfDocumentFromFile(mode === "new" ? file : null);
   const fromUrl = usePdfDocumentFromUrl(proxyUrl);
-  const { pdfDoc, pageCount, isLoading, error } = mode === "new" ? fromFile : fromUrl;
+  const { pdfDoc, pageCount, isLoading, error } =
+    mode === "new" ? fromFile : fromUrl;
 
   // Intrinsic page size (PDF points), captured from page 1 — stored as page_w/page_h.
   useEffect(() => {
@@ -133,14 +144,21 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
   );
 
   const updatePlacement = (id: string, patch: Partial<Placement>) =>
-    setPlacements((ps) => ps.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+    setPlacements((ps) =>
+      ps.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    );
 
   const deletePlacement = (id: string) => {
     setPlacements((ps) => ps.filter((p) => p.id !== id));
     setSelectedId((s) => (s === id ? null : s));
   };
 
-  const handleDropField = (key: string, dropPage: number, xPt: number, yPt: number) => {
+  const handleDropField = (
+    key: string,
+    dropPage: number,
+    xPt: number,
+    yPt: number,
+  ) => {
     const f = FIELD_BY_KEY[key];
     if (!f || !dims) return;
     const w = f.defaultW;
@@ -171,7 +189,11 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
     const GAP = 8;
     let y = 40;
     const created = fields.map((f) => {
-      const x = clamp((dims.w - f.defaultW) / 2, 0, Math.max(0, dims.w - f.defaultW));
+      const x = clamp(
+        (dims.w - f.defaultW) / 2,
+        0,
+        Math.max(0, dims.w - f.defaultW),
+      );
       y = clamp(y, 0, Math.max(0, dims.h - f.defaultH));
       const p: Placement = {
         id: newPlacementId(),
@@ -234,7 +256,12 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
       if (e.key !== "Delete" && e.key !== "Backspace") return;
       const el = document.activeElement;
       const tag = el?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || (el as HTMLElement)?.isContentEditable) return;
+      if (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        (el as HTMLElement)?.isContentEditable
+      )
+        return;
       if (selectedId) {
         e.preventDefault();
         deletePlacement(selectedId);
@@ -292,7 +319,9 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: getAdminControllerListTemplatesQueryKey() });
+      queryClient.invalidateQueries({
+        queryKey: getAdminControllerListTemplatesQueryKey(),
+      });
       toast.success(mode === "new" ? "Template created" : "Template saved");
       router.push("/templates");
     },
@@ -351,7 +380,15 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setScale((s) => clamp(Math.round((s - 0.1) * 10) / 10, MIN_SCALE, MAX_SCALE))}
+                  onClick={() =>
+                    setScale((s) =>
+                      clamp(
+                        Math.round((s - 0.1) * 10) / 10,
+                        MIN_SCALE,
+                        MAX_SCALE,
+                      ),
+                    )
+                  }
                   disabled={scale <= MIN_SCALE}
                 >
                   <Minus />
@@ -362,7 +399,15 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setScale((s) => clamp(Math.round((s + 0.1) * 10) / 10, MIN_SCALE, MAX_SCALE))}
+                  onClick={() =>
+                    setScale((s) =>
+                      clamp(
+                        Math.round((s + 0.1) * 10) / 10,
+                        MIN_SCALE,
+                        MAX_SCALE,
+                      ),
+                    )
+                  }
                   disabled={scale >= MAX_SCALE}
                 >
                   <Plus />
@@ -403,254 +448,299 @@ export function TemplateEditor({ mode, templateId, initial }: TemplateEditorProp
       {/* ── Sidebar ────────────────────────────────────────────────────────── */}
       <aside className="flex w-full flex-col gap-4 lg:w-80 lg:flex-shrink-0 lg:overflow-hidden">
         <div className="min-h-0 flex-1 space-y-5 overflow-y-auto lg:pr-1">
-        <section className="space-y-3 rounded-[0.33em] border border-gray-300 bg-white p-4">
-          <h2 className="text-sm font-semibold text-gray-900">Template details</h2>
-          <div className="space-y-1.5">
-            <Label htmlFor="tmpl-name">Name</Label>
-            <Input
-              id="tmpl-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="CHED Standard MOA"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="tmpl-desc">Description</Label>
-            <Textarea
-              id="tmpl-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional notes for universities"
-              className="min-h-16 text-sm"
-            />
-          </div>
-          <div className="grid grid-cols-2 items-end gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="tmpl-term">Term (months)</Label>
-              <Input
-                id="tmpl-term"
-                type="number"
-                min={1}
-                value={termMonths}
-                disabled={isPerpetual}
-                onChange={(e) => setTermMonths(parseInt(e.target.value, 10) || 0)}
-              />
-            </div>
-            <div className="flex h-9 items-center gap-2 pb-1">
-              <input
-                type="checkbox"
-                id="tmpl-perpetual"
-                className="h-4 w-4"
-                checked={isPerpetual}
-                onChange={(e) => setIsPerpetual(e.target.checked)}
-              />
-              <Label htmlFor="tmpl-perpetual" className="text-xs cursor-pointer">
-                Perpetual
-              </Label>
-            </div>
-          </div>
-          {isPerpetual && hasExpiryField && (
-            <p className="text-destructive text-xs">
-              Remove the Expiry date field — this template is perpetual.
-            </p>
-          )}
-        </section>
-
-        {/* Field palette */}
-        <section className="space-y-3 rounded-[0.33em] border border-gray-300 bg-white p-4">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Fields ({placements.length} field{placements.length === 1 ? "" : "s"} placed)
-          </h2>
-          <Accordion
-            type="multiple"
-            defaultValue={FIELD_CATEGORIES.map((c) => c.label)}
-          >
-            {FIELD_CATEGORIES.map((category) => (
-              <AccordionItem key={category.label} value={category.label}>
-                <AccordionTrigger className="py-2 text-sm font-semibold text-gray-900">
-                  {category.label}
-                </AccordionTrigger>
-                <AccordionContent className="pb-2">
-                  <div className="space-y-3">
-                    {category.groups.map((group) => (
-                      <div key={group.label} className="space-y-1.5">
-                        <p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
-                          {group.label}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {group.fields
-                            .filter((f) => !isPerpetual || f.key !== "expiry_date")
-                            .map((f) => (
-                            <span
-                              key={f.key}
-                              draggable={ready}
-                              onDragStart={(e) => {
-                                e.dataTransfer.setData("field", f.key);
-                                e.dataTransfer.effectAllowed = "copy";
-                              }}
-                              className={
-                                "cursor-grab rounded-[0.33em] border px-2 py-1 text-[11px] active:cursor-grabbing " +
-                                (f.type === "signature"
-                                  ? "border-blue-300 bg-blue-50 text-blue-700"
-                                  : "border-gray-300 bg-gray-50 text-gray-700") +
-                                (ready ? "" : " pointer-events-none opacity-50")
-                              }
-                              title={f.key}
-                            >
-                              {f.label}
-                            </span>
-                          ))}
-                        </div>
-                        {group.slot && (
-                          <span
-                            draggable={ready}
-                            onDragStart={(e) => {
-                              e.dataTransfer.setData(
-                                "slot",
-                                JSON.stringify(group.fields.map((f) => f.key)),
-                              );
-                              e.dataTransfer.effectAllowed = "copy";
-                            }}
-                            onClick={() => handleAddSlot(group.fields, page)}
-                            className={
-                              "cursor-grab rounded-[0.33em] border px-2 py-1 text-[11px] active:cursor-grabbing " +
-                              "border-emerald-300 bg-emerald-50 text-emerald-700" +
-                              (ready ? "" : " pointer-events-none opacity-50")
-                            }
-                            title="Complete slot"
-                          >
-                            Complete slot
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </section>
-
-        {/* Selected field properties */}
-        {selected && (
           <section className="space-y-3 rounded-[0.33em] border border-gray-300 bg-white p-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-gray-900">{fieldLabel(selected.field)}</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                scheme="destructive"
-                onClick={() => deletePlacement(selected.id)}
-              >
-                <Trash2 />
-              </Button>
-            </div>
-            <p className="text-muted-foreground font-mono text-[11px]">{selected.field}</p>
-
-            <div className="space-y-1">
-              <Label className="text-xs">Prefill value</Label>
+            <h2 className="text-sm font-semibold text-gray-900">
+              Template details
+            </h2>
+            <div className="space-y-1.5">
+              <Label htmlFor="tmpl-name">Name</Label>
               <Input
-                value={selected.value ?? ""}
-                onChange={(e) => updatePlacement(selected.id, { value: e.target.value })}
-                placeholder={selected.type === "signature" ? "e.g. BetterInternship" : "Fixed text on the PDF"}
+                id="tmpl-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="CHED Standard MOA"
               />
-              <p className="text-muted-foreground text-[11px] leading-snug">
-                Shown on the PDF as-is. The company won't be asked to fill this field.
-              </p>
-              <div className="flex items-center justify-between pt-1">
-                <Label className="text-xs cursor-pointer" htmlFor="wrap-toggle">
-                  Wrap text
-                </Label>
-                <Switch
-                  id="wrap-toggle"
-                  checked={!!selected.wrap}
-                  onCheckedChange={(c) => updatePlacement(selected.id, { wrap: c })}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tmpl-desc">Description</Label>
+              <Textarea
+                id="tmpl-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional notes for universities"
+                className="min-h-16 text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-2 items-end gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="tmpl-term">Term (months)</Label>
+                <Input
+                  id="tmpl-term"
+                  type="number"
+                  min={1}
+                  value={termMonths}
+                  disabled={isPerpetual}
+                  onChange={(e) =>
+                    setTermMonths(parseInt(e.target.value, 10) || 0)
+                  }
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-xs">Page</Label>
-                <Select
-                  value={String(selected.page)}
-                  onValueChange={(v) => updatePlacement(selected.id, { page: parseInt(v, 10) })}
+              <div className="flex h-9 items-center gap-2 pb-1">
+                <input
+                  type="checkbox"
+                  id="tmpl-perpetual"
+                  className="h-4 w-4"
+                  checked={isPerpetual}
+                  onChange={(e) => setIsPerpetual(e.target.checked)}
+                />
+                <Label
+                  htmlFor="tmpl-perpetual"
+                  className="text-xs cursor-pointer"
                 >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
-                      <SelectItem key={n} value={String(n)}>
-                        {n}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Align</Label>
-                <Select
-                  value={selected.align_h}
-                  onValueChange={(v) => updatePlacement(selected.id, { align_h: v as AlignH })}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="left">Left</SelectItem>
-                    <SelectItem value="center">Center</SelectItem>
-                    <SelectItem value="right">Right</SelectItem>
-                  </SelectContent>
-                </Select>
+                  Perpetual
+                </Label>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <NumberField
-                label="X"
-                value={selected.x}
-                onChange={(n) => updatePlacement(selected.id, { x: n })}
-              />
-              <NumberField
-                label="Y"
-                value={selected.y}
-                onChange={(n) => updatePlacement(selected.id, { y: n })}
-              />
-              <NumberField
-                label="W"
-                value={selected.w}
-                onChange={(n) => updatePlacement(selected.id, { w: Math.max(4, n) })}
-              />
-              <NumberField
-                label="H"
-                value={selected.h}
-                onChange={(n) => updatePlacement(selected.id, { h: Math.max(4, n) })}
-              />
-              <div className="space-y-1">
-                <Label className="text-xs">Vertical</Label>
-                <Select
-                  value={selected.align_v}
-                  onValueChange={(v) => updatePlacement(selected.id, { align_v: v as AlignV })}
-                >
-                  <SelectTrigger className="h-8">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="top">Top</SelectItem>
-                    <SelectItem value="middle">Middle</SelectItem>
-                    <SelectItem value="bottom">Bottom</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+            {isPerpetual && hasExpiryField && (
+              <p className="text-destructive text-xs">
+                Remove the Expiry date field — this template is perpetual.
+              </p>
+            )}
           </section>
-        )}
 
+          {/* Field palette */}
+          <section className="space-y-3 rounded-[0.33em] border border-gray-300 bg-white p-4">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Fields ({placements.length} field
+              {placements.length === 1 ? "" : "s"} placed)
+            </h2>
+            <Accordion
+              type="multiple"
+              defaultValue={FIELD_CATEGORIES.map((c) => c.label)}
+            >
+              {FIELD_CATEGORIES.map((category) => (
+                <AccordionItem key={category.label} value={category.label}>
+                  <AccordionTrigger className="py-2 text-sm font-semibold text-gray-900">
+                    {category.label}
+                  </AccordionTrigger>
+                  <AccordionContent className="pb-2">
+                    <div className="space-y-3">
+                      {category.groups.map((group) => (
+                        <div key={group.label} className="space-y-1.5">
+                          <p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
+                            {group.label}
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {group.fields
+                              .filter(
+                                (f) => !isPerpetual || f.key !== "expiry_date",
+                              )
+                              .map((f) => (
+                                <span
+                                  key={f.key}
+                                  draggable={ready}
+                                  onDragStart={(e) => {
+                                    e.dataTransfer.setData("field", f.key);
+                                    e.dataTransfer.effectAllowed = "copy";
+                                  }}
+                                  className={
+                                    "cursor-grab rounded-[0.33em] border px-2 py-1 text-[11px] active:cursor-grabbing " +
+                                    (f.type === "signature"
+                                      ? "border-blue-300 bg-blue-50 text-blue-700"
+                                      : "border-gray-300 bg-gray-50 text-gray-700") +
+                                    (ready
+                                      ? ""
+                                      : " pointer-events-none opacity-50")
+                                  }
+                                  title={f.key}
+                                >
+                                  {f.label}
+                                </span>
+                              ))}
+                          </div>
+                          {group.slot && (
+                            <span
+                              draggable={ready}
+                              onDragStart={(e) => {
+                                e.dataTransfer.setData(
+                                  "slot",
+                                  JSON.stringify(
+                                    group.fields.map((f) => f.key),
+                                  ),
+                                );
+                                e.dataTransfer.effectAllowed = "copy";
+                              }}
+                              onClick={() => handleAddSlot(group.fields, page)}
+                              className={
+                                "cursor-grab rounded-[0.33em] border px-2 py-1 text-[11px] active:cursor-grabbing " +
+                                "border-emerald-300 bg-emerald-50 text-emerald-700" +
+                                (ready ? "" : " pointer-events-none opacity-50")
+                              }
+                              title="Complete slot"
+                            >
+                              Complete slot
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </section>
+
+          {/* Selected field properties */}
+          {selected && (
+            <section className="space-y-3 rounded-[0.33em] border border-gray-300 bg-white p-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-gray-900">
+                  {fieldLabel(selected.field)}
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  scheme="destructive"
+                  onClick={() => deletePlacement(selected.id)}
+                >
+                  <Trash2 />
+                </Button>
+              </div>
+              <p className="text-muted-foreground font-mono text-[11px]">
+                {selected.field}
+              </p>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Prefill value</Label>
+                <Input
+                  value={selected.value ?? ""}
+                  onChange={(e) =>
+                    updatePlacement(selected.id, { value: e.target.value })
+                  }
+                  placeholder={
+                    selected.type === "signature"
+                      ? "e.g. BetterInternship"
+                      : "Fixed text on the PDF"
+                  }
+                />
+                <p className="text-muted-foreground text-[11px] leading-snug">
+                  Shown on the PDF as-is. The company won't be asked to fill
+                  this field.
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <Label
+                    className="text-xs cursor-pointer"
+                    htmlFor="wrap-toggle"
+                  >
+                    Wrap text
+                  </Label>
+                  <Switch
+                    id="wrap-toggle"
+                    checked={!!selected.wrap}
+                    onCheckedChange={(c) =>
+                      updatePlacement(selected.id, { wrap: c })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Page</Label>
+                  <Select
+                    value={String(selected.page)}
+                    onValueChange={(v) =>
+                      updatePlacement(selected.id, { page: parseInt(v, 10) })
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: pageCount }, (_, i) => i + 1).map(
+                        (n) => (
+                          <SelectItem key={n} value={String(n)}>
+                            {n}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Align</Label>
+                  <Select
+                    value={selected.align_h}
+                    onValueChange={(v) =>
+                      updatePlacement(selected.id, { align_h: v as AlignH })
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="left">Left</SelectItem>
+                      <SelectItem value="center">Center</SelectItem>
+                      <SelectItem value="right">Right</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <NumberField
+                  label="X"
+                  value={selected.x}
+                  onChange={(n) => updatePlacement(selected.id, { x: n })}
+                />
+                <NumberField
+                  label="Y"
+                  value={selected.y}
+                  onChange={(n) => updatePlacement(selected.id, { y: n })}
+                />
+                <NumberField
+                  label="W"
+                  value={selected.w}
+                  onChange={(n) =>
+                    updatePlacement(selected.id, { w: Math.max(4, n) })
+                  }
+                />
+                <NumberField
+                  label="H"
+                  value={selected.h}
+                  onChange={(n) =>
+                    updatePlacement(selected.id, { h: Math.max(4, n) })
+                  }
+                />
+                <div className="space-y-1">
+                  <Label className="text-xs">Vertical</Label>
+                  <Select
+                    value={selected.align_v}
+                    onValueChange={(v) =>
+                      updatePlacement(selected.id, { align_v: v as AlignV })
+                    }
+                  >
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="top">Top</SelectItem>
+                      <SelectItem value="middle">Middle</SelectItem>
+                      <SelectItem value="bottom">Bottom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </section>
+          )}
         </div>
 
         <div className="shrink-0 space-y-2 lg:border-t lg:border-gray-200 lg:pt-3">
-          <Button className="w-full" disabled={!canSave} onClick={() => save.mutate()}>
+          <Button
+            className="w-full"
+            disabled={!canSave}
+            onClick={() => save.mutate()}
+          >
             {save.isPending ? <Loader2 className="animate-spin" /> : <Save />}
             {mode === "new" ? "Create template" : "Save changes"}
           </Button>
@@ -707,8 +797,12 @@ function UploadPrompt({ onPick }: { onPick: (f: File | undefined) => void }) {
     >
       <FileText className="text-muted-foreground h-8 w-8" />
       <div>
-        <p className="text-sm font-medium text-gray-900">Upload a template PDF</p>
-        <p className="text-muted-foreground mt-0.5 text-xs">Drag a file here, or browse. Max 7 MB.</p>
+        <p className="text-sm font-medium text-gray-900">
+          Upload a template PDF
+        </p>
+        <p className="text-muted-foreground mt-0.5 text-xs">
+          Drag a file here, or browse. Max 7 MB.
+        </p>
       </div>
       <input
         ref={inputRef}
@@ -717,7 +811,11 @@ function UploadPrompt({ onPick }: { onPick: (f: File | undefined) => void }) {
         className="hidden"
         onChange={(e) => onPick(e.target.files?.[0])}
       />
-      <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()}>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => inputRef.current?.click()}
+      >
         <Upload /> Browse
       </Button>
     </div>

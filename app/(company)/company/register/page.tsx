@@ -16,7 +16,7 @@ import {
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { getCareerHireUrl } from "@/components/career-listing-cta";
 import { toastPresets } from "@/components/sonner-toaster";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OtpInput } from "@/components/ui/otp-input";

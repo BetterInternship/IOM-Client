@@ -5,8 +5,12 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, parse } from "date-fns";
 
 import { Calendar } from "@/components/ui/calendar";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@betterinternship/components";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 const DATE_FORMAT = "yyyy-MM-dd";
@@ -54,7 +58,11 @@ function areInputPartsValid(parts: string[]) {
     if (dayNumber < 1) return false;
     const daysInMonth =
       month.length === 2
-        ? new Date(year.length === 4 ? yearNumber : 2000, monthNumber, 0).getDate()
+        ? new Date(
+            year.length === 4 ? yearNumber : 2000,
+            monthNumber,
+            0,
+          ).getDate()
         : 31;
     if (dayNumber > daysInMonth) return false;
   }
@@ -90,10 +98,13 @@ function DatePicker({
   const monthInputRef = React.useRef<HTMLInputElement>(null);
   const dayInputRef = React.useRef<HTMLInputElement>(null);
   const yearInputRef = React.useRef<HTMLInputElement>(null);
-  const [yearPageStart, setYearPageStart] = React.useState(() =>
-    MIN_YEAR + Math.floor(((selected ?? new Date()).getFullYear() - MIN_YEAR) / 12) * 12,
+  const [yearPageStart, setYearPageStart] = React.useState(
+    () =>
+      MIN_YEAR +
+      Math.floor(((selected ?? new Date()).getFullYear() - MIN_YEAR) / 12) * 12,
   );
-  const [inputMonth = "", inputDay = "", inputYear = ""] = inputValue.split("/");
+  const [inputMonth = "", inputDay = "", inputYear = ""] =
+    inputValue.split("/");
 
   React.useEffect(() => {
     setInputValue(formatInputValue(value));
@@ -171,7 +182,8 @@ function DatePicker({
     } else if (event.key === "/" && index < 2) {
       event.preventDefault();
       const nextParts = [...inputParts];
-      if (nextParts[index]) nextParts[index] = nextParts[index].padStart(2, "0");
+      if (nextParts[index])
+        nextParts[index] = nextParts[index].padStart(2, "0");
       if (!areInputPartsValid(nextParts)) return;
       setInputValue(nextParts.join("/"));
       inputRefs[index + 1].current?.focus();
@@ -343,7 +355,9 @@ function DatePicker({
                   className="h-8 w-8 px-0"
                   disabled={month.getFullYear() <= MIN_YEAR}
                   onClick={() =>
-                    setMonth(new Date(month.getFullYear() - 1, month.getMonth(), 1))
+                    setMonth(
+                      new Date(month.getFullYear() - 1, month.getMonth(), 1),
+                    )
                   }
                   aria-label="Previous year"
                 >
@@ -363,7 +377,9 @@ function DatePicker({
                   className="h-8 w-8 p-0"
                   disabled={month.getFullYear() >= MAX_YEAR}
                   onClick={() =>
-                    setMonth(new Date(month.getFullYear() + 1, month.getMonth(), 1))
+                    setMonth(
+                      new Date(month.getFullYear() + 1, month.getMonth(), 1),
+                    )
                   }
                   aria-label="Next year"
                 >
@@ -419,25 +435,26 @@ function DatePicker({
                 </Button>
               </div>
               <div className="mt-3 grid grid-cols-3 gap-2">
-                {Array.from({ length: 12 }, (_, index) => yearPageStart + index).map(
-                  (year) => (
-                    <Button
-                      key={year}
-                      type="button"
-                      variant={
-                        month.getFullYear() === year ? "default" : "outline"
-                      }
-                      className="h-10"
-                      disabled={year > MAX_YEAR}
-                      onClick={() => {
-                        setMonth(new Date(year, month.getMonth(), 1));
-                        setView("months");
-                      }}
-                    >
-                      {year}
-                    </Button>
-                  ),
-                )}
+                {Array.from(
+                  { length: 12 },
+                  (_, index) => yearPageStart + index,
+                ).map((year) => (
+                  <Button
+                    key={year}
+                    type="button"
+                    variant={
+                      month.getFullYear() === year ? "default" : "outline"
+                    }
+                    className="h-10"
+                    disabled={year > MAX_YEAR}
+                    onClick={() => {
+                      setMonth(new Date(year, month.getMonth(), 1));
+                      setView("months");
+                    }}
+                  >
+                    {year}
+                  </Button>
+                ))}
               </div>
             </>
           )}

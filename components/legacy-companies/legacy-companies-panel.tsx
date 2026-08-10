@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-query";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useModal } from "@/app/providers/modal-provider";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { FileUpload } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";

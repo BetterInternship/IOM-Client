@@ -10,7 +10,7 @@ import {
   PageHeader,
   EmptyState,
 } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RequestDialog } from "@/components/moa-request-dialog";

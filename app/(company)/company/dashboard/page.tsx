@@ -12,7 +12,7 @@ import {
   useCompanyControllerListPendingInvites,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

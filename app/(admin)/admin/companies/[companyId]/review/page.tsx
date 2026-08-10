@@ -31,7 +31,7 @@ import {
   CollapsibleCardSection,
 } from "@/components/ui/collapsible-card";
 import { DetailField } from "@/components/ui/detail-field";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";

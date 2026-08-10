@@ -11,7 +11,7 @@ import {
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";

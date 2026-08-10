@@ -3,7 +3,7 @@ import { useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useUniversityAuthControllerReset } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
@@ -19,11 +19,11 @@ function UniversityResetPasswordForm() {
 
   const reset = useUniversityAuthControllerReset({
     mutation: {
-    onSuccess: () => {
-      setDone(true);
-      setError("");
-    },
-    onError: (e: Error) => setError(e.message),
+      onSuccess: () => {
+        setDone(true);
+        setError("");
+      },
+      onError: (e: Error) => setError(e.message),
     },
   });
 
@@ -31,8 +31,8 @@ function UniversityResetPasswordForm() {
     return (
       <AuthShell portal="University" title="Invalid reset link">
         <FormError>
-          This password reset link is invalid or has expired. Please request a new
-          one.
+          This password reset link is invalid or has expired. Please request a
+          new one.
         </FormError>
         <Button
           className="mt-4 w-full"
@@ -54,7 +54,9 @@ function UniversityResetPasswordForm() {
       portal="University"
       title={done ? "Password updated" : "Set a new password"}
       description={
-        done ? undefined : "Choose a strong password with at least 8 characters."
+        done
+          ? undefined
+          : "Choose a strong password with at least 8 characters."
       }
     >
       {done ? (
@@ -106,7 +108,9 @@ function UniversityResetPasswordForm() {
               required
             />
             {mismatch && (
-              <p className="text-destructive text-xs">Passwords do not match.</p>
+              <p className="text-destructive text-xs">
+                Passwords do not match.
+              </p>
             )}
           </div>
 

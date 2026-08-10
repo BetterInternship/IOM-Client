@@ -8,7 +8,7 @@ import {
   type ResourceTableColumn,
 } from "@/components/ui/resource-table";
 import { useResourceTable } from "@/components/ui/use-resource-table";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -232,10 +232,7 @@ export function UniversityTemplatesTable({
       width: "w-[16%]",
       sortable: false,
       render: (offer) => (
-        <Button
-          variant="outline"
-          onClick={() => onPreview(offer.template)}
-        >
+        <Button variant="outline" onClick={() => onPreview(offer.template)}>
           <Eye className="mr-1 h-3.5 w-3.5" /> Preview
         </Button>
       ),

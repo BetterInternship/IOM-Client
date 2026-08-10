@@ -4,7 +4,7 @@ import { useAdminControllerListTemplates } from "@/app/api";
 import { useResolvedFile } from "@/app/lib/resolve-file";
 import { TemplateEditor } from "@/components/templates/template-editor";
 import { PageContainer } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -50,7 +50,11 @@ export default function EditTemplatePage({
     return (
       <PageContainer className="space-y-4">
         <p className="text-sm text-gray-700">Template not found.</p>
-        <Button variant="outline" size="sm" onClick={() => router.push("/templates")}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push("/templates")}
+        >
           Back to catalog
         </Button>
       </PageContainer>
@@ -60,8 +64,14 @@ export default function EditTemplatePage({
   if (!pdfUrl) {
     return (
       <PageContainer className="space-y-4">
-        <p className="text-destructive text-sm">Couldn’t load this template’s PDF.</p>
-        <Button variant="outline" size="sm" onClick={() => router.push("/templates")}>
+        <p className="text-destructive text-sm">
+          Couldn’t load this template’s PDF.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push("/templates")}
+        >
           Back to catalog
         </Button>
       </PageContainer>

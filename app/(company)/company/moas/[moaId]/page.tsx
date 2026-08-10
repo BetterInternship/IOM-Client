@@ -11,7 +11,7 @@ import {
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCompanyControllerGetMoa } from "@/app/api";
 import { useModal } from "@/app/providers/modal-provider";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoaStatusBadge } from "@/components/status-badge";
 import { cn, formatDateWithoutTime, formatExpiryCountdown } from "@/lib/utils";

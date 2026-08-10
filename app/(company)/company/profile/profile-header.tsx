@@ -1,6 +1,6 @@
 import { Loader2, Pencil } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { cn } from "@/lib/utils";
 
 type ProfileHeaderProps = {

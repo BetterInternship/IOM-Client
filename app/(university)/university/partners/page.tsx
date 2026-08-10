@@ -31,7 +31,7 @@ import {
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { CompanyLogo } from "@/components/company-logo";
-import { Button } from "@/components/ui/button";
+import { Button } from "@betterinternship/components";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
@@ -412,50 +412,50 @@ function ReadOnlyLegacyDetail({
       )}
 
       <div className="flex flex-col">
-      <div className="order-1">
-      <CollapsibleCard
-        id="legacy-moa-history"
-        title={
-          <span className="flex w-full items-center justify-between gap-3">
-            <span>MOA history</span>
-            {canUpload && (
-              <Button
-                size="xs"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  openModal(
-                    "legacy-add-moa",
-                    <MoaUploadDialog
-                      title="Add Legacy MOA"
-                      description="Add an MOA record to this imported company."
-                      isPending={moaUploadMutation.isPending}
-                      onClose={() => closeModal("legacy-add-moa")}
-                      onSubmit={(moas) =>
-                        moaUploadMutation.mutate({
-                          legacyCompanyId: company.id,
-                          data: buildMoaRequest(moas),
-                        })
-                      }
-                    />,
-                    {
-                      title: "Add Legacy MOA",
-                      description:
-                        "Add an MOA record to this imported company.",
-                      panelClassName: "!w-full sm:!max-w-2xl",
-                    },
-                  );
-                }}
-              >
-                <Plus className="h-3.5 w-3.5" /> Add MOA
-              </Button>
-            )}
-          </span>
-        }
-        defaultOpen
-      >
-        <LegacyPartnerMoasTable moas={company.moas} onOpenMoa={onOpenMoa} />
-      </CollapsibleCard>
-      </div>
+        <div className="order-1">
+          <CollapsibleCard
+            id="legacy-moa-history"
+            title={
+              <span className="flex w-full items-center justify-between gap-3">
+                <span>MOA history</span>
+                {canUpload && (
+                  <Button
+                    size="xs"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openModal(
+                        "legacy-add-moa",
+                        <MoaUploadDialog
+                          title="Add Legacy MOA"
+                          description="Add an MOA record to this imported company."
+                          isPending={moaUploadMutation.isPending}
+                          onClose={() => closeModal("legacy-add-moa")}
+                          onSubmit={(moas) =>
+                            moaUploadMutation.mutate({
+                              legacyCompanyId: company.id,
+                              data: buildMoaRequest(moas),
+                            })
+                          }
+                        />,
+                        {
+                          title: "Add Legacy MOA",
+                          description:
+                            "Add an MOA record to this imported company.",
+                          panelClassName: "!w-full sm:!max-w-2xl",
+                        },
+                      );
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add MOA
+                  </Button>
+                )}
+              </span>
+            }
+            defaultOpen
+          >
+            <LegacyPartnerMoasTable moas={company.moas} onOpenMoa={onOpenMoa} />
+          </CollapsibleCard>
+        </div>
       </div>
     </>
   );
@@ -1152,7 +1152,8 @@ function PartnersContent({
                                 confirmLabel: "Remove",
                                 onConfirm: () =>
                                   unblacklistMutation.mutate({
-                                    companyId: getCompanyIdForBlacklist(partnerEntry),
+                                    companyId:
+                                      getCompanyIdForBlacklist(partnerEntry),
                                   }),
                               })
                             }
@@ -1175,7 +1176,8 @@ function PartnersContent({
                                 onBlacklist: (reason) =>
                                   blacklistMutation.mutate({
                                     data: {
-                                      companyId: getCompanyIdForBlacklist(partnerEntry),
+                                      companyId:
+                                        getCompanyIdForBlacklist(partnerEntry),
                                       reason: reason || undefined,
                                     },
                                   }),
@@ -1244,7 +1246,6 @@ function PartnersContent({
                       onOpenDocument={openDocumentPreview}
                     />
                   )}
-
                 </>
               )}
 
