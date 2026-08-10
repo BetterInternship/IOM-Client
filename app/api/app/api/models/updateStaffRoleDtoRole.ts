@@ -6,12 +6,11 @@
  * OpenAPI spec version: 1.0
  */
 
-export type UniversityStaffAccountDtoRole =
-  (typeof UniversityStaffAccountDtoRole)[keyof typeof UniversityStaffAccountDtoRole];
+export type UpdateStaffRoleDtoRole =
+  (typeof UpdateStaffRoleDtoRole)[keyof typeof UpdateStaffRoleDtoRole];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const UniversityStaffAccountDtoRole = {
-  superadmin: "superadmin",
-  admin: "admin",
+export const UpdateStaffRoleDtoRole = {
   staff: "staff",
+  admin: "admin",
 } as const;

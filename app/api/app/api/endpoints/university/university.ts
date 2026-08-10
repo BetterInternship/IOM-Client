@@ -65,7 +65,9 @@ import type {
   UniversityUpdateStaffResponse,
   UniversityUploadLogoResponse,
   UniversityUploadSignatureResponse,
+  UpdateLegacyMoaDto,
   UpdateStaffAccountDto,
+  UpdateStaffRoleDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
@@ -2640,6 +2642,207 @@ export const useUniversityControllerAppendLegacyCompanyMoas = <
 > => {
   const mutationOptions =
     getUniversityControllerAppendLegacyCompanyMoasMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerUpdateLegacyCompanyMoa = (
+  legacyCompanyId: string | undefined | null,
+  moaId: string | undefined | null,
+  updateLegacyMoaDto: UpdateLegacyMoaDto,
+) => {
+  return preconfiguredAxiosFunction<UniversityLegacyCompanyDetailResponse>({
+    url: `/api/university/legacy-companies/${legacyCompanyId}/moas/${moaId}`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: updateLegacyMoaDto,
+  });
+};
+
+export const getUniversityControllerUpdateLegacyCompanyMoaMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerUpdateLegacyCompanyMoa>>,
+    TError,
+    {
+      legacyCompanyId: string | undefined | null;
+      moaId: string | undefined | null;
+      data: UpdateLegacyMoaDto;
+    },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerUpdateLegacyCompanyMoa>>,
+  TError,
+  {
+    legacyCompanyId: string | undefined | null;
+    moaId: string | undefined | null;
+    data: UpdateLegacyMoaDto;
+  },
+  TContext
+> => {
+  const mutationKey = ["universityControllerUpdateLegacyCompanyMoa"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerUpdateLegacyCompanyMoa>>,
+    {
+      legacyCompanyId: string | undefined | null;
+      moaId: string | undefined | null;
+      data: UpdateLegacyMoaDto;
+    }
+  > = (props) => {
+    const { legacyCompanyId, moaId, data } = props ?? {};
+
+    return universityControllerUpdateLegacyCompanyMoa(
+      legacyCompanyId,
+      moaId,
+      data,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityControllerUpdateLegacyCompanyMoaMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof universityControllerUpdateLegacyCompanyMoa>>
+  >;
+export type UniversityControllerUpdateLegacyCompanyMoaMutationBody =
+  UpdateLegacyMoaDto;
+export type UniversityControllerUpdateLegacyCompanyMoaMutationError =
+  ErrorResponse;
+
+export const useUniversityControllerUpdateLegacyCompanyMoa = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerUpdateLegacyCompanyMoa>>,
+      TError,
+      {
+        legacyCompanyId: string | undefined | null;
+        moaId: string | undefined | null;
+        data: UpdateLegacyMoaDto;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerUpdateLegacyCompanyMoa>>,
+  TError,
+  {
+    legacyCompanyId: string | undefined | null;
+    moaId: string | undefined | null;
+    data: UpdateLegacyMoaDto;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerUpdateLegacyCompanyMoaMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerDeleteLegacyCompanyMoa = (
+  legacyCompanyId: string | undefined | null,
+  moaId: string | undefined | null,
+) => {
+  return preconfiguredAxiosFunction<UniversityLegacyCompanyDetailResponse>({
+    url: `/api/university/legacy-companies/${legacyCompanyId}/moas/${moaId}`,
+    method: "DELETE",
+  });
+};
+
+export const getUniversityControllerDeleteLegacyCompanyMoaMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerDeleteLegacyCompanyMoa>>,
+    TError,
+    {
+      legacyCompanyId: string | undefined | null;
+      moaId: string | undefined | null;
+    },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerDeleteLegacyCompanyMoa>>,
+  TError,
+  {
+    legacyCompanyId: string | undefined | null;
+    moaId: string | undefined | null;
+  },
+  TContext
+> => {
+  const mutationKey = ["universityControllerDeleteLegacyCompanyMoa"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerDeleteLegacyCompanyMoa>>,
+    {
+      legacyCompanyId: string | undefined | null;
+      moaId: string | undefined | null;
+    }
+  > = (props) => {
+    const { legacyCompanyId, moaId } = props ?? {};
+
+    return universityControllerDeleteLegacyCompanyMoa(legacyCompanyId, moaId);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityControllerDeleteLegacyCompanyMoaMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof universityControllerDeleteLegacyCompanyMoa>>
+  >;
+
+export type UniversityControllerDeleteLegacyCompanyMoaMutationError =
+  ErrorResponse;
+
+export const useUniversityControllerDeleteLegacyCompanyMoa = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerDeleteLegacyCompanyMoa>>,
+      TError,
+      {
+        legacyCompanyId: string | undefined | null;
+        moaId: string | undefined | null;
+      },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerDeleteLegacyCompanyMoa>>,
+  TError,
+  {
+    legacyCompanyId: string | undefined | null;
+    moaId: string | undefined | null;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerDeleteLegacyCompanyMoaMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };
@@ -6109,6 +6312,86 @@ export const useUniversityControllerResendInvite = <
 > => {
   const mutationOptions =
     getUniversityControllerResendInviteMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerUpdateStaffRole = (
+  accountId: string | undefined | null,
+  updateStaffRoleDto: UpdateStaffRoleDto,
+) => {
+  return preconfiguredAxiosFunction<UniversityUpdateStaffResponse>({
+    url: `/api/university/accounts/${accountId}/role`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: updateStaffRoleDto,
+  });
+};
+
+export const getUniversityControllerUpdateStaffRoleMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>,
+    TError,
+    { accountId: string | undefined | null; data: UpdateStaffRoleDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>,
+  TError,
+  { accountId: string | undefined | null; data: UpdateStaffRoleDto },
+  TContext
+> => {
+  const mutationKey = ["universityControllerUpdateStaffRole"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>,
+    { accountId: string | undefined | null; data: UpdateStaffRoleDto }
+  > = (props) => {
+    const { accountId, data } = props ?? {};
+
+    return universityControllerUpdateStaffRole(accountId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityControllerUpdateStaffRoleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>
+>;
+export type UniversityControllerUpdateStaffRoleMutationBody =
+  UpdateStaffRoleDto;
+export type UniversityControllerUpdateStaffRoleMutationError = ErrorResponse;
+
+export const useUniversityControllerUpdateStaffRole = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>,
+      TError,
+      { accountId: string | undefined | null; data: UpdateStaffRoleDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>,
+  TError,
+  { accountId: string | undefined | null; data: UpdateStaffRoleDto },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerUpdateStaffRoleMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

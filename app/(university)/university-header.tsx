@@ -14,7 +14,8 @@ const AUTH_SUFFIXES = [
 
 export function UniversityHeader() {
   const pathname = usePathname() ?? "";
-  const { account, isSuperadmin, isSetupComplete } = useUniversityProfile();
+  const { account, canManageUniversity, isSetupComplete } =
+    useUniversityProfile();
 
   if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
 
@@ -22,14 +23,16 @@ export function UniversityHeader() {
     ? [
         { href: "/partners", label: "Partners" },
         { href: "/invites", label: "Invites" },
-        ...(isSuperadmin
+        ...(canManageUniversity
           ? [{ href: "/templates", label: "MOA Templates" }]
           : []),
       ]
     : [];
   const accountNav: NavItem[] = isSetupComplete
     ? [
-        ...(isSuperadmin ? [{ href: "/accounts", label: "Accounts" }] : []),
+        ...(canManageUniversity
+          ? [{ href: "/accounts", label: "Accounts" }]
+          : []),
         { href: "/activity-log", label: "Activity Log" },
       ]
     : [];
