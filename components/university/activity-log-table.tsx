@@ -27,6 +27,7 @@ const EVENT_LABELS: Record<string, string> = {
   company_invite_accepted: "Company queued MOA via invite",
   legacy_moa_created: "Legacy MOA created",
   legacy_document_uploaded: "Legacy document uploaded",
+  university_profile_updated: "University profile updated",
 };
 
 const EVENT_TYPES: Record<string, BadgeProps["type"]> = {
@@ -43,6 +44,7 @@ const EVENT_TYPES: Record<string, BadgeProps["type"]> = {
   company_invite_accepted: "supportive",
   legacy_moa_created: "default",
   legacy_document_uploaded: "default",
+  university_profile_updated: "default",
 };
 
 function EventBadge({ eventType }: { eventType: string }) {
