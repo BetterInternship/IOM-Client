@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { AppHeader, type NavItem } from "@/components/app-header";
 import {
   useCompanyProfile,
@@ -50,15 +51,32 @@ export function CompanyHeader() {
   ];
 
   return (
-    <AppHeader
-      portal="Company"
-      homeHref="/dashboard"
-      nav={nav}
-      userPrimary={company?.registered_name ?? undefined}
-      userSecondary={company?.email ?? undefined}
-      logout={companyAuthControllerLogout}
-      postLogoutPath="/login"
-      profileHref="/profile"
-    />
+    <>
+      <AppHeader
+        portal="Company"
+        homeHref="/dashboard"
+        nav={nav}
+        userPrimary={company?.registered_name ?? undefined}
+        userSecondary={company?.email ?? undefined}
+        logout={companyAuthControllerLogout}
+        postLogoutPath="/login"
+        profileHref="/profile"
+      />
+      {status === "expired" && (
+        <div
+          role="alert"
+          className="border-destructive/30 bg-destructive/5 border-b px-4 py-3 text-center text-sm text-gray-800"
+        >
+          Your company verification has expired. Replace at least one required
+          document to submit it for approval. New MOA issuance is paused.{" "}
+          <Link
+            href="/profile#documents"
+            className="text-primary font-medium underline"
+          >
+            Update documents
+          </Link>
+        </div>
+      )}
+    </>
   );
 }

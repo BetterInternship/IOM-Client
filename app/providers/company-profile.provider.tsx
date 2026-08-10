@@ -42,6 +42,7 @@ export interface CompanyVerification {
   status: VerificationStatus;
   rejectionReason: string | null;
   canPostListing: boolean;
+  approvalExpiresAt: string | null;
 }
 
 /** Shared platform-verification state for the company (banner + request gate). */

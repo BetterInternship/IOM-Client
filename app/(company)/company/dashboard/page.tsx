@@ -210,7 +210,9 @@ function CompanyDashboardContent() {
 
   const { data: verification, isLoading: vLoading } =
     useCompanyVerification(!!company);
+  const status = verification?.status;
   const verified = verification?.status === "verified";
+  const canRequest = verified || status === "pending";
   const openUniversityName = (invitesData?.invites ?? []).find(
     (invite) =>
       (inviteId && invite.id === inviteId) ||
@@ -227,6 +229,11 @@ function CompanyDashboardContent() {
 
   useEffect(() => {
     if (!openUniversityId) {
+      closeModal("request-moa");
+      return;
+    }
+    if (vLoading) return;
+    if (!canRequest) {
       closeModal("request-moa");
       return;
     }
@@ -266,6 +273,8 @@ function CompanyDashboardContent() {
     openUniversityName,
     router,
     verified,
+    canRequest,
+    vLoading,
   ]);
 
   if (isLoading) {
@@ -312,8 +321,6 @@ function CompanyDashboardContent() {
       a.university.registered_name.localeCompare(b.university.registered_name),
   );
 
-  const status = verification?.status;
-  const canRequest = verified || status === "pending";
   const pendingInvites = (invitesData?.invites ?? []).filter(
     (inv) => inv.university !== null,
   );
@@ -338,7 +345,8 @@ function CompanyDashboardContent() {
 
       {(verified || verification?.canPostListing) && <CareerListingCta />}
 
-      {pendingInvites.length > 0 &&
+      {canRequest &&
+        pendingInvites.length > 0 &&
         (() => {
           const invite = pendingInvites[0];
           const params = new URLSearchParams({

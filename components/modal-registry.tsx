@@ -155,10 +155,16 @@ export function useIomModalRegistry() {
       close: () => closeModal("blacklist-partner"),
     },
     approvalPending: {
-      open: (opts: { onQueueMoa: () => void; onClose: () => void }) =>
+      open: (opts: {
+        onQueueMoa: () => void;
+        onClose: () => void;
+        reapproval?: boolean;
+      }) =>
         openModal(
           "approval-pending",
           <ApprovalPendingContent
+            reapproval={opts.reapproval}
+            onDismiss={() => closeModal("approval-pending")}
             onQueueMoa={() => {
               closeModal("approval-pending", { skipOnClose: true });
               opts.onQueueMoa();
@@ -203,7 +209,7 @@ export function useIomModalRegistry() {
         confirmLabel: string;
         onConfirm: () => void | Promise<void>;
         isPending?: boolean;
-        tone?: "default" | "warning";
+        tone?: "default" | "warning" | "alert";
       }) =>
         openModal(
           "confirm-action",
@@ -249,7 +255,15 @@ function UniversityProfileCompleteContent({
   );
 }
 
-function ApprovalPendingContent({ onQueueMoa }: { onQueueMoa: () => void }) {
+function ApprovalPendingContent({
+  onQueueMoa,
+  onDismiss,
+  reapproval = false,
+}: {
+  onQueueMoa: () => void;
+  onDismiss: () => void;
+  reapproval?: boolean;
+}) {
   return (
     <div>
       <div className="text-center">
@@ -260,8 +274,9 @@ function ApprovalPendingContent({ onQueueMoa }: { onQueueMoa: () => void }) {
           Pending approval
         </h2>
         <p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-6">
-          Your company is pending approval. Expect an email in the next 24
-          hours.
+          {reapproval
+            ? "Your document batch was submitted. Your company requires re-approval before new MOAs can be issued."
+            : "Your company is pending approval. Expect an email in the next 24 hours."}
         </p>
       </div>
 
@@ -272,7 +287,9 @@ function ApprovalPendingContent({ onQueueMoa }: { onQueueMoa: () => void }) {
           </span>
           <div>
             <p className="text-sm font-semibold text-gray-900">
-              Continue requesting MOAs
+              {reapproval
+                ? "Queue MOA requests while you wait"
+                : "Continue requesting MOAs"}
             </p>
             <p className="text-muted-foreground mt-0.5 text-xs">
               We&apos;ll queue them until approval.
@@ -295,11 +312,26 @@ function ApprovalPendingContent({ onQueueMoa }: { onQueueMoa: () => void }) {
             We&apos;ll notify you via email
           </p>
         </div>
+        {reapproval && (
+          <p className="text-muted-foreground text-sm">
+            Your existing MOAs remain valid while this review is pending.
+          </p>
+        )}
       </div>
 
-      <Button size="lg" className="mt-6 w-full" onClick={onQueueMoa}>
-        Request MOA now
-      </Button>
+      <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
+        <Button
+          size="lg"
+          variant="outline"
+          className="flex-1"
+          onClick={onDismiss}
+        >
+          Not now
+        </Button>
+        <Button size="lg" className="flex-1" onClick={onQueueMoa}>
+          Request MOA now
+        </Button>
+      </div>
 
       <p className="text-muted-foreground mt-3 text-center text-xs">
         You can keep using the platform while you wait.
@@ -371,7 +403,7 @@ function ConfirmForm({
   confirmLabel: string;
   onConfirm: () => void | Promise<void>;
   isPending?: boolean;
-  tone?: "default" | "warning";
+  tone?: "default" | "warning" | "alert";
   close: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -388,16 +420,36 @@ function ConfirmForm({
 
   return (
     <div className="space-y-4">
-      {tone === "warning" ? (
+      {tone === "warning" || tone === "alert" ? (
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <span className="text-destructive flex shrink-0 items-center justify-center">
+            <span
+              className={
+                tone === "alert"
+                  ? "text-warning flex shrink-0 items-center justify-center"
+                  : "text-destructive flex shrink-0 items-center justify-center"
+              }
+            >
               <AlertTriangle className="h-6 w-6" aria-hidden="true" />
             </span>
             <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           </div>
-          <div className="border-destructive/30 bg-destructive/5 rounded-[0.33em] border px-4 py-3 text-left">
-            <p className="text-destructive text-sm leading-6">{description}</p>
+          <div
+            className={
+              tone === "alert"
+                ? "border-warning/30 bg-warning/10 rounded-[0.33em] border px-4 py-3 text-left"
+                : "border-destructive/30 bg-destructive/5 rounded-[0.33em] border px-4 py-3 text-left"
+            }
+          >
+            <p
+              className={
+                tone === "alert"
+                  ? "text-gray-800 text-sm leading-6"
+                  : "text-destructive text-sm leading-6"
+              }
+            >
+              {description}
+            </p>
           </div>
         </div>
       ) : (
