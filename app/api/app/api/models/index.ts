@@ -265,3 +265,5 @@ export * from "./universityUploadSignatureResponse";
 export * from "./universityValidateInviteDto";
 export * from "./updateStaffAccountDto";
 export * from "./verifyTinDto";
+export * from "./updateStaffRoleDto";
+export * from "./updateStaffRoleDtoRole";

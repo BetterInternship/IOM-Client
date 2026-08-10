@@ -66,6 +66,7 @@ import type {
   UniversityUploadLogoResponse,
   UniversityUploadSignatureResponse,
   UpdateStaffAccountDto,
+  UpdateStaffRoleDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
@@ -6109,6 +6110,86 @@ export const useUniversityControllerResendInvite = <
 > => {
   const mutationOptions =
     getUniversityControllerResendInviteMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerUpdateStaffRole = (
+  accountId: string | undefined | null,
+  updateStaffRoleDto: UpdateStaffRoleDto,
+) => {
+  return preconfiguredAxiosFunction<UniversityUpdateStaffResponse>({
+    url: `/api/university/accounts/${accountId}/role`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: updateStaffRoleDto,
+  });
+};
+
+export const getUniversityControllerUpdateStaffRoleMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>,
+    TError,
+    { accountId: string | undefined | null; data: UpdateStaffRoleDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>,
+  TError,
+  { accountId: string | undefined | null; data: UpdateStaffRoleDto },
+  TContext
+> => {
+  const mutationKey = ["universityControllerUpdateStaffRole"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>,
+    { accountId: string | undefined | null; data: UpdateStaffRoleDto }
+  > = (props) => {
+    const { accountId, data } = props ?? {};
+
+    return universityControllerUpdateStaffRole(accountId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityControllerUpdateStaffRoleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>
+>;
+export type UniversityControllerUpdateStaffRoleMutationBody =
+  UpdateStaffRoleDto;
+export type UniversityControllerUpdateStaffRoleMutationError = ErrorResponse;
+
+export const useUniversityControllerUpdateStaffRole = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>,
+      TError,
+      { accountId: string | undefined | null; data: UpdateStaffRoleDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerUpdateStaffRole>>,
+  TError,
+  { accountId: string | undefined | null; data: UpdateStaffRoleDto },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerUpdateStaffRoleMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

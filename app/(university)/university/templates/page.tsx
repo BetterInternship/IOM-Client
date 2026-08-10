@@ -22,7 +22,7 @@ import {
 } from "@/components/university/university-templates-table";
 
 export default function UniversityTemplatesPage() {
-  const { account, isLoading, isSuperadmin } = useUniversityProfile();
+  const { account, isLoading, canManageUniversity } = useUniversityProfile();
   const router = useRouter();
   const queryClient = useQueryClient();
   const { confirmAction, universityProfileComplete } = useIomModalRegistry();
@@ -55,11 +55,12 @@ export default function UniversityTemplatesPage() {
   }, []);
 
   useEffect(() => {
-    if (!isLoading && !isSuperadmin) router.replace("/university/partners");
-  }, [isLoading, isSuperadmin, router]);
+    if (!isLoading && !canManageUniversity)
+      router.replace("/university/partners");
+  }, [isLoading, canManageUniversity, router]);
 
   const { data, isLoading: tLoading } = useUniversityControllerListTemplates({
-    query: { enabled: !!account && isSuperadmin },
+    query: { enabled: !!account && canManageUniversity },
   });
 
   const toggle = useUniversityControllerToggleTemplateOffer({
@@ -102,7 +103,7 @@ export default function UniversityTemplatesPage() {
     updatePreviewWidth(((bounds.right - event.clientX) / bounds.width) * 100);
   };
 
-  if (isLoading || !account || !isSuperadmin) return null;
+  if (isLoading || !account || !canManageUniversity) return null;
 
   return (
     <PageContainer

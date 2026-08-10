@@ -10,6 +10,7 @@ import {
   useUniversityControllerGetAccounts,
   useUniversityControllerReactivateStaff,
   useUniversityControllerResendInvite,
+  useUniversityControllerUpdateStaffRole,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -92,13 +93,14 @@ function InviteStaffForm({ onClose }: { onClose: () => void }) {
 }
 
 export default function AccountsPage() {
-  const { account, isLoading, isSuperadmin } = useUniversityProfile();
+  const { account, isLoading, isSuperadmin, canManageUniversity } =
+    useUniversityProfile();
   const queryClient = useQueryClient();
   const { openModal, closeModal } = useModal();
 
   const { data, isLoading: accountsLoading } =
     useUniversityControllerGetAccounts({
-      query: { enabled: !!account && isSuperadmin },
+      query: { enabled: !!account && canManageUniversity },
     });
 
   const invalidate = () =>
@@ -124,11 +126,17 @@ export default function AccountsPage() {
       onError: (e: Error) => toast.error(e.message),
     },
   });
+  const changeRole = useUniversityControllerUpdateStaffRole({
+    mutation: {
+      onSuccess: invalidate,
+      onError: (e: Error) => toast.error(e.message),
+    },
+  });
 
   if (isLoading || !account) return null;
-  if (!isSuperadmin) return null;
+  if (!canManageUniversity) return null;
 
-  const staff = (data?.accounts ?? []).filter((a) => a.role === "staff");
+  const accounts = data?.accounts ?? [];
 
   return (
     <PageContainer className="space-y-6">
@@ -137,14 +145,19 @@ export default function AccountsPage() {
         description="Manage staff accounts for your institution."
       />
       <StaffAccountsTable
-        accounts={staff}
+        accounts={accounts}
         isLoading={accountsLoading}
+        isSuperadmin={isSuperadmin}
         isDeactivating={deactivate.isPending}
         isReactivating={reactivate.isPending}
         isResendingInvite={resendInvite.isPending}
+        isChangingRole={changeRole.isPending}
         onDeactivate={(accountId) => deactivate.mutate({ accountId })}
         onReactivate={(accountId) => reactivate.mutate({ accountId })}
         onResendInvite={(accountId) => resendInvite.mutate({ accountId })}
+        onChangeRole={(accountId, role) =>
+          changeRole.mutate({ accountId, data: { role } })
+        }
         toolbarActions={
           <Button
             onClick={() =>

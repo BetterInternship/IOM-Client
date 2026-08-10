@@ -94,7 +94,7 @@ export function UniversityProfileContent({
 }: {
   mode: UniversityProfileMode;
 }) {
-  const { account, isLoading, isSuperadmin } = useUniversityProfile();
+  const { account, isLoading, canManageUniversity } = useUniversityProfile();
   const router = useRouter();
   const queryClient = useQueryClient();
   const logoRef = useRef<HTMLInputElement>(null);
@@ -277,7 +277,7 @@ export function UniversityProfileContent({
     universitySignatoriesComplete(persistedSignatories);
   const setupComplete = isUniversitySetupComplete(uni);
   const isSetupRoute = mode === "setup";
-  const isSetupMode = isSetupRoute && isSuperadmin;
+  const isSetupMode = isSetupRoute && canManageUniversity;
   const liveValues = form.watch();
   const formIsValid = universityProfileSchema.safeParse(liveValues).success;
   const hasChanges =
@@ -311,20 +311,21 @@ export function UniversityProfileContent({
     )
       return;
 
-    if (!isSuperadmin || setupComplete) {
+    if (!canManageUniversity || setupComplete) {
       router.replace("/profile");
     }
   }, [
     account,
     isLoading,
     isSetupRoute,
-    isSuperadmin,
+    canManageUniversity,
     profileLoading,
     router,
     setupComplete,
   ]);
 
-  const isLeavingSetupRoute = isSetupRoute && (!isSuperadmin || setupComplete);
+  const isLeavingSetupRoute =
+    isSetupRoute && (!canManageUniversity || setupComplete);
 
   if (isLoading || profileLoading || !account || isLeavingSetupRoute)
     return null;
@@ -465,7 +466,7 @@ export function UniversityProfileContent({
               </FileDropTarget>
               <PageHeader title={account.university.registered_name} />
             </div>
-            {isSuperadmin &&
+            {canManageUniversity &&
               (editing === "all" ? (
                 <div className="flex gap-2">
                   <Button
@@ -507,7 +508,7 @@ export function UniversityProfileContent({
           </div>
         )}
 
-        {!isSetupMode && !persistedSignatoriesComplete && isSuperadmin && (
+        {!isSetupMode && !persistedSignatoriesComplete && canManageUniversity && (
           <div className="border-warning/30 bg-warning/10 flex items-start gap-3 rounded-[0.33em] border p-4 text-sm">
             <AlertTriangle className="text-warning mt-0.5 h-4 w-4 flex-shrink-0" />
             <p className="text-gray-700">
