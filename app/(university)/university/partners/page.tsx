@@ -19,6 +19,7 @@ import {
   getUniversityControllerListPartnersQueryKey,
   getUniversityControllerListRenewalsQueryKey,
   useUniversityControllerAppendLegacyCompanyMoas,
+  useUniversityControllerDeleteLegacyCompanyMoa,
   useUniversityControllerBlacklistCompany,
   useUniversityControllerGetBlacklist,
   useUniversityControllerGetLegacyCompany,
@@ -26,12 +27,17 @@ import {
   useUniversityControllerGetPartnerMoas,
   useUniversityControllerListLegacyCompanies,
   useUniversityControllerListPartners,
+  useUniversityControllerUpdateLegacyCompanyMoa,
   useUniversityControllerUnblacklistCompany,
   type UniversityPartnerMoasDocumentDto,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { CompanyLogo } from "@/components/company-logo";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
@@ -70,6 +76,7 @@ import {
   Upload,
   UserPlus,
   X,
+  Loader2,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -366,6 +373,7 @@ function ReadOnlyLegacyDetail({
 }) {
   const queryClient = useQueryClient();
   const { openModal, closeModal } = useModal();
+  const { confirmAction } = useIomModalRegistry();
   const details = company.company_details as Record<string, unknown>;
   const logoUrl =
     typeof details.logo_url === "string" ? details.logo_url : null;
@@ -393,6 +401,42 @@ function ReadOnlyLegacyDetail({
       },
     },
   });
+  const refreshLegacyCompany = () => {
+    queryClient.invalidateQueries({
+      queryKey: getUniversityControllerGetLegacyCompanyQueryKey(company.id),
+    });
+    queryClient.invalidateQueries({
+      queryKey: getUniversityControllerListLegacyCompaniesQueryKey(),
+    });
+  };
+  const updateMoaMutation = useUniversityControllerUpdateLegacyCompanyMoa({
+    mutation: {
+      onSuccess: () => {
+        refreshLegacyCompany();
+        closeModal("legacy-edit-moa");
+        toast("Legacy MOA updated", toastPresets.success);
+      },
+      onError: (err) =>
+        toast(
+          err instanceof Error ? err.message : "Failed to update legacy MOA",
+          toastPresets.destructive,
+        ),
+    },
+  });
+  const deleteMoaMutation = useUniversityControllerDeleteLegacyCompanyMoa({
+    mutation: {
+      onSuccess: () => {
+        refreshLegacyCompany();
+        confirmAction.close();
+        toast("Legacy MOA deleted", toastPresets.success);
+      },
+      onError: (err) =>
+        toast(
+          err instanceof Error ? err.message : "Failed to delete legacy MOA",
+          toastPresets.destructive,
+        ),
+    },
+  });
 
   return (
     <>
@@ -412,52 +456,201 @@ function ReadOnlyLegacyDetail({
       )}
 
       <div className="flex flex-col">
-      <div className="order-1">
-      <CollapsibleCard
-        id="legacy-moa-history"
-        title={
-          <span className="flex w-full items-center justify-between gap-3">
-            <span>MOA history</span>
-            {canUpload && (
-              <Button
-                size="xs"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  openModal(
-                    "legacy-add-moa",
-                    <MoaUploadDialog
-                      title="Add Legacy MOA"
-                      description="Add an MOA record to this imported company."
-                      isPending={moaUploadMutation.isPending}
-                      onClose={() => closeModal("legacy-add-moa")}
-                      onSubmit={(moas) =>
-                        moaUploadMutation.mutate({
-                          legacyCompanyId: company.id,
-                          data: buildMoaRequest(moas),
-                        })
-                      }
-                    />,
-                    {
-                      title: "Add Legacy MOA",
-                      description:
-                        "Add an MOA record to this imported company.",
-                      panelClassName: "!w-full sm:!max-w-2xl",
-                    },
-                  );
-                }}
-              >
-                <Plus className="h-3.5 w-3.5" /> Add MOA
-              </Button>
-            )}
-          </span>
-        }
-        defaultOpen
-      >
-        <LegacyPartnerMoasTable moas={company.moas} onOpenMoa={onOpenMoa} />
-      </CollapsibleCard>
-      </div>
+        <div className="order-1">
+          <CollapsibleCard
+            id="legacy-moa-history"
+            title={
+              <span className="flex w-full items-center justify-between gap-3">
+                <span>MOA history</span>
+                {canUpload && (
+                  <Button
+                    size="xs"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openModal(
+                        "legacy-add-moa",
+                        <MoaUploadDialog
+                          title="Add Legacy MOA"
+                          description="Add an MOA record to this imported company."
+                          isPending={moaUploadMutation.isPending}
+                          onClose={() => closeModal("legacy-add-moa")}
+                          onSubmit={(moas) =>
+                            moaUploadMutation.mutate({
+                              legacyCompanyId: company.id,
+                              data: buildMoaRequest(moas),
+                            })
+                          }
+                        />,
+                        {
+                          title: "Add Legacy MOA",
+                          description:
+                            "Add an MOA record to this imported company.",
+                          panelClassName: "!w-full sm:!max-w-2xl",
+                        },
+                      );
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add MOA
+                  </Button>
+                )}
+              </span>
+            }
+            defaultOpen
+          >
+            <LegacyPartnerMoasTable
+              moas={company.moas}
+              onOpenMoa={onOpenMoa}
+              onEditMoa={
+                canUpload
+                  ? (moa) => {
+                      openModal(
+                        "legacy-edit-moa",
+                        <LegacyMoaEditForm
+                          moa={moa}
+                          isPending={updateMoaMutation.isPending}
+                          onClose={() => closeModal("legacy-edit-moa")}
+                          onSubmit={(data) =>
+                            updateMoaMutation.mutate({
+                              legacyCompanyId: company.id,
+                              moaId: moa.id,
+                              data,
+                            })
+                          }
+                        />,
+                        {
+                          title: "Edit Legacy MOA",
+                          description: "Update this imported MOA record.",
+                          panelClassName: "!w-full sm:!max-w-lg",
+                        },
+                      );
+                    }
+                  : undefined
+              }
+              onDeleteMoa={
+                canUpload
+                  ? (moa) => {
+                      confirmAction.open({
+                        title: "Delete this MOA?",
+                        description:
+                          "This removes the imported MOA record from the company history. This can't be undone.",
+                        confirmLabel: "Delete MOA",
+                        tone: "warning",
+                        isPending: deleteMoaMutation.isPending,
+                        onConfirm: () =>
+                          deleteMoaMutation.mutate({
+                            legacyCompanyId: company.id,
+                            moaId: moa.id,
+                          }),
+                      });
+                    }
+                  : undefined
+              }
+            />
+          </CollapsibleCard>
+        </div>
       </div>
     </>
+  );
+}
+
+type LegacyMoa = LegacyCompanyDetail["moas"][number];
+
+function LegacyMoaEditForm({
+  moa,
+  isPending,
+  onClose,
+  onSubmit,
+}: {
+  moa: LegacyMoa;
+  isPending: boolean;
+  onClose: () => void;
+  onSubmit: (data: {
+    effective_date: string | null;
+    expiry_date: string | null;
+    is_perpetual: boolean;
+    filename: string | null;
+    notes: string | null;
+  }) => void;
+}) {
+  const [effectiveDate, setEffectiveDate] = useState(moa.effective_date ?? "");
+  const [expiryDate, setExpiryDate] = useState(moa.expiry_date ?? "");
+  const [isPerpetual, setIsPerpetual] = useState(moa.is_perpetual);
+  const [filename, setFilename] = useState(moa.filename ?? "");
+  const [notes, setNotes] = useState(moa.notes ?? "");
+  const invalidRange =
+    !!effectiveDate && !!expiryDate && expiryDate < effectiveDate;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <input
+          id={`edit-perpetual-${moa.id}`}
+          type="checkbox"
+          className="size-4"
+          checked={isPerpetual}
+          onChange={(event) => {
+            setIsPerpetual(event.target.checked);
+            if (event.target.checked) setExpiryDate("");
+          }}
+        />
+        <Label htmlFor={`edit-perpetual-${moa.id}`}>Perpetual MOA</Label>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label>Effective date</Label>
+          <DatePicker value={effectiveDate} onChange={setEffectiveDate} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{isPerpetual ? "Expiry date (N/A)" : "Expiry date"}</Label>
+          <DatePicker
+            value={expiryDate}
+            disabled={isPerpetual}
+            onChange={setExpiryDate}
+          />
+        </div>
+      </div>
+      {invalidRange && (
+        <p className="text-destructive text-sm">
+          Expiry date must be on or after the effective date.
+        </p>
+      )}
+      <div className="space-y-1.5">
+        <Label htmlFor={`edit-filename-${moa.id}`}>Document name</Label>
+        <Input
+          id={`edit-filename-${moa.id}`}
+          value={filename}
+          onChange={(event) => setFilename(event.target.value)}
+        />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor={`edit-notes-${moa.id}`}>Notes</Label>
+        <Textarea
+          id={`edit-notes-${moa.id}`}
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+        />
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <Button variant="outline" onClick={onClose} disabled={isPending}>
+          Cancel
+        </Button>
+        <Button
+          disabled={invalidRange || isPending}
+          onClick={() =>
+            onSubmit({
+              effective_date: effectiveDate || null,
+              expiry_date: isPerpetual ? null : expiryDate || null,
+              is_perpetual: isPerpetual,
+              filename: filename.trim() || null,
+              notes: notes.trim() || null,
+            })
+          }
+        >
+          {isPending && <Loader2 className="size-4 animate-spin" />}
+          Save changes
+        </Button>
+      </div>
+    </div>
   );
 }
 

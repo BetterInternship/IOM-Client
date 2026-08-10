@@ -36,7 +36,8 @@ function AcceptInviteForm() {
           staleTime: 0,
         });
         router.replace(
-          profile.account.role === "superadmin"
+          profile.account.role === "superadmin" ||
+            profile.account.role === "admin"
             ? "/complete-profile"
             : "/partners",
         );

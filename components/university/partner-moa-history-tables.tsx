@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { Loader as PdfLoader } from "@betterinternship/core/pdf-viewer";
-import { ArrowRight, Download, Eye, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+  Download,
+  Eye,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 
 import { useUniversityControllerGetMoaDetail } from "@/app/api/app/api/endpoints/university/university";
 import { DocumentPreviewPane } from "@/components/document-preview-pane";
@@ -15,6 +23,13 @@ import {
 } from "@/components/ui/resource-table";
 import { useResourceTable } from "@/components/ui/use-resource-table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
 import { cn, formatDateWithoutTime } from "@/lib/utils";
 
@@ -32,6 +47,51 @@ export interface RegisteredPartnerMoa {
 }
 
 type LegacyMoa = LegacyCompanyDetail["moas"][number];
+
+function LegacyMoaActions({
+  moa,
+  onEditMoa,
+  onDeleteMoa,
+}: {
+  moa: LegacyMoa;
+  onEditMoa?: (moa: LegacyMoa) => void;
+  onDeleteMoa?: (moa: LegacyMoa) => void;
+}) {
+  if (!onEditMoa && !onDeleteMoa) return null;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="xs"
+          className="size-7 px-0"
+          aria-label="MOA actions"
+          title="MOA actions"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {onEditMoa && (
+          <DropdownMenuItem onSelect={() => onEditMoa(moa)}>
+            <Pencil /> Edit
+          </DropdownMenuItem>
+        )}
+        {onDeleteMoa && (
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={() => onDeleteMoa(moa)}
+          >
+            <Trash2 /> Delete
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export type PartnerPdfSelection =
   | { kind: "registered"; moaId: string; label: string }
@@ -352,9 +412,13 @@ export function RegisteredPartnerMoasTable({
 export function LegacyPartnerMoasTable({
   moas,
   onOpenMoa,
+  onEditMoa,
+  onDeleteMoa,
 }: {
   moas: LegacyMoa[];
   onOpenMoa: (selection: PartnerPdfSelection) => void;
+  onEditMoa?: (moa: LegacyMoa) => void;
+  onDeleteMoa?: (moa: LegacyMoa) => void;
 }) {
   const columns: Array<ResourceTableColumn<LegacyMoa>> = [
     {
@@ -447,11 +511,25 @@ export function LegacyPartnerMoasTable({
     },
     {
       id: "action",
-      header: <span className="sr-only">Open</span>,
+      header: <span className="sr-only">Actions</span>,
       width: "w-[6%]",
       align: "right",
       sortable: false,
-      render: () => <ArrowRight className="text-primary ml-auto h-4 w-4" />,
+      render: (moa) =>
+        onEditMoa || onDeleteMoa ? (
+          <div
+            className="flex items-center justify-end gap-1"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <LegacyMoaActions
+              moa={moa}
+              onEditMoa={onEditMoa}
+              onDeleteMoa={onDeleteMoa}
+            />
+          </div>
+        ) : (
+          <ArrowRight className="text-primary ml-auto h-4 w-4" />
+        ),
     },
   ];
   const table = useResourceTable({
@@ -509,10 +587,15 @@ export function LegacyPartnerMoasTable({
               </p>
             </div>
           </button>
-          <div className="shrink-0 pr-4">
+          <div className="flex shrink-0 items-center gap-1 pr-4">
             <DownloadMoaButton
               pdfUrl={moa.document_url}
               label={withPdfExtension(moa.filename ?? "MOA document")}
+            />
+            <LegacyMoaActions
+              moa={moa}
+              onEditMoa={onEditMoa}
+              onDeleteMoa={onDeleteMoa}
             />
           </div>
         </div>

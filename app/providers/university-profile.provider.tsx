@@ -9,7 +9,7 @@ interface UniversityAccount {
   university_id: string;
   email: string;
   display_name: string;
-  role: "superadmin" | "staff";
+  role: "superadmin" | "admin" | "staff";
   is_deactivated: boolean | null;
   university: {
     id: string;
@@ -35,6 +35,7 @@ interface UniversityProfileCtx {
   account: UniversityAccount | null;
   isLoading: boolean;
   isSuperadmin: boolean;
+  canManageUniversity: boolean;
   isSetupComplete: boolean;
 }
 
@@ -42,6 +43,7 @@ const UniversityProfileContext = createContext<UniversityProfileCtx>({
   account: null,
   isLoading: true,
   isSuperadmin: false,
+  canManageUniversity: false,
   isSetupComplete: false,
 });
 
@@ -92,6 +94,8 @@ export function UniversityProfileProvider({
   const loginRedirect = "/login";
   const account = (data?.account as UniversityAccount) ?? null;
   const isSuperadmin = account?.role === "superadmin";
+  const canManageUniversity =
+    account?.role === "superadmin" || account?.role === "admin";
   const isSetupComplete = isUniversitySetupComplete(account?.university);
   const completeProfileRedirect = "/complete-profile";
 
@@ -105,7 +109,7 @@ export function UniversityProfileProvider({
       !onCompleteProfilePage &&
       !isError &&
       !isLoading &&
-      isSuperadmin &&
+      canManageUniversity &&
       !isSetupComplete
     ) {
       router.replace(completeProfileRedirect);
@@ -115,7 +119,7 @@ export function UniversityProfileProvider({
     isError,
     isLoading,
     isSetupComplete,
-    isSuperadmin,
+    canManageUniversity,
     onAuthPage,
     onCompleteProfilePage,
     router,
@@ -123,7 +127,7 @@ export function UniversityProfileProvider({
 
   return (
     <UniversityProfileContext.Provider
-      value={{ account, isLoading, isSuperadmin, isSetupComplete }}
+      value={{ account, isLoading, isSuperadmin, canManageUniversity, isSetupComplete }}
     >
       {children}
     </UniversityProfileContext.Provider>
