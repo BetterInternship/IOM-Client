@@ -9,4 +9,6 @@
 export interface CompanyPendingInviteUniversityDto {
   id: string;
   registered_name: string;
+  /** @nullable */
+  logo_url: string | null;
 }

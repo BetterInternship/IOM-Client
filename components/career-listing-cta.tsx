@@ -3,10 +3,10 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowUpRight } from "lucide-react";
+import { BriefcaseBusiness } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import {
   useCompanyControllerCareerLinkStatus,
   useCompanyControllerCareerListingLink,
@@ -21,7 +21,8 @@ export function getCareerHireUrl(): string {
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
     if (host.startsWith("dev.")) return "https://hire.dev.betterinternship.com";
-    if (host.endsWith(".betterinternship.com")) return "https://hire.betterinternship.com";
+    if (host.endsWith(".betterinternship.com"))
+      return "https://hire.betterinternship.com";
   }
   return "http://hire.localhost:3000";
 }
@@ -78,7 +79,11 @@ export function CareerListingCta() {
       },
       onError: (e: Error) => {
         const error = e as ApiError;
-        if (error.code === "EMAIL_MANAGES_OTHER_EMPLOYER" && error.email && error.autoLinkToken) {
+        if (
+          error.code === "EMAIL_MANAGES_OTHER_EMPLOYER" &&
+          error.email &&
+          error.autoLinkToken
+        ) {
           const url = new URL("/login", getCareerHireUrl());
           url.searchParams.set("email", error.email);
           url.searchParams.set("auto_link", error.autoLinkToken);
@@ -93,7 +98,9 @@ export function CareerListingCta() {
         if (error.code === "NO_EMAIL") {
           setConflictCode(error.code);
         } else {
-          toast.error(error.message || "Could not start BetterInternship listing setup.");
+          toast.error(
+            error.message || "Could not start BetterInternship listing setup.",
+          );
         }
       },
     },
@@ -118,36 +125,69 @@ export function CareerListingCta() {
       : "Post a listing";
 
   return (
-    <Card className="flex-row items-start gap-3 border-primary/30 bg-primary/5 px-5 py-4">
-      <ArrowUpRight className="text-primary mt-0.5 h-5 w-5 flex-shrink-0" />
-      <div className="min-w-0 flex-1 space-y-1.5">
-        <div className="flex items-start justify-between gap-3">
+    <Card
+      className="cursor-pointer flex-row items-center gap-4 border-gray-200 bg-white px-5 py-4 transition-colors hover:bg-gray-50"
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(event) => {
+        if (
+          event.currentTarget === event.target &&
+          (event.key === "Enter" || event.key === " ")
+        ) {
+          event.preventDefault();
+          handleClick();
+        }
+      }}
+    >
+      <span className="bg-primary/10 text-primary flex h-14 w-14 shrink-0 items-center justify-center rounded-[0.33em]">
+        <BriefcaseBusiness className="h-6 w-6" aria-hidden="true" />
+      </span>
+      <div className="flex min-w-0 flex-1 items-center justify-between gap-5">
+        <div className="min-w-0 space-y-1">
           <p className="text-sm font-medium text-gray-900">
-            Post internship openings straight to BetterInternship&apos;s
-            marketplace
+            Reach more students with an internship listing
           </p>
-          {!linkStatusLoading && (
-            <Badge type={linked ? "supportive" : "warning"} className="flex-shrink-0">
-              {linked ? "Linked" : "Not Linked"}
-            </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-muted-foreground text-sm">
+              Post openings directly to BetterInternship&apos;s marketplace.
+            </p>
+            {!linkStatusLoading && (
+              <PartnershipStatusBadge
+                status={linked ? "active" : "inactive"}
+                label={linked ? "Linked" : "Not linked"}
+                showIcon={linked}
+                className="px-2 py-1 text-xs"
+              />
+            )}
+          </div>
+
+          {conflictCode === "NO_EMAIL" && (
+            <p className="text-destructive text-sm">
+              Set an account email on your{" "}
+              <Link href="/profile" className="underline">
+                company profile
+              </Link>{" "}
+              first.
+            </p>
           )}
         </div>
 
-        {conflictCode === "NO_EMAIL" && (
-          <p className="text-destructive text-sm">
-            Set an account email on your{" "}
-            <Link href="/profile" className="underline">
-              company profile
-            </Link>{" "}
-            first.
-          </p>
-        )}
-
-        <div className="pt-1">
-          <Button size="sm" onClick={handleClick} disabled={isBusy}>
-            {ctaLabel}
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          scheme="primary"
+          expandIcon
+          onClick={(event) => {
+            event.stopPropagation();
+            handleClick();
+          }}
+          disabled={isBusy}
+          className="shrink-0"
+          aria-label={ctaLabel}
+        >
+          <BriefcaseBusiness aria-hidden="true" />
+          <span className="button-label">{ctaLabel}</span>
+        </Button>
       </div>
     </Card>
   );
