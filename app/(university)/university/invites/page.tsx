@@ -26,7 +26,13 @@ import {
   type UniversityRenewal,
 } from "@/components/university/university-renewals-table";
 import Link from "next/link";
-import { ChevronDown, FileText, Megaphone, Plus } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronDown,
+  FileText,
+  Megaphone,
+  Plus,
+} from "lucide-react";
 
 function mapInviteStatus(status: string): CompanyInvite["status"] {
   switch (status) {
@@ -112,10 +118,20 @@ export default function InvitesPage() {
       openModal(
         "no-templates",
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            You need at least one active MOA template before you can invite
-            companies. Go to your templates page to activate one.
-          </p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="text-warning size-6 shrink-0" />
+              <h2 className="text-lg font-semibold text-gray-900">
+                No active templates
+              </h2>
+            </div>
+            <div className="border-warning/30 bg-warning/10 rounded-[0.33em] border px-4 py-3 text-left">
+              <p className="text-sm leading-6 text-gray-800">
+                You need at least one active MOA template before you can invite
+                companies. Go to your templates page to activate one.
+              </p>
+            </div>
+          </div>
           <div className="flex justify-end gap-2">
             <Button
               variant="outline"
@@ -129,8 +145,9 @@ export default function InvitesPage() {
           </div>
         </div>,
         {
-          title: "No active templates",
-          panelClassName: "!w-full sm:!max-w-sm",
+          title: null,
+          hasClose: false,
+          panelClassName: "!w-full sm:!max-w-lg",
         },
       );
     } else {
