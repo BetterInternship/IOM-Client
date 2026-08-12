@@ -63,7 +63,7 @@ export function ProfileHeader({
       </h1>
       <div className="w-full max-w-sm space-y-3 sm:w-80">
         <p className="text-sm font-medium text-gray-700">
-          {remainingSteps === 1 ? "One last step remaining" : "Complete"}
+          {remainingSteps === 1 ? "One last step remaining" : "Ready to save"}
         </p>
         <div
           className="flex gap-1.5"
