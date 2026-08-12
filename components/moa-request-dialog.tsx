@@ -334,6 +334,8 @@ export function RequestDialog({
         "Your company must be verified by the platform team before you can request MOAs. " +
           "If you recently changed your details, they need to be re-verified.",
       );
+    } else if (code === "QUEUED_MOA_ALREADY_EXISTS") {
+      setError("You already have a pending MOA request with this university.");
     } else {
       setError(
         "Couldn't request from this university at this time. Please contact us for help.",
