@@ -9,6 +9,7 @@ import {
   CalendarDays,
   ChevronRight,
   FileText,
+  Link2Off,
   Loader2,
   Quote,
 } from "lucide-react";
@@ -177,29 +178,36 @@ function InvitePageContent() {
 
   if (!token || (!isLoading && (error || !inviteData))) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="space-y-2 rounded-lg border border-slate-200 bg-white px-8 py-7 text-center shadow-lg backdrop-blur-sm">
-          <p className="text-lg font-semibold text-slate-950">
-            {!token
-              ? "Invalid invite link"
-              : isWithdrawn
-                ? "Invitation withdrawn"
-                : "Invite not found"}
-          </p>
-          <p className="text-muted-foreground text-sm">
-            {!token
-              ? "This invite link is missing required information."
-              : isWithdrawn
-                ? apiError!.message
-                : "This invite link may have expired or already been used."}
-          </p>
+      <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
+        <div className="w-full max-w-md rounded-xl bg-white px-5 py-8 backdrop-blur-[2px] sm:px-0 md:bg-transparent md:py-12 md:backdrop-blur-none">
+          <section className="text-center">
+            <span className="mx-auto flex size-24 items-center justify-center rounded-full bg-slate-100 text-slate-500 sm:size-28">
+              <Link2Off className="size-10" aria-hidden="true" />
+            </span>
+          </section>
+
+          <div className=" border-slate-200 py-6">
+            <div className="flex items-center justify-center">
+              <div className="text-center">
+                <p className="font-semibold text-[#121d3d]">
+                  {!token ? "Invalid invite link" : "Invite not found"}
+                </p>
+                <p className="text-muted-foreground mt-1 text-sm leading-5">
+                  {!token
+                    ? "This invite link is missing required information."
+                    : "This invite link may have expired or already been used."}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {token && !isWithdrawn && (
-            <Button asChild className="mt-2 w-full">
-              <Link href="/login">Login to your company account</Link>
+            <Button asChild size="lg" className="mt-8 w-full" variant="outline">
+              <Link href="/login">Sign in to your company account</Link>
             </Button>
           )}
         </div>
-      </div>
+      </main>
     );
   }
 
