@@ -32,6 +32,7 @@ import type {
   CompanyControllerListMoasParams,
   CompanyControllerRequestMoaBody,
   CompanyControllerUploadDocumentBody,
+  CompanyControllerUploadDocumentsBody,
   CompanyControllerUploadLogoBody,
   CompanyCreateQueuedMoaResponse,
   CompanyDocumentsResponse,
@@ -45,6 +46,7 @@ import type {
   CompanyRequestableTemplatesResponse,
   CompanyUniversitiesResponse,
   CompanyUploadDocumentResponse,
+  CompanyUploadDocumentsResponse,
   CompanyUploadLogoResponse,
   CompanyVerificationResponse,
   ErrorResponse,
@@ -1407,6 +1409,107 @@ export function useCompanyControllerGetDocumentsSuspense<
   return query;
 }
 
+export const companyControllerUploadDocuments = (
+  companyControllerUploadDocumentsBody: CompanyControllerUploadDocumentsBody,
+  signal?: AbortSignal,
+) => {
+  const formData = new FormData();
+  if (companyControllerUploadDocumentsBody.business_permit !== undefined) {
+    formData.append(
+      `business_permit`,
+      companyControllerUploadDocumentsBody.business_permit,
+    );
+  }
+  if (companyControllerUploadDocumentsBody.sec_dti_registration !== undefined) {
+    formData.append(
+      `sec_dti_registration`,
+      companyControllerUploadDocumentsBody.sec_dti_registration,
+    );
+  }
+  if (companyControllerUploadDocumentsBody.mayor_permit !== undefined) {
+    formData.append(
+      `mayor_permit`,
+      companyControllerUploadDocumentsBody.mayor_permit,
+    );
+  }
+
+  return preconfiguredAxiosFunction<CompanyUploadDocumentsResponse>({
+    url: `/api/company/documents/batch`,
+    method: "POST",
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
+    signal,
+  });
+};
+
+export const getCompanyControllerUploadDocumentsMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyControllerUploadDocuments>>,
+    TError,
+    { data: CompanyControllerUploadDocumentsBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyControllerUploadDocuments>>,
+  TError,
+  { data: CompanyControllerUploadDocumentsBody },
+  TContext
+> => {
+  const mutationKey = ["companyControllerUploadDocuments"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyControllerUploadDocuments>>,
+    { data: CompanyControllerUploadDocumentsBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return companyControllerUploadDocuments(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyControllerUploadDocumentsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerUploadDocuments>>
+>;
+export type CompanyControllerUploadDocumentsMutationBody =
+  CompanyControllerUploadDocumentsBody;
+export type CompanyControllerUploadDocumentsMutationError = ErrorResponse;
+
+export const useCompanyControllerUploadDocuments = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyControllerUploadDocuments>>,
+      TError,
+      { data: CompanyControllerUploadDocumentsBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyControllerUploadDocuments>>,
+  TError,
+  { data: CompanyControllerUploadDocumentsBody },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyControllerUploadDocumentsMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export const companyControllerListUniversities = (signal?: AbortSignal) => {
   return preconfiguredAxiosFunction<CompanyUniversitiesResponse>({
     url: `/api/company/universities`,

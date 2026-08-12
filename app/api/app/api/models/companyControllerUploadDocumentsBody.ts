@@ -6,9 +6,8 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface CompanyPendingInviteUniversityDto {
-  id: string;
-  registered_name: string;
-  /** @nullable */
-  logo_url: string | null;
-}
+export type CompanyControllerUploadDocumentsBody = {
+  business_permit?: Blob;
+  sec_dti_registration?: Blob;
+  mayor_permit?: Blob;
+};

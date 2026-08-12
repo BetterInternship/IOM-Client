@@ -8,6 +8,7 @@ import {
   useAdminControllerCreateUniversity,
   useAdminControllerDeactivateUniversity,
   useAdminControllerListUniversities,
+  useAdminControllerReactivateUniversity,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
@@ -26,7 +27,13 @@ import { FormError } from "@/components/auth-shell";
 import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { toastPresets } from "@/components/sonner-toaster";
-import { ChevronRight, Loader2, Plus, UserRoundX } from "lucide-react";
+import {
+  ChevronRight,
+  Loader2,
+  Plus,
+  UserRoundCheck,
+  UserRoundX,
+} from "lucide-react";
 
 interface University {
   id: string;
@@ -222,7 +229,7 @@ function CreateUniversityForm({
   );
 }
 
-function DeactivateCell({ uni }: { uni: University }) {
+function UniversityAccessCell({ uni }: { uni: University }) {
   const queryClient = useQueryClient();
   const { confirmAction } = useIomModalRegistry();
 
@@ -232,13 +239,53 @@ function DeactivateCell({ uni }: { uni: University }) {
         queryClient.invalidateQueries({
           queryKey: getAdminControllerListUniversitiesQueryKey(),
         });
+        confirmAction.close();
         toast.success("University deactivated");
       },
       onError: (e: Error) => toast.error(e.message),
     },
   });
 
-  if (uni.is_deactivated) return null;
+  const reactivate = useAdminControllerReactivateUniversity({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: getAdminControllerListUniversitiesQueryKey(),
+        });
+        confirmAction.close();
+        toast.success("University reactivated");
+      },
+      onError: (e: Error) => toast.error(e.message),
+    },
+  });
+
+  if (uni.is_deactivated) {
+    return (
+      <Button
+        scheme="supportive"
+        variant="outline"
+        size="sm"
+        aria-label={`Reactivate ${uni.registered_name}`}
+        title="Reactivate university"
+        onClick={(e) => {
+          e.stopPropagation();
+          confirmAction.open({
+            title: `Reactivate ${uni.registered_name}?`,
+            description:
+              "The institution and its staff accounts will be able to sign in again.",
+            confirmLabel: "Reactivate",
+            onConfirm: async () => {
+              await reactivate.mutateAsync({ universityId: uni.id });
+            },
+            isPending: reactivate.isPending,
+          });
+        }}
+      >
+        <UserRoundCheck className="h-3.5 w-3.5" />
+        Reactivate
+      </Button>
+    );
+  }
 
   return (
     <Button
@@ -254,7 +301,9 @@ function DeactivateCell({ uni }: { uni: University }) {
           description:
             "Staff will lose access and the institution can no longer receive new MOA requests. This can be reversed later.",
           confirmLabel: "Deactivate",
-          onConfirm: () => deactivate.mutate({ universityId: uni.id }),
+          onConfirm: async () => {
+            await deactivate.mutateAsync({ universityId: uni.id });
+          },
           isPending: deactivate.isPending,
         });
       }}
@@ -304,7 +353,7 @@ const columns: Array<ResourceTableColumn<University>> = [
     header: "Actions",
     width: "w-[15%]",
     sortable: false,
-    render: (university) => <DeactivateCell uni={university} />,
+    render: (university) => <UniversityAccessCell uni={university} />,
   },
   {
     id: "open",
@@ -436,7 +485,7 @@ export default function AdminUniversitiesPage() {
                 className="mt-4"
                 onClick={(event) => event.stopPropagation()}
               >
-                <DeactivateCell uni={university} />
+                <UniversityAccessCell uni={university} />
               </div>
             </article>
           )}

@@ -38,7 +38,7 @@ function PdfViewer({
 
   useEffect(() => {
     const savedScale = Number(window.localStorage.getItem(zoomStorageKey));
-    if (savedScale >= 0.5 && savedScale <= 3) setScale(savedScale);
+    if (savedScale >= 0.2 && savedScale <= 3) setScale(savedScale);
   }, [zoomStorageKey]);
 
   const updateScale = (nextScale: number) => {

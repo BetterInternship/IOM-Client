@@ -23,9 +23,10 @@ export interface CompanyPartnerUniversity {
     logo_url: string | null;
   };
   activeCount: number;
+  pendingCount: number;
 }
 
-export type PartnerStatus = "active" | "inactive";
+export type PartnerStatus = "active" | "pending" | "inactive";
 export type ActiveMoaRange = "0" | "1-2" | "3-5" | "6+";
 
 const PARTNERS_PER_PAGE = 20;
@@ -73,7 +74,7 @@ function PartnerLogo({ partner }: { partner: CompanyPartnerUniversity }) {
 export function parsePartnerStatuses(value: string | null): PartnerStatus[] {
   return (value?.split(",") ?? []).filter(
     (status): status is PartnerStatus =>
-      status === "active" || status === "inactive",
+      status === "active" || status === "pending" || status === "inactive",
   );
 }
 
@@ -89,16 +90,23 @@ function PartnerStatusBadge({
   partner: CompanyPartnerUniversity;
 }) {
   const isActive = partner.activeCount > 0;
+  const isPending = !isActive && partner.pendingCount > 0;
 
   return (
     <PartnershipStatusBadge
-      status={isActive ? "active" : "inactive"}
-      label={isActive ? "Active Partner" : "Inactive Partnership"}
+      status={isActive ? "active" : isPending ? "pending" : "inactive"}
+      label={
+        isActive
+          ? "Active Partner"
+          : isPending
+            ? "Pending MOA"
+            : "Inactive Partnership"
+      }
     />
   );
 }
 
-function ActiveMoas({ partner }: { partner: CompanyPartnerUniversity }) {
+function MoaCounts({ partner }: { partner: CompanyPartnerUniversity }) {
   return (
     <span className="inline-flex items-center gap-3 text-left">
       <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-500">
@@ -106,10 +114,15 @@ function ActiveMoas({ partner }: { partner: CompanyPartnerUniversity }) {
       </span>
       <span>
         <span className="block text-sm font-semibold text-gray-900">
-          {partner.activeCount}
+          {partner.activeCount + partner.pendingCount}
         </span>
         <span className="text-muted-foreground block text-xs whitespace-nowrap">
-          Active MOA{partner.activeCount === 1 ? "" : "s"}
+          {[
+            partner.activeCount > 0 && `${partner.activeCount} active`,
+            partner.pendingCount > 0 && `${partner.pendingCount} pending`,
+          ]
+            .filter(Boolean)
+            .join(" · ") || "No MOAs"}
         </span>
       </span>
     </span>
@@ -162,7 +175,12 @@ export function CompanyPartnersTable({
 }) {
   const statusCounts = {
     active: partners.filter((partner) => partner.activeCount > 0).length,
-    inactive: partners.filter((partner) => partner.activeCount === 0).length,
+    pending: partners.filter(
+      (partner) => partner.activeCount === 0 && partner.pendingCount > 0,
+    ).length,
+    inactive: partners.filter(
+      (partner) => partner.activeCount === 0 && partner.pendingCount === 0,
+    ).length,
   };
 
   const readCurrentQuery = () => {
@@ -183,7 +201,8 @@ export function CompanyPartnersTable({
       header: "Status",
       width: "w-[15%]",
       defaultSortDirection: "desc",
-      getSortValue: (partner) => (partner.activeCount > 0 ? 1 : 0),
+      getSortValue: (partner) =>
+        partner.activeCount > 0 ? 2 : partner.pendingCount > 0 ? 1 : 0,
       render: (partner) => (
         <Link
           href={partnerHref(partner)}
@@ -214,17 +233,17 @@ export function CompanyPartnersTable({
     },
     {
       id: "active-moas",
-      header: "Active MOAs",
+      header: "MOAs",
       width: "w-[20%]",
       defaultSortDirection: "desc",
-      getSortValue: (partner) => partner.activeCount,
+      getSortValue: (partner) => partner.activeCount + partner.pendingCount,
       render: (partner) => (
         <Link
           href={partnerHref(partner)}
           onClick={(event) => event.stopPropagation()}
           className="inline-flex text-inherit"
         >
-          <ActiveMoas partner={partner} />
+          <MoaCounts partner={partner} />
         </Link>
       ),
     },
@@ -277,6 +296,11 @@ export function CompanyPartnersTable({
           options: [
             { value: "active", label: "Active", count: statusCounts.active },
             {
+              value: "pending",
+              label: "Pending",
+              count: statusCounts.pending,
+            },
+            {
               value: "inactive",
               label: "Inactive",
               count: statusCounts.inactive,
@@ -298,7 +322,11 @@ export function CompanyPartnersTable({
           (filters.activeMoaRanges ?? []).join(","),
         );
         const status: PartnerStatus =
-          partner.activeCount > 0 ? "active" : "inactive";
+          partner.activeCount > 0
+            ? "active"
+            : partner.pendingCount > 0
+              ? "pending"
+              : "inactive";
         const matchesStatus =
           statuses.length === 0 || statuses.includes(status);
         const matchesMoaRange =
@@ -362,7 +390,7 @@ export function CompanyPartnersTable({
             <ArrowRight className="text-primary mt-3 h-4 w-4 shrink-0" />
           </div>
           <div className="mt-3 flex justify-end text-sm">
-            <ActiveMoas partner={partner} />
+            <MoaCounts partner={partner} />
           </div>
         </Link>
       )}

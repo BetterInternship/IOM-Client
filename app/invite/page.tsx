@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { formatDateWithoutTime } from "@/lib/utils";
 
 const CAREER_UNREACHABLE_MESSAGE =
-  "Your account is ready, but we couldn't reach BetterInternship just now — use the \"Post a listing\" button on your dashboard to continue.";
+  'Your account is ready, but we couldn\'t reach BetterInternship just now — use the "Post a listing" button on your dashboard to continue.';
 
 interface InviteData {
   email: string;
@@ -137,6 +137,11 @@ function InvitePageContent() {
                 ? apiError!.message
                 : "This invite link may have expired or already been used."}
           </p>
+          {token && !isWithdrawn && (
+            <Button asChild className="mt-2 w-full">
+              <Link href="/login">Login to your company account</Link>
+            </Button>
+          )}
         </div>
       </div>
     );

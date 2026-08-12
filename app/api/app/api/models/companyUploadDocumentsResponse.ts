@@ -5,10 +5,10 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
+import type { CompanyDocumentDto } from "./companyDocumentDto";
 
-export interface CompanyPendingInviteUniversityDto {
-  id: string;
-  registered_name: string;
-  /** @nullable */
-  logo_url: string | null;
+export interface CompanyUploadDocumentsResponse {
+  success: boolean;
+  message?: string;
+  documents: CompanyDocumentDto[];
 }

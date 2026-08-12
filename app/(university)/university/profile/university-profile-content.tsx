@@ -10,6 +10,7 @@ import {
   useUniversityProfile,
 } from "@/app/providers/university-profile.provider";
 import {
+  getUniversityControllerGetAuditLogQueryKey,
   getUniversityControllerGetProfileQueryKey,
   getUniversityControllerMeQueryKey,
   universityControllerPatchProfile,
@@ -231,6 +232,9 @@ export function UniversityProfileContent({
         }),
         queryClient.invalidateQueries({
           queryKey: getUniversityControllerMeQueryKey(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getUniversityControllerGetAuditLogQueryKey(),
         }),
       ]);
       setPendingSigs({});

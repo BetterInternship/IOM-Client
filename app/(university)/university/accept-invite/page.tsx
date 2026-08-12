@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -55,9 +56,14 @@ function AcceptInviteForm() {
         title="Invalid invitation"
       >
         <FormError>
-          This invitation link is invalid or has expired. Please ask your
+          This invitation link has expired or has been used. Please ask your
           administrator to resend it.
         </FormError>
+        <div className="mt-4 text-center">
+          <Button asChild className="w-full">
+            <Link href="/login">Login to your university account</Link>
+          </Button>
+        </div>
       </AuthShell>
     );
   }

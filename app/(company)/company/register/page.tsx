@@ -412,8 +412,11 @@ function RegisterPageContent() {
           <FormError>
             This invite link has expired or is no longer valid.
           </FormError>
-          <div className="mt-4 text-center">
-            <Link href="/register" className="text-primary text-sm font-medium">
+          <div className="mt-4 space-y-2 text-center text-sm font-medium">
+            <Button asChild className="w-full">
+              <Link href="/login">Login to your company account</Link>
+            </Button>
+            <Link href="/register" className="text-primary block">
               Register without an invite
             </Link>
           </div>

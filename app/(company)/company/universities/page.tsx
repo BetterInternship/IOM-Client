@@ -97,7 +97,7 @@ function UniversityDirectoryContent() {
             : status === "incomplete"
               ? "Complete your profile and upload all required documents so the platform team can verify your company."
               : status === "expired"
-                ? "Your company verification has expired. Please re-upload your documents to request re-review."
+                ? "Your company verification has expired. Replace at least one required document to submit it for approval."
                 : "Your company is pending verification by the platform team. You can queue MOA requests once your profile is complete."}{" "}
           <Link href={profileHref} className="text-primary underline">
             Go to your profile

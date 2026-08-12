@@ -5,9 +5,13 @@ import { cn } from "@/lib/utils";
 export function PartnershipStatusBadge({
   status,
   label,
+  showIcon = true,
+  className,
 }: {
   status: string;
   label?: string;
+  showIcon?: boolean;
+  className?: string;
 }) {
   const normalizedStatus = status.toLowerCase();
   const isActive = normalizedStatus === "active";
@@ -19,13 +23,13 @@ export function PartnershipStatusBadge({
     ? CheckCircle2
     : isPending
       ? Clock
-    : isBlocked
-      ? Ban
-      : isDestructive
-        ? AlertCircle
-        : isInactive
-          ? Minus
-          : null;
+      : isBlocked
+        ? Ban
+        : isDestructive
+          ? AlertCircle
+          : isInactive
+            ? Minus
+            : null;
 
   return (
     <span
@@ -40,9 +44,12 @@ export function PartnershipStatusBadge({
           !isDestructive &&
           !isInactive &&
           "bg-primary/10 text-primary",
+        className,
       )}
     >
-      {Icon && <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />}
+      {showIcon && Icon && (
+        <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+      )}
       {label ?? status}
     </span>
   );

@@ -16,7 +16,9 @@ import {
   useCompanyControllerGetDocuments,
   useCompanyControllerPatchProfile,
   useCompanyControllerUploadDocument,
+  useCompanyControllerUploadDocuments,
   type CompanyDocumentDto,
+  type CompanyVerificationResponse,
   type PatchCompanyProfileDto,
 } from "@/app/api";
 import { cn } from "@/lib/utils";
@@ -42,6 +44,11 @@ import {
   CollapsibleCardSectionTitle,
 } from "@/components/ui/collapsible-card";
 import { DetailField } from "@/components/ui/detail-field";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { toastPresets } from "@/components/sonner-toaster";
@@ -51,6 +58,7 @@ import {
   CircleCheck,
   Eye,
   FileText,
+  Info,
   Loader2,
   Upload,
 } from "lucide-react";
@@ -79,7 +87,7 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { openModal } = useModal();
-  const { confirmAction } = useIomModalRegistry();
+  const { approvalPending, confirmAction } = useIomModalRegistry();
   const inviteUniId = searchParams.get("invite_uni");
   const inviteTemplateId = searchParams.get("invite_template");
   const inviteId = searchParams.get("invite_id");
@@ -103,6 +111,9 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
   });
 
   const [uploadingType, setUploadingType] = useState<string | null>(null);
+  const [replacementFiles, setReplacementFiles] = useState<
+    Record<string, File>
+  >({});
   const [awaitingCompletionReview, setAwaitingCompletionReview] =
     useState(false);
   const documentInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -115,6 +126,52 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
     useCompanyVerification(!!company);
   const verified = verification?.status === "verified";
   const isSetupMode = mode === "setup";
+
+  useEffect(() => {
+    const warnBeforeLeave = (event: BeforeUnloadEvent) => {
+      if (!Object.keys(replacementFiles).length) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeLeave);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeave);
+  }, [replacementFiles]);
+
+  useEffect(() => {
+    if (!Object.keys(replacementFiles).length) return;
+    const warnInternalNavigation = (event: MouseEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey
+      )
+        return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const anchor = target.closest<HTMLAnchorElement>("a[href]");
+      if (!anchor) return;
+      const destination = new URL(anchor.href, window.location.href);
+      if (
+        destination.pathname === window.location.pathname &&
+        destination.search === window.location.search
+      )
+        return;
+      if (
+        !window.confirm(
+          "Leave this page? Your selected replacement documents will be lost.",
+        )
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    document.addEventListener("click", warnInternalNavigation, true);
+    return () =>
+      document.removeEventListener("click", warnInternalNavigation, true);
+  }, [replacementFiles]);
 
   useEffect(() => {
     if (!company) return;
@@ -211,7 +268,6 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
     mutation: {
       onSuccess: (_data, variables) => {
         form.reset(variables.data as CompanyProfileDraft);
-        setIsEditing(false);
         queryClient.invalidateQueries({
           queryKey: getCompanyControllerMeQueryKey(),
         });
@@ -245,6 +301,40 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
     },
   });
 
+  const uploadDocuments = useCompanyControllerUploadDocuments({
+    mutation: {
+      onSuccess: () => {
+        setReplacementFiles({});
+        setIsEditing(false);
+        queryClient.invalidateQueries({
+          queryKey: getCompanyControllerGetDocumentsQueryKey(),
+        });
+        queryClient.setQueryData<CompanyVerificationResponse>(
+          getCompanyControllerGetVerificationQueryKey(),
+          (current) =>
+            current
+              ? {
+                  ...current,
+                  status: "pending",
+                  approvalExpiresAt: null,
+                  rejectionReason: null,
+                }
+              : current,
+        );
+        queryClient.invalidateQueries({
+          queryKey: getCompanyControllerGetVerificationQueryKey(),
+        });
+        confirmAction.close();
+        approvalPending.open({
+          onQueueMoa: () => router.push("/universities"),
+          onClose: () => undefined,
+          reapproval: true,
+        });
+      },
+      onError: (e: Error) => toast(e.message, toastPresets.destructive),
+    },
+  });
+
   if (isLoading || !company) return null;
 
   function persisted(key: string): string {
@@ -252,43 +342,51 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
       return String(company!.cosmetic?.[key] ?? "");
     return String(company?.[key as keyof NonNullable<typeof company>] ?? "");
   }
-  function attemptSave() {
+  async function attemptSave() {
     if (
       save.isPending ||
       uploadDoc.isPending ||
+      uploadDocuments.isPending ||
       (isSetupMode && !documentsComplete) ||
       !form.formState.isValid
     )
       return;
-    const changedMaterial =
-      form.getValues("registered_name") !== persisted("registered_name");
-    const submit = () => {
+    const submit = async () => {
       if (
         save.isPending ||
         uploadDoc.isPending ||
+        uploadDocuments.isPending ||
         (isSetupMode && !documentsComplete)
       )
         return;
-      const values = form.getValues();
-      save.mutate({
-        data: {
-          ...values,
-          company_type:
-            values.company_type as PatchCompanyProfileDto["company_type"],
-        },
-      });
+      if (form.formState.isDirty) {
+        const values = form.getValues();
+        await save.mutateAsync({
+          data: {
+            ...values,
+            company_type:
+              values.company_type as PatchCompanyProfileDto["company_type"],
+          },
+        });
+      }
+      if (replacementCount > 0) {
+        await uploadDocuments.mutateAsync({ data: replacementFiles });
+      } else {
+        setIsEditing(false);
+      }
     };
-    if (verified && changedMaterial) {
+    if (!isSetupMode && replacementCount > 0) {
       confirmAction.open({
-        title: "This change requires re-verification",
+        title: "Save document changes?",
         description:
-          "Changing this will require re-verification by the platform team. You won't be able to request new MOAs until you're re-approved. Your existing MOAs stay valid.",
-        confirmLabel: "Save anyway",
+          "Uploading a new document will require your company to go through approval again. Do you want to save these changes? Existing MOAs will remain valid while your company is reviewed.",
+        confirmLabel: "Save changes",
         onConfirm: submit,
-        isPending: save.isPending,
+        isPending: save.isPending || uploadDocuments.isPending,
+        tone: "alert",
       });
     } else {
-      submit();
+      await submit();
     }
   }
 
@@ -339,6 +437,7 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
     watched.company_type,
   );
   const documentsComplete = docCount === DOC_TYPES.length;
+  const replacementCount = Object.keys(replacementFiles).length;
 
   // ── small renderers (plain functions, NOT components, to preserve input focus) ─
   const textField = (
@@ -396,13 +495,15 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
           isSaveDisabled={
             save.isPending ||
             uploadDoc.isPending ||
+            uploadDocuments.isPending ||
             !form.formState.isValid ||
-            !form.formState.isDirty
+            (!form.formState.isDirty && replacementCount === 0)
           }
-          isSaving={save.isPending}
+          isSaving={save.isPending || uploadDocuments.isPending}
           onEdit={() => setIsEditing(true)}
           onCancel={() => {
             form.reset();
+            setReplacementFiles({});
             setIsEditing(false);
           }}
           onSave={attemptSave}
@@ -485,6 +586,42 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
                 )}
               </div>
             </DetailField>
+            {verified && verification.approvalExpiresAt && (
+              <DetailField label="Verified until">
+                <div className="flex min-h-8 items-center gap-2 text-sm font-medium text-gray-900">
+                  <span>
+                    {new Date(
+                      verification.approvalExpiresAt,
+                    ).toLocaleDateString("en-PH", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      timeZone: "Asia/Manila",
+                    })}
+                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="About this verification expiry"
+                        className="text-muted-foreground hover:text-primary focus-visible:ring-primary/30 inline-flex rounded-full outline-none focus-visible:ring-2"
+                      >
+                        <Info className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      sideOffset={6}
+                      className="max-w-64"
+                    >
+                      This reflects the latest expiry date recorded for one of
+                      your documents. We&apos;ll notify you when it&apos;s time
+                      to renew.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </DetailField>
+            )}
           </CollapsibleCardSection>
 
           {/* 2 — Required Documents */}
@@ -501,6 +638,7 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
             }
             contentClassName="space-y-4 px-5 pb-5"
           >
+            <div id="documents" className="scroll-mt-24" />
             {isSetupMode && (
               <div className="space-y-2">
                 <div className="flex max-w-xs items-center gap-3">
@@ -525,9 +663,19 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
                   <FileDropTarget
                     key={value}
                     accept="application/pdf"
-                    disabled={!isSetupMode || uploadDoc.isPending}
+                    disabled={
+                      isSetupMode
+                        ? uploadDoc.isPending
+                        : !isEditing || uploadDocuments.isPending
+                    }
                     onFiles={([file]) => {
-                      if (file) attemptUploadDoc(file, value);
+                      if (!file) return;
+                      if (isSetupMode) attemptUploadDoc(file, value);
+                      else
+                        setReplacementFiles((current) => ({
+                          ...current,
+                          [value]: file,
+                        }));
                     }}
                     dragOverlay={
                       <div className="text-primary flex min-h-[72px] w-full items-center justify-center gap-2 rounded-[0.33em] border-2 border-dashed border-primary/50 bg-primary/5 text-sm font-medium">
@@ -548,13 +696,15 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
                           {label}
                         </p>
                         <p className="text-muted-foreground mt-0.5 text-xs">
-                          {existing
-                            ? `Uploaded ${new Date(existing.uploaded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
-                            : "Not uploaded"}
+                          {replacementFiles[value]
+                            ? `Selected: ${replacementFiles[value].name}`
+                            : existing
+                              ? `Uploaded ${new Date(existing.uploaded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
+                              : "Not uploaded"}
                         </p>
                       </div>
-                      <div className="flex flex-shrink-0 items-center gap-2">
-                        {isSetupMode && (
+                      <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-2">
+                        {isSetupMode ? (
                           <>
                             <Button
                               type="button"
@@ -576,6 +726,23 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
                                   ? "Drop or replace"
                                   : "Drop or upload"}
                             </Button>
+                            {replacementFiles[value] && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={uploadDocuments.isPending}
+                                onClick={() =>
+                                  setReplacementFiles((current) => {
+                                    const next = { ...current };
+                                    delete next[value];
+                                    return next;
+                                  })
+                                }
+                              >
+                                Undo
+                              </Button>
+                            )}
                             <input
                               ref={(input) => {
                                 documentInputRefs.current[value] = input;
@@ -591,7 +758,44 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
                               }}
                             />
                           </>
-                        )}
+                        ) : isEditing ? (
+                          <>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={uploadDocuments.isPending}
+                              onClick={() =>
+                                documentInputRefs.current[value]?.click()
+                              }
+                            >
+                              <Upload />
+                              {replacementFiles[value]
+                                ? "Replace selected"
+                                : existing
+                                  ? "Replace"
+                                  : "Upload"}
+                            </Button>
+                            <input
+                              ref={(input) => {
+                                documentInputRefs.current[value] = input;
+                              }}
+                              type="file"
+                              accept="application/pdf"
+                              className="hidden"
+                              disabled={uploadDocuments.isPending}
+                              onChange={(event) => {
+                                const file = event.target.files?.[0];
+                                if (file)
+                                  setReplacementFiles((current) => ({
+                                    ...current,
+                                    [value]: file,
+                                  }));
+                                event.target.value = "";
+                              }}
+                            />
+                          </>
+                        ) : null}
                         {existing && (
                           <Button
                             variant="outline"

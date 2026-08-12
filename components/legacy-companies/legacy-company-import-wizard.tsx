@@ -33,8 +33,6 @@ import {
   Plus,
   Trash2,
   Upload,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 import { toast } from "sonner";
 import { toastPresets } from "@/components/sonner-toaster";
@@ -116,64 +114,23 @@ function LocalPdfPreview({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-slate-50">
-      <div className="flex h-12 shrink-0 items-center justify-end gap-3 border-b border-slate-300 bg-white px-3">
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="text-xs font-medium text-slate-700">
-            {visiblePage}/{pageCount || 1}
-          </span>
-          <div className="ml-1 inline-flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() =>
-                onScaleChange(Math.max(0.25, Number((scale - 0.1).toFixed(2))))
-              }
-              disabled={scale <= 0.25}
-              className="rounded p-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
-              aria-label="Zoom out"
-              title="Zoom out"
-            >
-              <ZoomOut className="size-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                onScaleChange(Math.min(3, Number((scale + 0.1).toFixed(2))))
-              }
-              disabled={scale >= 3}
-              className="rounded p-1.5 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30"
-              aria-label="Zoom in"
-              title="Zoom in"
-            >
-              <ZoomIn className="size-3.5" />
-            </button>
-          </div>
-          <span className="w-10 text-center text-[11px] font-medium text-slate-700">
-            {Math.round(scale * 100)}%
-          </span>
-        </div>
-      </div>
-      <div className="min-h-0 flex-1">
-        <BasePdfViewer
-          pdfDoc={pdfDoc}
-          pageCount={pageCount}
+    <BasePdfViewer
+      pdfDoc={pdfDoc}
+      pageCount={pageCount}
+      scale={scale}
+      onScaleChange={onScaleChange}
+      visiblePage={visiblePage}
+      onVisiblePageChange={setVisiblePage}
+      squareFrame
+      renderPage={(pageNumber) => (
+        <PdfPage
+          key={pageNumber}
+          pdf={pdfDoc}
+          pageNumber={pageNumber}
           scale={scale}
-          onScaleChange={onScaleChange}
-          visiblePage={visiblePage}
-          onVisiblePageChange={setVisiblePage}
-          showToolbar={false}
-          squareFrame
-          renderPage={(pageNumber) => (
-            <PdfPage
-              key={pageNumber}
-              pdf={pdfDoc}
-              pageNumber={pageNumber}
-              scale={scale}
-            />
-          )}
         />
-      </div>
-    </div>
+      )}
+    />
   );
 }
 

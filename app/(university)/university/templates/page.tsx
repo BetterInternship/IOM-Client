@@ -5,6 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import {
+  getUniversityControllerGetAuditLogQueryKey,
   getUniversityControllerListTemplatesQueryKey,
   useUniversityControllerListTemplates,
   useUniversityControllerToggleTemplateOffer,
@@ -71,6 +72,9 @@ export default function UniversityTemplatesPage() {
         });
         queryClient.invalidateQueries({
           queryKey: ["university-templates-for-invite"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: getUniversityControllerGetAuditLogQueryKey(),
         });
         confirmAction.close();
         toast(
