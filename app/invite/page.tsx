@@ -9,6 +9,7 @@ import {
   CalendarDays,
   ChevronRight,
   FileText,
+  Link2Off,
   Loader2,
   Quote,
 } from "lucide-react";
@@ -50,6 +51,13 @@ interface InviteData {
   invite: { personal_message: string | null; expires_at: string };
   kind: "moa" | "listing";
   tin_hint: string | null;
+}
+
+interface ExpiredInviteError extends ApiError {
+  university?: Pick<
+    InviteData["university"],
+    "id" | "registered_name" | "logo_url"
+  > | null;
 }
 
 function InvitePageContent() {
@@ -116,34 +124,90 @@ function InvitePageContent() {
   // §5.6 — a cancelled invite's token resolves to a distinguishable
   // INVITE_WITHDRAWN error carrying its own message, rather than the
   // generic expired/bogus-token copy.
-  const apiError = error as ApiError | null;
+  const apiError = error as ExpiredInviteError | null;
   const isWithdrawn = apiError?.code === "INVITE_WITHDRAWN";
+  const isExpired = apiError?.code === "INVITE_EXPIRED";
+
+  if ((isExpired || isWithdrawn) && apiError?.university) {
+    const university = apiError.university;
+    const title = isExpired ? "Invitation expired" : "Invitation withdrawn";
+    const message = isExpired
+      ? "Please ask the university to send a new invitation."
+      : apiError.message;
+    return (
+      <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
+        <div className="w-full max-w-md rounded-xl bg-white px-5 py-8 backdrop-blur-[2px] sm:px-0 md:bg-transparent md:py-12 md:backdrop-blur-none">
+          <section className="text-center">
+            {university.logo_url && (
+              // University logos are user-uploaded external assets.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={university.logo_url}
+                alt={`${university.registered_name} logo`}
+                className="mx-auto size-24 object-contain sm:size-28"
+              />
+            )}
+            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-[#121d3d] sm:text-3xl">
+              {university.registered_name}
+            </h1>
+          </section>
+
+          <div className="mt-8 border-y border-slate-200 py-6">
+            <div className="flex items-center gap-4">
+              <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700">
+                <CalendarDays className="size-6" aria-hidden="true" />
+              </span>
+              <div className="min-w-0 text-left">
+                <p className="font-semibold text-[#121d3d]">{title}</p>
+                <p className="text-muted-foreground mt-1 text-sm leading-5">
+                  {message}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <Button asChild size="lg" className="w-full" variant="outline">
+              <Link href="/login">Sign in to your company account</Link>
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (!token || (!isLoading && (error || !inviteData))) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="space-y-2 rounded-lg border border-slate-200 bg-white px-8 py-7 text-center shadow-lg backdrop-blur-sm">
-          <p className="text-lg font-semibold text-slate-950">
-            {!token
-              ? "Invalid invite link"
-              : isWithdrawn
-                ? "Invitation withdrawn"
-                : "Invite not found"}
-          </p>
-          <p className="text-muted-foreground text-sm">
-            {!token
-              ? "This invite link is missing required information."
-              : isWithdrawn
-                ? apiError!.message
-                : "This invite link may have expired or already been used."}
-          </p>
+      <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
+        <div className="w-full max-w-md rounded-xl bg-white px-5 py-8 backdrop-blur-[2px] sm:px-0 md:bg-transparent md:py-12 md:backdrop-blur-none">
+          <section className="text-center">
+            <span className="mx-auto flex size-24 items-center justify-center rounded-full bg-slate-100 text-slate-500 sm:size-28">
+              <Link2Off className="size-10" aria-hidden="true" />
+            </span>
+          </section>
+
+          <div className=" border-slate-200 py-6">
+            <div className="flex items-center justify-center">
+              <div className="text-center">
+                <p className="font-semibold text-[#121d3d]">
+                  {!token ? "Invalid invite link" : "Invite not found"}
+                </p>
+                <p className="text-muted-foreground mt-1 text-sm leading-5">
+                  {!token
+                    ? "This invite link is missing required information."
+                    : "This invite link may have expired or already been used."}
+                </p>
+              </div>
+            </div>
+          </div>
+
           {token && !isWithdrawn && (
-            <Button asChild className="mt-2 w-full">
-              <Link href="/login">Login to your company account</Link>
+            <Button asChild size="lg" className="mt-8 w-full" variant="outline">
+              <Link href="/login">Sign in to your company account</Link>
             </Button>
           )}
         </div>
-      </div>
+      </main>
     );
   }
 

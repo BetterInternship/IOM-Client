@@ -68,6 +68,7 @@ import { ProfileHeader } from "./profile-header";
 type SectionKey = "company" | "documents";
 
 const COSMETIC_KEYS = ["description", "website", "phone", "industry"];
+const COMPANY_PROFILE_DRAFT_KEY = "iom:company-profile-draft";
 
 const COMPANY_TYPES = [
   { value: "corporation", label: "Corporation" },
@@ -82,6 +83,19 @@ const DOC_TYPES = [
 ];
 
 type CompanyProfileMode = "setup" | "profile";
+
+function readCompanyProfileDraft(key: string): Partial<CompanyProfileDraft> {
+  try {
+    const draft = JSON.parse(localStorage.getItem(key) ?? "null");
+    if (!draft || typeof draft !== "object") return {};
+
+    return Object.fromEntries(
+      Object.entries(draft).filter(([, value]) => typeof value === "string"),
+    ) as Partial<CompanyProfileDraft>;
+  } catch {
+    return {};
+  }
+}
 
 export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
   const searchParams = useSearchParams();
@@ -126,19 +140,30 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
     useCompanyVerification(!!company);
   const verified = verification?.status === "verified";
   const isSetupMode = mode === "setup";
+  const profileDraftKey = company
+    ? `${COMPANY_PROFILE_DRAFT_KEY}:${company.id}`
+    : null;
+  const watched = form.watch();
+  const hasUnsavedChanges =
+    Boolean(
+      isSetupMode
+        ? form.formState.isDirty
+        : form.formState.dirtyFields.registered_address ||
+            form.formState.dirtyFields.company_type,
+    ) || Object.keys(replacementFiles).length > 0;
 
   useEffect(() => {
     const warnBeforeLeave = (event: BeforeUnloadEvent) => {
-      if (!Object.keys(replacementFiles).length) return;
+      if (!hasUnsavedChanges) return;
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", warnBeforeLeave);
     return () => window.removeEventListener("beforeunload", warnBeforeLeave);
-  }, [replacementFiles]);
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
-    if (!Object.keys(replacementFiles).length) return;
+    if (!hasUnsavedChanges) return;
     const warnInternalNavigation = (event: MouseEvent) => {
       if (
         event.defaultPrevented ||
@@ -160,9 +185,7 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
       )
         return;
       if (
-        !window.confirm(
-          "Leave this page? Your selected replacement documents will be lost.",
-        )
+        !window.confirm("Leave this page? Your unsaved changes will be lost.")
       ) {
         event.preventDefault();
         event.stopPropagation();
@@ -171,7 +194,7 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
     document.addEventListener("click", warnInternalNavigation, true);
     return () =>
       document.removeEventListener("click", warnInternalNavigation, true);
-  }, [replacementFiles]);
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
     if (!company) return;
@@ -184,9 +207,24 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
       phone: String(company.cosmetic?.phone ?? ""),
       industry: String(company.cosmetic?.industry ?? ""),
     };
+    const draft =
+      isSetupMode && profileDraftKey
+        ? readCompanyProfileDraft(profileDraftKey)
+        : {};
     form.reset(seed);
+    for (const key of Object.keys(draft) as (keyof CompanyProfileDraft)[]) {
+      const value = draft[key];
+      if (value !== undefined && value !== seed[key]) {
+        form.setValue(key, value, { shouldDirty: true });
+      }
+    }
     void form.trigger();
-  }, [company, form]);
+  }, [company, form, isSetupMode, profileDraftKey]);
+
+  useEffect(() => {
+    if (!isSetupMode || !profileDraftKey || !form.formState.isDirty) return;
+    localStorage.setItem(profileDraftKey, JSON.stringify(watched));
+  }, [form.formState.isDirty, isSetupMode, profileDraftKey, watched]);
 
   // Continue an invitation only after the server has confirmed setup completion.
   useEffect(() => {
@@ -268,6 +306,8 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
     mutation: {
       onSuccess: (_data, variables) => {
         form.reset(variables.data as CompanyProfileDraft);
+        if (isSetupMode && profileDraftKey)
+          localStorage.removeItem(profileDraftKey);
         queryClient.invalidateQueries({
           queryKey: getCompanyControllerMeQueryKey(),
         });
@@ -430,7 +470,6 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
   const docs = docsData?.documents ?? [];
   const latestDoc = (type: string) => docs.find((d) => d.type === type);
   const docCount = DOC_TYPES.filter(({ value }) => latestDoc(value)).length;
-  const watched = form.watch();
   const companyInfoComplete = Boolean(
     company.registered_name &&
     watched.registered_address?.trim() &&

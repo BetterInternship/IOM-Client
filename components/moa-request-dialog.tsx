@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import type { PDFDocumentProxy } from "pdfjs-dist";
@@ -276,6 +276,16 @@ export function RequestDialog({
   const createQueuedMoa = useCompanyControllerCreateQueuedMoa();
   const isRequestPending = requestMoa.isPending || createQueuedMoa.isPending;
 
+  useEffect(() => {
+    if (
+      !isLoading &&
+      selectedTemplate &&
+      !data?.templates.some((t) => t.id === selectedTemplate)
+    ) {
+      setSelectedTemplate(null);
+    }
+  }, [data?.templates, isLoading, selectedTemplate]);
+
   const handleSuccess = (res: {
     moa?: { id: string };
     queued?: { id: string };
@@ -334,6 +344,10 @@ export function RequestDialog({
         "Your company must be verified by the platform team before you can request MOAs. " +
           "If you recently changed your details, they need to be re-verified.",
       );
+    } else if (code === "QUEUED_MOA_ALREADY_EXISTS") {
+      setError("You already have a pending MOA request with this university.");
+    } else if (code === "INVITE_NOT_REQUESTABLE") {
+      setError("This invitation is no longer available.");
     } else {
       setError(
         "Couldn't request from this university at this time. Please contact us for help.",
@@ -632,12 +646,14 @@ export function RequestDialog({
         <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button
-          onClick={() => setStep(2)}
-          disabled={!selectedTemplate || isLoading}
-        >
-          Next <ChevronRight className="h-4 w-4" />
-        </Button>
+        {templates.length > 0 && (
+          <Button
+            onClick={() => setStep(2)}
+            disabled={!selectedTemplate || isLoading}
+          >
+            Next <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     ) : (
       <div className="flex justify-end gap-2">
