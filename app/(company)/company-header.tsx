@@ -27,10 +27,11 @@ export function CompanyHeader() {
   const verified = status === "verified";
   const canRequestMoa = verified || status === "pending";
   const incomplete = status === "incomplete";
+  const canViewInvites = verified || status === "pending";
 
   const { data: invitesData } = useCompanyControllerListPendingInvites({
     query: {
-      enabled: !!company && !incomplete,
+      enabled: !!company && canViewInvites,
       staleTime: 30_000,
     },
   });
@@ -45,7 +46,7 @@ export function CompanyHeader() {
   const nav: NavItem[] = [
     ...(!incomplete ? [{ href: "/dashboard", label: "Partners" }] : []),
     ...(canRequestMoa ? [{ href: "/universities", label: "Request MOA" }] : []),
-    ...(pendingInviteCount > 0
+    ...(canViewInvites && pendingInviteCount > 0
       ? [{ href: "/invites", label: "Invitations", badge: pendingInviteCount }]
       : []),
   ];
