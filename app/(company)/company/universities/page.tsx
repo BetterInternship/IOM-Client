@@ -17,6 +17,8 @@ import { RequestDialog } from "@/components/moa-request-dialog";
 import { useModal } from "@/app/providers/modal-provider";
 import { RequestableUniversitiesTable } from "@/components/company/requestable-universities-table";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { StatusNotice } from "@/components/ui/status-notice";
+import { Clock } from "lucide-react";
 
 function UniversityDirectoryContent() {
   const router = useRouter();
@@ -120,10 +122,12 @@ function UniversityDirectoryContent() {
       />
 
       {!verified && (
-        <div className="border-primary/20 bg-primary/5 rounded-[0.33em] border p-4 text-sm text-gray-700">
-          Your company is pending platform approval. You can still submit MOA
-          requests now; they will stay queued until your company is approved.
-        </div>
+        <StatusNotice
+          icon={Clock}
+          title="Pending approval"
+          description="You can submit MOA requests now. They'll be queued and issued automatically once the platform team verifies your company."
+          variant="warning"
+        />
       )}
 
       <RequestableUniversitiesTable
