@@ -9,15 +9,18 @@ const variantClasses: Record<
   { container: string; icon: string }
 > = {
   primary: {
-    container: "border-primary/25 bg-primary/[0.035]",
+    container:
+      "border-primary/25 bg-primary/[0.035] transition-colors hover:bg-primary/[0.06]",
     icon: "bg-primary/5 text-primary",
   },
   warning: {
-    container: "border-warning/30 bg-warning/10",
+    container:
+      "border-warning/30 bg-warning/10 transition-colors hover:bg-warning/15",
     icon: "bg-warning/10 text-warning",
   },
   destructive: {
-    container: "border-destructive/30 bg-destructive/5",
+    container:
+      "border-destructive/30 bg-destructive/5 transition-colors hover:bg-destructive/10",
     icon: "bg-destructive/10 text-destructive",
   },
 };
@@ -28,6 +31,7 @@ function StatusNotice({
   title,
   description,
   action,
+  actionClassName,
   variant = "primary",
   compact = false,
   className,
@@ -38,6 +42,7 @@ function StatusNotice({
   title: ReactNode;
   description?: ReactNode;
   action?: ReactNode;
+  actionClassName?: string;
   variant?: StatusNoticeVariant;
   compact?: boolean;
 }) {
@@ -47,7 +52,7 @@ function StatusNotice({
     <div
       data-slot="status-notice"
       className={cn(
-        "flex rounded-[0.33em] border",
+        "group/status-notice flex rounded-[0.33em] border",
         compact ? "items-start gap-2 p-3" : "items-stretch gap-3 px-5 py-4",
         styles.container,
         className,
@@ -63,7 +68,7 @@ function StatusNotice({
         <span
           className={cn(
             "flex shrink-0 items-center justify-center rounded-[0.33em]",
-            compact ? "size-8" : "w-10 self-stretch",
+            compact ? "size-8" : "size-10 self-center",
             styles.icon,
           )}
         >
@@ -82,7 +87,11 @@ function StatusNotice({
           )}
         </div>
       </div>
-      {action && <div className="shrink-0 self-center">{action}</div>}
+      {action && (
+        <div className={cn("shrink-0 self-center", actionClassName)}>
+          {action}
+        </div>
+      )}
     </div>
   );
 }

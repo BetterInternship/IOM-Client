@@ -12,13 +12,14 @@ import {
   type CompanyUniversityDirectoryItemDto,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RequestDialog } from "@/components/moa-request-dialog";
 import { useModal } from "@/app/providers/modal-provider";
 import { RequestableUniversitiesTable } from "@/components/company/requestable-universities-table";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { StatusNotice } from "@/components/ui/status-notice";
-import { Clock } from "lucide-react";
+import { AlertCircle, ClipboardList, Clock } from "lucide-react";
 
 function UniversityDirectoryContent() {
   const router = useRouter();
@@ -28,7 +29,7 @@ function UniversityDirectoryContent() {
     useCompanyVerification(!!company);
   const verified = verification?.status === "verified";
   const status = verification?.status;
-  const canRequestMoa = verified || status === "pending";
+  const canRequestMoa = !!status;
   const profileHref =
     status === "incomplete" ? "/complete-profile" : "/profile";
   const { openModal, closeModal } = useModal();
@@ -85,33 +86,85 @@ function UniversityDirectoryContent() {
   }
   if (!company) return null;
 
-  if (!canRequestMoa) {
-    return (
-      <PageContainer className="space-y-6">
-        <PageHeader
-          title="Request MOA"
-          description="This is a list of universities you can request a MOA with."
-        />
-        <div className="border-warning/30 bg-warning/10 rounded-[0.33em] border p-4 text-sm text-gray-700">
-          {status === "rejected"
-            ? verification?.rejectionReason ||
-              "Your company could not be verified. Please review your profile and documents."
-            : status === "incomplete"
-              ? "Complete your profile and upload all required documents so the platform team can verify your company."
-              : status === "expired"
-                ? "Your company verification has expired. Replace at least one required document to submit it for approval."
-                : "Your company is pending verification by the platform team. You can queue MOA requests once your profile is complete."}{" "}
-          <Link href={profileHref} className="text-primary underline">
-            Go to your profile
-          </Link>
-          .
-        </div>
-      </PageContainer>
-    );
-  }
-
   return (
     <PageContainer className="space-y-8 pb-12">
+      {!verified && status === "incomplete" && (
+        <StatusNotice
+          icon={ClipboardList}
+          title="Finish setting up your account"
+          description="You can sign and queue MOA requests now, but they won't be issued until you complete your profile and the platform team approves your company."
+          variant="warning"
+          role="alert"
+          tabIndex={0}
+          className="cursor-pointer"
+          onClick={() => router.push("/complete-profile")}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              router.push("/complete-profile");
+            }
+          }}
+          actionClassName="sm:flex sm:w-52 sm:justify-end"
+          action={
+            <Button asChild variant="outline" scheme="primary" expandIcon>
+              <Link
+                href="/complete-profile"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <ClipboardList aria-hidden="true" />
+                <span className="button-label">Complete profile</span>
+              </Link>
+            </Button>
+          }
+        />
+      )}
+
+      {!verified && status === "pending" && (
+        <StatusNotice
+          icon={Clock}
+          title="Pending approval"
+          description="You can submit MOA requests now. They'll be queued and issued automatically once the platform team verifies your company."
+          variant="warning"
+          role="alert"
+          tabIndex={0}
+          className="cursor-pointer"
+          onClick={() => router.push("/profile")}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              router.push("/profile");
+            }
+          }}
+        />
+      )}
+
+      {!verified &&
+        status &&
+        status !== "incomplete" &&
+        status !== "pending" && (
+        <StatusNotice
+          compact
+          icon={AlertCircle}
+          title={
+            status === "expired"
+              ? "Verification expired"
+              : "Verification needs attention"
+          }
+          description={
+            <>
+              You can submit MOA requests now. They&apos;ll stay queued until
+              your company is approved.{" "}
+              <Link href={profileHref} className="text-primary underline">
+                Update profile
+              </Link>
+              .
+            </>
+          }
+          variant="destructive"
+          role="alert"
+        />
+        )}
+
       <PageHeader
         title="Request MOA"
         description={
@@ -120,15 +173,6 @@ function UniversityDirectoryContent() {
             : "Your MOA requests will be queued and issued automatically after approval."
         }
       />
-
-      {!verified && (
-        <StatusNotice
-          icon={Clock}
-          title="Pending approval"
-          description="You can submit MOA requests now. They'll be queued and issued automatically once the platform team verifies your company."
-          variant="warning"
-        />
-      )}
 
       <RequestableUniversitiesTable
         universities={requestableUniversities}

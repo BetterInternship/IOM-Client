@@ -238,13 +238,17 @@ export function RequestDialog({
   defaultTemplateId = null,
   inviteId = null,
   verified = true,
+  queuedSuccessHref = "/company/dashboard",
   onClose,
+  onSuccessClose = onClose,
 }: {
   universityId: string;
   defaultTemplateId?: string | null;
   inviteId?: string | null;
   verified?: boolean;
+  queuedSuccessHref?: string;
   onClose: () => void;
+  onSuccessClose?: () => void;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -324,8 +328,8 @@ export function RequestDialog({
         "MOA request submitted — it will be issued automatically once your company is verified.",
         toastPresets.success,
       );
-      onClose();
-      router.push("/company/dashboard");
+      onSuccessClose();
+      router.push(queuedSuccessHref);
     }
   };
 

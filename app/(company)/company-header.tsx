@@ -24,10 +24,8 @@ export function CompanyHeader() {
   const { company } = useCompanyProfile();
   const { data: verification } = useCompanyVerification(!!company);
   const status = verification?.status;
-  const verified = status === "verified";
-  const canRequestMoa = verified || status === "pending";
-  const incomplete = status === "incomplete";
-  const canViewInvites = verified || status === "pending";
+  const canRequestMoa = !!status;
+  const canViewInvites = !!status;
 
   const { data: invitesData } = useCompanyControllerListPendingInvites({
     query: {
@@ -42,9 +40,8 @@ export function CompanyHeader() {
   // Hide the app chrome on the unauthenticated pages.
   if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
 
-  // Partners and the request surface are hidden until the company has a complete profile.
   const nav: NavItem[] = [
-    ...(!incomplete ? [{ href: "/dashboard", label: "Partners" }] : []),
+    ...(status ? [{ href: "/dashboard", label: "Partners" }] : []),
     ...(canRequestMoa ? [{ href: "/universities", label: "Request MOA" }] : []),
     ...(canViewInvites && pendingInviteCount > 0
       ? [{ href: "/invites", label: "Invitations", badge: pendingInviteCount }]

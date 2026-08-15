@@ -208,12 +208,13 @@ function RegisterPageContent() {
 
         if (data.university_id) {
           const params = new URLSearchParams({
-            invite_uni: data.university_id,
+            open_university_id: data.university_id,
+            complete_profile_after_queue: "1",
           });
-          if (data.template_id) params.set("invite_template", data.template_id);
+          if (data.template_id) params.set("template_id", data.template_id);
           if (invitePeek?.invite_id)
             params.set("invite_id", invitePeek.invite_id);
-          router.replace(`/complete-profile?${params}`);
+          router.replace(`/company/dashboard?${params}`);
         } else {
           router.replace("/company/dashboard");
         }

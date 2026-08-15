@@ -59,14 +59,18 @@ interface PartnerUniversity extends CompanyPartnerUniversity {
 function NotificationCenter({
   count,
   children,
+  className,
 }: {
   count: number;
   children: ReactNode;
+  className?: string;
 }) {
   if (count === 0) return null;
 
   return (
-    <section className="border-primary/20 overflow-hidden rounded-[0.33em] border shadow-sm">
+    <section
+      className={`overflow-hidden rounded-[0.33em] border ${className ?? "border-primary/20"}`}
+    >
       <div className="divide-y divide-gray-200 [&>[data-slot=status-notice]]:rounded-none [&>[data-slot=status-notice]]:border-0">
         {children}
       </div>
@@ -97,12 +101,14 @@ function VerificationBanner({
       <StatusNotice
         icon={ClipboardList}
         title="Finish setting up your account"
-        description="Complete your company profile and upload all required documents. Once everything's in, the platform team will verify your company so you can request MOAs."
-        className="hover:bg-primary/[0.025] cursor-pointer transition-colors"
+        description="You can sign and queue MOA requests now, but they won't be issued until you complete your profile and the platform team approves your company."
+        variant="warning"
+        className="cursor-pointer"
         role="link"
         tabIndex={0}
         onClick={openDestination}
         onKeyDown={handleKeyDown}
+        actionClassName="sm:flex sm:w-52 sm:justify-end"
         action={
           <Button asChild variant="outline" scheme="primary" expandIcon>
             <Link
@@ -125,7 +131,7 @@ function VerificationBanner({
         title="Pending approval"
         description="You can submit MOA requests now. They'll be queued and issued automatically once the platform team verifies your company."
         variant="warning"
-        className="hover:bg-warning/15 cursor-pointer transition-colors"
+        className="cursor-pointer"
         role="link"
         tabIndex={0}
         onClick={openDestination}
@@ -142,7 +148,8 @@ function VerificationBanner({
         description={
           <>
             Your company verification has expired. Please re-upload your
-            documents to request re-review.{" "}
+            documents to request re-review. New MOA requests will stay queued
+            until you are approved again.{" "}
             <Link
               href="/profile"
               className="text-primary underline"
@@ -154,7 +161,7 @@ function VerificationBanner({
           </>
         }
         variant="destructive"
-        className="hover:bg-destructive/10 cursor-pointer transition-colors"
+        className="cursor-pointer"
         role="link"
         tabIndex={0}
         onClick={openDestination}
@@ -171,6 +178,7 @@ function VerificationBanner({
         <>
           {rejectionReason ||
             "Your company could not be verified. Please review your profile and documents."}{" "}
+          New MOA requests will stay queued until you are approved.
           <br />
           <br />
           <Link
@@ -184,7 +192,7 @@ function VerificationBanner({
         </>
       }
       variant="destructive"
-      className="hover:bg-destructive/10 cursor-pointer transition-colors"
+      className="cursor-pointer"
       role="link"
       tabIndex={0}
       onClick={openDestination}
@@ -210,6 +218,8 @@ function CompanyDashboardContent() {
   const openUniversityId = searchParams.get("open_university_id");
   const inviteTemplateId = searchParams.get("template_id");
   const inviteId = searchParams.get("invite_id");
+  const completeProfileAfterQueue =
+    searchParams.get("complete_profile_after_queue") === "1";
   const showApprovalPending =
     searchParams.get("approval_pending") === "1" ||
     (process.env.NODE_ENV !== "production" &&
@@ -259,7 +269,7 @@ function CompanyDashboardContent() {
     useCompanyVerification(!!company);
   const status = verification?.status;
   const verified = verification?.status === "verified";
-  const canRequest = verified || status === "pending";
+  const canRequest = !!status;
   const openUniversityName = (invitesData?.invites ?? []).find(
     (invite) =>
       (inviteId && invite.id === inviteId) ||
@@ -292,7 +302,13 @@ function CompanyDashboardContent() {
         defaultTemplateId={inviteTemplateId}
         inviteId={inviteId}
         verified={verified}
+        queuedSuccessHref={
+          completeProfileAfterQueue ? "/complete-profile" : "/company/dashboard"
+        }
         onClose={() => closeModal("request-moa")}
+        onSuccessClose={() =>
+          closeModal("request-moa", { skipOnClose: true })
+        }
       />,
       {
         title: (
@@ -313,6 +329,7 @@ function CompanyDashboardContent() {
     );
   }, [
     closeModal,
+    completeProfileAfterQueue,
     inviteId,
     inviteTemplateId,
     openModal,
@@ -386,6 +403,23 @@ function CompanyDashboardContent() {
   const pendingInvites = (invitesData?.invites ?? []).filter(
     (inv) => inv.university !== null,
   );
+  const hasCareerTask = verified || verification?.canPostListing;
+  const hasInviteTask = pendingInvites.length > 0;
+  const hasFailedQueueTask = failedQueued.length > 0;
+  const hasVerificationTask = !!status && status !== "verified";
+  const notificationCount =
+    (hasCareerTask ? 1 : 0) +
+    (hasInviteTask ? 1 : 0) +
+    (hasFailedQueueTask ? 1 : 0) +
+    (hasVerificationTask ? 1 : 0);
+  const notificationBorderClass =
+    notificationCount > 1
+      ? "border-gray-200"
+      : hasFailedQueueTask || status === "rejected" || status === "expired"
+        ? "border-destructive/30"
+        : status === "incomplete" || status === "pending"
+          ? "border-warning/30"
+          : "border-primary/25";
   const navigateToDetail = (uniId: string) => {
     router.push(`/partners/${uniId}`);
   };
@@ -393,17 +427,19 @@ function CompanyDashboardContent() {
   return (
     <PageContainer className="space-y-8">
       <NotificationCenter
-        count={
-          (verified || verification?.canPostListing ? 1 : 0) +
-          (canRequest && pendingInvites.length > 0 ? 1 : 0) +
-          (failedQueued.length > 0 ? 1 : 0) +
-          (status && status !== "verified" ? 1 : 0)
-        }
+        className={notificationBorderClass}
+        count={notificationCount}
       >
-        {(verified || verification?.canPostListing) && <CareerListingCta />}
+        {hasCareerTask && <CareerListingCta />}
 
-        {canRequest &&
-          pendingInvites.length > 0 &&
+        {!vLoading && status && status !== "verified" && (
+          <VerificationBanner
+            status={status}
+            rejectionReason={verification?.rejectionReason ?? null}
+          />
+        )}
+
+        {hasInviteTask &&
           (() => {
             const invite = pendingInvites[0];
             const params = new URLSearchParams({
@@ -459,7 +495,7 @@ function CompanyDashboardContent() {
                     </Link>
                   </Button>
                 }
-                className="bg-primary/[0.035] hover:bg-primary/[0.06] cursor-pointer transition-colors"
+                className="cursor-pointer"
                 key={invite.id}
                 role="link"
                 tabIndex={0}
@@ -474,7 +510,7 @@ function CompanyDashboardContent() {
             );
           })()}
 
-        {failedQueued.length > 0 && (
+        {hasFailedQueueTask && (
           <StatusNotice
             icon={AlertCircle}
             title={
@@ -496,7 +532,7 @@ function CompanyDashboardContent() {
               </>
             }
             variant="destructive"
-            className="hover:bg-destructive/10 cursor-pointer transition-colors"
+            className="cursor-pointer"
             role="link"
             tabIndex={0}
             onClick={() => {
@@ -511,12 +547,6 @@ function CompanyDashboardContent() {
           />
         )}
 
-        {!vLoading && status && status !== "verified" && (
-          <VerificationBanner
-            status={status}
-            rejectionReason={verification?.rejectionReason ?? null}
-          />
-        )}
       </NotificationCenter>
 
       <PageHeader

@@ -52,7 +52,7 @@ const buttonVariants = cva(
         xs: "h-6 px-3 text-xs",
       },
       expandIcon: {
-        true: "max-w-8 gap-0 overflow-hidden px-2 transition-[max-width,padding,gap] duration-200 hover:max-w-48 hover:gap-2 hover:px-3 focus-visible:max-w-48 focus-visible:gap-2 focus-visible:px-3 [&_.button-label]:max-w-0 [&_.button-label]:overflow-hidden [&_.button-label]:opacity-0 [&_.button-label]:transition-[max-width,opacity] [&_.button-label]:duration-200 hover:[&_.button-label]:max-w-40 hover:[&_.button-label]:opacity-100 focus-visible:[&_.button-label]:max-w-40 focus-visible:[&_.button-label]:opacity-100",
+        true: "max-w-8 gap-0 overflow-hidden px-2 transition-[max-width,padding,gap] duration-200 hover:max-w-48 hover:gap-2 hover:px-3 focus-visible:max-w-48 focus-visible:gap-2 focus-visible:px-3 group-hover/status-notice:max-w-48 group-hover/status-notice:gap-2 group-hover/status-notice:px-3 [&_.button-label]:max-w-0 [&_.button-label]:overflow-hidden [&_.button-label]:opacity-0 [&_.button-label]:transition-[max-width,opacity] [&_.button-label]:duration-200 hover:[&_.button-label]:max-w-40 hover:[&_.button-label]:opacity-100 focus-visible:[&_.button-label]:max-w-40 focus-visible:[&_.button-label]:opacity-100 group-hover/status-notice:[&_.button-label]:max-w-40 group-hover/status-notice:[&_.button-label]:opacity-100",
         false: "",
       },
     },
