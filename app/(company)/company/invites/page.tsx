@@ -1,6 +1,4 @@
 "use client";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   useCompanyProfile,
   useCompanyVerification,
@@ -15,9 +13,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { StatusNotice } from "@/components/ui/status-notice";
+import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import { RequestDialog } from "@/components/moa-request-dialog";
-import { AlertCircle, ArrowRight, ClipboardList, Clock } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 function universityInitials(name: string) {
   return name
@@ -30,7 +28,6 @@ function universityInitials(name: string) {
 }
 
 export default function CompanyInvitesPage() {
-  const router = useRouter();
   const { company, isLoading } = useCompanyProfile();
   const { data: verification, isLoading: verificationLoading } =
     useCompanyVerification(!!company);
@@ -90,84 +87,13 @@ export default function CompanyInvitesPage() {
         description="Universities that have invited your company to sign a MOA."
       />
 
-      {!verified && status === "incomplete" && (
-        <StatusNotice
-          icon={ClipboardList}
-          title="Finish setting up your account"
-          description="You can sign and queue MOA requests now, but they won't be issued until you complete your profile and the platform team approves your company."
-          variant="warning"
-          role="alert"
-          tabIndex={0}
-          className="cursor-pointer"
-          onClick={() => router.push("/complete-profile")}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              router.push("/complete-profile");
-            }
-          }}
-          actionClassName="sm:flex sm:w-52 sm:justify-end"
-          action={
-            <Button asChild variant="outline" scheme="primary" expandIcon>
-              <Link
-                href="/complete-profile"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <ClipboardList aria-hidden="true" />
-                <span className="button-label">Complete profile</span>
-              </Link>
-            </Button>
-          }
+      {status && status !== "verified" && (
+        <CompanyProfileStatusNotice
+          status={status}
+          rejectionReason={verification?.rejectionReason}
+          compactAttention
         />
       )}
-
-      {!verified && status === "pending" && (
-        <StatusNotice
-          icon={Clock}
-          title="Pending approval"
-          description="You can submit MOA requests now. They'll be queued and issued automatically once the platform team verifies your company."
-          variant="warning"
-          role="alert"
-          tabIndex={0}
-          className="cursor-pointer"
-          onClick={() => router.push("/profile")}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              router.push("/profile");
-            }
-          }}
-        />
-      )}
-
-      {!verified &&
-        status &&
-        status !== "incomplete" &&
-        status !== "pending" && (
-        <StatusNotice
-          compact
-          icon={AlertCircle}
-          title={
-            status === "expired"
-              ? "Verification expired"
-              : "Verification needs attention"
-          }
-          description={
-            <>
-              You can sign and queue this MOA now. It will be issued after your
-              company is approved.{" "}
-              <Link
-                href="/profile#documents"
-                className="text-primary underline"
-              >
-                Update profile
-              </Link>
-              .
-            </>
-          }
-          variant="destructive"
-        />
-        )}
 
       {invitesLoading ? (
         <div className="space-y-4">

@@ -1,5 +1,5 @@
 "use client";
-import { type KeyboardEvent, type ReactNode, Suspense, useEffect } from "react";
+import { type ReactNode, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -15,6 +15,7 @@ import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusNotice } from "@/components/ui/status-notice";
+import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CompanyPartnersTable,
@@ -28,8 +29,6 @@ import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import {
   AlertCircle,
-  ClipboardList,
-  Clock,
   FileSignature,
   Plus,
 } from "lucide-react";
@@ -75,129 +74,6 @@ function NotificationCenter({
         {children}
       </div>
     </section>
-  );
-}
-
-function VerificationBanner({
-  status,
-  rejectionReason,
-}: {
-  status: "incomplete" | "pending" | "rejected" | "expired";
-  rejectionReason: string | null;
-}) {
-  const router = useRouter();
-  const destination =
-    status === "incomplete" ? "/complete-profile" : "/profile";
-  const openDestination = () => router.push(destination);
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      openDestination();
-    }
-  };
-
-  if (status === "incomplete") {
-    return (
-      <StatusNotice
-        icon={ClipboardList}
-        title="Finish setting up your account"
-        description="You can sign and queue MOA requests now, but they won't be issued until you complete your profile and the platform team approves your company."
-        variant="warning"
-        className="cursor-pointer"
-        role="link"
-        tabIndex={0}
-        onClick={openDestination}
-        onKeyDown={handleKeyDown}
-        actionClassName="sm:flex sm:w-52 sm:justify-end"
-        action={
-          <Button asChild variant="outline" scheme="primary" expandIcon>
-            <Link
-              href="/complete-profile"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <ClipboardList aria-hidden="true" />
-              <span className="button-label">Complete profile</span>
-            </Link>
-          </Button>
-        }
-      />
-    );
-  }
-
-  if (status === "pending") {
-    return (
-      <StatusNotice
-        icon={Clock}
-        title="Pending approval"
-        description="You can submit MOA requests now. They'll be queued and issued automatically once the platform team verifies your company."
-        variant="warning"
-        className="cursor-pointer"
-        role="link"
-        tabIndex={0}
-        onClick={openDestination}
-        onKeyDown={handleKeyDown}
-      />
-    );
-  }
-
-  if (status === "expired") {
-    return (
-      <StatusNotice
-        icon={AlertCircle}
-        title="Verification expired"
-        description={
-          <>
-            Your company verification has expired. Please re-upload your
-            documents to request re-review. New MOA requests will stay queued
-            until you are approved again.{" "}
-            <Link
-              href="/profile"
-              className="text-primary underline"
-              onClick={(event) => event.stopPropagation()}
-            >
-              Update your profile
-            </Link>
-            .
-          </>
-        }
-        variant="destructive"
-        className="cursor-pointer"
-        role="link"
-        tabIndex={0}
-        onClick={openDestination}
-        onKeyDown={handleKeyDown}
-      />
-    );
-  }
-
-  return (
-    <StatusNotice
-      icon={AlertCircle}
-      title="Verification needs attention"
-      description={
-        <>
-          {rejectionReason ||
-            "Your company could not be verified. Please review your profile and documents."}{" "}
-          New MOA requests will stay queued until you are approved.
-          <br />
-          <br />
-          <Link
-            href="/profile"
-            className="text-primary underline"
-            onClick={(event) => event.stopPropagation()}
-          >
-            Update your profile
-          </Link>
-          .
-        </>
-      }
-      variant="destructive"
-      className="cursor-pointer"
-      role="link"
-      tabIndex={0}
-      onClick={openDestination}
-      onKeyDown={handleKeyDown}
-    />
   );
 }
 
@@ -433,7 +309,7 @@ function CompanyDashboardContent() {
         {hasCareerTask && <CareerListingCta />}
 
         {!vLoading && status && status !== "verified" && (
-          <VerificationBanner
+          <CompanyProfileStatusNotice
             status={status}
             rejectionReason={verification?.rejectionReason ?? null}
           />
