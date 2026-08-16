@@ -145,12 +145,14 @@ export function useIomModalRegistry() {
         openModal(
           "blacklist-partner",
           <BlacklistForm
-            companyName={opts.companyName}
             onBlacklist={opts.onBlacklist}
             isPending={opts.isPending}
             close={() => closeModal("blacklist-partner")}
           />,
-          { title: "Blacklist company", showHeaderDivider: false },
+          {
+            title: `Blacklist ${opts.companyName}`,
+            showHeaderDivider: false,
+          },
         ),
       close: () => closeModal("blacklist-partner"),
     },
@@ -341,12 +343,10 @@ function ApprovalPendingContent({
 }
 
 function BlacklistForm({
-  companyName,
   onBlacklist,
   isPending,
   close,
 }: {
-  companyName: string;
   onBlacklist: (reason: string) => void;
   isPending: boolean;
   close: () => void;
@@ -355,20 +355,17 @@ function BlacklistForm({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">{companyName}</p>
       <div className="border-destructive/30 bg-destructive/5 text-destructive space-y-1 rounded-[0.33em] border p-3 text-sm">
         <p>
-          This immediately <strong>revokes all active MOAs</strong> with this
-          company and blocks new requests.
+          This immediately revokes all active MOAs with this company and blocks
+          new requests. Revoked MOAs cannot be restored. The company is not
+          notified. This action is logged under your name.
         </p>
-        <p className="text-destructive/80 text-xs">
-          Revoked MOAs cannot be restored. The company is not notified. This
-          action is logged under your name.
-        </p>
+        <p className="text-destructive/80 font-semibold"></p>
       </div>
       <Textarea
-        rows={2}
-        placeholder="Internal reason (optional — never shown to the company)"
+        rows={3}
+        placeholder="Reason (optional — never shown to the company)"
         value={reason}
         onChange={(e) => setReason(e.target.value)}
       />
