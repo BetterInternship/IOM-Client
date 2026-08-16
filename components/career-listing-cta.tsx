@@ -169,7 +169,7 @@ export function CareerListingCta() {
           <span className="button-label">{ctaLabel}</span>
         </Button>
       }
-      className="cursor-pointer border-gray-200 bg-white transition-colors hover:bg-gray-50"
+      className="cursor-pointer border-gray-200 bg-gray-50/50 transition-colors hover:bg-gray-100"
       role="button"
       tabIndex={0}
       onClick={handleClick}

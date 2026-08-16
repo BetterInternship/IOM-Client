@@ -279,7 +279,7 @@ function CompanyDashboardContent() {
   const pendingInvites = (invitesData?.invites ?? []).filter(
     (inv) => inv.university !== null,
   );
-  const hasCareerTask = verified || verification?.canPostListing;
+  const hasCareerTask = true;
   const hasInviteTask = pendingInvites.length > 0;
   const hasFailedQueueTask = failedQueued.length > 0;
   const hasVerificationTask = !!status && status !== "verified";
