@@ -14,6 +14,7 @@ import {
   getUniversityControllerGetAuditLogQueryKey,
   getUniversityControllerGetBlacklistQueryKey,
   getUniversityControllerGetLegacyCompanyQueryKey,
+  getUniversityControllerGetPartnerMoasQueryKey,
   getUniversityControllerListInvitesQueryKey,
   getUniversityControllerListLegacyCompaniesQueryKey,
   getUniversityControllerListPartnersQueryKey,
@@ -795,6 +796,9 @@ function PartnersContent({
     });
     queryClient.invalidateQueries({
       queryKey: getUniversityControllerListRenewalsQueryKey(),
+    });
+    queryClient.invalidateQueries({
+      queryKey: getUniversityControllerGetPartnerMoasQueryKey(detailId),
     });
   };
 
