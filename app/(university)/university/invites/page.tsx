@@ -158,12 +158,18 @@ export default function InvitesPage() {
     }
   };
 
-  const invites: CompanyInvite[] = (data?.invites ?? []).map((invite) => ({
+  const moaInvites: CompanyInvite[] = (data?.moa ?? []).map((invite) => ({
     ...invite,
     status: mapInviteStatus(invite.status),
   }));
-  const listingInvites = invites.filter((invite) => invite.kind === "listing");
-  const moaInvites = invites.filter((invite) => invite.kind === "moa");
+  const listingInvites: CompanyInvite[] = (data?.listing ?? []).map(
+    (invite) => ({
+      ...invite,
+      template_id: null,
+      template_name: null,
+      status: mapInviteStatus(invite.status),
+    }),
+  );
   const renewals = renewalsData?.renewals ?? [];
   const inviteTabs = (
     <InviteTabs
@@ -230,6 +236,7 @@ export default function InvitesPage() {
         <TabsContent value="moa">
           <UniversityInvitesTable
             invites={moaInvites}
+            kind="moa"
             isLoading={isLoading}
             toolbarStart={inviteTabs}
             onChanged={() => refetch()}
@@ -245,6 +252,7 @@ export default function InvitesPage() {
         <TabsContent value="listing">
           <UniversityInvitesTable
             invites={listingInvites}
+            kind="listing"
             isLoading={isLoading}
             toolbarStart={inviteTabs}
             onChanged={() => refetch()}

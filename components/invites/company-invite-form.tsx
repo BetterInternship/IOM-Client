@@ -15,11 +15,13 @@ import {
 import { toast } from "sonner";
 
 import {
-  universityControllerCancelInvite,
+  universityControllerCancelMoaInvite,
+  universityControllerCancelListingInvite,
   useUniversityControllerListRegisteredCompanies,
   useUniversityControllerListTemplates,
   useUniversityControllerMe,
-  useUniversityControllerSendInvite,
+  useUniversityControllerSendMoaInvite,
+  useUniversityControllerSendListingInvite,
 } from "@/app/api/app/api/endpoints/university/university";
 import type { UniversityRegisteredCompanyDto } from "@/app/api/app/api/models";
 import { useModal } from "@/app/providers/modal-provider";
@@ -142,12 +144,14 @@ function InviteBlockedContent({
 function InviteSendConfirmationContent({
   companyLabel,
   inviteId,
+  kind,
   superseded,
   onCancelled,
   onClose,
 }: {
   companyLabel: string;
   inviteId: string;
+  kind: CompanyInviteKind;
   superseded: boolean;
   onCancelled: () => void;
   onClose: () => void;
@@ -158,7 +162,11 @@ function InviteSendConfirmationContent({
   const handleCancel = async () => {
     setIsCancelling(true);
     try {
-      await universityControllerCancelInvite(inviteId);
+      if (kind === "moa") {
+        await universityControllerCancelMoaInvite(inviteId);
+      } else {
+        await universityControllerCancelListingInvite(inviteId);
+      }
       toast("Invite cancelled", toastPresets.success);
       onCancelled();
       onClose();
@@ -351,9 +359,8 @@ export function CompanyInviteForm({
       ? selectedCompany?.registered_name
       : companyName.trim() || undefined;
 
-  const send = useUniversityControllerSendInvite({
-    mutation: {
-      onSuccess: (res) => {
+  const sendMutationOptions = {
+    onSuccess: (res: { inviteLink: string; inviteId: string; superseded: boolean }) => {
         const composeUrl = buildComposeUrl(provider, {
           to: invitedEmail,
           cc: INVITE_CC_EMAIL,
@@ -416,6 +423,7 @@ export function CompanyInviteForm({
               <InviteSendConfirmationContent
                 companyLabel={invitedName || invitedEmail}
                 inviteId={res.inviteId}
+                kind={kind}
                 superseded={res.superseded}
                 onCancelled={onSent}
                 onClose={() => closeModal("invite-send-confirmation")}
@@ -435,25 +443,42 @@ export function CompanyInviteForm({
           ),
         );
       },
-      onError: (e) => setError(e.message ?? "Failed to send invitation."),
-    },
+    onError: (e: Error) => setError(e.message ?? "Failed to send invitation."),
+  };
+  // Kind is fixed for the form's lifetime (see prop doc above), so exactly
+  // one of these two mutations is ever actually invoked.
+  const sendMoaInvite = useUniversityControllerSendMoaInvite({
+    mutation: sendMutationOptions,
   });
+  const sendListingInvite = useUniversityControllerSendListingInvite({
+    mutation: sendMutationOptions,
+  });
+  const send = kind === "moa" ? sendMoaInvite : sendListingInvite;
 
   function handleSend() {
     setError("");
     if (account?.id) {
       saveInviteDraft(account.id, { provider, welcomeMessage: message });
     }
-    send.mutate({
-      data: {
-        invitedEmail,
-        companyName: invitedName,
-        templateId: kind === "moa" ? templateId || undefined : undefined,
-        personalMessage: message.trim() || undefined,
-        kind,
-        legacyCompanyId: kind === "listing" ? legacyCompanyId : undefined,
-      },
-    });
+    if (kind === "moa") {
+      sendMoaInvite.mutate({
+        data: {
+          invitedEmail,
+          companyName: invitedName,
+          templateId: templateId || undefined,
+          personalMessage: message.trim() || undefined,
+        },
+      });
+    } else {
+      sendListingInvite.mutate({
+        data: {
+          invitedEmail,
+          companyName: invitedName,
+          personalMessage: message.trim() || undefined,
+          legacyCompanyId,
+        },
+      });
+    }
   }
 
   const step1CanNext =

@@ -28,7 +28,8 @@ import type {
   BaseResponse,
   BlacklistCompanyDto,
   BulkInviteDto,
-  CreateCompanyInviteDto,
+  CreateListingInviteDto,
+  CreateMoaInviteDto,
   CreateStaffAccountDto,
   ErrorResponse,
   PatchUniversityProfileDto,
@@ -4284,36 +4285,36 @@ export function useUniversityControllerListRegisteredCompaniesSuspense<
   return query;
 }
 
-export const universityControllerSendInvite = (
-  createCompanyInviteDto: CreateCompanyInviteDto,
+export const universityControllerSendMoaInvite = (
+  createMoaInviteDto: CreateMoaInviteDto,
   signal?: AbortSignal,
 ) => {
   return preconfiguredAxiosFunction<UniversitySendInviteResponse>({
-    url: `/api/university/invites`,
+    url: `/api/university/invites/moa`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: createCompanyInviteDto,
+    data: createMoaInviteDto,
     signal,
   });
 };
 
-export const getUniversityControllerSendInviteMutationOptions = <
+export const getUniversityControllerSendMoaInviteMutationOptions = <
   TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof universityControllerSendInvite>>,
+    Awaited<ReturnType<typeof universityControllerSendMoaInvite>>,
     TError,
-    { data: CreateCompanyInviteDto },
+    { data: CreateMoaInviteDto },
     TContext
   >;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof universityControllerSendInvite>>,
+  Awaited<ReturnType<typeof universityControllerSendMoaInvite>>,
   TError,
-  { data: CreateCompanyInviteDto },
+  { data: CreateMoaInviteDto },
   TContext
 > => {
-  const mutationKey = ["universityControllerSendInvite"];
+  const mutationKey = ["universityControllerSendMoaInvite"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -4323,44 +4324,125 @@ export const getUniversityControllerSendInviteMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof universityControllerSendInvite>>,
-    { data: CreateCompanyInviteDto }
+    Awaited<ReturnType<typeof universityControllerSendMoaInvite>>,
+    { data: CreateMoaInviteDto }
   > = (props) => {
     const { data } = props ?? {};
 
-    return universityControllerSendInvite(data);
+    return universityControllerSendMoaInvite(data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type UniversityControllerSendInviteMutationResult = NonNullable<
-  Awaited<ReturnType<typeof universityControllerSendInvite>>
+export type UniversityControllerSendMoaInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerSendMoaInvite>>
 >;
-export type UniversityControllerSendInviteMutationBody = CreateCompanyInviteDto;
-export type UniversityControllerSendInviteMutationError = ErrorResponse;
+export type UniversityControllerSendMoaInviteMutationBody = CreateMoaInviteDto;
+export type UniversityControllerSendMoaInviteMutationError = ErrorResponse;
 
-export const useUniversityControllerSendInvite = <
+export const useUniversityControllerSendMoaInvite = <
   TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof universityControllerSendInvite>>,
+      Awaited<ReturnType<typeof universityControllerSendMoaInvite>>,
       TError,
-      { data: CreateCompanyInviteDto },
+      { data: CreateMoaInviteDto },
       TContext
     >;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
-  Awaited<ReturnType<typeof universityControllerSendInvite>>,
+  Awaited<ReturnType<typeof universityControllerSendMoaInvite>>,
   TError,
-  { data: CreateCompanyInviteDto },
+  { data: CreateMoaInviteDto },
   TContext
 > => {
   const mutationOptions =
-    getUniversityControllerSendInviteMutationOptions(options);
+    getUniversityControllerSendMoaInviteMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerSendListingInvite = (
+  createListingInviteDto: CreateListingInviteDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<UniversitySendInviteResponse>({
+    url: `/api/university/invites/listing`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: createListingInviteDto,
+    signal,
+  });
+};
+
+export const getUniversityControllerSendListingInviteMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerSendListingInvite>>,
+    TError,
+    { data: CreateListingInviteDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerSendListingInvite>>,
+  TError,
+  { data: CreateListingInviteDto },
+  TContext
+> => {
+  const mutationKey = ["universityControllerSendListingInvite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerSendListingInvite>>,
+    { data: CreateListingInviteDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return universityControllerSendListingInvite(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityControllerSendListingInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerSendListingInvite>>
+>;
+export type UniversityControllerSendListingInviteMutationBody =
+  CreateListingInviteDto;
+export type UniversityControllerSendListingInviteMutationError = ErrorResponse;
+
+export const useUniversityControllerSendListingInvite = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerSendListingInvite>>,
+      TError,
+      { data: CreateListingInviteDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerSendListingInvite>>,
+  TError,
+  { data: CreateListingInviteDto },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerSendListingInviteMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };
@@ -4623,34 +4705,34 @@ export function useUniversityControllerListInvitesSuspense<
   return query;
 }
 
-export const universityControllerCancelInvite = (
+export const universityControllerCancelMoaInvite = (
   id: string | undefined | null,
   signal?: AbortSignal,
 ) => {
   return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/university/invites/${id}/cancel`,
+    url: `/api/university/invites/moa/${id}/cancel`,
     method: "POST",
     signal,
   });
 };
 
-export const getUniversityControllerCancelInviteMutationOptions = <
+export const getUniversityControllerCancelMoaInviteMutationOptions = <
   TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+    Awaited<ReturnType<typeof universityControllerCancelMoaInvite>>,
     TError,
     { id: string | undefined | null },
     TContext
   >;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+  Awaited<ReturnType<typeof universityControllerCancelMoaInvite>>,
   TError,
   { id: string | undefined | null },
   TContext
 > => {
-  const mutationKey = ["universityControllerCancelInvite"];
+  const mutationKey = ["universityControllerCancelMoaInvite"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -4660,30 +4742,30 @@ export const getUniversityControllerCancelInviteMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+    Awaited<ReturnType<typeof universityControllerCancelMoaInvite>>,
     { id: string | undefined | null }
   > = (props) => {
     const { id } = props ?? {};
 
-    return universityControllerCancelInvite(id);
+    return universityControllerCancelMoaInvite(id);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type UniversityControllerCancelInviteMutationResult = NonNullable<
-  Awaited<ReturnType<typeof universityControllerCancelInvite>>
+export type UniversityControllerCancelMoaInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerCancelMoaInvite>>
 >;
 
-export type UniversityControllerCancelInviteMutationError = ErrorResponse;
+export type UniversityControllerCancelMoaInviteMutationError = ErrorResponse;
 
-export const useUniversityControllerCancelInvite = <
+export const useUniversityControllerCancelMoaInvite = <
   TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+      Awaited<ReturnType<typeof universityControllerCancelMoaInvite>>,
       TError,
       { id: string | undefined | null },
       TContext
@@ -4691,13 +4773,92 @@ export const useUniversityControllerCancelInvite = <
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
-  Awaited<ReturnType<typeof universityControllerCancelInvite>>,
+  Awaited<ReturnType<typeof universityControllerCancelMoaInvite>>,
   TError,
   { id: string | undefined | null },
   TContext
 > => {
   const mutationOptions =
-    getUniversityControllerCancelInviteMutationOptions(options);
+    getUniversityControllerCancelMoaInviteMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityControllerCancelListingInvite = (
+  id: string | undefined | null,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<BaseResponse>({
+    url: `/api/university/invites/listing/${id}/cancel`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getUniversityControllerCancelListingInviteMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityControllerCancelListingInvite>>,
+    TError,
+    { id: string | undefined | null },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityControllerCancelListingInvite>>,
+  TError,
+  { id: string | undefined | null },
+  TContext
+> => {
+  const mutationKey = ["universityControllerCancelListingInvite"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityControllerCancelListingInvite>>,
+    { id: string | undefined | null }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return universityControllerCancelListingInvite(id);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityControllerCancelListingInviteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityControllerCancelListingInvite>>
+>;
+
+export type UniversityControllerCancelListingInviteMutationError =
+  ErrorResponse;
+
+export const useUniversityControllerCancelListingInvite = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityControllerCancelListingInvite>>,
+      TError,
+      { id: string | undefined | null },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityControllerCancelListingInvite>>,
+  TError,
+  { id: string | undefined | null },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityControllerCancelListingInviteMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

@@ -2,7 +2,10 @@
 
 import type { ReactNode } from "react";
 
-import { useUniversityControllerCancelInvite } from "@/app/api";
+import {
+  useUniversityControllerCancelMoaInvite,
+  useUniversityControllerCancelListingInvite,
+} from "@/app/api";
 import {
   ResourceTable,
   type ResourceTableColumn,
@@ -27,15 +30,27 @@ export interface CompanyInvite {
   template_name: string | null;
   personal_message: string | null;
   status: "pending" | "accepted" | "expired" | "used_waiting" | "cancelled";
-  kind: "moa" | "listing";
   created_at: string;
   expires_at: string;
   registered_company: { registered_name: string } | null;
 }
 
-function InviteStatusBadge({ status }: { status: CompanyInvite["status"] }) {
+// §8.5 — the two tabs share every label except "accepted": MOA invites are
+// signed, listing invites are posted. Keep DB values semantic — this maps
+// client-side only, never rename the enum to match copy.
+function acceptedLabel(kind: "moa" | "listing"): string {
+  return kind === "moa" ? "Signed MOA" : "Posted listing";
+}
+
+function InviteStatusBadge({
+  status,
+  kind,
+}: {
+  status: CompanyInvite["status"];
+  kind: "moa" | "listing";
+}) {
   if (status === "accepted") {
-    return <PartnershipStatusBadge status="active" label="Signed MOA" />;
+    return <PartnershipStatusBadge status="active" label={acceptedLabel(kind)} />;
   }
   if (status === "used_waiting") {
     return <PartnershipStatusBadge status="pending" label="Waiting" />;
@@ -49,13 +64,17 @@ function InviteStatusBadge({ status }: { status: CompanyInvite["status"] }) {
   return <PartnershipStatusBadge status="inactive" label="Not yet used" />;
 }
 
-const INVITE_STATUS_LABELS: Record<CompanyInvite["status"], string> = {
-  pending: "Not yet used",
-  accepted: "Signed MOA",
-  expired: "Expired",
-  used_waiting: "Waiting",
-  cancelled: "Cancelled",
-};
+function inviteStatusLabels(
+  kind: "moa" | "listing",
+): Record<CompanyInvite["status"], string> {
+  return {
+    pending: "Not yet used",
+    accepted: acceptedLabel(kind),
+    expired: "Expired",
+    used_waiting: "Waiting",
+    cancelled: "Cancelled",
+  };
+}
 
 function resolveDisplayName(invite: CompanyInvite): string {
   const registeredName =
@@ -76,24 +95,33 @@ function resolveDisplayName(invite: CompanyInvite): string {
 // there's nothing to resend; it's already sitting in the recipient's inbox.
 function InviteActions({
   invite,
+  kind,
   onCancelled,
 }: {
   invite: CompanyInvite;
+  kind: "moa" | "listing";
   onCancelled: () => void;
 }) {
-  const cancelInvite = useUniversityControllerCancelInvite({
-    mutation: {
-      onSuccess: () => {
-        toast("Invite cancelled", toastPresets.success);
-        onCancelled();
-      },
-      onError: (e) =>
-        toast(
-          e.message ?? "Failed to cancel invite.",
-          toastPresets.destructive,
-        ),
+  const mutationOptions = {
+    onSuccess: () => {
+      toast("Invite cancelled", toastPresets.success);
+      onCancelled();
     },
+    onError: (e: Error) =>
+      toast(
+        e.message ?? "Failed to cancel invite.",
+        toastPresets.destructive,
+      ),
+  };
+  // Kind is fixed per table instance (each tab renders its own), so exactly
+  // one of these two mutations is ever actually invoked below.
+  const cancelMoaInvite = useUniversityControllerCancelMoaInvite({
+    mutation: mutationOptions,
   });
+  const cancelListingInvite = useUniversityControllerCancelListingInvite({
+    mutation: mutationOptions,
+  });
+  const cancelInvite = kind === "moa" ? cancelMoaInvite : cancelListingInvite;
 
   if (invite.status !== "pending") return null;
 
@@ -132,20 +160,23 @@ function InvitesTableSkeleton({ toolbarStart }: { toolbarStart?: ReactNode }) {
 
 export function UniversityInvitesTable({
   invites,
+  kind,
   isLoading,
   toolbarStart,
   onChanged,
 }: {
   invites: CompanyInvite[];
+  kind: "moa" | "listing";
   isLoading: boolean;
   toolbarStart?: ReactNode;
   onChanged: () => void;
 }) {
+  const statusLabels = inviteStatusLabels(kind);
   const statusOptions = Array.from(
     new Set(invites.map((invite) => invite.status)),
   ).map((status) => ({
     value: status,
-    label: INVITE_STATUS_LABELS[status],
+    label: statusLabels[status],
     count: invites.filter((invite) => invite.status === status).length,
   }));
 
@@ -155,12 +186,14 @@ export function UniversityInvitesTable({
       header: "Status",
       width: "w-[16%]",
       getSortValue: (invite) => invite.status,
-      render: (invite) => <InviteStatusBadge status={invite.status} />,
+      render: (invite) => (
+        <InviteStatusBadge status={invite.status} kind={kind} />
+      ),
     },
     {
       id: "company",
       header: "Company",
-      width: "w-[28%]",
+      width: kind === "moa" ? "w-[28%]" : "w-[46%]",
       getSortValue: resolveDisplayName,
       render: (invite) => {
         const name = resolveDisplayName(invite);
@@ -179,17 +212,23 @@ export function UniversityInvitesTable({
         );
       },
     },
-    {
-      id: "template",
-      header: "Template",
-      width: "w-[18%]",
-      getSortValue: (invite) => invite.template_name ?? "",
-      render: (invite) => (
-        <span className="text-muted-foreground">
-          {invite.template_name ?? "—"}
-        </span>
-      ),
-    },
+    // Listing invites have no template — the column would just be an empty
+    // "—" on every row, so it's dropped entirely on that tab.
+    ...(kind === "moa"
+      ? [
+          {
+            id: "template",
+            header: "Template",
+            width: "w-[18%]",
+            getSortValue: (invite: CompanyInvite) => invite.template_name ?? "",
+            render: (invite: CompanyInvite) => (
+              <span className="text-muted-foreground">
+                {invite.template_name ?? "—"}
+              </span>
+            ),
+          } satisfies ResourceTableColumn<CompanyInvite>,
+        ]
+      : []),
     {
       id: "sent",
       header: "Sent",
@@ -220,7 +259,7 @@ export function UniversityInvitesTable({
       align: "right",
       sortable: false,
       render: (invite) => (
-        <InviteActions invite={invite} onCancelled={onChanged} />
+        <InviteActions invite={invite} kind={kind} onCancelled={onChanged} />
       ),
     },
   ];
@@ -279,16 +318,18 @@ export function UniversityInvitesTable({
                 )}
               </div>
               <div className="shrink-0">
-                <InviteStatusBadge status={invite.status} />
+                <InviteStatusBadge status={invite.status} kind={kind} />
               </div>
             </div>
             <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-              <div className="min-w-0">
-                <dt className="text-muted-foreground">Template</dt>
-                <dd className="mt-0.5 truncate text-gray-700">
-                  {invite.template_name ?? "—"}
-                </dd>
-              </div>
+              {kind === "moa" && (
+                <div className="min-w-0">
+                  <dt className="text-muted-foreground">Template</dt>
+                  <dd className="mt-0.5 truncate text-gray-700">
+                    {invite.template_name ?? "—"}
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt className="text-muted-foreground">Sent</dt>
                 <dd className="mt-0.5 text-gray-700">
