@@ -35,33 +35,25 @@ export interface CompanyInvite {
 
 function InviteStatusBadge({ status }: { status: CompanyInvite["status"] }) {
   if (status === "accepted") {
-    return <PartnershipStatusBadge status="active" label="Accepted" />;
+    return <PartnershipStatusBadge status="active" label="Signed MOA" />;
   }
   if (status === "used_waiting") {
-    return (
-      <span className="bg-primary/10 text-primary inline-flex max-w-full items-center rounded-full px-2.5 py-1.5 text-sm leading-tight font-semibold whitespace-normal">
-        Registered · awaiting MOA
-      </span>
-    );
+    return <PartnershipStatusBadge status="pending" label="Waiting" />;
   }
   if (status === "expired") {
     return <PartnershipStatusBadge status="expired" label="Expired" />;
   }
   if (status === "cancelled") {
-    return (
-      <span className="bg-gray-100 text-muted-foreground inline-flex max-w-full items-center rounded-full px-2.5 py-1.5 text-sm leading-tight font-semibold whitespace-normal">
-        Cancelled
-      </span>
-    );
+    return <PartnershipStatusBadge status="cancelled" label="Cancelled" />;
   }
-  return <PartnershipStatusBadge status="inactive" label="Pending" />;
+  return <PartnershipStatusBadge status="inactive" label="Not yet used" />;
 }
 
 const INVITE_STATUS_LABELS: Record<CompanyInvite["status"], string> = {
-  pending: "Pending",
-  accepted: "Accepted",
+  pending: "Not yet used",
+  accepted: "Signed MOA",
   expired: "Expired",
-  used_waiting: "Registered — awaiting MOA",
+  used_waiting: "Waiting",
   cancelled: "Cancelled",
 };
 
@@ -161,14 +153,14 @@ export function UniversityInvitesTable({
     {
       id: "status",
       header: "Status",
-      width: "w-[10%]",
+      width: "w-[16%]",
       getSortValue: (invite) => invite.status,
       render: (invite) => <InviteStatusBadge status={invite.status} />,
     },
     {
       id: "company",
       header: "Company",
-      width: "w-[34%]",
+      width: "w-[28%]",
       getSortValue: resolveDisplayName,
       render: (invite) => {
         const name = resolveDisplayName(invite);
@@ -201,7 +193,7 @@ export function UniversityInvitesTable({
     {
       id: "sent",
       header: "Sent",
-      width: "w-[12%]",
+      width: "w-[15%]",
       defaultSortDirection: "desc",
       getSortValue: (invite) => invite.created_at,
       render: (invite) => (
@@ -213,7 +205,7 @@ export function UniversityInvitesTable({
     {
       id: "expires",
       header: "Expires",
-      width: "w-[12%]",
+      width: "w-[15%]",
       getSortValue: (invite) => invite.expires_at,
       render: (invite) => (
         <span className="text-muted-foreground">
@@ -224,7 +216,7 @@ export function UniversityInvitesTable({
     {
       id: "actions",
       header: <span className="sr-only">Actions</span>,
-      width: "w-[14%]",
+      width: "w-[8%]",
       align: "right",
       sortable: false,
       render: (invite) => (
