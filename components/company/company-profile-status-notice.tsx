@@ -84,21 +84,32 @@ function CompanyProfileStatusNotice({
       icon={AlertCircle}
       title={expired ? "Verification expired" : "Verification needs attention"}
       description={
-        <>
-          {expired
-            ? "Your company verification has expired."
-            : rejectionReason ||
+        expired ? (
+          <>
+            <p>Your company verification has expired.</p>
+            <p className="mt-2 border-l-2 border-destructive/50 pl-3 font-medium text-gray-800">
+              Your MOA requests will not be approved until you are verified by
+              the platform admin.
+            </p>
+          </>
+        ) : (
+          <>
+            {rejectionReason + "." ||
               "Your company could not be verified. Please review your profile and documents."}{" "}
-          New MOA requests will stay queued until you are approved.{" "}
+            New MOA requests will stay queued until you are approved.{" "}
+          </>
+        )
+      }
+      action={
+        <Button asChild variant="outline" scheme="destructive" expandIcon>
           <Link
             href="/profile#documents"
-            className="text-primary underline"
             onClick={(event) => event.stopPropagation()}
           >
-            Update profile
+            <ClipboardList aria-hidden="true" />
+            <span className="button-label">Update profile</span>
           </Link>
-          .
-        </>
+        </Button>
       }
       variant="destructive"
       role="alert"
