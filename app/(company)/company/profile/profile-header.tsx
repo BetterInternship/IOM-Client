@@ -72,25 +72,6 @@ export function ProfileHeader({
       <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
         Finish your profile to have your MOA approved
       </h1>
-      <div className="w-full max-w-sm space-y-3 sm:w-80">
-        <p className="text-sm font-medium text-gray-700">
-          {remainingSteps === 1 ? "One last step remaining" : "Ready to save"}
-        </p>
-        <div
-          className="flex gap-1.5"
-          aria-label={`${steps.length - remainingSteps} of ${steps.length} setup steps completed`}
-        >
-          {steps.map((complete, index) => (
-            <span
-              key={index}
-              className={cn(
-                "h-1.5 flex-1 rounded-full",
-                complete ? "bg-primary" : "bg-gray-200",
-              )}
-            />
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
