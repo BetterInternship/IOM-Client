@@ -108,7 +108,7 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
           {...dropProps}
           disabled={disabled}
           className={cn(
-            "flex items-center gap-2 rounded-[0.33em] border border-gray-300 px-4 py-4 text-left text-sm transition-colors",
+            "flex w-full items-center gap-2 rounded-[0.33em] border border-gray-300 px-4 py-4 text-left text-sm transition-colors",
             "hover:bg-muted text-muted-foreground hover:cursor-pointer",
             isDragging && "border-primary bg-primary/5 ring-2 ring-primary/15",
             disabled && "cursor-not-allowed opacity-60",
@@ -118,9 +118,11 @@ export const FileUpload = forwardRef<FileUploadRef, FileUploadProps>(
         >
           <Upload className="text-primary h-5 w-5 shrink-0" />
           {fileName ? (
-            <span className="text-foreground truncate">{fileName}</span>
+            <span className="text-foreground min-w-0 truncate">{fileName}</span>
           ) : (
-            <span>{placeholder ?? "Drop a file here or click to upload"}</span>
+            <span className="min-w-0 truncate">
+              {placeholder ?? "Drop a file here or click to upload"}
+            </span>
           )}
         </button>
 

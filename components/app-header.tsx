@@ -266,7 +266,7 @@ export function AppHeader({
 
       <div
         className={cn(
-          "fixed top-0 right-0 z-[31] h-[100svh] w-full max-w-[92%] border-l border-gray-200 bg-white shadow-xl sm:max-w-[420px] md:hidden",
+          "fixed top-0 right-0 z-[31] h-dvh w-full max-w-[92%] border-l border-gray-200 bg-white shadow-xl sm:max-w-[420px] md:hidden",
           "transition-transform duration-250 ease-out",
           isDrawerOpen ? "translate-x-0" : "translate-x-full",
         )}
@@ -284,9 +284,14 @@ export function AppHeader({
                 height={25}
                 className="h-6 w-6 rounded object-contain"
               />
-              <span className="text-sm font-semibold">Partners</span>
-              <span className="rounded border border-gray-200 bg-gray-50 px-1 py-0 text-[10px] font-medium text-gray-400 leading-none">
-                {portal}
+              <span className="font-display text-sm font-bold text-gray-900">
+                Partners
+              </span>
+              <span className="text-gray-300" aria-hidden="true">
+                |
+              </span>
+              <span className="font-display text-sm text-gray-500">
+                {portal === "Platform Admin" ? portal : `${portal} Portal`}
               </span>
             </div>
             <button
@@ -335,18 +340,21 @@ export function AppHeader({
                   </Link>
                 );
               })}
+              {profileHref && (
+                <Link href={profileHref} className="block w-full">
+                  <button className="flex w-full items-center justify-between rounded-md border border-transparent px-3 py-2 text-sm transition-colors hover:border-gray-200 hover:bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      <UserRound className="h-4 w-4 text-gray-500" />
+                      <span>Profile</span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-gray-300" />
+                  </button>
+                </Link>
+              )}
             </nav>
           </div>
 
           <div className="mt-auto border-t px-4 py-3 space-y-1">
-            {profileHref && (
-              <Link href={profileHref} className="block w-full">
-                <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors hover:bg-gray-50">
-                  <UserRound className="h-4 w-4" />
-                  Profile
-                </button>
-              </Link>
-            )}
             {accountNav.map((item) => {
               const Icon = item.icon ?? labelIcon(item.label);
               return (

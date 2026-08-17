@@ -162,7 +162,7 @@ export function CareerListingCta() {
             handleClick();
           }}
           disabled={isBusy}
-          className="shrink-0"
+          className="w-full bg-transparent sm:shrink-0 sm:bg-background"
           aria-label={ctaLabel}
         >
           <BriefcaseBusiness aria-hidden="true" />
