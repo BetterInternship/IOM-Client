@@ -66,6 +66,7 @@ interface DatePickerProps {
   id?: string;
   value?: string;
   onChange: (value: string) => void;
+  onValidityChange?: (isValid: boolean) => void;
   placeholder?: string;
   disabled?: boolean;
   invalid?: boolean;
@@ -76,6 +77,7 @@ function DatePicker({
   value,
   id,
   onChange,
+  onValidityChange,
   placeholder = "Select date",
   disabled,
   invalid,
@@ -107,23 +109,27 @@ function DatePicker({
 
     if (!digits) {
       setInputInvalid(false);
+      onValidityChange?.(false);
       onChange("");
       return;
     }
 
     if (digits.length < 8) {
       setInputInvalid(false);
+      onValidityChange?.(false);
       return;
     }
 
     const parsed = parseInputValue(next);
     if (!parsed) {
       setInputInvalid(true);
+      onValidityChange?.(false);
       return;
     }
 
     setInputInvalid(false);
     setMonth(parsed);
+    onValidityChange?.(true);
     onChange(format(parsed, DATE_FORMAT));
   };
 
@@ -153,8 +159,12 @@ function DatePicker({
     const nextParts = [...inputParts];
     nextParts[index] = rawValue.replace(/\D/g, "").slice(0, maxLength);
     if (!areInputPartsValid(nextParts)) return;
-    setInputValue(nextParts.join("/"));
+    const nextValue = nextParts.join("/");
+    const parsed = parseInputValue(nextValue);
+    setInputValue(nextValue);
     setInputInvalid(false);
+    onValidityChange?.(!!parsed);
+    if (parsed) onChange(format(parsed, DATE_FORMAT));
 
     if (nextParts[index].length === maxLength && index < 2) {
       inputRefs[index + 1].current?.focus();
@@ -199,9 +209,12 @@ function DatePicker({
           if (digits.length !== 8) return;
           event.preventDefault();
           const pastedValue = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-          if (!parseInputValue(pastedValue)) return;
+          const parsed = parseInputValue(pastedValue);
+          if (!parsed) return;
           setInputValue(pastedValue);
           setInputInvalid(false);
+          onValidityChange?.(true);
+          onChange(format(parsed, DATE_FORMAT));
           yearInputRef.current?.focus();
         }}
         className={cn(
@@ -322,6 +335,7 @@ function DatePicker({
                   const next = date ? format(date, DATE_FORMAT) : "";
                   setInputValue(date ? format(date, INPUT_FORMAT) : "");
                   setInputInvalid(false);
+                  onValidityChange?.(!!date);
                   onChange(next);
                   setOpen(false);
                 }}

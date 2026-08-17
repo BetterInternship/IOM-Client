@@ -148,9 +148,11 @@ const yearsFromToday = (years: number) => {
 function ReviewFieldsEditor({
   values,
   onChange,
+  onDateValidityChange,
 }: {
   values: Record<string, string>;
   onChange: (next: Record<string, string>) => void;
+  onDateValidityChange: (field: string, isValid: boolean) => void;
 }) {
   return (
     <div className="space-y-4 px-5 pb-5">
@@ -166,6 +168,9 @@ function ReviewFieldsEditor({
               className="h-9 text-sm"
               value={values[field.key] ?? ""}
               onChange={(value) => onChange({ ...values, [field.key]: value })}
+              onValidityChange={(isValid) =>
+                onDateValidityChange(field.key, isValid)
+              }
             />
           ) : (
             <Input
@@ -479,7 +484,11 @@ export default function AdminCompanyReviewPage() {
   const { openModal, closeModal } = useModal();
   const { confirmAction } = useIomModalRegistry();
   const [reviewValues, setReviewValues] = useState<Record<string, string>>({});
+  const [reviewDateValidity, setReviewDateValidity] = useState<
+    Record<string, boolean>
+  >({});
   const [approvalExpiresAt, setApprovalExpiresAt] = useState("");
+  const [approvalExpiresAtValid, setApprovalExpiresAtValid] = useState(false);
   const [documentPreview, setDocumentPreview] =
     useState<DocumentPreviewSelection | null>(null);
   const [previewWidth, setPreviewWidth] = useState(50);
@@ -599,11 +608,19 @@ export default function AdminCompanyReviewPage() {
         ]),
       ),
     );
+    setReviewDateValidity({});
     setApprovalExpiresAt("");
+    setApprovalExpiresAtValid(false);
   }, [data?.history, openEntry]);
 
   const canApprove = openEntry
-    ? reviewFieldsComplete(reviewValues) && !!approvalExpiresAt
+    ? reviewFieldsComplete(reviewValues) &&
+      REVIEW_FIELDS.every(
+        (field) =>
+          field.type !== "date" || reviewDateValidity[field.key] !== false,
+      ) &&
+      !!approvalExpiresAt &&
+      approvalExpiresAtValid
     : false;
 
   const updatePreviewWidth = (nextWidth: number) => {
@@ -776,6 +793,12 @@ export default function AdminCompanyReviewPage() {
               <ReviewFieldsEditor
                 values={reviewValues}
                 onChange={setReviewValues}
+                onDateValidityChange={(field, isValid) =>
+                  setReviewDateValidity((validity) => ({
+                    ...validity,
+                    [field]: isValid,
+                  }))
+                }
               />
               <DetailField
                 label={
@@ -790,13 +813,17 @@ export default function AdminCompanyReviewPage() {
                     className="h-9 text-sm"
                     value={approvalExpiresAt}
                     onChange={setApprovalExpiresAt}
+                    onValidityChange={setApprovalExpiresAtValid}
                   />
                   <div className="flex gap-2">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setApprovalExpiresAt(yearsFromToday(1))}
+                      onClick={() => {
+                        setApprovalExpiresAt(yearsFromToday(1));
+                        setApprovalExpiresAtValid(true);
+                      }}
                     >
                       +1 year
                     </Button>
@@ -804,7 +831,10 @@ export default function AdminCompanyReviewPage() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setApprovalExpiresAt(yearsFromToday(3))}
+                      onClick={() => {
+                        setApprovalExpiresAt(yearsFromToday(3));
+                        setApprovalExpiresAtValid(true);
+                      }}
                     >
                       +3 years
                     </Button>
