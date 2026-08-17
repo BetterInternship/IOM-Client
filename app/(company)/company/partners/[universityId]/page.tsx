@@ -116,7 +116,7 @@ export default function CompanyPartnerDetailPage() {
       <div className="flex items-center gap-4">
         <UniversityLogo university={university} />
         <div className="min-w-0">
-          <h1 className="truncate font-semibold text-gray-900">
+          <h1 className="truncate text-lg leading-tight font-semibold text-gray-900 sm:text-2xl">
             {university.registered_name}
           </h1>
         </div>

@@ -146,6 +146,10 @@ function TemplatePdfViewer({ url }: { url: string }) {
   const [scale, setScale] = useState(1);
   const [visiblePage, setVisiblePage] = useState(1);
 
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 639px)").matches) setScale(0.7);
+  }, []);
+
   if (error) {
     return (
       <div className="flex h-full items-center justify-center bg-slate-100 text-center">
@@ -741,7 +745,7 @@ export function RequestDialog({
         </div>
         {content}
       </div>
-      <div className="sticky bottom-0 z-20 -mx-4 mt-4 border-t bg-white px-4 pt-3">
+      <div className="sticky bottom-0 z-20 -mx-4 mt-4 border-t bg-white px-4 pt-3 pb-3 sm:pb-0">
         {footer}
       </div>
     </div>

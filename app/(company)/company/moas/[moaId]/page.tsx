@@ -44,6 +44,10 @@ function MoaPdfViewer({ url }: { url: string }) {
   const [scale, setScale] = useState(1);
   const [visiblePage, setVisiblePage] = useState(1);
 
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 639px)").matches) setScale(0.7);
+  }, []);
+
   if (error) {
     return (
       <div className="flex h-full items-center justify-center bg-slate-100 px-6 text-center">

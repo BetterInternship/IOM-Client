@@ -30,7 +30,6 @@ import { useIomModalRegistry } from "@/components/modal-registry";
 import {
   AlertCircle,
   FileSignature,
-  Plus,
 } from "lucide-react";
 import { RequestDialog } from "@/components/moa-request-dialog";
 import { CareerListingCta } from "@/components/career-listing-cta";
@@ -428,6 +427,7 @@ function CompanyDashboardContent() {
       <PageHeader
         title="Partners"
         description="Universities you have MOAs with."
+        actionsClassName="self-center sm:self-auto"
       >
         {canRequest && (
           <Button
@@ -436,7 +436,7 @@ function CompanyDashboardContent() {
             className="sm:h-8 sm:w-auto sm:px-[1em] sm:py-[0.33em]"
           >
             <Link href="/universities" aria-label="Request MOA">
-              <Plus />
+              <FileSignature />
               <span className="hidden sm:inline">Request MOA</span>
             </Link>
           </Button>

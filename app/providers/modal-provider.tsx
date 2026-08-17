@@ -242,7 +242,7 @@ const ModalWrapper = ({
             <div
               className={
                 options.contentClassName ??
-                "max-h-[calc(100dvh-4rem)] overflow-x-hidden overflow-y-auto px-4 pb-4 sm:max-h-[calc(90vh-4rem)] sm:overflow-auto"
+                "max-h-[calc(100dvh-6rem)] overflow-x-hidden overflow-y-auto px-4 pb-4 sm:max-h-[calc(90vh-4rem)] sm:overflow-auto"
               }
             >
               {children}

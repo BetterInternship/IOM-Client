@@ -112,8 +112,8 @@ export function AppHeader({
     pathname === href || pathname.startsWith(`${href}/`);
 
   return (
-    <header className="bg-background/70 sticky top-0 z-40 border-b py-2 backdrop-blur">
-      <div className="mx-auto flex h-16 items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
+    <header className="bg-background/70 sticky top-0 z-40 border-b py-0 backdrop-blur sm:py-2">
+      <div className="mx-auto flex h-14 items-center justify-between gap-2 px-4 sm:h-16 sm:px-6 lg:px-8">
         {/* Brand */}
         <Link
           href={homeHref}

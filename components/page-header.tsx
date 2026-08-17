@@ -20,10 +20,12 @@ export function PageHeader({
   title,
   description,
   children,
+  actionsClassName,
 }: {
   title: string;
   description?: React.ReactNode;
   children?: React.ReactNode;
+  actionsClassName?: string;
 }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
@@ -35,7 +37,11 @@ export function PageHeader({
           <p className="text-muted-foreground text-sm">{description}</p>
         )}
       </div>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      {children && (
+        <div className={cn("flex items-center gap-2", actionsClassName)}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
