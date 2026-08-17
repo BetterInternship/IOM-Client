@@ -1,8 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Link from "next/link";
 import { AppHeader, type NavItem } from "@/components/app-header";
+import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import {
   useCompanyProfile,
   useCompanyVerification,
@@ -61,19 +61,7 @@ export function CompanyHeader() {
         profileHref="/profile"
       />
       {status === "expired" && (
-        <div
-          role="alert"
-          className="border-destructive/30 bg-destructive/5 border-b px-4 py-3 text-center text-sm text-gray-800"
-        >
-          Your company verification has expired. Replace at least one required
-          document to submit it for approval. New MOA issuance is paused.{" "}
-          <Link
-            href="/profile#documents"
-            className="text-primary font-medium underline"
-          >
-            Update documents
-          </Link>
-        </div>
+        <CompanyProfileStatusNotice status="expired" compactAttention />
       )}
     </>
   );
