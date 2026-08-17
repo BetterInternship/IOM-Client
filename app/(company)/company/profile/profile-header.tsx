@@ -70,7 +70,7 @@ export function ProfileHeader({
   return (
     <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
       <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
-        You&apos;re almost ready to request MOAs!
+        Finish your profile to have your MOA approved
       </h1>
       <div className="w-full max-w-sm space-y-3 sm:w-80">
         <p className="text-sm font-medium text-gray-700">
