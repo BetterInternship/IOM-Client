@@ -52,8 +52,10 @@ function StatusNotice({
     <div
       data-slot="status-notice"
       className={cn(
-        "group/status-notice flex rounded-[0.33em] border",
-        compact ? "items-start gap-2 p-3" : "items-stretch gap-3 px-5 py-4",
+        "group/status-notice flex flex-col rounded-[0.33em] border",
+        compact
+          ? "items-start gap-3 p-3 sm:flex-row sm:items-start sm:gap-2"
+          : "gap-4 px-4 py-4 sm:flex-row sm:items-stretch sm:gap-3 sm:px-5",
         styles.container,
         className,
       )}
@@ -61,14 +63,14 @@ function StatusNotice({
     >
       <div
         className={cn(
-          "flex min-w-0 flex-1",
-          compact ? "items-start gap-2" : "items-stretch gap-3",
+          "flex min-w-0 flex-1 items-start gap-3 sm:items-stretch sm:gap-3",
+          compact && "gap-2 sm:items-start sm:gap-2",
         )}
       >
         <span
           className={cn(
             "flex shrink-0 items-center justify-center rounded-[0.33em]",
-            compact ? "size-8" : "size-10 self-center",
+            compact ? "size-8" : "size-10 sm:self-center",
             styles.icon,
           )}
         >
@@ -88,7 +90,7 @@ function StatusNotice({
         </div>
       </div>
       {action && (
-        <div className={cn("shrink-0 self-center", actionClassName)}>
+        <div className={cn("w-full shrink-0 sm:w-auto sm:self-center", actionClassName)}>
           {action}
         </div>
       )}

@@ -182,10 +182,10 @@ export function RequestableUniversitiesTable({
       onRowClick={onRequest}
       renderMobileRow={(university) => (
         <article
-          className="group grid cursor-pointer gap-6 rounded-[0.33em] border border-gray-200 bg-white p-6 transition-colors hover:border-gray-300 hover:bg-gray-50/40 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.7fr)_auto] lg:items-center"
+          className="group flex cursor-pointer flex-col items-start gap-4 rounded-[0.33em] border border-gray-200 bg-white p-5 text-left transition-colors hover:border-gray-300 hover:bg-gray-50/40 lg:flex-row lg:items-center lg:gap-6 lg:p-6"
           onClick={() => onRequest(university)}
         >
-          <div className="flex min-w-0 items-center gap-5">
+          <div className="flex min-w-0 flex-col items-start gap-3 lg:flex-1 lg:flex-row lg:items-center lg:gap-5">
             <UniversityLogo university={university} />
             <div className="min-w-0">
               <h2 className="text-base font-semibold text-gray-900 sm:text-lg">
@@ -201,7 +201,7 @@ export function RequestableUniversitiesTable({
             <InstantApprovalBadge />
           </div>
 
-          <div className="flex items-center lg:py-3 lg:pl-6">
+          <div className="flex w-full items-center lg:w-auto lg:py-3 lg:pl-6">
             <Button
               size="md"
               className="w-full lg:w-auto"

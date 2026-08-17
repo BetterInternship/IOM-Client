@@ -47,7 +47,13 @@ function CompanyProfileStatusNotice({
         onKeyDown={handleKeyDown}
         actionClassName="sm:flex sm:w-52 sm:justify-end"
         action={
-          <Button asChild variant="outline" scheme="primary" expandIcon>
+          <Button
+            asChild
+            variant="outline"
+            scheme="primary"
+            expandIcon
+            className="w-full bg-transparent sm:bg-background"
+          >
             <Link
               href="/complete-profile"
               onClick={(event) => event.stopPropagation()}
@@ -101,7 +107,13 @@ function CompanyProfileStatusNotice({
         )
       }
       action={
-        <Button asChild variant="outline" scheme="destructive" expandIcon>
+        <Button
+          asChild
+          variant="outline"
+          scheme="destructive"
+          expandIcon
+          className="w-full bg-transparent sm:bg-background"
+        >
           <Link
             href="/profile#documents"
             onClick={(event) => event.stopPropagation()}

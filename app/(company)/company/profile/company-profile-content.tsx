@@ -722,14 +722,14 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
                         Drop PDF to {existing ? "replace" : "upload"}
                       </div>
                     }
-                    className="flex min-h-[72px] flex-row items-center border-b border-gray-100 px-4 last:border-b-0"
+                    className="flex min-h-[72px] flex-col gap-2 border-b border-gray-100 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:gap-0 sm:py-0"
                   >
                     {existing ? (
                       <CircleCheck className="text-supportive" />
                     ) : (
                       <CircleAlert className="text-warning" />
                     )}
-                    <div className="flex flex-1 items-center justify-between gap-3 rounded-[0.16em] p-3">
+                    <div className="flex min-w-0 flex-1 flex-col gap-2 rounded-[0.16em] p-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-3">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-800">
                           {label}
@@ -742,13 +742,21 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
                               : "Not uploaded"}
                         </p>
                       </div>
-                      <div className="flex flex-shrink-0 flex-wrap items-center justify-end gap-2">
+                      <div
+                        className={cn(
+                          "flex w-full flex-shrink-0 gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end",
+                          isEditing
+                            ? "flex-row items-stretch"
+                            : "flex-col items-stretch",
+                        )}
+                      >
                         {isSetupMode ? (
                           <>
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
+                              className="w-full sm:w-auto"
                               disabled={uploadDoc.isPending}
                               onClick={() =>
                                 documentInputRefs.current[value]?.click()
@@ -770,6 +778,7 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
+                                className="w-full sm:w-auto"
                                 disabled={uploadDocuments.isPending}
                                 onClick={() =>
                                   setReplacementFiles((current) => {
@@ -803,6 +812,7 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
                               type="button"
                               variant="outline"
                               size="sm"
+                              className="flex-1 sm:flex-none"
                               disabled={uploadDocuments.isPending}
                               onClick={() =>
                                 documentInputRefs.current[value]?.click()
@@ -839,6 +849,11 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
                           <Button
                             variant="outline"
                             size="sm"
+                            className={
+                              isEditing
+                                ? "flex-1 sm:flex-none"
+                                : "w-full sm:w-auto"
+                            }
                             onClick={() => preview(existing)}
                           >
                             <Eye /> View
