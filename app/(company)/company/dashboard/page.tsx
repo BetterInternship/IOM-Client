@@ -1,11 +1,5 @@
 "use client";
-import {
-  type KeyboardEvent,
-  type ReactNode,
-  Suspense,
-  useEffect,
-  useState,
-} from "react";
+import { type ReactNode, Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -20,6 +14,8 @@ import {
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { StatusNotice } from "@/components/ui/status-notice";
+import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   CompanyPartnersTable,
@@ -33,9 +29,6 @@ import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import {
   AlertCircle,
-  ChevronUp,
-  ClipboardList,
-  Clock,
   FileSignature,
   Plus,
 } from "lucide-react";
@@ -65,180 +58,22 @@ interface PartnerUniversity extends CompanyPartnerUniversity {
 function NotificationCenter({
   count,
   children,
+  className,
 }: {
   count: number;
   children: ReactNode;
+  className?: string;
 }) {
-  const [isOpen, setIsOpen] = useState(true);
-
   if (count === 0) return null;
 
   return (
-    <section className="border-primary/20 bg-primary/[0.025] overflow-hidden rounded-[0.33em] border shadow-sm">
-      <button
-        type="button"
-        onClick={() => setIsOpen((value) => !value)}
-        className="hover:bg-primary/[0.025] flex min-h-14 w-full items-center gap-3 px-5 py-3 text-left text-sm font-semibold text-gray-900 transition-colors focus-visible:outline-none"
-        aria-expanded={isOpen}
-      >
-        Your tasks
-        <span className="bg-primary/10 text-primary inline-flex h-7 min-w-7 items-center justify-center rounded-full px-2">
-          {count}
-        </span>
-        <ChevronUp
-          className={`text-muted-foreground ml-auto h-4 w-4 transition-transform ${isOpen ? "" : "rotate-180"}`}
-          aria-hidden="true"
-        />
-      </button>
-      {isOpen && (
-        <div className="border-primary/15 divide-y divide-gray-200 border-t [&>div]:rounded-none [&>div]:border-0 [&>div]:shadow-none">
-          {children}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function VerificationBanner({
-  status,
-  rejectionReason,
-}: {
-  status: "incomplete" | "pending" | "rejected" | "expired";
-  rejectionReason: string | null;
-}) {
-  const router = useRouter();
-  const destination =
-    status === "incomplete" ? "/complete-profile" : "/profile";
-  const openDestination = () => router.push(destination);
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      openDestination();
-    }
-  };
-
-  if (status === "incomplete") {
-    return (
-      <Card
-        className="hover:bg-primary/[0.025] cursor-pointer flex-row items-start gap-3 px-5 py-4 transition-colors"
-        role="link"
-        tabIndex={0}
-        onClick={openDestination}
-        onKeyDown={handleKeyDown}
-      >
-        <span className="bg-primary/10 text-primary flex h-14 w-14 items-center justify-center rounded-[0.33em]">
-          <ClipboardList className="h-7 w-7" />
-        </span>
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Finish setting up your account
-          </h2>
-          <p className="text-muted-foreground mx-auto max-w-sm text-sm">
-            Complete your company profile and upload all required documents.
-            Once everything&apos;s in, the platform team will verify your
-            company so you can request MOAs.
-          </p>
-        </div>
-        <Button asChild variant="outline" scheme="primary" expandIcon>
-          <Link
-            href="/complete-profile"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <ClipboardList aria-hidden="true" />
-            <span className="button-label">Complete profile</span>
-          </Link>
-        </Button>
-      </Card>
-    );
-  }
-
-  if (status === "pending") {
-    return (
-      <Card
-        className="hover:bg-warning/15 cursor-pointer flex-row items-start gap-3 border-warning/30 bg-warning/10 px-5 py-4 transition-colors"
-        role="link"
-        tabIndex={0}
-        onClick={openDestination}
-        onKeyDown={handleKeyDown}
-      >
-        <span className="bg-warning/10 text-warning flex h-14 w-14 shrink-0 items-center justify-center rounded-[0.33em]">
-          <Clock className="h-6 w-6" />
-        </span>
-        <div className="space-y-0.5">
-          <p className="text-sm font-medium text-gray-900">Pending approval</p>
-          <p className="text-muted-foreground text-sm">
-            You can submit MOA requests now. They&apos;ll be queued and issued
-            automatically once the platform team verifies your company.
-          </p>
-        </div>
-      </Card>
-    );
-  }
-
-  if (status === "expired") {
-    return (
-      <Card
-        className="hover:bg-destructive/10 cursor-pointer flex-row items-start gap-3 border-destructive/30 bg-destructive/5 px-5 py-4 transition-colors"
-        role="link"
-        tabIndex={0}
-        onClick={openDestination}
-        onKeyDown={handleKeyDown}
-      >
-        <span className="bg-destructive/10 text-destructive flex h-14 w-14 shrink-0 items-center justify-center rounded-[0.33em]">
-          <AlertCircle className="h-6 w-6" />
-        </span>
-        <div className="space-y-0.5">
-          <p className="text-sm font-medium text-gray-900">
-            Verification expired
-          </p>
-          <p className="text-muted-foreground text-sm">
-            Your company verification has expired. Please re-upload your
-            documents to request re-review.{" "}
-            <Link
-              href="/profile"
-              className="text-primary underline"
-              onClick={(event) => event.stopPropagation()}
-            >
-              Update your profile
-            </Link>
-            .
-          </p>
-        </div>
-      </Card>
-    );
-  }
-
-  return (
-    <Card
-      className="hover:bg-destructive/10 cursor-pointer flex-row items-start gap-3 border-destructive/30 bg-destructive/5 px-5 py-4 transition-colors"
-      role="link"
-      tabIndex={0}
-      onClick={openDestination}
-      onKeyDown={handleKeyDown}
+    <section
+      className={`overflow-hidden rounded-[0.33em] border ${className ?? "border-primary/20"}`}
     >
-      <span className="bg-destructive/10 text-destructive flex h-14 w-14 shrink-0 items-center justify-center rounded-[0.33em]">
-        <AlertCircle className="h-6 w-6" />
-      </span>
-      <div className="space-y-0.5">
-        <p className="text-sm font-medium text-gray-900">
-          Verification needs attention
-        </p>
-        <p className="text-muted-foreground text-sm">
-          {rejectionReason ||
-            "Your company could not be verified. Please review your profile and documents."}{" "}
-          <br />
-          <br />
-          <Link
-            href="/profile"
-            className="text-primary underline"
-            onClick={(event) => event.stopPropagation()}
-          >
-            Update your profile
-          </Link>
-          .
-        </p>
+      <div className="divide-y divide-gray-200 [&>[data-slot=status-notice]]:rounded-none [&>[data-slot=status-notice]]:border-0">
+        {children}
       </div>
-    </Card>
+    </section>
   );
 }
 
@@ -259,6 +94,8 @@ function CompanyDashboardContent() {
   const openUniversityId = searchParams.get("open_university_id");
   const inviteTemplateId = searchParams.get("template_id");
   const inviteId = searchParams.get("invite_id");
+  const completeProfileAfterQueue =
+    searchParams.get("complete_profile_after_queue") === "1";
   const showApprovalPending =
     searchParams.get("approval_pending") === "1" ||
     (process.env.NODE_ENV !== "production" &&
@@ -308,7 +145,7 @@ function CompanyDashboardContent() {
     useCompanyVerification(!!company);
   const status = verification?.status;
   const verified = verification?.status === "verified";
-  const canRequest = verified || status === "pending";
+  const canRequest = !!status;
   const openUniversityName = (invitesData?.invites ?? []).find(
     (invite) =>
       (inviteId && invite.id === inviteId) ||
@@ -341,7 +178,13 @@ function CompanyDashboardContent() {
         defaultTemplateId={inviteTemplateId}
         inviteId={inviteId}
         verified={verified}
+        queuedSuccessHref={
+          completeProfileAfterQueue ? "/complete-profile" : "/company/dashboard"
+        }
         onClose={() => closeModal("request-moa")}
+        onSuccessClose={() =>
+          closeModal("request-moa", { skipOnClose: true })
+        }
       />,
       {
         title: (
@@ -362,6 +205,7 @@ function CompanyDashboardContent() {
     );
   }, [
     closeModal,
+    completeProfileAfterQueue,
     inviteId,
     inviteTemplateId,
     openModal,
@@ -435,6 +279,23 @@ function CompanyDashboardContent() {
   const pendingInvites = (invitesData?.invites ?? []).filter(
     (inv) => inv.university !== null,
   );
+  const hasCareerTask = true;
+  const hasInviteTask = pendingInvites.length > 0;
+  const hasFailedQueueTask = failedQueued.length > 0;
+  const hasVerificationTask = !!status && status !== "verified";
+  const notificationCount =
+    (hasCareerTask ? 1 : 0) +
+    (hasInviteTask ? 1 : 0) +
+    (hasFailedQueueTask ? 1 : 0) +
+    (hasVerificationTask ? 1 : 0);
+  const notificationBorderClass =
+    notificationCount > 1
+      ? "border-gray-200"
+      : hasFailedQueueTask || status === "rejected" || status === "expired"
+        ? "border-destructive/30"
+        : status === "incomplete" || status === "pending"
+          ? "border-warning/30"
+          : "border-primary/25";
   const navigateToDetail = (uniId: string) => {
     router.push(`/partners/${uniId}`);
   };
@@ -442,17 +303,19 @@ function CompanyDashboardContent() {
   return (
     <PageContainer className="space-y-8">
       <NotificationCenter
-        count={
-          (verified || verification?.canPostListing ? 1 : 0) +
-          (canRequest && pendingInvites.length > 0 ? 1 : 0) +
-          (failedQueued.length > 0 ? 1 : 0) +
-          (status && status !== "verified" ? 1 : 0)
-        }
+        className={notificationBorderClass}
+        count={notificationCount}
       >
-        {(verified || verification?.canPostListing) && <CareerListingCta />}
+        {hasCareerTask && <CareerListingCta />}
 
-        {canRequest &&
-          pendingInvites.length > 0 &&
+        {!vLoading && status && status !== "verified" && (
+          <CompanyProfileStatusNotice
+            status={status}
+            rejectionReason={verification?.rejectionReason ?? null}
+          />
+        )}
+
+        {hasInviteTask &&
           (() => {
             const invite = pendingInvites[0];
             const params = new URLSearchParams({
@@ -462,21 +325,9 @@ function CompanyDashboardContent() {
             if (invite.template) params.set("template_id", invite.template.id);
             const href = `/company/dashboard?${params}`;
             return (
-              <Card
-                className="bg-primary/[0.035] hover:bg-primary/[0.06] cursor-pointer flex-row items-center gap-4 border-primary/25 px-5 py-4 transition-colors"
-                key={invite.id}
-                role="link"
-                tabIndex={0}
-                onClick={() => router.push(href)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    router.push(href);
-                  }
-                }}
-              >
-                <span className="bg-primary/5 text-primary flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[0.33em] border border-primary/15 text-sm font-semibold">
-                  {invite.university!.logo_url ? (
+              <StatusNotice
+                media={
+                  invite.university!.logo_url ? (
                     // University logos are user-uploaded external assets.
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -485,7 +336,7 @@ function CompanyDashboardContent() {
                       className="h-full w-full bg-white object-contain p-1.5"
                     />
                   ) : (
-                    <span aria-hidden="true">
+                    <span aria-hidden="true" className="text-sm font-semibold">
                       {invite
                         .university!.registered_name.split(/\s+/)
                         .filter(Boolean)
@@ -494,19 +345,16 @@ function CompanyDashboardContent() {
                         .join("")
                         .toUpperCase()}
                     </span>
-                  )}
-                </span>
-                <div className="flex min-w-0 flex-1 items-center justify-between gap-5">
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      {invite.university!.registered_name} invited you to sign
-                      an MOA
-                    </p>
-                    <p className="text-muted-foreground text-sm">
-                      MOA invitation
-                      {invite.template ? ` · ${invite.template.name}` : ""}
-                    </p>
-                  </div>
+                  )
+                }
+                title={`${invite.university!.registered_name} invited you to sign an MOA`}
+                description={
+                  <>
+                    MOA invitation
+                    {invite.template ? ` · ${invite.template.name}` : ""}
+                  </>
+                }
+                action={
                   <Button
                     asChild
                     variant="outline"
@@ -522,14 +370,45 @@ function CompanyDashboardContent() {
                       <span className="button-label">Sign MOA</span>
                     </Link>
                   </Button>
-                </div>
-              </Card>
+                }
+                className="cursor-pointer"
+                key={invite.id}
+                role="link"
+                tabIndex={0}
+                onClick={() => router.push(href)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    router.push(href);
+                  }
+                }}
+              />
             );
           })()}
 
-        {failedQueued.length > 0 && (
-          <Card
-            className="hover:bg-destructive/10 cursor-pointer flex-row items-start gap-3 border-destructive/30 bg-destructive/5 px-5 py-4 transition-colors"
+        {hasFailedQueueTask && (
+          <StatusNotice
+            icon={AlertCircle}
+            title={
+              failedQueued.length === 1
+                ? "A queued MOA failed"
+                : `${failedQueued.length} queued MOAs failed`
+            }
+            description={
+              <>
+                Please contact us for help at{" "}
+                <a
+                  href="mailto:hello@betterinternship.com"
+                  className="text-primary underline"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  hello@betterinternship.com
+                </a>
+                .
+              </>
+            }
+            variant="destructive"
+            className="cursor-pointer"
             role="link"
             tabIndex={0}
             onClick={() => {
@@ -541,37 +420,9 @@ function CompanyDashboardContent() {
                 window.location.href = "mailto:hello@betterinternship.com";
               }
             }}
-          >
-            <span className="bg-destructive/10 text-destructive flex h-14 w-14 shrink-0 items-center justify-center rounded-[0.33em]">
-              <AlertCircle className="h-6 w-6" />
-            </span>
-            <div className="space-y-0.5">
-              <p className="text-sm font-medium text-gray-900">
-                {failedQueued.length === 1
-                  ? "A queued MOA failed"
-                  : `${failedQueued.length} queued MOAs failed`}
-              </p>
-              <p className="text-muted-foreground text-sm">
-                Please contact us for help at{" "}
-                <a
-                  href="mailto:hello@betterinternship.com"
-                  className="text-primary underline"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  hello@betterinternship.com
-                </a>
-                .
-              </p>
-            </div>
-          </Card>
-        )}
-
-        {!vLoading && status && status !== "verified" && (
-          <VerificationBanner
-            status={status}
-            rejectionReason={verification?.rejectionReason ?? null}
           />
         )}
+
       </NotificationCenter>
 
       <PageHeader

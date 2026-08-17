@@ -14,6 +14,7 @@ import {
   getUniversityControllerGetAuditLogQueryKey,
   getUniversityControllerGetBlacklistQueryKey,
   getUniversityControllerGetLegacyCompanyQueryKey,
+  getUniversityControllerGetPartnerMoasQueryKey,
   getUniversityControllerListInvitesQueryKey,
   getUniversityControllerListLegacyCompaniesQueryKey,
   getUniversityControllerListPartnersQueryKey,
@@ -39,6 +40,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatusNotice } from "@/components/ui/status-notice";
 import { useModal } from "@/app/providers/modal-provider";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { toast } from "sonner";
@@ -795,12 +797,16 @@ function PartnersContent({
     queryClient.invalidateQueries({
       queryKey: getUniversityControllerListRenewalsQueryKey(),
     });
+    queryClient.invalidateQueries({
+      queryKey: getUniversityControllerGetPartnerMoasQueryKey(detailId),
+    });
   };
 
   const blacklistMutation = useUniversityControllerBlacklistCompany({
     mutation: {
       onSuccess: () => {
         refresh();
+        modal.blacklistPartner.close();
       },
     },
   });
@@ -809,6 +815,7 @@ function PartnersContent({
     mutation: {
       onSuccess: () => {
         refresh();
+        modal.confirmAction.close();
       },
     },
   });
@@ -1345,7 +1352,8 @@ function PartnersContent({
                                 confirmLabel: "Remove",
                                 onConfirm: () =>
                                   unblacklistMutation.mutate({
-                                    companyId: getCompanyIdForBlacklist(partnerEntry),
+                                    companyId:
+                                      getCompanyIdForBlacklist(partnerEntry),
                                   }),
                               })
                             }
@@ -1368,7 +1376,8 @@ function PartnersContent({
                                 onBlacklist: (reason) =>
                                   blacklistMutation.mutate({
                                     data: {
-                                      companyId: getCompanyIdForBlacklist(partnerEntry),
+                                      companyId:
+                                        getCompanyIdForBlacklist(partnerEntry),
                                       reason: reason || undefined,
                                     },
                                   }),
@@ -1386,6 +1395,25 @@ function PartnersContent({
                     }
                   />
 
+                  {partnerEntry?.isBlacklisted &&
+                    partnerEntry.blacklistEntry && (
+                      <StatusNotice
+                        icon={Ban}
+                        variant="destructive"
+                        title="This company is blacklisted — all active MOAs are revoked and new requests are blocked."
+                        description={
+                          <>
+                            Blacklisted on{" "}
+                            {formatDateWithoutTime(
+                              partnerEntry.blacklistEntry.created_at,
+                            )}
+                            {partnerEntry.blacklistEntry.actor_email &&
+                              ` by ${partnerEntry.blacklistEntry.actor_email}`}
+                          </>
+                        }
+                      />
+                    )}
+
                   <CollapsibleCard
                     id="registered-moa-history"
                     title="MOA history"
@@ -1397,29 +1425,6 @@ function PartnersContent({
                       onOpenMoa={setPdfSelection}
                     />
                   </CollapsibleCard>
-
-                  {partnerEntry?.isBlacklisted &&
-                    partnerEntry.blacklistEntry && (
-                      <div className="border-destructive/30 bg-destructive/5 text-destructive space-y-1 rounded-[0.33em] border p-3 text-sm">
-                        <p>
-                          This company is <strong>blacklisted</strong> — all
-                          active MOAs are revoked and new requests are blocked.
-                        </p>
-                        {partnerEntry.blacklistEntry.reason && (
-                          <p className="text-destructive/80 text-xs">
-                            Reason: {partnerEntry.blacklistEntry.reason}
-                          </p>
-                        )}
-                        <p className="text-destructive/60 text-xs">
-                          Blacklisted on{" "}
-                          {formatDateWithoutTime(
-                            partnerEntry.blacklistEntry.created_at,
-                          )}
-                          {partnerEntry.blacklistEntry.actor_email &&
-                            ` by ${partnerEntry.blacklistEntry.actor_email}`}
-                        </p>
-                      </div>
-                    )}
 
                   {(partnerMoasData?.company?.document_review_details ||
                     company?.company_type) && (
@@ -1437,7 +1442,6 @@ function PartnersContent({
                       onOpenDocument={openDocumentPreview}
                     />
                   )}
-
                 </>
               )}
 

@@ -72,40 +72,11 @@ export function CompanyProfileProvider({
     pathname.startsWith("/company/register") ||
     pathname === "/login" ||
     pathname.startsWith("/register");
-  const onCompleteProfilePage =
-    pathname.startsWith("/company/complete-profile") ||
-    pathname === "/complete-profile";
   const loginRedirect = "/login";
-  const completeProfileRedirect = "/complete-profile";
-
-  // Profile-completeness gate: keep initial setup separate from profile management.
-  const { data: verification } = useCompanyVerification(
-    !onAuthPage && !isError && !isLoading,
-  );
 
   useEffect(() => {
     if (isError && !onAuthPage) router.replace(loginRedirect);
   }, [isError, loginRedirect, onAuthPage, router]);
-
-  useEffect(() => {
-    if (
-      !onAuthPage &&
-      !onCompleteProfilePage &&
-      !isError &&
-      !isLoading &&
-      verification?.status === "incomplete"
-    ) {
-      router.replace(completeProfileRedirect);
-    }
-  }, [
-    completeProfileRedirect,
-    isError,
-    isLoading,
-    onAuthPage,
-    onCompleteProfilePage,
-    router,
-    verification?.status,
-  ]);
 
   return (
     <CompanyProfileContext.Provider

@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import {
   useCompanyProfile,
   useCompanyVerification,
@@ -14,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import { RequestDialog } from "@/components/moa-request-dialog";
 import { ArrowRight } from "lucide-react";
 
@@ -32,7 +32,7 @@ export default function CompanyInvitesPage() {
   const { data: verification, isLoading: verificationLoading } =
     useCompanyVerification(!!company);
   const verified = verification?.status === "verified";
-  const canRequestMoa = verified || verification?.status === "pending";
+  const status = verification?.status;
   const { openModal, closeModal } = useModal();
 
   const { data, isLoading: invitesLoading } =
@@ -80,38 +80,20 @@ export default function CompanyInvitesPage() {
   }
   if (!company) return null;
 
-  if (!canRequestMoa) {
-    return (
-      <PageContainer className="space-y-6">
-        <PageHeader
-          title="Invitations"
-          description="Universities that have invited your company to sign a MOA."
-        />
-        <Card className="border-warning/30 bg-warning/10 p-4 text-sm text-gray-700">
-          {verification?.status === "expired"
-            ? "Your verification has expired. Replace a required document and submit it for approval before requesting an MOA."
-            : verification?.rejectionReason ||
-              "Your company must be approved before requesting an MOA."}
-          {(verification?.status === "expired" ||
-            verification?.status === "rejected") && (
-            <Link
-              href="/profile#documents"
-              className="text-primary ml-1 underline"
-            >
-              Update documents
-            </Link>
-          )}
-        </Card>
-      </PageContainer>
-    );
-  }
-
   return (
     <PageContainer className="space-y-6">
       <PageHeader
         title="Invitations"
         description="Universities that have invited your company to sign a MOA."
       />
+
+      {status && status !== "verified" && (
+        <CompanyProfileStatusNotice
+          status={status}
+          rejectionReason={verification?.rejectionReason}
+          compactAttention
+        />
+      )}
 
       {invitesLoading ? (
         <div className="space-y-4">

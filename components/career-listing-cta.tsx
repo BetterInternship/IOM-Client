@@ -4,8 +4,8 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { BriefcaseBusiness } from "lucide-react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { StatusNotice } from "@/components/ui/status-notice";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import {
   useCompanyControllerCareerLinkStatus,
@@ -125,33 +125,13 @@ export function CareerListingCta() {
       : "Post a listing";
 
   return (
-    <Card
-      className="cursor-pointer flex-row items-center gap-4 border-gray-200 bg-white px-5 py-4 transition-colors hover:bg-gray-50"
-      role="button"
-      tabIndex={0}
-      onClick={handleClick}
-      onKeyDown={(event) => {
-        if (
-          event.currentTarget === event.target &&
-          (event.key === "Enter" || event.key === " ")
-        ) {
-          event.preventDefault();
-          handleClick();
-        }
-      }}
-    >
-      <span className="bg-primary/10 text-primary flex h-14 w-14 shrink-0 items-center justify-center rounded-[0.33em]">
-        <BriefcaseBusiness className="h-6 w-6" aria-hidden="true" />
-      </span>
-      <div className="flex min-w-0 flex-1 items-center justify-between gap-5">
-        <div className="min-w-0 space-y-1">
-          <p className="text-sm font-medium text-gray-900">
-            Reach more students with an internship listing
-          </p>
+    <StatusNotice
+      icon={BriefcaseBusiness}
+      title="Reach more students with an internship listing"
+      description={
+        <>
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-muted-foreground text-sm">
-              Post openings directly to BetterInternship&apos;s marketplace.
-            </p>
+            <span>Post openings directly to BetterInternship&apos;s marketplace.</span>
             {!linkStatusLoading && (
               <PartnershipStatusBadge
                 status={linked ? "active" : "inactive"}
@@ -161,9 +141,8 @@ export function CareerListingCta() {
               />
             )}
           </div>
-
           {conflictCode === "NO_EMAIL" && (
-            <p className="text-destructive text-sm">
+            <p className="text-destructive mt-1">
               Set an account email on your{" "}
               <Link href="/profile" className="underline">
                 company profile
@@ -171,8 +150,9 @@ export function CareerListingCta() {
               first.
             </p>
           )}
-        </div>
-
+        </>
+      }
+      action={
         <Button
           variant="outline"
           scheme="primary"
@@ -188,7 +168,20 @@ export function CareerListingCta() {
           <BriefcaseBusiness aria-hidden="true" />
           <span className="button-label">{ctaLabel}</span>
         </Button>
-      </div>
-    </Card>
+      }
+      className="cursor-pointer border-gray-200 bg-gray-50/50 transition-colors hover:bg-gray-100"
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(event) => {
+        if (
+          event.currentTarget === event.target &&
+          (event.key === "Enter" || event.key === " ")
+        ) {
+          event.preventDefault();
+          handleClick();
+        }
+      }}
+    />
   );
 }

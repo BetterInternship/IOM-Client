@@ -18,7 +18,9 @@ export function PartnershipStatusBadge({
   const isPending = normalizedStatus === "pending";
   const isBlocked = ["blacklisted", "revoked"].includes(normalizedStatus);
   const isDestructive = ["expired", "rejected"].includes(normalizedStatus);
-  const isInactive = ["inactive", "none"].includes(normalizedStatus);
+  const isInactive = ["inactive", "none", "cancelled"].includes(
+    normalizedStatus,
+  );
   const Icon = isActive
     ? CheckCircle2
     : isPending

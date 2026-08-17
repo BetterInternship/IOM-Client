@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useEffect, useMemo } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCompanyProfile,
@@ -17,6 +16,7 @@ import { RequestDialog } from "@/components/moa-request-dialog";
 import { useModal } from "@/app/providers/modal-provider";
 import { RequestableUniversitiesTable } from "@/components/company/requestable-universities-table";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 
 function UniversityDirectoryContent() {
   const router = useRouter();
@@ -26,9 +26,7 @@ function UniversityDirectoryContent() {
     useCompanyVerification(!!company);
   const verified = verification?.status === "verified";
   const status = verification?.status;
-  const canRequestMoa = verified || status === "pending";
-  const profileHref =
-    status === "incomplete" ? "/complete-profile" : "/profile";
+  const canRequestMoa = !!status;
   const { openModal, closeModal } = useModal();
   const { approvalPending } = useIomModalRegistry();
   const showApprovalPending = searchParams.get("approval_pending") === "1";
@@ -83,33 +81,16 @@ function UniversityDirectoryContent() {
   }
   if (!company) return null;
 
-  if (!canRequestMoa) {
-    return (
-      <PageContainer className="space-y-6">
-        <PageHeader
-          title="Request MOA"
-          description="This is a list of universities you can request a MOA with."
-        />
-        <div className="border-warning/30 bg-warning/10 rounded-[0.33em] border p-4 text-sm text-gray-700">
-          {status === "rejected"
-            ? verification?.rejectionReason ||
-              "Your company could not be verified. Please review your profile and documents."
-            : status === "incomplete"
-              ? "Complete your profile and upload all required documents so the platform team can verify your company."
-              : status === "expired"
-                ? "Your company verification has expired. Replace at least one required document to submit it for approval."
-                : "Your company is pending verification by the platform team. You can queue MOA requests once your profile is complete."}{" "}
-          <Link href={profileHref} className="text-primary underline">
-            Go to your profile
-          </Link>
-          .
-        </div>
-      </PageContainer>
-    );
-  }
-
   return (
     <PageContainer className="space-y-8 pb-12">
+      {status && status !== "verified" && (
+        <CompanyProfileStatusNotice
+          status={status}
+          rejectionReason={verification?.rejectionReason}
+          compactAttention
+        />
+      )}
+
       <PageHeader
         title="Request MOA"
         description={
@@ -118,13 +99,6 @@ function UniversityDirectoryContent() {
             : "Your MOA requests will be queued and issued automatically after approval."
         }
       />
-
-      {!verified && (
-        <div className="border-primary/20 bg-primary/5 rounded-[0.33em] border p-4 text-sm text-gray-700">
-          Your company is pending platform approval. You can still submit MOA
-          requests now; they will stay queued until your company is approved.
-        </div>
-      )}
 
       <RequestableUniversitiesTable
         universities={requestableUniversities}

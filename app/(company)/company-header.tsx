@@ -1,8 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Link from "next/link";
 import { AppHeader, type NavItem } from "@/components/app-header";
+import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import {
   useCompanyProfile,
   useCompanyVerification,
@@ -24,13 +24,12 @@ export function CompanyHeader() {
   const { company } = useCompanyProfile();
   const { data: verification } = useCompanyVerification(!!company);
   const status = verification?.status;
-  const verified = status === "verified";
-  const canRequestMoa = verified || status === "pending";
-  const incomplete = status === "incomplete";
+  const canRequestMoa = !!status;
+  const canViewInvites = !!status;
 
   const { data: invitesData } = useCompanyControllerListPendingInvites({
     query: {
-      enabled: !!company && !incomplete,
+      enabled: !!company && canViewInvites,
       staleTime: 30_000,
     },
   });
@@ -41,11 +40,10 @@ export function CompanyHeader() {
   // Hide the app chrome on the unauthenticated pages.
   if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
 
-  // Partners and the request surface are hidden until the company has a complete profile.
   const nav: NavItem[] = [
-    ...(!incomplete ? [{ href: "/dashboard", label: "Partners" }] : []),
+    ...(status ? [{ href: "/dashboard", label: "Partners" }] : []),
     ...(canRequestMoa ? [{ href: "/universities", label: "Request MOA" }] : []),
-    ...(pendingInviteCount > 0
+    ...(canViewInvites && pendingInviteCount > 0
       ? [{ href: "/invites", label: "Invitations", badge: pendingInviteCount }]
       : []),
   ];
@@ -63,19 +61,7 @@ export function CompanyHeader() {
         profileHref="/profile"
       />
       {status === "expired" && (
-        <div
-          role="alert"
-          className="border-destructive/30 bg-destructive/5 border-b px-4 py-3 text-center text-sm text-gray-800"
-        >
-          Your company verification has expired. Replace at least one required
-          document to submit it for approval. New MOA issuance is paused.{" "}
-          <Link
-            href="/profile#documents"
-            className="text-primary font-medium underline"
-          >
-            Update documents
-          </Link>
-        </div>
+        <CompanyProfileStatusNotice status="expired" compactAttention />
       )}
     </>
   );
