@@ -59,7 +59,7 @@ function UniversityDirectoryContent() {
       />,
       {
         title: (
-          <h2 className="text-2xl leading-snug font-semibold tracking-tight">
+          <h2 className="text-lg leading-snug font-semibold tracking-tight sm:text-2xl">
             Requesting a MOA with{" "}
             <span className="text-primary">{university.registered_name}</span>
           </h2>

@@ -20,22 +20,28 @@ export function PageHeader({
   title,
   description,
   children,
+  actionsClassName,
 }: {
   title: string;
   description?: React.ReactNode;
   children?: React.ReactNode;
+  actionsClassName?: string;
 }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">
+        <h1 className="text-xl font-semibold tracking-tight text-gray-900 sm:text-2xl">
           {title}
         </h1>
         {description && (
           <p className="text-muted-foreground text-sm">{description}</p>
         )}
       </div>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      {children && (
+        <div className={cn("flex items-center gap-2", actionsClassName)}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }

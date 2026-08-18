@@ -130,16 +130,19 @@ export function CareerListingCta() {
       title="Reach more students with an internship listing"
       description={
         <>
-          <div className="flex flex-wrap items-center gap-2">
-            <span>Post openings directly to BetterInternship&apos;s marketplace.</span>
+          <div>
+            <span>Post openings directly to BetterInternship&apos;s </span>
+            <span className="whitespace-nowrap">
+              marketplace.
             {!linkStatusLoading && (
               <PartnershipStatusBadge
                 status={linked ? "active" : "inactive"}
                 label={linked ? "Linked" : "Not linked"}
                 showIcon={linked}
-                className="px-2 py-1 text-xs"
+                className="ml-2 align-middle px-2 py-1 text-xs"
               />
             )}
+            </span>
           </div>
           {conflictCode === "NO_EMAIL" && (
             <p className="text-destructive mt-1">
@@ -162,7 +165,7 @@ export function CareerListingCta() {
             handleClick();
           }}
           disabled={isBusy}
-          className="shrink-0"
+          className="w-full bg-transparent sm:shrink-0 sm:bg-background"
           aria-label={ctaLabel}
         >
           <BriefcaseBusiness aria-hidden="true" />

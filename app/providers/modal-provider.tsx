@@ -191,7 +191,7 @@ const ModalWrapper = ({
           className={[
             "relative overflow-hidden border bg-white shadow-2xl",
             "w-full max-w-full min-w-[100svw] rounded-t-[0.33em] rounded-b-none",
-            "max-h-screen",
+            "max-h-dvh",
             "sm:max-h-[90vh] sm:w-auto sm:max-w-2xl sm:min-w-sm sm:rounded-[0.33em]",
             options.panelClassName ?? "",
           ].join(" ")}
@@ -208,7 +208,7 @@ const ModalWrapper = ({
               {options.title ? (
                 typeof options.title === "string" ? (
                   <div className="min-w-0 flex-1">
-                    <h2 className="text-2xl leading-snug font-semibold tracking-tight">
+                    <h2 className="text-lg leading-snug font-semibold tracking-tight sm:text-2xl">
                       {options.title}
                     </h2>
                     {options.description && (
@@ -242,7 +242,7 @@ const ModalWrapper = ({
             <div
               className={
                 options.contentClassName ??
-                "max-h-[calc(100dvh-4rem)] overflow-auto px-4 pb-4 sm:max-h-[calc(90vh-4rem)]"
+                "max-h-[calc(100dvh-6rem)] overflow-x-hidden overflow-y-auto px-4 pb-0 sm:max-h-[calc(90vh-4rem)] sm:overflow-auto sm:pb-4"
               }
             >
               {children}

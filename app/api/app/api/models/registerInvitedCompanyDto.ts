@@ -10,5 +10,6 @@ export interface RegisterInvitedCompanyDto {
   token: string;
   tin: string;
   legalIdentifier: string;
+  email: string;
   password: string;
 }

@@ -58,7 +58,7 @@ export function CompanyHeader() {
         userSecondary={company?.email ?? undefined}
         logout={companyAuthControllerLogout}
         postLogoutPath="/login"
-        profileHref="/profile"
+        profileHref={status === "incomplete" ? "/complete-profile" : "/profile"}
       />
       {status === "expired" && (
         <CompanyProfileStatusNotice status="expired" compactAttention />

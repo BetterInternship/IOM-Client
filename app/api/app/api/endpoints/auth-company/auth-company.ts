@@ -35,6 +35,7 @@ import type {
   CompanyOtpRequestDto,
   CompanyOtpRequestResponse,
   CompanyOtpVerifyDto,
+  CompanyOtpVerifyResponse,
   CompanyRegisterDto,
   CompanyRegisterInvitedResponse,
   CompanyRegisterResponse,
@@ -550,7 +551,7 @@ export const companyAuthControllerOtpVerify = (
   companyOtpVerifyDto: CompanyOtpVerifyDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<BaseResponse>({
+  return preconfiguredAxiosFunction<CompanyOtpVerifyResponse>({
     url: `/api/auth/company/otp/verify`,
     method: "POST",
     headers: { "Content-Type": "application/json" },

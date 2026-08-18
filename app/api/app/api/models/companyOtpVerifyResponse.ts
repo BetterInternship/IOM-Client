@@ -5,19 +5,17 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
-import type { CompanyRegisterInvitedResponseKind } from "./companyRegisterInvitedResponseKind";
+import type { CompanyOtpVerifyResponseKind } from "./companyOtpVerifyResponseKind";
 
-export interface CompanyRegisterInvitedResponse {
+export interface CompanyOtpVerifyResponse {
   success: boolean;
   message?: string;
-  university_id: string;
+  kind: CompanyOtpVerifyResponseKind;
+  university_id?: string;
   /** @nullable */
-  template_id: string | null;
-  kind?: CompanyRegisterInvitedResponseKind;
+  template_id?: string | null;
   /** @nullable */
   magicLink?: string | null;
   conflictEmail?: string;
   autoLinkToken?: string;
-  needsOtp?: boolean;
-  resendIn?: number;
 }

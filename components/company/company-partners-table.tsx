@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ChevronRight, FileText } from "lucide-react";
+import { ChevronRight, FileText } from "lucide-react";
 
 import {
   ResourceTable,
@@ -373,25 +373,26 @@ export function CompanyPartnersTable({
       renderMobileRow={(partner) => (
         <Link
           href={partnerHref(partner)}
-          className="group w-full px-4 py-4 text-left transition-colors hover:bg-primary/[0.035] focus-visible:bg-primary/[0.035] focus-visible:outline-none"
+          className="group flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-primary/[0.035] focus-visible:bg-primary/[0.035] focus-visible:outline-none"
         >
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex min-w-0 items-start gap-3">
-              <PartnerLogo partner={partner} />
-              <div className="min-w-0">
-                <TruncatedTooltip className="text-sm font-semibold text-gray-900">
-                  {partner.university.registered_name}
-                </TruncatedTooltip>
-                <div className="mt-1">
-                  <PartnerStatusBadge partner={partner} />
-                </div>
-              </div>
+          <PartnerLogo partner={partner} />
+          <div className="min-w-0 flex-1">
+            <TruncatedTooltip className="text-sm font-semibold text-gray-900">
+              {partner.university.registered_name}
+            </TruncatedTooltip>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <PartnerStatusBadge partner={partner} />
+              <span className="text-muted-foreground text-xs whitespace-nowrap">
+                {[
+                  partner.activeCount > 0 && `${partner.activeCount} active`,
+                  partner.pendingCount > 0 && `${partner.pendingCount} pending`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "No MOAs"}
+              </span>
             </div>
-            <ArrowRight className="text-primary mt-3 h-4 w-4 shrink-0" />
           </div>
-          <div className="mt-3 flex justify-end text-sm">
-            <MoaCounts partner={partner} />
-          </div>
+          <ChevronRight className="text-primary h-4 w-4 shrink-0" />
         </Link>
       )}
       emptyState={{
