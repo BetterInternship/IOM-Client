@@ -1,11 +1,5 @@
 "use client";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
@@ -41,7 +35,8 @@ import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MorphHeight } from "@/components/ui/morph-height";
 import {
   Select,
   SelectTrigger,
@@ -50,29 +45,16 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useModal } from "@/app/providers/modal-provider";
 import { REQUIRED_DOCUMENT_TYPES, documentLabel } from "@/lib/document-types";
 import { cn, formatDateWithoutTime } from "@/lib/utils";
-import {
-  ArrowLeft,
-  Check,
-  CircleAlert,
-  CircleCheck,
-  Eye,
-  GripVertical,
-  Loader2,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Check, Eye, Loader2, X } from "lucide-react";
 
 interface ReviewDoc {
   type: string;
   filename: string;
   url: string | null;
-}
-
-interface DocumentPreviewSelection {
-  document: ReviewDoc;
-  label: string;
 }
 
 const COMPANY_TYPES: Array<{
@@ -88,6 +70,18 @@ const COMPANY_TYPES: Array<{
 const COMPANY_TYPE_LABELS: Record<string, string> = Object.fromEntries(
   COMPANY_TYPES.map((t) => [t.value, t.label]),
 );
+
+// Short labels for the tabs and left-panel rows on this page only — admins
+// are the only audience here, so the full legal document names (used
+// everywhere a company sees its own docs) aren't needed.
+const REVIEW_DOCUMENT_LABELS: Record<string, string> = {
+  bir_2303: "BIR Form 2303",
+  sec_dti_registration: "SEC/DTI Reg Form",
+  mayor_permit: "Mayor's Permit",
+};
+
+const reviewDocumentLabel = (type: string) =>
+  REVIEW_DOCUMENT_LABELS[type] ?? documentLabel(type);
 
 function ReviewStatusBadge({
   status,
@@ -106,32 +100,13 @@ function ReviewStatusBadge({
   return <PartnershipStatusBadge status="inactive" label="Superseded" />;
 }
 
-const toDateInputValue = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const yearsFromToday = (years: number) => {
-  const date = new Date();
-  date.setFullYear(date.getFullYear() + years);
-  return toDateInputValue(date);
-};
-
 // unknown-valued fields come back from generic Record<string, X> DTOs the
 // OpenAPI codegen can't narrow further (see admin/companies/[companyId]
 // /page.tsx for the same pattern) — render defensively.
 const asDisplayString = (value: unknown): string =>
   typeof value === "string" ? value : value == null ? "" : String(value);
 
-function DocumentsReadOnly({
-  entry,
-  openPreview,
-}: {
-  entry: AdminReviewHistoryItemDto;
-  openPreview: (url: string, title: string) => void;
-}) {
+function DocumentsReadOnly({ entry }: { entry: AdminReviewHistoryItemDto }) {
   const documents = entry.documents ?? [];
   if (documents.length === 0) return null;
   return (
@@ -139,12 +114,17 @@ function DocumentsReadOnly({
       {documents.map((doc) => {
         const label = documentLabel(doc.type);
         return (
-          <button
+          <a
             key={doc.type}
-            type="button"
-            className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 disabled:cursor-default disabled:opacity-50"
-            onClick={() => doc.url && openPreview(doc.url, label)}
-            disabled={!doc.url}
+            href={doc.url ?? undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
+              doc.url
+                ? "cursor-pointer hover:bg-gray-50"
+                : "pointer-events-none cursor-default opacity-50",
+            )}
           >
             <span className="bg-primary/5 text-primary flex size-8 shrink-0 items-center justify-center rounded-[0.2em]">
               <Eye className="h-4 w-4" aria-hidden="true" />
@@ -160,7 +140,7 @@ function DocumentsReadOnly({
             <span className="text-primary text-xs font-medium">
               {doc.url ? "View" : "Unavailable"}
             </span>
-          </button>
+          </a>
         );
       })}
     </div>
@@ -191,83 +171,51 @@ function CompanyIdentity({
   );
 }
 
-// Documents — one card each: preview, an optional expiry date, and a reject
-// flag with a per-document reason (flow spec §5).
+// Documents — one row each: document name, an accept checkbox, and (once
+// accepted) an animated-in expiry date. A document left unchecked is
+// treated as rejected, and its reason gets collected in the reject
+// confirmation modal instead of here — it might not even be uploaded yet.
 function ReviewDocumentCard({
   type,
+  label,
   document,
-  onOpenDocument,
+  accepted,
+  onAcceptedChange,
   expiryValue,
   onExpiryChange,
   onExpiryValidityChange,
-  rejected,
-  onRejectedChange,
-  reason,
-  onReasonChange,
 }: {
   type: string;
+  label: string;
   document: ReviewDoc | undefined;
-  onOpenDocument: (document: ReviewDoc, label: string) => void;
+  accepted: boolean;
+  onAcceptedChange: (accepted: boolean) => void;
   expiryValue: string;
   onExpiryChange: (value: string) => void;
   onExpiryValidityChange: (isValid: boolean) => void;
-  rejected: boolean;
-  onRejectedChange: (rejected: boolean) => void;
-  reason: string;
-  onReasonChange: (reason: string) => void;
 }) {
-  const label = documentLabel(type);
-
   return (
-    <div className="space-y-3 border-b border-gray-100 px-4 py-4 last:border-b-0">
-      <button
-        type="button"
-        disabled={!document?.url}
-        onClick={() => document?.url && onOpenDocument(document, label)}
-        className="flex w-full items-center gap-3 rounded-[0.16em] text-left enabled:cursor-pointer enabled:hover:bg-gray-50 disabled:cursor-default"
-      >
-        {document ? (
-          <CircleCheck className="text-supportive shrink-0" />
-        ) : (
-          <CircleAlert className="text-warning shrink-0" />
-        )}
-        <div className="min-w-0 flex-1 p-1">
+    <div className="border-b border-gray-100 px-4 py-4 last:border-b-0">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <p className="text-sm font-medium text-gray-800">{label}</p>
-          <p className="text-muted-foreground mt-0.5 truncate text-xs">
-            {document ? document.filename : "Not included with this request"}
-          </p>
+          {!document && (
+            <p className="text-muted-foreground mt-0.5 text-xs">
+              Not included with this request
+            </p>
+          )}
         </div>
-        {document && (
-          <span className="text-primary text-xs font-medium">
-            {document.url ? "View" : "Unavailable"}
-          </span>
-        )}
-      </button>
+        <Checkbox
+          checked={accepted && !!document}
+          disabled={!document}
+          onCheckedChange={(checked) => onAcceptedChange(checked === true)}
+          aria-label={`Accept ${label}`}
+        />
+      </div>
 
-      {document && (
-        <div className="space-y-3 pl-9">
-          <div className="flex items-center justify-between gap-3">
-            <Label
-              htmlFor={`reject-${type}`}
-              className="text-sm font-normal text-gray-700"
-            >
-              Reject this document
-            </Label>
-            <Switch
-              id={`reject-${type}`}
-              checked={rejected}
-              onCheckedChange={onRejectedChange}
-            />
-          </div>
-
-          {rejected ? (
-            <Textarea
-              rows={2}
-              placeholder="Reason (required — emailed to the company)"
-              value={reason}
-              onChange={(event) => onReasonChange(event.target.value)}
-            />
-          ) : (
+      <MorphHeight>
+        {accepted && document ? (
+          <div className="pt-3">
             <DetailField
               label={
                 <Label htmlFor={`expiry-${type}`}>
@@ -276,43 +224,17 @@ function ReviewDocumentCard({
               }
               labelClassName="sm:min-h-9"
             >
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <DatePicker
-                  id={`expiry-${type}`}
-                  className="h-9 text-sm"
-                  value={expiryValue}
-                  onChange={onExpiryChange}
-                  onValidityChange={onExpiryValidityChange}
-                />
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      onExpiryChange(yearsFromToday(1));
-                      onExpiryValidityChange(true);
-                    }}
-                  >
-                    +1 year
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      onExpiryChange(yearsFromToday(3));
-                      onExpiryValidityChange(true);
-                    }}
-                  >
-                    +3 years
-                  </Button>
-                </div>
-              </div>
+              <DatePicker
+                id={`expiry-${type}`}
+                className="h-9 text-sm"
+                value={expiryValue}
+                onChange={onExpiryChange}
+                onValidityChange={onExpiryValidityChange}
+              />
             </DetailField>
-          )}
-        </div>
-      )}
+          </div>
+        ) : null}
+      </MorphHeight>
     </div>
   );
 }
@@ -370,13 +292,7 @@ function CompactHistorySection({
   );
 }
 
-function PastReviewContent({
-  entry,
-  openPreview,
-}: {
-  entry: AdminReviewHistoryItemDto;
-  openPreview: (url: string, title: string) => void;
-}) {
+function PastReviewContent({ entry }: { entry: AdminReviewHistoryItemDto }) {
   const companyRows = Object.entries(entry.material ?? {})
     .filter((field): field is [string, string] => typeof field[1] === "string" && !!field[1])
     .map(([key, value]) => ({
@@ -424,7 +340,7 @@ function PastReviewContent({
       {(entry.documents ?? []).length > 0 && (
         <section className="space-y-3">
           <h3 className="text-sm font-semibold text-gray-900">Documents</h3>
-          <DocumentsReadOnly entry={entry} openPreview={openPreview} />
+          <DocumentsReadOnly entry={entry} />
         </section>
       )}
     </div>
@@ -526,21 +442,31 @@ function ApproveSummaryModal({
 
 function RejectCompanyForm({
   companyName,
-  documentRejections,
+  documentTypes,
   onReject,
 }: {
   companyName: string;
-  documentRejections: Record<string, string>;
-  onReject: (note: string) => Promise<unknown>;
+  documentTypes: string[];
+  onReject: (
+    documentRejections: Record<string, string>,
+    note: string,
+  ) => Promise<unknown>;
 }) {
   const { closeModal } = useModal();
+  const [reasons, setReasons] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const canSubmit = documentTypes.every((type) => !!reasons[type]?.trim());
+
   const rejectCompany = async () => {
+    if (!canSubmit) return;
     setIsSubmitting(true);
     try {
-      await onReject(note);
+      const documentRejections = Object.fromEntries(
+        documentTypes.map((type) => [type, reasons[type].trim()]),
+      );
+      await onReject(documentRejections, note);
     } catch {
       setIsSubmitting(false);
     }
@@ -552,14 +478,26 @@ function RejectCompanyForm({
         {companyName} will be asked to update the flagged documents below.
         Each reason is emailed to the company.
       </p>
-      <div className="overflow-hidden rounded-[0.33em] border border-gray-200">
-        {Object.entries(documentRejections).map(([type, reason]) => (
-          <div key={type} className="border-b border-gray-100 px-4 py-2.5 last:border-b-0">
-            <p className="text-sm font-medium text-gray-900">{documentLabel(type)}</p>
-            <p className="text-muted-foreground text-sm">{reason}</p>
-          </div>
-        ))}
-      </div>
+      {documentTypes.length > 0 && (
+        <div className="space-y-3">
+          {documentTypes.map((type) => (
+            <div key={type} className="space-y-1.5">
+              <Label htmlFor={`reject-reason-${type}`}>
+                {documentLabel(type)}
+              </Label>
+              <Textarea
+                id={`reject-reason-${type}`}
+                rows={2}
+                placeholder="Reason (required — emailed to the company)"
+                value={reasons[type] ?? ""}
+                onChange={(event) =>
+                  setReasons((v) => ({ ...v, [type]: event.target.value }))
+                }
+              />
+            </div>
+          ))}
+        </div>
+      )}
       <Textarea
         rows={2}
         placeholder="Additional note (optional — emailed to the company)"
@@ -576,7 +514,7 @@ function RejectCompanyForm({
         </Button>
         <Button
           scheme="destructive"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !canSubmit}
           onClick={rejectCompany}
         >
           {isSubmitting && <Loader2 className="animate-spin" />}
@@ -605,19 +543,8 @@ export default function AdminCompanyReviewPage() {
   const [debouncedTin, setDebouncedTin] = useState("");
   const [expiryValues, setExpiryValues] = useState<Record<string, string>>({});
   const [expiryValidity, setExpiryValidity] = useState<Record<string, boolean>>({});
-  const [rejectedDocs, setRejectedDocs] = useState<Record<string, boolean>>({});
-  const [rejectReasons, setRejectReasons] = useState<Record<string, string>>({});
-  const [documentPreview, setDocumentPreview] =
-    useState<DocumentPreviewSelection | null>(null);
-  const [previewWidth, setPreviewWidth] = useState(50);
+  const [acceptedDocs, setAcceptedDocs] = useState<Record<string, boolean>>({});
   const prefetchedReviewId = useRef<string | null>(null);
-
-  useEffect(() => {
-    const savedWidth = Number(
-      window.localStorage.getItem("iom-admin-review-preview-width"),
-    );
-    if (savedWidth >= 30 && savedWidth <= 70) setPreviewWidth(savedWidth);
-  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedTin(identity.tin.trim()), 350);
@@ -721,8 +648,7 @@ export default function AdminCompanyReviewPage() {
       onSuccess: () => {
         toast.success("Company review rejected");
         closeModal("reject-company");
-        setRejectedDocs({});
-        setRejectReasons({});
+        setAcceptedDocs({});
         invalidate();
       },
       onError: (e: Error) => {
@@ -766,8 +692,7 @@ export default function AdminCompanyReviewPage() {
     setDateValid(!!priorDetails?.["Date of Incorporation"]?.value);
     setExpiryValues({});
     setExpiryValidity({});
-    setRejectedDocs({});
-    setRejectReasons({});
+    setAcceptedDocs({});
   }, [data, openEntry]);
 
   const documentByType = useMemo(() => {
@@ -776,12 +701,12 @@ export default function AdminCompanyReviewPage() {
     return map;
   }, [openEntry]);
 
-  const rejectedCount = Object.values(rejectedDocs).filter(Boolean).length;
-  const canReject =
-    rejectedCount > 0 &&
-    Object.entries(rejectedDocs).every(
-      ([type, isRejected]) => !isRejected || !!rejectReasons[type]?.trim(),
-    );
+  const notAcceptedCount = REQUIRED_DOCUMENT_TYPES.filter(
+    (type) => !acceptedDocs[type],
+  ).length;
+  const allDocsAccepted = REQUIRED_DOCUMENT_TYPES.every(
+    (type) => acceptedDocs[type] && documentByType.has(type),
+  );
 
   const expiryOk = (type: string) =>
     !expiryValues[type]?.trim() || expiryValidity[type] !== false;
@@ -800,24 +725,8 @@ export default function AdminCompanyReviewPage() {
     identityComplete &&
     !tinConflict &&
     !tinChecking &&
-    rejectedCount === 0 &&
+    allDocsAccepted &&
     REQUIRED_DOCUMENT_TYPES.every(expiryOk);
-
-  const updatePreviewWidth = (nextWidth: number) => {
-    const clampedWidth = Math.min(70, Math.max(30, nextWidth));
-    setPreviewWidth(clampedWidth);
-    window.localStorage.setItem(
-      "iom-admin-review-preview-width",
-      String(clampedWidth),
-    );
-  };
-
-  const resizePreview = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return;
-    const bounds = event.currentTarget.parentElement?.getBoundingClientRect();
-    if (!bounds) return;
-    updatePreviewWidth(((bounds.right - event.clientX) / bounds.width) * 100);
-  };
 
   const openApproveSummary = () => {
     openModal(
@@ -855,17 +764,15 @@ export default function AdminCompanyReviewPage() {
   };
 
   const openRejectSummary = () => {
-    const documentRejections = Object.fromEntries(
-      Object.entries(rejectedDocs)
-        .filter(([, isRejected]) => isRejected)
-        .map(([type]) => [type, rejectReasons[type]?.trim() ?? ""]),
+    const documentTypes = REQUIRED_DOCUMENT_TYPES.filter(
+      (type) => !acceptedDocs[type],
     );
     openModal(
       "reject-company",
       <RejectCompanyForm
         companyName={identity.registered_name || data?.company.email || "This company"}
-        documentRejections={documentRejections}
-        onReject={(note) =>
+        documentTypes={documentTypes}
+        onReject={(documentRejections, note) =>
           reject.mutateAsync({
             companyId,
             data: { document_rejections: documentRejections, reason: note || undefined },
@@ -916,22 +823,8 @@ export default function AdminCompanyReviewPage() {
       : null;
 
   return (
-    <PageContainer
-      className={cn(
-        documentPreview ? "max-w-none py-0 pr-0 sm:pr-0" : "max-w-3xl py-0",
-      )}
-    >
-      <div
-        className={cn(
-          "relative min-h-[calc(100dvh-5rem-1px)] lg:h-[calc(100dvh-5rem-1px)] lg:min-h-0 lg:overflow-hidden",
-          documentPreview && "lg:grid",
-        )}
-        style={
-          documentPreview
-            ? { gridTemplateColumns: `${100 - previewWidth}% ${previewWidth}%` }
-            : undefined
-        }
-      >
+    <PageContainer className="max-w-none py-0 pr-0 sm:pr-0">
+      <div className="relative min-h-[calc(100dvh-5rem-1px)] lg:grid lg:h-[calc(100dvh-5rem-1px)] lg:min-h-0 lg:grid-cols-2 lg:overflow-hidden">
         <div className="min-w-0 space-y-3 py-5 pr-4 lg:h-full lg:overflow-y-auto lg:px-6">
           <Link
             href="/reviews"
@@ -1095,9 +988,11 @@ export default function AdminCompanyReviewPage() {
                   <ReviewDocumentCard
                     key={type}
                     type={type}
+                    label={reviewDocumentLabel(type)}
                     document={documentByType.get(type)}
-                    onOpenDocument={(document, label) =>
-                      setDocumentPreview({ document, label })
+                    accepted={!!acceptedDocs[type]}
+                    onAcceptedChange={(accepted) =>
+                      setAcceptedDocs((v) => ({ ...v, [type]: accepted }))
                     }
                     expiryValue={expiryValues[type] ?? ""}
                     onExpiryChange={(value) =>
@@ -1105,14 +1000,6 @@ export default function AdminCompanyReviewPage() {
                     }
                     onExpiryValidityChange={(isValid) =>
                       setExpiryValidity((v) => ({ ...v, [type]: isValid }))
-                    }
-                    rejected={!!rejectedDocs[type]}
-                    onRejectedChange={(rejected) =>
-                      setRejectedDocs((v) => ({ ...v, [type]: rejected }))
-                    }
-                    reason={rejectReasons[type] ?? ""}
-                    onReasonChange={(reason) =>
-                      setRejectReasons((v) => ({ ...v, [type]: reason }))
                     }
                   />
                 ))}
@@ -1154,17 +1041,7 @@ export default function AdminCompanyReviewPage() {
                         </span>
                       }
                     >
-                      <PastReviewContent
-                        entry={entry}
-                        openPreview={(url, title) => {
-                          const document = (entry.documents ?? []).find(
-                            (item) => item.url === url,
-                          );
-                          if (document) {
-                            setDocumentPreview({ document, label: title });
-                          }
-                        }}
-                      />
+                      <PastReviewContent entry={entry} />
                     </CollapsibleCardSection>
                   ))}
                 </CollapsibleCardGroup>
@@ -1175,10 +1052,10 @@ export default function AdminCompanyReviewPage() {
           <div className="flex justify-end gap-3">
             <Button
               scheme="destructive"
-              disabled={!canReject || reject.isPending}
+              disabled={reject.isPending}
               onClick={openRejectSummary}
             >
-              <X /> Reject{rejectedCount > 0 ? ` (${rejectedCount})` : ""}
+              <X /> Reject{notAcceptedCount > 0 ? ` (${notAcceptedCount})` : ""}
             </Button>
             <Button
               scheme="supportive"
@@ -1195,59 +1072,51 @@ export default function AdminCompanyReviewPage() {
           </div>
         </div>
 
-        {documentPreview && (
-          <>
-            <div
-              role="separator"
-              aria-label="Resize document preview pane"
-              aria-orientation="vertical"
-              aria-valuemin={30}
-              aria-valuemax={70}
-              aria-valuenow={Math.round(previewWidth)}
-              tabIndex={0}
-              className="group absolute top-0 bottom-0 z-30 hidden w-5 -translate-x-1/2 cursor-col-resize touch-none lg:block"
-              style={{ left: `${100 - previewWidth}%` }}
-              onPointerDown={(event) => {
-                event.preventDefault();
-                event.currentTarget.setPointerCapture(event.pointerId);
-              }}
-              onPointerMove={resizePreview}
-              onPointerUp={(event) =>
-                event.currentTarget.releasePointerCapture(event.pointerId)
-              }
-              onKeyDown={(event) => {
-                if (event.key === "ArrowLeft") {
-                  updatePreviewWidth(previewWidth + 2);
-                }
-                if (event.key === "ArrowRight") {
-                  updatePreviewWidth(previewWidth - 2);
-                }
-              }}
-            >
-              <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-gray-300 transition-colors group-hover:bg-primary group-focus:bg-primary" />
-              <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-full border border-gray-300 bg-white text-gray-500 shadow-sm transition-colors group-hover:border-primary group-focus:border-primary">
-                <button
-                  type="button"
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={() => setDocumentPreview(null)}
-                  className="flex h-8 w-7 items-center justify-center border-b border-gray-200 hover:bg-gray-100 hover:text-gray-900"
-                  aria-label="Close preview"
+        <Tabs
+          defaultValue={REQUIRED_DOCUMENT_TYPES[0]}
+          className="min-w-0 gap-0 border-t border-gray-200 lg:h-full lg:min-h-0 lg:overflow-hidden lg:border-t-0"
+        >
+          <TabsList className="h-auto max-w-full shrink-0 justify-start overflow-x-auto rounded-none border-0 border-b border-gray-200 bg-transparent">
+            {REQUIRED_DOCUMENT_TYPES.map((type) => {
+              const doc = documentByType.get(type);
+              return (
+                <TabsTrigger
+                  key={type}
+                  value={type}
+                  className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
                 >
-                  <X className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-                <span className="flex h-10 w-7 items-center justify-center group-hover:text-primary group-focus:text-primary">
-                  <GripVertical className="h-4 w-4" aria-hidden="true" />
-                </span>
-              </div>
-            </div>
-            <DocumentPreviewPane
-              url={documentPreview.document.url!}
-              filename={documentPreview.document.filename}
-              label={documentPreview.label}
-              zoomStorageKey="iom-admin-review-preview-zoom"
-            />
-          </>
-        )}
+                  {reviewDocumentLabel(type)}
+                  {!doc && (
+                    <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                      Missing
+                    </span>
+                  )}
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+          {REQUIRED_DOCUMENT_TYPES.map((type) => {
+            const doc = documentByType.get(type);
+            return (
+              <TabsContent key={type} value={type} className="min-h-0">
+                {doc?.url ? (
+                  <DocumentPreviewPane
+                    url={doc.url}
+                    filename={doc.filename}
+                    label={reviewDocumentLabel(type)}
+                    zoomStorageKey="iom-admin-review-preview-zoom"
+                  />
+                ) : (
+                  <div className="text-muted-foreground flex h-[70vh] min-h-[400px] items-center justify-center border-l border-gray-200 bg-slate-100 px-6 text-center text-sm lg:h-full">
+                    {doc
+                      ? "Preview unavailable for this file."
+                      : "Not included with this request."}
+                  </div>
+                )}
+              </TabsContent>
+            );
+          })}
+        </Tabs>
       </div>
     </PageContainer>
   );

@@ -27,16 +27,11 @@ const columns: Array<ResourceTableColumn<ReviewRow>> = [
     id: "company",
     header: "Company",
     width: "w-[70%]",
-    getSortValue: (review) => review.company?.registered_name ?? "",
+    getSortValue: (review) => review.company?.email ?? "",
     render: (review) => (
-      <div className="min-w-0">
-        <p className="font-medium text-gray-900">
-          {review.company?.registered_name ?? "Unknown company"}
-        </p>
-        <p className="text-muted-foreground truncate text-xs">
-          {review.company?.email}
-        </p>
-      </div>
+      <p className="truncate font-medium text-gray-900">
+        {review.company?.email ?? "No account email"}
+      </p>
     ),
   },
   {
@@ -68,6 +63,7 @@ export default function AdminReviewsPage() {
       placeholder: "Search companies...",
       ariaLabel: "Search company reviews",
       matches: (review, query) =>
+        (review.company?.email ?? "").toLowerCase().includes(query) ||
         (review.company?.registered_name ?? "").toLowerCase().includes(query) ||
         review.created_at.toLowerCase().includes(query),
     },
@@ -98,10 +94,7 @@ export default function AdminReviewsPage() {
               }
             >
               <p className="font-semibold text-gray-900">
-                {review.company?.registered_name ?? "Unknown company"}
-              </p>
-              <p className="text-muted-foreground mt-1 truncate text-sm">
-                {review.company?.email}
+                {review.company?.email ?? "No account email"}
               </p>
               <p className="text-muted-foreground mt-3 text-xs">
                 Submitted {formatDateWithoutTime(review.created_at)}
