@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   useCompanyAuthControllerLogin,
   companyControllerClaimInvite,
+  companyControllerGetVerification,
 } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,21 @@ function LoginPageContent() {
           } catch {
             // Invite expired or already claimed — fall through to dashboard
           }
+        }
+
+        // Missing, rejected, or expired documents all collapse into
+        // "incomplete" — send those straight to the upload gate instead of
+        // wherever login was headed, so an unverified company never lands
+        // on a page that just lets it sit there unverified.
+        try {
+          const verification = await companyControllerGetVerification();
+          if (verification.status === "incomplete") {
+            router.replace("/verification");
+            return;
+          }
+        } catch {
+          // Can't tell — fall through. The client-side guard will still
+          // catch it on whatever page we land on.
         }
 
         router.replace(next || "/company/dashboard");
