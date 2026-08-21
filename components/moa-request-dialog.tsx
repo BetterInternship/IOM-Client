@@ -11,9 +11,7 @@ import {
 } from "@betterinternship/core/pdf-viewer";
 import {
   type CompanyControllerCreateMoaRequestBody,
-  type CompanyPendingInvitesResponse,
   getCompanyControllerListMoaRequestsQueryKey,
-  getCompanyControllerListPendingInvitesQueryKey,
   useCompanyControllerCreateMoaRequest,
   useCompanyControllerGetRequestableTemplates,
 } from "@/app/api";
@@ -270,14 +268,12 @@ export function TemplatePreviewContent({
 export function RequestDialog({
   universityId,
   defaultTemplateId = null,
-  inviteId = null,
   successHref = "/company/requests",
   onClose,
   onSuccessClose = onClose,
 }: {
   universityId: string;
   defaultTemplateId?: string | null;
-  inviteId?: string | null;
   successHref?: string;
   onClose: () => void;
   onSuccessClose?: () => void;
@@ -341,24 +337,6 @@ export function RequestDialog({
     queryClient.invalidateQueries({
       queryKey: getCompanyControllerListMoaRequestsQueryKey(),
     });
-    const pendingInvitesQueryKey =
-      getCompanyControllerListPendingInvitesQueryKey();
-    if (inviteId) {
-      queryClient.setQueriesData<CompanyPendingInvitesResponse>(
-        { queryKey: pendingInvitesQueryKey },
-        (current) =>
-          current
-            ? {
-                ...current,
-                invites: current.invites.filter(
-                  (invite) => invite.id !== inviteId,
-                ),
-              }
-            : current,
-      );
-    } else {
-      queryClient.invalidateQueries({ queryKey: pendingInvitesQueryKey });
-    }
 
     const status = res.request?.status;
     if (status === "issued" && res.request?.moa_id) {
@@ -419,7 +397,6 @@ export function RequestDialog({
       universityId,
       templateId: selectedTemplateId,
       mode,
-      ...(inviteId ? { inviteId } : {}),
       ...(mode === "self"
         ? {
             signatoryName: repName,

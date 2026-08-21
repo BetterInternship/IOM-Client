@@ -9,4 +9,6 @@
 export interface CompanyPendingInviteTemplateDto {
   id: string;
   name: string;
+  /** @nullable */
+  description: string | null;
 }

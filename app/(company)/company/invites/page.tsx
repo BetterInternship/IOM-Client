@@ -1,9 +1,9 @@
 "use client";
+import { useRouter } from "next/navigation";
 import {
   useCompanyProfile,
   useCompanyVerification,
 } from "@/app/providers/company-profile.provider";
-import { useModal } from "@/app/providers/modal-provider";
 import { useCompanyControllerListPendingInvites } from "@/app/api";
 import {
   PageContainer,
@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
-import { RequestDialog } from "@/components/moa-request-dialog";
 import { ArrowRight } from "lucide-react";
 
 function universityInitials(name: string) {
@@ -28,11 +27,11 @@ function universityInitials(name: string) {
 }
 
 export default function CompanyInvitesPage() {
+  const router = useRouter();
   const { company, isLoading } = useCompanyProfile();
   const { data: verification, isLoading: verificationLoading } =
     useCompanyVerification(!!company);
   const status = verification?.status;
-  const { openModal, closeModal } = useModal();
 
   const { data, isLoading: invitesLoading } =
     useCompanyControllerListPendingInvites({
@@ -42,31 +41,6 @@ export default function CompanyInvitesPage() {
   const invites = (data?.invites ?? []).filter(
     (inv) => inv.university !== null,
   );
-
-  const openInviteDialog = (invite: (typeof invites)[number]) => {
-    openModal(
-      "request-moa",
-      <RequestDialog
-        universityId={invite.university!.id}
-        defaultTemplateId={invite.template?.id ?? null}
-        inviteId={invite.id}
-        onClose={() => closeModal("request-moa")}
-      />,
-      {
-        title: (
-          <h2 className="text-2xl leading-snug font-semibold tracking-tight">
-            Signing a MOA with{" "}
-            <span className="text-primary">
-              {invite.university!.registered_name}
-            </span>
-          </h2>
-        ),
-        panelClassName: "sm:!max-w-none",
-        headerClassName: "request-moa-header",
-        exitAnimation: "fade",
-      },
-    );
-  };
 
   if (isLoading || verificationLoading) {
     return (
@@ -133,7 +107,9 @@ export default function CompanyInvitesPage() {
                 <Button
                   size="md"
                   className="w-full md:w-auto"
-                  onClick={() => openInviteDialog(invite)}
+                  onClick={() =>
+                    router.push(`/invite/continue?invite_id=${invite.id}`)
+                  }
                 >
                   Sign MOA
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />

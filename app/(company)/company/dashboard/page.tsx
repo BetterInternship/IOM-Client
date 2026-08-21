@@ -186,31 +186,6 @@ function CompanyDashboardContent() {
     (inv) => inv.university !== null,
   );
 
-  const openInviteDialog = (invite: (typeof pendingInvites)[number]) => {
-    openModal(
-      "request-moa",
-      <RequestDialog
-        universityId={invite.university!.id}
-        defaultTemplateId={invite.template?.id ?? null}
-        inviteId={invite.id}
-        onClose={() => closeModal("request-moa")}
-      />,
-      {
-        title: (
-          <h2 className="text-2xl leading-snug font-semibold tracking-tight">
-            Signing a MOA with{" "}
-            <span className="text-primary">
-              {invite.university!.registered_name}
-            </span>
-          </h2>
-        ),
-        panelClassName: "sm:!max-w-none",
-        headerClassName: "request-moa-header",
-        exitAnimation: "fade",
-      },
-    );
-  };
-
   if (isLoading) {
     return (
       <>
@@ -358,7 +333,7 @@ function CompanyDashboardContent() {
                     className="w-full bg-transparent sm:shrink-0 sm:bg-background"
                     onClick={(event) => {
                       event.stopPropagation();
-                      openInviteDialog(invite);
+                      router.push(`/invite/continue?invite_id=${invite.id}`);
                     }}
                   >
                     <FileSignature aria-hidden="true" />
@@ -369,11 +344,13 @@ function CompanyDashboardContent() {
                 key={invite.id}
                 role="button"
                 tabIndex={0}
-                onClick={() => openInviteDialog(invite)}
+                onClick={() =>
+                  router.push(`/invite/continue?invite_id=${invite.id}`)
+                }
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    openInviteDialog(invite);
+                    router.push(`/invite/continue?invite_id=${invite.id}`);
                   }
                 }}
               />

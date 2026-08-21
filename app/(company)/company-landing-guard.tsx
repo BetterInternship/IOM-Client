@@ -11,7 +11,12 @@ import {
 // documents page except the three the company can still freely browse
 // (flow spec §2, plan §7.1). Matched by suffix, not full path — subdomain
 // routing drops the /company prefix (see company-header.tsx's own note).
-const EXEMPT_SUFFIXES = ["/dashboard", "/invites", "/profile"];
+const EXEMPT_SUFFIXES = [
+  "/dashboard",
+  "/invites",
+  "/profile",
+  "/invite/continue",
+];
 
 export function CompanyLandingGuard() {
   const pathname = usePathname() ?? "";

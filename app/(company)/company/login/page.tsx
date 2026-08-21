@@ -41,12 +41,9 @@ function LoginPageContent() {
             });
 
             if (res.university_id) {
-              const params = new URLSearchParams({
-                open_university_id: res.university_id,
-              });
-              if (res.template_id) params.set("template_id", res.template_id);
-              if (res.invite_id) params.set("invite_id", res.invite_id);
-              router.replace(`/company/dashboard?${params}`);
+              router.replace(
+                `/invite/continue?invite_id=${encodeURIComponent(res.invite_id)}`,
+              );
               return;
             }
           } catch {

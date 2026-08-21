@@ -88,12 +88,8 @@ interface InviteCompletionData {
  * Shared post-registration redirect for the invite flow (plan §6.1, §11) —
  * used by both registerInvited's immediate completion and the OTP-verify
  * completion reached when the submitted email differs from the invite's, so
- * the listing magic-link/conflict branch and the MOA dashboard-params
- * branch can't drift between the two entry points.
- *
- * The full invite-continuation stepper (`/invite/continue`) lands in a
- * later pass — until then a MOA-kind invite just opens the Partners page on
- * the invited university, same as any other post-registration landing.
+ * the listing magic-link/conflict branch and the MOA stepper branch can't
+ * drift between the two entry points.
  */
 function handleInviteCompletion(
   data: InviteCompletionData,
@@ -118,13 +114,10 @@ function handleInviteCompletion(
     return;
   }
 
-  if (data.university_id) {
-    const params = new URLSearchParams({
-      open_university_id: data.university_id,
-    });
-    if (data.template_id) params.set("template_id", data.template_id);
-    if (invitePeek?.invite_id) params.set("invite_id", invitePeek.invite_id);
-    router.replace(`/company/dashboard?${params}`);
+  if (invitePeek?.invite_id) {
+    router.replace(
+      `/invite/continue?invite_id=${encodeURIComponent(invitePeek.invite_id)}`,
+    );
   } else {
     router.replace("/company/dashboard");
   }

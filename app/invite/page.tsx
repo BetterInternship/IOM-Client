@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -22,9 +22,45 @@ import {
 import type { ApiError } from "@/app/api/preconfig.axios";
 import { getCareerHireUrl } from "@/components/career-listing-cta";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { useModal } from "@/app/providers/modal-provider";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
+import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
 import { formatDateWithoutTime } from "@/lib/utils";
+
+function RequiredDocumentsList() {
+  return (
+    <ul className="space-y-1.5">
+      {REQUIRED_DOCUMENT_TYPES.map((type) => (
+        <li
+          key={type}
+          className="flex items-center gap-2 text-sm text-[#121d3d]"
+        >
+          <FileText
+            className="text-muted-foreground h-3.5 w-3.5 shrink-0"
+            aria-hidden="true"
+          />
+          {documentLabel(type)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function RequiredDocumentsModal({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div className="space-y-4">
+      <p className="text-muted-foreground text-sm">
+        Before this MOA can be issued, we&apos;ll need these three documents
+        on file. You can upload them right after you accept.
+      </p>
+      <RequiredDocumentsList />
+      <Button className="w-full" onClick={onDismiss}>
+        Got it
+      </Button>
+    </div>
+  );
+}
 
 const CAREER_UNREACHABLE_MESSAGE =
   'Your account is ready, but we couldn\'t reach BetterInternship just now — use the "Post a listing" button on your dashboard to continue.';
@@ -51,6 +87,7 @@ interface InviteData {
   invite: { personal_message: string | null; expires_at: string };
   kind: "moa" | "listing";
   tin_hint: string | null;
+  documents_complete: boolean;
 }
 
 interface ExpiredInviteError extends ApiError {
@@ -64,6 +101,7 @@ function InvitePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const modal = useIomModalRegistry();
+  const { openModal, closeModal } = useModal();
   const token = searchParams.get("token") ?? "";
   const [loginError, setLoginError] = useState("");
 
@@ -109,12 +147,9 @@ function InvitePageContent() {
           });
           return;
         }
-        const params = new URLSearchParams();
-        params.set("open_university_id", response.university_id);
-        if (response.template_id)
-          params.set("template_id", response.template_id);
-        if (response.invite_id) params.set("invite_id", response.invite_id);
-        router.replace(`/company/dashboard?${params}`);
+        router.replace(
+          `/invite/continue?invite_id=${encodeURIComponent(response.invite_id)}`,
+        );
       },
       onError: (error: Error) => setLoginError(error.message),
     },
@@ -131,6 +166,23 @@ function InvitePageContent() {
   const apiError = error as ExpiredInviteError | null;
   const isWithdrawn = apiError?.code === "INVITE_WITHDRAWN";
   const isExpired = apiError?.code === "INVITE_EXPIRED";
+
+  // Flow spec §11 — a heads-up before they accept, shown only when
+  // documents are actually missing. Fires once per page load.
+  const docsModalShownRef = useRef(false);
+  useEffect(() => {
+    if (docsModalShownRef.current) return;
+    if (!inviteData || inviteData.kind !== "moa") return;
+    if (inviteData.documents_complete) return;
+    docsModalShownRef.current = true;
+    openModal(
+      "invite-required-documents",
+      <RequiredDocumentsModal
+        onDismiss={() => closeModal("invite-required-documents")}
+      />,
+      { title: "You'll need these documents", showHeaderDivider: false },
+    );
+  }, [inviteData, openModal, closeModal]);
 
   if ((isExpired || isWithdrawn) && apiError?.university) {
     const university = apiError.university;
@@ -228,6 +280,7 @@ function InvitePageContent() {
   const registerHref = `/company/register?invite_token=${encodeURIComponent(token)}`;
   const companyLabel = company_name || "Your company";
   const isListing = kind === "listing";
+  const isMoa = kind === "moa";
 
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
@@ -310,6 +363,17 @@ function InvitePageContent() {
                 <p className="mt-2 whitespace-pre-line text-base leading-6 text-[#121d3d]">
                   “{invite.personal_message}”
                 </p>
+              </div>
+            </div>
+          )}
+
+          {isMoa && (
+            <div className="border-b border-slate-200 py-6 text-left">
+              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                Documents you&apos;ll need
+              </p>
+              <div className="mt-3">
+                <RequiredDocumentsList />
               </div>
             </div>
           )}
