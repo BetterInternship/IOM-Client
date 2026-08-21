@@ -1,8 +1,6 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import {
   useCompanyProfile,
@@ -12,20 +10,13 @@ import {
   getCompanyControllerGetDocumentsQueryKey,
   getCompanyControllerGetVerificationQueryKey,
   useCompanyControllerGetDocuments,
-  useCompanyControllerPatchProfile,
   useCompanyControllerUploadDocuments,
   type CompanyDocumentDto,
 } from "@/app/api";
-import { cn, formatDateWithoutTime } from "@/lib/utils";
-import {
-  companyProfileSchema,
-  type CompanyProfileDraft,
-} from "@/lib/profile-validation";
+import { formatDateWithoutTime } from "@/lib/utils";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { FileDropTarget } from "@/components/ui/use-file-drop";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   CollapsibleCardGroup,
   CollapsibleCardSection,
@@ -52,8 +43,6 @@ import {
 } from "lucide-react";
 import { DocumentPreview } from "@/components/company/document-preview";
 
-const COSMETIC_KEYS = ["description", "website", "phone", "industry"];
-
 const COMPANY_TYPE_LABELS: Record<string, string> = {
   corporation: "Corporation",
   partnership: "Partnership",
@@ -66,12 +55,6 @@ export function CompanyProfileContent() {
   const { company, isLoading } = useCompanyProfile();
   const queryClient = useQueryClient();
 
-  const form = useForm<CompanyProfileDraft>({
-    resolver: zodResolver(companyProfileSchema),
-    mode: "onChange",
-    defaultValues: { description: "", website: "", phone: "", industry: "" },
-  });
-
   const documentInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const { data: docsData } = useCompanyControllerGetDocuments({
@@ -80,26 +63,6 @@ export function CompanyProfileContent() {
 
   const { data: verification } = useCompanyVerification(!!company);
   const status = verification?.status;
-
-  useEffect(() => {
-    if (!company) return;
-    form.reset({
-      description: String(company.cosmetic?.description ?? ""),
-      website: String(company.cosmetic?.website ?? ""),
-      phone: String(company.cosmetic?.phone ?? ""),
-      industry: String(company.cosmetic?.industry ?? ""),
-    });
-  }, [company, form]);
-
-  const saveCosmetic = useCompanyControllerPatchProfile({
-    mutation: {
-      onSuccess: (_data, variables) => {
-        form.reset(variables.data as CompanyProfileDraft);
-        toast("Profile saved", toastPresets.success);
-      },
-      onError: (e: Error) => toast.error(e.message),
-    },
-  });
 
   const invalidateDocuments = () => {
     queryClient.invalidateQueries({
@@ -169,10 +132,6 @@ export function CompanyProfileContent() {
     uploadReplacement.mutate({ data: { [type]: file } });
   }
 
-  function fieldError(field: string) {
-    return form.formState.errors[field as keyof CompanyProfileDraft]?.message;
-  }
-
   function preview(doc: CompanyDocumentDto) {
     openModal("preview-doc", <DocumentPreview docId={doc.id} />, {
       title: documentLabel(doc.type),
@@ -182,32 +141,11 @@ export function CompanyProfileContent() {
     });
   }
 
-  const cosmeticField = (
-    field: "description" | "website" | "phone" | "industry",
-    label: string,
-  ) => (
-    <DetailField label={<Label htmlFor={field}>{label}</Label>}>
-      <div className="min-w-0 flex-1 space-y-1">
-        <Input
-          id={field}
-          aria-invalid={!!fieldError(field)}
-          aria-describedby={fieldError(field) ? `${field}-error` : undefined}
-          {...form.register(field)}
-        />
-        {fieldError(field) && (
-          <p id={`${field}-error`} className="text-destructive text-xs">
-            {fieldError(field)}
-          </p>
-        )}
-      </div>
-    </DetailField>
-  );
-
   return (
     <div className="relative isolate flex-1 bg-slate-50/70">
       <div className="pointer-events-none absolute inset-0 z-0 bg-[url('/bg2.png')] bg-cover bg-center bg-no-repeat opacity-30" />
       <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-56 bg-gradient-to-b from-white/90 via-white/50 to-transparent" />
-      <PageContainer className={cn("relative z-10 space-y-8 pb-12")}>
+      <PageContainer className="relative z-10 space-y-8 pb-12">
         <PageHeader
           title={company.registered_name ?? company.email}
           description={
@@ -217,111 +155,8 @@ export function CompanyProfileContent() {
           }
         />
 
-        <CollapsibleCardGroup type="multiple" defaultValue={["company", "documents"]} variant="grouped">
-          {/* 1 — Company identity (read-only) + cosmetic (editable) */}
-          <CollapsibleCardSection
-            value="company"
-            trigger={
-              <CollapsibleCardSectionTitle icon={Building2} title="Company Profile" />
-            }
-            contentClassName="space-y-4 px-5 pb-5"
-          >
-            <DetailField label="Account email">
-              <p className="flex min-h-8 items-center break-all text-sm font-medium text-gray-900">
-                {company.email}
-              </p>
-            </DetailField>
-            <DetailField label="Registered name">
-              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
-                {company.registered_name ?? (
-                  <span className="text-muted-foreground font-normal">
-                    Set by an admin at verification
-                  </span>
-                )}
-              </p>
-            </DetailField>
-            <DetailField label="TIN">
-              <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
-                {company.tin ?? (
-                  <span className="text-muted-foreground font-normal">
-                    Set by an admin at verification
-                  </span>
-                )}
-              </p>
-            </DetailField>
-            <DetailField label="Company type">
-              <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
-                {company.company_type
-                  ? (COMPANY_TYPE_LABELS[company.company_type] ?? company.company_type)
-                  : (
-                      <span className="text-muted-foreground font-normal">
-                        Set by an admin at verification
-                      </span>
-                    )}
-              </p>
-            </DetailField>
-            <DetailField label="Registered address">
-              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
-                {company.registered_address ?? (
-                  <span className="text-muted-foreground font-normal">
-                    Set by an admin at verification
-                  </span>
-                )}
-              </p>
-            </DetailField>
-            {status === "verified" && verification?.approvalExpiresAt && (
-              <DetailField label="Verified until">
-                <div className="flex min-h-8 items-center gap-2 text-sm font-medium text-gray-900">
-                  <span>
-                    {new Date(verification.approvalExpiresAt).toLocaleDateString(
-                      "en-PH",
-                      { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Manila" },
-                    )}
-                  </span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        aria-label="About this verification expiry"
-                        className="text-muted-foreground hover:text-primary focus-visible:ring-primary/30 inline-flex cursor-help rounded-full outline-none focus-visible:ring-2"
-                      >
-                        <Info className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" sideOffset={6} className="max-w-64">
-                      This reflects the earliest expiry date recorded across
-                      your documents. We&apos;ll notify you when it&apos;s
-                      time to renew.
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </DetailField>
-            )}
-
-            <div className="border-t border-gray-100 pt-4">
-              <p className="mb-3 text-xs font-semibold tracking-wide text-gray-500 uppercase">
-                Public details
-              </p>
-              <div className="space-y-4">
-                {cosmeticField("description", "Description")}
-                {cosmeticField("website", "Website")}
-                {cosmeticField("phone", "Phone")}
-                {cosmeticField("industry", "Industry")}
-              </div>
-              <div className="mt-4 flex justify-end">
-                <Button
-                  size="sm"
-                  disabled={saveCosmetic.isPending || !form.formState.isDirty || !form.formState.isValid}
-                  onClick={form.handleSubmit((values) => saveCosmetic.mutate({ data: values }))}
-                >
-                  {saveCosmetic.isPending && <Loader2 className="animate-spin" />}
-                  Save
-                </Button>
-              </div>
-            </div>
-          </CollapsibleCardSection>
-
-          {/* 2 — Required documents: three named slots, per-slot state */}
+        <CollapsibleCardGroup type="multiple" defaultValue={["documents", "company"]} variant="grouped">
+          {/* 1 — Required documents: three named slots, per-slot state */}
           <CollapsibleCardSection
             value="documents"
             trigger={
@@ -435,6 +270,87 @@ export function CompanyProfileContent() {
                 );
               })}
             </div>
+          </CollapsibleCardSection>
+
+          {/* 2 — Company identity, read-only (admin-owned per flow spec §3) */}
+          <CollapsibleCardSection
+            value="company"
+            trigger={
+              <CollapsibleCardSectionTitle icon={Building2} title="Company Profile" />
+            }
+            contentClassName="space-y-4 px-5 pb-5"
+          >
+            <DetailField label="Account email">
+              <p className="flex min-h-8 items-center break-all text-sm font-medium text-gray-900">
+                {company.email}
+              </p>
+            </DetailField>
+            <DetailField label="Registered name">
+              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+                {company.registered_name ?? (
+                  <span className="text-muted-foreground font-normal">
+                    Set by an admin at verification
+                  </span>
+                )}
+              </p>
+            </DetailField>
+            <DetailField label="TIN">
+              <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
+                {company.tin ?? (
+                  <span className="text-muted-foreground font-normal">
+                    Set by an admin at verification
+                  </span>
+                )}
+              </p>
+            </DetailField>
+            <DetailField label="Company type">
+              <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
+                {company.company_type
+                  ? (COMPANY_TYPE_LABELS[company.company_type] ?? company.company_type)
+                  : (
+                      <span className="text-muted-foreground font-normal">
+                        Set by an admin at verification
+                      </span>
+                    )}
+              </p>
+            </DetailField>
+            <DetailField label="Registered address">
+              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+                {company.registered_address ?? (
+                  <span className="text-muted-foreground font-normal">
+                    Set by an admin at verification
+                  </span>
+                )}
+              </p>
+            </DetailField>
+            {status === "verified" && verification?.approvalExpiresAt && (
+              <DetailField label="Verified until">
+                <div className="flex min-h-8 items-center gap-2 text-sm font-medium text-gray-900">
+                  <span>
+                    {new Date(verification.approvalExpiresAt).toLocaleDateString(
+                      "en-PH",
+                      { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Manila" },
+                    )}
+                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="About this verification expiry"
+                        className="text-muted-foreground hover:text-primary focus-visible:ring-primary/30 inline-flex cursor-help rounded-full outline-none focus-visible:ring-2"
+                      >
+                        <Info className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6} className="max-w-64">
+                      This reflects the earliest expiry date recorded across
+                      your documents. We&apos;ll notify you when it&apos;s
+                      time to renew.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </DetailField>
+            )}
           </CollapsibleCardSection>
         </CollapsibleCardGroup>
       </PageContainer>

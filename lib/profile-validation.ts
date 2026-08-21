@@ -4,32 +4,6 @@ import { MAX_UNIVERSITY_SIGNATORIES } from "@betterinternship/core/partners/form
 export const MIN_SIGNATORIES = 2;
 export const MAX_SIGNATORIES = MAX_UNIVERSITY_SIGNATORIES;
 
-const optionalUrl = z
-  .string()
-  .trim()
-  .refine(
-    (value) => !value || /^https?:\/\/[^\s]+$/i.test(value),
-    "Enter a valid URL beginning with http:// or https://.",
-  );
-
-const optionalPhone = z
-  .string()
-  .trim()
-  .refine(
-    (value) => !value || /^[+0-9()\s.-]{7,}$/.test(value),
-    "Enter a valid phone number.",
-  );
-
-// Identity (registered_name, registered_address, company_type, tin) is
-// admin-owned and read-only forever (flow spec §3) — only the cosmetic
-// fields are ever company-editable.
-export const companyProfileSchema = z.object({
-  description: z.string(),
-  website: optionalUrl,
-  phone: optionalPhone,
-  industry: z.string(),
-});
-
 const signatoryEntrySchema = z.object({
   id: z.string().uuid("Each signatory needs a valid UUID."),
   name: z.string().trim().min(1, "Signatory name is required."),
@@ -112,6 +86,5 @@ export function universitySignatoriesComplete(
   );
 }
 
-export type CompanyProfileDraft = z.infer<typeof companyProfileSchema>;
 export type UniversityProfileDraft = z.infer<typeof universityProfileSchema>;
 export type UniversitySignatoryDraft = z.infer<typeof signatoryEntrySchema>;
