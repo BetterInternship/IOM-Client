@@ -14,6 +14,4 @@ export const CompanyVerificationResponseStatus = {
   incomplete: "incomplete",
   pending: "pending",
   verified: "verified",
-  expired: "expired",
-  rejected: "rejected",
 } as const;

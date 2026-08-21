@@ -24,14 +24,10 @@ export function CompanyHeader() {
   const { company } = useCompanyProfile();
   const { data: verification } = useCompanyVerification(!!company);
   const status = verification?.status;
-  const canRequestMoa = !!status;
-  const canViewInvites = !!status;
 
+  // Three fixed tabs always (flow spec §2) — no status-derived gating.
   const { data: invitesData } = useCompanyControllerListPendingInvites({
-    query: {
-      enabled: !!company && canViewInvites,
-      staleTime: 30_000,
-    },
+    query: { enabled: !!company, staleTime: 30_000 },
   });
   const pendingInviteCount = (invitesData?.invites ?? []).filter(
     (inv) => inv.university !== null,
@@ -41,11 +37,13 @@ export function CompanyHeader() {
   if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
 
   const nav: NavItem[] = [
-    ...(status ? [{ href: "/dashboard", label: "Partners" }] : []),
-    ...(canRequestMoa ? [{ href: "/universities", label: "Request MOA" }] : []),
-    ...(canViewInvites && pendingInviteCount > 0
-      ? [{ href: "/invites", label: "Invitations", badge: pendingInviteCount }]
-      : []),
+    { href: "/dashboard", label: "Partners" },
+    { href: "/requests", label: "MOA Requests" },
+    {
+      href: "/invites",
+      label: "Invites",
+      ...(pendingInviteCount > 0 ? { badge: pendingInviteCount } : {}),
+    },
   ];
 
   return (
@@ -54,14 +52,21 @@ export function CompanyHeader() {
         portal="Company"
         homeHref="/dashboard"
         nav={nav}
-        userPrimary={company?.registered_name ?? undefined}
+        // Identity before approval is the account email (flow spec §3).
+        userPrimary={company?.registered_name ?? company?.email ?? undefined}
         userSecondary={company?.email ?? undefined}
         logout={companyAuthControllerLogout}
         postLogoutPath="/login"
-        profileHref={status === "incomplete" ? "/complete-profile" : "/profile"}
+        profileHref="/profile"
       />
-      {status === "expired" && (
-        <CompanyProfileStatusNotice status="expired" compactAttention />
+      {status === "incomplete" && (
+        <CompanyProfileStatusNotice
+          status="incomplete"
+          reason={verification?.reason}
+          documentRejections={verification?.documentRejections}
+          expiredDocument={verification?.expiredDocument}
+          compactAttention
+        />
       )}
     </>
   );

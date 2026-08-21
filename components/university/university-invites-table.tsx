@@ -32,7 +32,9 @@ export interface CompanyInvite {
   status: "pending" | "accepted" | "expired" | "used_waiting" | "cancelled";
   created_at: string;
   expires_at: string;
-  registered_company: { registered_name: string } | null;
+  // Unapproved companies have no registered_name yet (flow spec §3) —
+  // resolveDisplayName() already falls back to company_name/invited_email.
+  registered_company: { registered_name: string | null } | null;
 }
 
 // §8.5 — the two tabs share every label except "accepted": MOA invites are

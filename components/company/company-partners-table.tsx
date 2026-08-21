@@ -402,7 +402,7 @@ export function CompanyPartnersTable({
           : "Complete your company verification requirements to request MOAs from partner universities.",
         action: canRequest ? (
           <Button asChild variant="outline" scheme="primary">
-            <Link href="/universities">Browse universities</Link>
+            <Link href="/dashboard">Browse universities</Link>
           </Button>
         ) : undefined,
       }}

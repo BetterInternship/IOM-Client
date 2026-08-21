@@ -9,28 +9,27 @@ import {
   usePdfDocumentFromUrl,
   usePdfPageRenderer,
 } from "@betterinternship/core/pdf-viewer";
-import { deriveCompanySignatoryRequirements } from "@betterinternship/core/partners/forms";
 import {
-  type CompanyControllerRequestMoaBody,
+  type CompanyControllerCreateMoaRequestBody,
   type CompanyPendingInvitesResponse,
-  getCompanyControllerListMoasQueryKey,
+  getCompanyControllerListMoaRequestsQueryKey,
   getCompanyControllerListPendingInvitesQueryKey,
-  getCompanyControllerListQueuedMoasQueryKey,
-  useCompanyControllerCreateQueuedMoa,
+  useCompanyControllerCreateMoaRequest,
   useCompanyControllerGetRequestableTemplates,
-  useCompanyControllerRequestMoa,
 } from "@/app/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SignatoryCard } from "@/components/signatory-card";
+import { SignatoryEmailInput } from "@/components/signatory-email-input";
 import { FormError } from "@/components/auth-shell";
 import {
   MoaSignatureInput,
   type MoaSignatureMode,
 } from "@/components/moa-signature-input";
 import { useResolvedFile } from "@/app/lib/resolve-file";
+import { useIomModalRegistry } from "@/components/modal-registry";
 import { toast } from "sonner";
 import { toastPresets } from "@/components/sonner-toaster";
 import { cn } from "@/lib/utils";
@@ -39,9 +38,12 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock4,
   FileText,
   Loader2,
+  Mail,
   PenLine,
+  Send,
 } from "lucide-react";
 
 function AnimatedCheck() {
@@ -66,7 +68,15 @@ function AnimatedCheck() {
   );
 }
 
-function MoaIssuedSuccess() {
+function OutcomeShell({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
   return (
     <div className="mx-auto flex min-h-[20rem] w-full flex-col items-center justify-center px-4 py-10 text-center sm:w-[30rem]">
       <style>{`
@@ -86,18 +96,38 @@ function MoaIssuedSuccess() {
           }
         }
       `}</style>
-      <div className="mb-5 rounded-full bg-supportive/10 p-6">
-        <AnimatedCheck />
-      </div>
+      <div className="mb-5 rounded-full bg-supportive/10 p-6">{icon}</div>
       <h2 className="text-3xl font-semibold tracking-tight text-foreground">
-        MOA issued
+        {title}
       </h2>
-      <p className="text-muted-foreground mt-2 text-sm">Opening your MOA...</p>
+      <p className="text-muted-foreground mt-2 max-w-sm text-sm">
+        {description}
+      </p>
     </div>
   );
 }
 
-function MoaIssuingState() {
+function MoaIssuedSuccess() {
+  return (
+    <OutcomeShell
+      icon={<AnimatedCheck />}
+      title="MOA issued"
+      description="Opening your MOA…"
+    />
+  );
+}
+
+function MoaSubmittedSuccess({ description }: { description: string }) {
+  return (
+    <OutcomeShell
+      icon={<Clock4 className="text-supportive h-9 w-9" />}
+      title="Request submitted"
+      description={description}
+    />
+  );
+}
+
+function MoaSubmittingState() {
   return (
     <div className="mx-auto flex min-h-[20rem] w-full flex-col items-center justify-center px-4 py-10 text-center sm:w-[30rem]">
       <style>{`
@@ -111,23 +141,23 @@ function MoaIssuingState() {
         <FileText className="text-primary relative h-12 w-12" />
       </div>
       <h2 className="text-3xl font-semibold tracking-tight text-foreground">
-        Issuing your MOA
+        Submitting your request
       </h2>
       <p className="text-muted-foreground mt-2 max-w-sm text-sm">
-        We&apos;re generating the agreement and preparing the signed document.
+        One moment…
       </p>
     </div>
   );
 }
 
-type RequestPhase = "form" | "issuing" | "issued";
+type RequestMode = "self" | "delegate";
+type RequestPhase = "form" | "submitting" | "issued" | "submitted";
 
 interface Template {
   id: string;
   name: string;
   description: string | null;
   term_months: number | null;
-  field_schema?: unknown;
 }
 
 type ApiError = {
@@ -135,11 +165,6 @@ type ApiError = {
   data?: { limit?: number };
   response?: { data?: { code?: string; data?: { limit?: number } } };
 };
-
-const requestSteps = [
-  { title: "Choose template", icon: FileText },
-  { title: "Sign request", icon: PenLine },
-];
 
 function TemplatePdfViewer({ url }: { url: string }) {
   const { pdfDoc, pageCount, isLoading, error } = usePdfDocumentFromUrl(url);
@@ -237,72 +262,84 @@ export function TemplatePreviewContent({
   );
 }
 
+/**
+ * Two steps now (flow spec §7): who-signs + a quiet template line, then the
+ * details form. One create path for every outcome — the server decides
+ * whether it issues immediately, parks, or goes out for signature.
+ */
 export function RequestDialog({
   universityId,
   defaultTemplateId = null,
   inviteId = null,
-  verified = true,
-  queuedSuccessHref = "/company/dashboard",
+  successHref = "/company/requests",
   onClose,
   onSuccessClose = onClose,
 }: {
   universityId: string;
   defaultTemplateId?: string | null;
   inviteId?: string | null;
-  verified?: boolean;
-  queuedSuccessHref?: string;
+  successHref?: string;
   onClose: () => void;
   onSuccessClose?: () => void;
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const modal = useIomModalRegistry();
   const [step, setStep] = useState<1 | 2>(1);
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(
+  const [mode, setMode] = useState<RequestMode | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     defaultTemplateId,
   );
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+
   const [repName, setRepName] = useState("");
   const [repTitle, setRepTitle] = useState("");
   const [sigMode, setSigMode] = useState<MoaSignatureMode>("type");
   const [sigText, setSigText] = useState("");
   const [sigFile, setSigFile] = useState<File | null>(null);
-  const [rep2Name, setRep2Name] = useState("");
-  const [rep2Title, setRep2Title] = useState("");
-  const [sig2Mode, setSig2Mode] = useState<MoaSignatureMode>("type");
-  const [sig2Text, setSig2Text] = useState("");
-  const [sig2File, setSig2File] = useState<File | null>(null);
+  const [signatoryEmail, setSignatoryEmail] = useState("");
+
   const [error, setError] = useState<string | null>(null);
-  const [requestPhase, setRequestPhase] = useState<RequestPhase>("form");
+  const [phase, setPhase] = useState<RequestPhase>("form");
+  const [outcomeMessage, setOutcomeMessage] = useState("");
 
   const { data, isLoading } = useCompanyControllerGetRequestableTemplates(
     universityId,
     {
-      query: { queryKey: ["university-templates-for-invite"] },
+      query: { queryKey: ["university-templates-for-invite", universityId] },
     },
   );
 
-  const requestMoa = useCompanyControllerRequestMoa();
-  const createQueuedMoa = useCompanyControllerCreateQueuedMoa();
-  const isRequestPending = requestMoa.isPending || createQueuedMoa.isPending;
+  const templates = (data?.templates ?? []) as Template[];
+  const universityName = data?.university?.registered_name ?? "";
+
+  // Auto-select the platform default (or this university's first template)
+  // once templates load, unless the caller already gave us one to start on.
+  useEffect(() => {
+    if (isLoading || selectedTemplateId) return;
+    const fallback = data?.defaultTemplateId ?? templates[0]?.id ?? null;
+    if (fallback) setSelectedTemplateId(fallback);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, data?.defaultTemplateId, templates.length]);
 
   useEffect(() => {
     if (
       !isLoading &&
-      selectedTemplate &&
-      !data?.templates.some((t) => t.id === selectedTemplate)
+      selectedTemplateId &&
+      !templates.some((t) => t.id === selectedTemplateId)
     ) {
-      setSelectedTemplate(null);
+      setSelectedTemplateId(data?.defaultTemplateId ?? templates[0]?.id ?? null);
     }
-  }, [data?.templates, isLoading, selectedTemplate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.templates, isLoading]);
+
+  const createRequest = useCompanyControllerCreateMoaRequest();
 
   const handleSuccess = (res: {
-    moa?: { id: string };
-    queued?: { id: string };
+    request?: { status?: string; moa_id?: string | null };
   }) => {
     queryClient.invalidateQueries({
-      queryKey: getCompanyControllerListMoasQueryKey(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: getCompanyControllerListQueuedMoasQueryKey(),
+      queryKey: getCompanyControllerListMoaRequestsQueryKey(),
     });
     const pendingInvitesQueryKey =
       getCompanyControllerListPendingInvitesQueryKey();
@@ -322,23 +359,36 @@ export function RequestDialog({
     } else {
       queryClient.invalidateQueries({ queryKey: pendingInvitesQueryKey });
     }
-    if (verified && res.moa) {
-      setRequestPhase("issued");
+
+    const status = res.request?.status;
+    if (status === "issued" && res.request?.moa_id) {
+      setPhase("issued");
       window.setTimeout(() => {
-        router.push(`/company/moas/${res.moa!.id}?issued=1`);
+        router.push(`/company/moas/${res.request!.moa_id}?issued=1`);
       }, 550);
-    } else {
-      toast(
-        "MOA request submitted — it will be issued automatically once your company is verified.",
-        toastPresets.success,
-      );
-      onSuccessClose();
-      router.push(queuedSuccessHref);
+      return;
     }
+
+    const message =
+      mode === "delegate"
+        ? `We emailed ${signatoryEmail} a link to sign — you'll see it here once it's signed.`
+        : "Signed and on file — it will issue automatically once your company is verified.";
+    setOutcomeMessage(message);
+    setPhase("submitted");
+    toast(
+      mode === "delegate"
+        ? "Signature request sent."
+        : "MOA request submitted.",
+      toastPresets.success,
+    );
+    window.setTimeout(() => {
+      onSuccessClose();
+      router.push(successHref);
+    }, 1400);
   };
 
   const handleError = (e: unknown) => {
-    setRequestPhase("form");
+    setPhase("form");
     const err = e as ApiError;
     const code = err.response?.data?.code || err.code || "";
     if (code === "AT_ACTIVE_MOA_CAP") {
@@ -347,15 +397,12 @@ export function RequestDialog({
       setError(
         `You have reached the maximum of ${limit} active MOAs with this university.`,
       );
-    } else if (code === "COMPANY_NOT_VERIFIED") {
-      setError(
-        "Your company must be verified by the platform team before you can request MOAs. " +
-          "If you recently changed your details, they need to be re-verified.",
-      );
-    } else if (code === "QUEUED_MOA_ALREADY_EXISTS") {
-      setError("You already have a pending MOA request with this university.");
-    } else if (code === "INVITE_NOT_REQUESTABLE") {
-      setError("This invitation is no longer available.");
+    } else if (code === "DOCUMENTS_INCOMPLETE") {
+      setError("Upload your documents before you can request MOAs.");
+    } else if (code === "REQUEST_ALREADY_IN_FLIGHT") {
+      setError("You already have a request in flight with this university.");
+    } else if (code === "UNIVERSITY_NOT_REQUESTABLE") {
+      setError("Unable to request from this university at this time.");
     } else {
       setError(
         "Couldn't request from this university at this time. Please contact us for help.",
@@ -364,110 +411,165 @@ export function RequestDialog({
   };
 
   const submitRequest = () => {
+    if (!mode || !selectedTemplateId) return;
     setError(null);
-    setRequestPhase("issuing");
-    const requestData: CompanyControllerRequestMoaBody = {
+    setPhase("submitting");
+
+    const requestData: CompanyControllerCreateMoaRequestBody = {
       universityId,
-      templateId: selectedTemplate!,
-      repName,
-      repTitle,
-      ...(signerRequirements.signer1.signature
-        ? sigMode !== "type" && sigFile
-          ? { signature: sigFile }
-          : { repSignatureText: sigText }
-        : {}),
-      ...(signer2Required ? { rep2Name, rep2Title } : {}),
-      ...(signer2Required && signerRequirements.signer2.signature
-        ? sig2Mode !== "type" && sig2File
-          ? { signature2: sig2File }
-          : { rep2SignatureText: sig2Text }
-        : {}),
-      ...(inviteId ? { invite_id: inviteId } : {}),
+      templateId: selectedTemplateId,
+      mode,
+      ...(inviteId ? { inviteId } : {}),
+      ...(mode === "self"
+        ? {
+            signatoryName: repName,
+            signatoryTitle: repTitle,
+            ...(sigMode !== "type" && sigFile
+              ? { signature: sigFile }
+              : { signatureText: sigText }),
+          }
+        : { signatoryEmail }),
     };
 
-    if (verified) {
-      requestMoa.mutate(
-        { data: requestData },
-        { onSuccess: handleSuccess, onError: handleError },
-      );
-      return;
-    }
-
-    createQueuedMoa.mutate(
+    createRequest.mutate(
       { data: requestData },
       { onSuccess: handleSuccess, onError: handleError },
     );
   };
 
-  const templates = data?.templates ?? [];
-  const universityName = data?.university?.registered_name ?? "";
-  const selectedTemplateData = templates.find((t) => t.id === selectedTemplate);
-  // Prefilled fields (fixed admin values) are rendered from the template and
-  // are never asked on the company form, so they don't drive requirements.
-  const activeFields = Array.isArray(selectedTemplateData?.field_schema)
-    ? selectedTemplateData.field_schema.filter(
-        (e: { field?: string; value?: unknown }) =>
-          !(typeof e?.value === "string" && e.value.trim() !== ""),
-      )
-    : selectedTemplateData?.field_schema;
-  const signerRequirements = deriveCompanySignatoryRequirements(activeFields);
+  const selectedTemplateData = templates.find(
+    (t) => t.id === selectedTemplateId,
+  );
   const sigReady = sigMode === "type" ? !!sigText.trim() : !!sigFile;
-  const sig2Ready = sig2Mode === "type" ? !!sig2Text.trim() : !!sig2File;
-  const signer1Ready =
-    (!signerRequirements.signer1.name || !!repName.trim()) &&
-    (!signerRequirements.signer1.title || !!repTitle.trim()) &&
-    (!signerRequirements.signer1.signature || sigReady);
-  const signer2Required =
-    signerRequirements.signer2.name ||
-    signerRequirements.signer2.title ||
-    signerRequirements.signer2.signature;
-  const signer2Ready =
-    !signer2Required ||
-    ((!signerRequirements.signer2.name || !!rep2Name.trim()) &&
-      (!signerRequirements.signer2.title || !!rep2Title.trim()) &&
-      (!signerRequirements.signer2.signature || sig2Ready));
-  const step2Ready = signer1Ready && signer2Ready;
-  const currentStepIndex = step - 1;
+  const selfReady = !!repName.trim() && !!repTitle.trim() && sigReady;
+  const delegateReady = /\S+@\S+\.\S+/.test(signatoryEmail.trim());
+  const step2Ready = mode === "self" ? selfReady : delegateReady;
 
-  if (requestPhase === "issuing") {
-    return <MoaIssuingState />;
-  }
-
-  if (requestPhase === "issued") {
-    return <MoaIssuedSuccess />;
+  if (phase === "submitting") return <MoaSubmittingState />;
+  if (phase === "issued") return <MoaIssuedSuccess />;
+  if (phase === "submitted") {
+    return <MoaSubmittedSuccess description={outcomeMessage} />;
   }
 
   const content =
     step === 1 ? (
-      <div className="space-y-3">
-        {isLoading && (
-          <>
-            <Skeleton className="h-16 w-full" />
-            <Skeleton className="h-16 w-full" />
-          </>
-        )}
-        {!isLoading && templates.length === 0 && (
-          <p className="text-muted-foreground text-sm">
-            No available templates at this university.
-          </p>
-        )}
-        {templates.map((t) => {
-          const selected = selectedTemplate === t.id;
-          return (
-            <div
-              key={t.id}
+      <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setMode("self")}
+            className={cn(
+              "flex flex-col items-start gap-2 rounded-[0.33em] border p-4 text-left transition-colors cursor-pointer",
+              mode === "self"
+                ? "border-primary bg-primary/5"
+                : "border-gray-200 hover:border-gray-300",
+            )}
+          >
+            <span
               className={cn(
-                "relative overflow-hidden rounded-[0.33em] border",
-                selected
-                  ? "border-primary bg-primary/5"
-                  : "border-gray-200 hover:border-gray-300",
+                "flex h-9 w-9 items-center justify-center rounded-full",
+                mode === "self"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-gray-100 text-muted-foreground",
               )}
             >
-              <div className="relative">
-                <Button
-                  variant="ghost"
-                  className="h-auto w-full items-start justify-start gap-3 rounded-none py-3 pr-28 pl-3 text-left hover:bg-transparent"
-                  onClick={() => setSelectedTemplate(t.id)}
+              <PenLine className="h-4.5 w-4.5" />
+            </span>
+            <span className="text-sm font-semibold text-gray-900">
+              I&apos;ll sign it myself
+            </span>
+            <span className="text-muted-foreground text-xs">
+              Enter your name, title, and signature now.
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("delegate")}
+            className={cn(
+              "flex flex-col items-start gap-2 rounded-[0.33em] border p-4 text-left transition-colors cursor-pointer",
+              mode === "delegate"
+                ? "border-primary bg-primary/5"
+                : "border-gray-200 hover:border-gray-300",
+            )}
+          >
+            <span
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-full",
+                mode === "delegate"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-gray-100 text-muted-foreground",
+              )}
+            >
+              <Send className="h-4.5 w-4.5" />
+            </span>
+            <span className="text-sm font-semibold text-gray-900">
+              Send it to someone else to sign
+            </span>
+            <span className="text-muted-foreground text-xs">
+              We&apos;ll email a signing link — no account needed.
+            </span>
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-gray-200 pt-3 text-sm">
+          {isLoading ? (
+            <Skeleton className="h-4 w-40" />
+          ) : (
+            <>
+              <span className="text-muted-foreground">Template:</span>
+              <span className="font-medium text-gray-900">
+                {selectedTemplateData?.name ?? "None available"}
+              </span>
+              {templates.length > 1 && (
+                <>
+                  <span className="text-muted-foreground">·</span>
+                  <button
+                    type="button"
+                    className="text-primary cursor-pointer underline underline-offset-2"
+                    onClick={() => setShowTemplatePicker((v) => !v)}
+                  >
+                    Change
+                  </button>
+                </>
+              )}
+              {selectedTemplateData && (
+                <>
+                  <span className="text-muted-foreground">·</span>
+                  <button
+                    type="button"
+                    className="text-primary cursor-pointer underline underline-offset-2"
+                    onClick={() =>
+                      modal.previewTemplate.open({
+                        id: selectedTemplateData.id,
+                        name: selectedTemplateData.name,
+                        description: selectedTemplateData.description,
+                      })
+                    }
+                  >
+                    Preview
+                  </button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+
+        {showTemplatePicker && (
+          <div className="space-y-1.5 rounded-[0.33em] border border-gray-200 p-2">
+            {templates.map((t) => {
+              const selected = t.id === selectedTemplateId;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedTemplateId(t.id);
+                    setShowTemplatePicker(false);
+                  }}
+                  className={cn(
+                    "flex w-full cursor-pointer items-start gap-2 rounded-[0.33em] px-3 py-2 text-left transition-colors",
+                    selected ? "bg-primary/5" : "hover:bg-gray-50",
+                  )}
                 >
                   <span
                     className={cn(
@@ -488,161 +590,81 @@ export function RequestDialog({
                         {t.description}
                       </span>
                     )}
-                    <span className="text-muted-foreground mt-1 block text-xs">
-                      Term:{" "}
-                      {t.term_months == null
-                        ? "Perpetual (no expiry)"
-                        : `${t.term_months} months`}
-                    </span>
                   </span>
-                </Button>
-                <button
-                  type="button"
-                  className="absolute top-0 right-0 bottom-0 flex items-center gap-1 border px-4 text-sm text-muted-foreground duration-200"
-                  onClick={() => setSelectedTemplate(t.id)}
-                >
-                  Preview
                 </button>
-              </div>
-              {selected && (
-                <div className="border-t border-primary/20 bg-white">
-                  <div className="h-[45vh] min-h-72 border-t border-gray-100 bg-gray-50 sm:h-[50vh]">
-                    <TemplatePreviewContent
-                      templateId={t.id}
-                      templateName={t.name}
-                      templateDescription={t.description}
-                    />
-                  </div>
-                </div>
-              )}
+              );
+            })}
+          </div>
+        )}
+
+        {!isLoading && templates.length === 0 && (
+          <p className="text-muted-foreground text-sm">
+            No available templates at this university.
+          </p>
+        )}
+      </div>
+    ) : mode === "self" ? (
+      <div className="space-y-4">
+        <SignatoryCard title="Your details">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label className="text-xs" htmlFor="rep-name">
+                Name
+              </Label>
+              <Input
+                id="rep-name"
+                value={repName}
+                onChange={(e) => setRepName(e.target.value)}
+                placeholder="Full name"
+              />
             </div>
-          );
-        })}
+            <div className="space-y-1">
+              <Label className="text-xs" htmlFor="rep-title">
+                Title
+              </Label>
+              <Input
+                id="rep-title"
+                value={repTitle}
+                onChange={(e) => setRepTitle(e.target.value)}
+                placeholder="e.g. CEO, HR Manager"
+              />
+            </div>
+          </div>
+
+          <MoaSignatureInput
+            mode={sigMode}
+            onModeChange={setSigMode}
+            text={sigText}
+            onTextChange={setSigText}
+            file={sigFile}
+            onFileChange={setSigFile}
+          />
+        </SignatoryCard>
+
+        <p className="text-muted-foreground text-sm">
+          These details will appear on the MOA document.
+        </p>
+
+        {error && <FormError>{error}</FormError>}
       </div>
     ) : (
       <div className="space-y-4">
-        {(signerRequirements.signer1.name ||
-          signerRequirements.signer1.title ||
-          signerRequirements.signer1.signature) && (
-          <SignatoryCard
-            title="Representative 1"
-            complete={signer1Ready}
-            completeLabel="This representative is complete."
-          >
-            {(signerRequirements.signer1.name ||
-              signerRequirements.signer1.title) && (
-              <div
-                className={cn(
-                  "grid gap-3",
-                  signerRequirements.signer1.name &&
-                    signerRequirements.signer1.title &&
-                    "sm:grid-cols-2",
-                )}
-              >
-                {signerRequirements.signer1.name && (
-                  <div className="space-y-1">
-                    <Label className="text-xs" htmlFor="rep-name">
-                      Representative name
-                    </Label>
-                    <Input
-                      id="rep-name"
-                      value={repName}
-                      onChange={(e) => setRepName(e.target.value)}
-                      placeholder="Full name"
-                    />
-                  </div>
-                )}
-                {signerRequirements.signer1.title && (
-                  <div className="space-y-1">
-                    <Label className="text-xs" htmlFor="rep-title">
-                      Representative title
-                    </Label>
-                    <Input
-                      id="rep-title"
-                      value={repTitle}
-                      onChange={(e) => setRepTitle(e.target.value)}
-                      placeholder="e.g. CEO, HR Manager"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
+        <div className="flex items-start gap-3 rounded-[0.33em] border border-gray-200 bg-gray-50 p-3">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-muted-foreground">
+            <Mail className="h-4 w-4" />
+          </span>
+          <p className="text-muted-foreground text-sm">
+            Just the email — name, title, and signature are theirs to enter,
+            since they&apos;re what gets printed on the document.
+          </p>
+        </div>
 
-            {signerRequirements.signer1.signature && (
-              <MoaSignatureInput
-                mode={sigMode}
-                onModeChange={setSigMode}
-                text={sigText}
-                onTextChange={setSigText}
-                file={sigFile}
-                onFileChange={setSigFile}
-              />
-            )}
-          </SignatoryCard>
-        )}
-
-        {signer2Required && (
-          <SignatoryCard
-            title="Representative 2"
-            complete={signer2Ready}
-            completeLabel="This representative is complete."
-          >
-            {(signerRequirements.signer2.name ||
-              signerRequirements.signer2.title) && (
-              <div
-                className={cn(
-                  "grid gap-3",
-                  signerRequirements.signer2.name &&
-                    signerRequirements.signer2.title &&
-                    "sm:grid-cols-2",
-                )}
-              >
-                {signerRequirements.signer2.name && (
-                  <div className="space-y-1">
-                    <Label className="text-xs" htmlFor="rep2-name">
-                      Representative name
-                    </Label>
-                    <Input
-                      id="rep2-name"
-                      value={rep2Name}
-                      onChange={(e) => setRep2Name(e.target.value)}
-                      placeholder="Full name"
-                    />
-                  </div>
-                )}
-                {signerRequirements.signer2.title && (
-                  <div className="space-y-1">
-                    <Label className="text-xs" htmlFor="rep2-title">
-                      Representative title
-                    </Label>
-                    <Input
-                      id="rep2-title"
-                      value={rep2Title}
-                      onChange={(e) => setRep2Title(e.target.value)}
-                      placeholder="e.g. CEO, HR Manager"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {signerRequirements.signer2.signature && (
-              <MoaSignatureInput
-                mode={sig2Mode}
-                onModeChange={setSig2Mode}
-                text={sig2Text}
-                onTextChange={setSig2Text}
-                file={sig2File}
-                onFileChange={setSig2File}
-              />
-            )}
-          </SignatoryCard>
-        )}
-
-        <p className="text-muted-foreground text-sm">
-          These details will appear on the MOA document. They are not stored
-          after generation.
-        </p>
+        <SignatoryEmailInput
+          id="signatory-email"
+          value={signatoryEmail}
+          onChange={setSignatoryEmail}
+          suggestions={[]}
+        />
 
         {error && <FormError>{error}</FormError>}
       </div>
@@ -657,7 +679,7 @@ export function RequestDialog({
         {templates.length > 0 && (
           <Button
             onClick={() => setStep(2)}
-            disabled={!selectedTemplate || isLoading}
+            disabled={!mode || !selectedTemplateId || isLoading}
           >
             Next <ChevronRight className="h-4 w-4" />
           </Button>
@@ -676,72 +698,76 @@ export function RequestDialog({
         </Button>
         <Button
           onClick={submitRequest}
-          disabled={!step2Ready || isRequestPending}
+          disabled={!step2Ready || createRequest.isPending}
         >
-          {isRequestPending && <Loader2 className="animate-spin" />}
-          {isRequestPending
-            ? verified
-              ? "Requesting…"
-              : "Queueing…"
-            : verified
-              ? "Request MOA"
-              : "Queue MOA"}
+          {createRequest.isPending && <Loader2 className="animate-spin" />}
+          {createRequest.isPending
+            ? "Submitting…"
+            : mode === "delegate"
+              ? "Send signing request"
+              : "Sign & request MOA"}
         </Button>
       </div>
     );
 
+  const requestSteps = [
+    { title: "Who signs", icon: mode === "delegate" ? Send : PenLine },
+    { title: "Details", icon: CheckCircle2 },
+  ];
+  const currentStepIndex = step - 1;
+
   return (
     <div className="sm:w-[min(92vw,64rem)]">
       <div className="space-y-4">
-        {!verified && (
-          <div className="border-primary/20 bg-primary/5 rounded-[0.33em] border px-4 py-3 text-sm text-gray-700">
-            Your company is still pending approval. This request will be queued
-            and issued automatically once the platform team approves your company.
-          </div>
+        {universityName && step === 1 && (
+          <p className="text-muted-foreground text-sm">
+            Requesting a partnership with{" "}
+            <span className="font-medium text-gray-900">{universityName}</span>.
+          </p>
         )}
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-        {requestSteps.map((requestStep, index) => {
-          const Icon = requestStep.icon;
-          const active = index === currentStepIndex;
-          const done = index < currentStepIndex;
+          {requestSteps.map((requestStep, index) => {
+            const Icon = requestStep.icon;
+            const active = index === currentStepIndex;
+            const done = index < currentStepIndex;
 
-          return (
-            <div
-              key={requestStep.title}
-              className={cn(
-                "flex min-w-0 items-center gap-2 rounded-[0.33em] border p-3",
-                active
-                  ? "border-primary/60 bg-primary/5"
-                  : done
-                    ? "border-supportive/40 bg-supportive/5"
-                    : "border-border/60",
-              )}
-              aria-current={active ? "step" : undefined}
-            >
+            return (
               <div
+                key={requestStep.title}
                 className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-                  active ? "bg-primary/10" : "bg-gray-100",
+                  "flex min-w-0 items-center gap-2 rounded-[0.33em] border p-3",
+                  active
+                    ? "border-primary/60 bg-primary/5"
+                    : done
+                      ? "border-supportive/40 bg-supportive/5"
+                      : "border-border/60",
                 )}
+                aria-current={active ? "step" : undefined}
               >
-                {done ? (
-                  <CheckCircle2 className="text-supportive h-5 w-5" />
-                ) : (
-                  <Icon
-                    className={cn(
-                      "h-5 w-5",
-                      active ? "text-primary" : "text-muted-foreground",
-                    )}
-                  />
-                )}
+                <div
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                    active ? "bg-primary/10" : "bg-gray-100",
+                  )}
+                >
+                  {done ? (
+                    <CheckCircle2 className="text-supportive h-5 w-5" />
+                  ) : (
+                    <Icon
+                      className={cn(
+                        "h-5 w-5",
+                        active ? "text-primary" : "text-muted-foreground",
+                      )}
+                    />
+                  )}
+                </div>
+                <div className="min-w-0 text-sm leading-tight font-medium">
+                  <div className="text-xs text-gray-400">Step {index + 1}</div>
+                  <div className="truncate">{requestStep.title}</div>
+                </div>
               </div>
-              <div className="min-w-0 text-sm leading-tight font-medium">
-                <div className="text-xs text-gray-400">Step {index + 1}</div>
-                <div className="truncate">{requestStep.title}</div>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
         </div>
         {content}
       </div>

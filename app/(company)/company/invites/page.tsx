@@ -31,7 +31,6 @@ export default function CompanyInvitesPage() {
   const { company, isLoading } = useCompanyProfile();
   const { data: verification, isLoading: verificationLoading } =
     useCompanyVerification(!!company);
-  const verified = verification?.status === "verified";
   const status = verification?.status;
   const { openModal, closeModal } = useModal();
 
@@ -51,7 +50,6 @@ export default function CompanyInvitesPage() {
         universityId={invite.university!.id}
         defaultTemplateId={invite.template?.id ?? null}
         inviteId={invite.id}
-        verified={verified}
         onClose={() => closeModal("request-moa")}
       />,
       {
@@ -87,13 +85,15 @@ export default function CompanyInvitesPage() {
         description="Universities that have invited your company to sign a MOA."
       />
 
-      {status && status !== "verified" && (
+      {status === "incomplete" || status === "pending" ? (
         <CompanyProfileStatusNotice
           status={status}
-          rejectionReason={verification?.rejectionReason}
+          reason={verification?.reason}
+          documentRejections={verification?.documentRejections}
+          expiredDocument={verification?.expiredDocument}
           compactAttention
         />
-      )}
+      ) : null}
 
       {invitesLoading ? (
         <div className="space-y-4">

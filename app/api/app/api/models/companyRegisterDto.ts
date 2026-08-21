@@ -7,8 +7,6 @@
  */
 
 export interface CompanyRegisterDto {
-  tin: string;
-  legalIdentifier: string;
   repEmail: string;
   password: string;
   cfToken?: string;

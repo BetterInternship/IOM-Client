@@ -102,7 +102,11 @@ function InvitePageContent() {
     mutation: {
       onSuccess: (response) => {
         if (response.kind === "listing") {
-          careerListingLink.mutate();
+          // Seeds the employer name from the university's legacy-record hint
+          // (plan §12) — this account may have no registered_name yet.
+          careerListingLink.mutate({
+            data: { displayName: inviteData?.company_name ?? undefined },
+          });
           return;
         }
         const params = new URLSearchParams();

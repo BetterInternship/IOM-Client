@@ -16,6 +16,7 @@ import {
 import type {
   AdminCompanyDetailReviewHistoryItemDto,
   AdminCompanyDetailVerificationDtoStatus,
+  AdminCompanyDetailVerificationDtoReason,
 } from "@/app/api";
 import { PageContainer } from "@/components/page-header";
 import { CompanyLogo } from "@/components/company-logo";
@@ -31,6 +32,7 @@ import {
 import { DetailField } from "@/components/ui/detail-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { REQUIRED_DOCUMENT_TYPES, documentLabel } from "@/lib/document-types";
 import { cn, formatDateWithoutTime } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -47,19 +49,15 @@ const COMPANY_TYPE_LABELS: Record<string, string> = {
   government_agency: "Government Agency",
 };
 
-const DOC_TYPE_LABELS: Record<string, string> = {
-  business_permit: "Business Permit",
-  sec_dti_registration: "SEC/DTI Registration",
-  mayor_permit: "Mayor's Permit",
-};
-
-const DOC_TYPES_LIST = Object.entries(DOC_TYPE_LABELS);
-
+// Rejected and expired are reasons attached to "incomplete" now (flow spec
+// §1), not separate statuses — the badge still tells them apart.
 function VerificationBadge({
   status,
+  reason,
   isDeactivated,
 }: {
   status: AdminCompanyDetailVerificationDtoStatus;
+  reason: AdminCompanyDetailVerificationDtoReason;
   isDeactivated: boolean;
 }) {
   if (isDeactivated) {
@@ -71,10 +69,10 @@ function VerificationBadge({
   if (status === "pending") {
     return <PartnershipStatusBadge status="pending" label="Pending" />;
   }
-  if (status === "rejected") {
+  if (reason === "rejected") {
     return <PartnershipStatusBadge status="rejected" label="Rejected" />;
   }
-  if (status === "expired") {
+  if (reason === "expired") {
     return <PartnershipStatusBadge status="expired" label="Expired" />;
   }
   return <PartnershipStatusBadge status="inactive" label="Incomplete" />;
@@ -193,6 +191,13 @@ export default function AdminCompanyProfilePage() {
     typeof (cosmetic as Record<string, unknown>).logo_url === "string"
       ? ((cosmetic as Record<string, unknown>).logo_url as string)
       : null;
+  // Pre-approval companies have no registered_name yet (flow spec §3) — the
+  // account email is their identity until an admin transcribes a name.
+  const companyName =
+    company.registered_name ?? company.email ?? "Unregistered company";
+  const documentRejectionEntries = Object.entries(
+    verification.documentRejections ?? {},
+  );
 
   return (
     <PageContainer
@@ -221,14 +226,15 @@ export default function AdminCompanyProfilePage() {
 
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
-              <CompanyLogo name={company.registered_name} logoUrl={logoUrl} />
+              <CompanyLogo name={companyName} logoUrl={logoUrl} />
               <div className="min-w-0 flex-1">
                 <h1 className="text-lg leading-tight font-semibold text-gray-900">
-                  {company.registered_name}
+                  {companyName}
                 </h1>
                 <div className="mt-1.5">
                   <VerificationBadge
                     status={verification.status}
+                    reason={verification.reason}
                     isDeactivated={!!company.is_deactivated}
                   />
                 </div>
@@ -236,14 +242,36 @@ export default function AdminCompanyProfilePage() {
             </div>
           </div>
 
-          {verification.status === "rejected" &&
-            verification.rejectionReason && (
+          {verification.status === "incomplete" &&
+            verification.reason === "rejected" &&
+            documentRejectionEntries.length > 0 && (
               <Card className="gap-1 border-destructive/30 bg-destructive/5 px-5 py-4">
                 <p className="text-sm font-medium text-gray-900">
-                  Rejection reason
+                  Rejection reasons
+                </p>
+                <ul className="text-muted-foreground space-y-0.5 text-sm">
+                  {documentRejectionEntries.map(([type, docReason]) => (
+                    <li key={type}>
+                      <span className="font-medium text-gray-700">
+                        {documentLabel(type)}:
+                      </span>{" "}
+                      {String(docReason)}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+
+          {verification.status === "incomplete" &&
+            verification.reason === "expired" && (
+              <Card className="gap-1 border-destructive/30 bg-destructive/5 px-5 py-4">
+                <p className="text-sm font-medium text-gray-900">
+                  Verification lapsed
                 </p>
                 <p className="text-muted-foreground text-sm">
-                  {verification.rejectionReason}
+                  {verification.expiredDocument
+                    ? `${documentLabel(verification.expiredDocument)} expired. Verification is lost until the company uploads a current one.`
+                    : "A document on file expired. Verification is lost until the company uploads a current one."}
                 </p>
               </Card>
             )}
@@ -262,6 +290,7 @@ export default function AdminCompanyProfilePage() {
                 label="Date joined"
                 value={formatDateWithoutTime(company.created_at)}
               />
+              <Field label="Registered name" value={company.registered_name} />
               <Field label="Email" value={company.email} />
               <Field label="TIN" value={company.tin} />
               <Field
@@ -295,7 +324,8 @@ export default function AdminCompanyProfilePage() {
               contentClassName="px-5 pb-5"
             >
               <div className="overflow-hidden rounded-[0.33em] border border-blue-100 bg-white">
-                {DOC_TYPES_LIST.map(([type, label]) => {
+                {REQUIRED_DOCUMENT_TYPES.map((type) => {
+                  const label = documentLabel(type);
                   const doc = documents.find((d) => d.type === type);
                   return (
                     <button
@@ -409,7 +439,7 @@ export default function AdminCompanyProfilePage() {
                     className="shrink-0"
                     onClick={() =>
                       confirmAction.open({
-                        title: `Deactivate ${company.registered_name}?`,
+                        title: `Deactivate ${companyName}?`,
                         description:
                           "The company will lose access and can no longer request MOAs. This can be reversed later.",
                         confirmLabel: "Deactivate",

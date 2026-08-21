@@ -343,11 +343,13 @@ export function CompanyInviteForm({
     (t) => t.is_available,
   );
 
+  // Pre-approval companies have no registered_name yet (flow spec §3) — the
+  // account email is their identity until an admin transcribes a name.
   const companyOptions = useMemo(
     () =>
       (companiesData?.companies ?? []).map((c) => ({
         id: c.id,
-        name: c.registered_name,
+        name: c.registered_name ?? c.email ?? "Unregistered company",
       })),
     [companiesData],
   );
@@ -356,7 +358,7 @@ export function CompanyInviteForm({
     mode === "registered" ? (selectedCompany?.email ?? "") : email.trim();
   const invitedName =
     mode === "registered"
-      ? selectedCompany?.registered_name
+      ? (selectedCompany?.registered_name ?? selectedCompany?.email ?? undefined)
       : companyName.trim() || undefined;
 
   const sendMutationOptions = {
@@ -699,14 +701,10 @@ export function CompanyInviteForm({
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-gray-900 uppercase">
-                    {mode === "registered" && selectedCompany
-                      ? selectedCompany.registered_name
-                      : companyName}
+                    {mode === "registered" ? invitedName : companyName}
                   </p>
                   <p className="text-muted-foreground truncate text-xs">
-                    {mode === "registered" && selectedCompany
-                      ? selectedCompany.email
-                      : email}
+                    {mode === "registered" ? invitedEmail : email}
                   </p>
                 </div>
               </div>

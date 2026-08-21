@@ -7,9 +7,11 @@ import { BriefcaseBusiness } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusNotice } from "@/components/ui/status-notice";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
+import { useIomModalRegistry } from "@/components/modal-registry";
 import {
   useCompanyControllerCareerLinkStatus,
   useCompanyControllerCareerListingLink,
+  useCompanyControllerMe,
 } from "@/app/api";
 import type { ApiError } from "@/app/api/preconfig.axios";
 
@@ -28,11 +30,12 @@ export function getCareerHireUrl(): string {
 }
 
 /**
- * "Post listings on BetterInternship" CTA (plan §4.2) — only ever rendered
- * by the caller when the company is verified OR has an accepted listing
- * invite (LISTING_INVITE_IMPLEMENTATION_PLAN.md D9; that much is already
- * implied by the card being visible, so it isn't repeated in the copy — the
- * Linked/Not Linked tag is the more useful signal here). Handles both
+ * "Post listings on BetterInternship" CTA (plan §4.2, §12) — only ever
+ * rendered by the caller when `verification.canPostListing` is true, i.e.
+ * the company's document set is complete (verified or still under review;
+ * only "incomplete" locks it out). That much is already implied by the card
+ * being visible, so it isn't repeated in the copy — the Linked/Not Linked
+ * tag is the more useful signal here. Handles both
  * account-creation and returning-user cases identically: the user never
  * sees which one happened, they just land on a magic link.
  *
@@ -55,9 +58,15 @@ export function getCareerHireUrl(): string {
 export function CareerListingCta() {
   const [conflictCode, setConflictCode] = useState<string | null>(null);
   const pendingTabRef = useRef<Window | null>(null);
+  const modal = useIomModalRegistry();
 
   const { data: linkStatus, isLoading: linkStatusLoading } =
     useCompanyControllerCareerLinkStatus();
+  const { data: me } = useCompanyControllerMe();
+  // No registered_name yet (pre-approval) and never prompted before — a
+  // display name is asked for exactly once, right when it starts to matter
+  // (plan §12).
+  const hasRegisteredName = !!me?.company?.registered_name;
   const linked = linkStatus?.linked ?? false;
   // "Link to marketplace account" only makes sense when there's an actual
   // existing career account to link to (an employer_user already owns this
@@ -106,14 +115,31 @@ export function CareerListingCta() {
     },
   });
 
-  const handleClick = () => {
-    setConflictCode(null);
+  const openTabAndSubmit = (displayName?: string) => {
     // No noopener/noreferrer here — we need the reference to navigate this
     // tab once the mutation resolves. The destination is always our own
     // hire site, never arbitrary/user-controlled, so the usual tabnabbing
     // concern that noopener guards against doesn't apply.
     pendingTabRef.current = window.open("about:blank", "_blank");
-    linkMutation.mutate();
+    linkMutation.mutate({ data: { displayName } });
+  };
+
+  const handleClick = () => {
+    setConflictCode(null);
+    if (!hasRegisteredName) {
+      // The modal's own submit button is the direct user gesture that opens
+      // the tab — opening it earlier, before a name exists to send, would
+      // leave a blank tab sitting behind the prompt.
+      modal.promptDisplayName.open({
+        isPending: linkMutation.isPending,
+        onSubmit: (displayName) => {
+          modal.promptDisplayName.close();
+          openTabAndSubmit(displayName);
+        },
+      });
+      return;
+    }
+    openTabAndSubmit();
   };
 
   const isBusy = linkMutation.isPending;

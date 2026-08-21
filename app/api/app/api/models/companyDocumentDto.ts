@@ -13,4 +13,6 @@ export interface CompanyDocumentDto {
   url: string;
   filename: string;
   uploaded_at: string;
+  /** @nullable */
+  expires_at: string | null;
 }

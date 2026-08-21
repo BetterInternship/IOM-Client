@@ -5,9 +5,15 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
-import type { ApproveCompanyReviewDtoDocumentReviewDetails } from "./approveCompanyReviewDtoDocumentReviewDetails";
+import type { ApproveCompanyReviewDtoCompanyType } from "./approveCompanyReviewDtoCompanyType";
+import type { ApproveCompanyReviewDtoDocumentExpiries } from "./approveCompanyReviewDtoDocumentExpiries";
 
 export interface ApproveCompanyReviewDto {
-  document_review_details: ApproveCompanyReviewDtoDocumentReviewDetails;
-  approval_expires_at: string;
+  registered_name: string;
+  tin: string;
+  company_type: ApproveCompanyReviewDtoCompanyType;
+  registered_address: string;
+  date_of_incorporation: string;
+  company_registry_number: string;
+  document_expiries: ApproveCompanyReviewDtoDocumentExpiries;
 }

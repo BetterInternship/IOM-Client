@@ -133,7 +133,7 @@ type DocReviewDetails = Record<
 >;
 
 const DOC_LABELS: Record<string, string> = {
-  business_permit: "Business Permit",
+  bir_2303: "BIR Certificate of Registration (Form 2303)",
   mayor_permit: "Mayor's Permit",
   sec_dti_registration: "SEC/DTI Registration",
 };

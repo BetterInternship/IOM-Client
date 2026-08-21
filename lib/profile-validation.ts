@@ -20,13 +20,10 @@ const optionalPhone = z
     "Enter a valid phone number.",
   );
 
+// Identity (registered_name, registered_address, company_type, tin) is
+// admin-owned and read-only forever (flow spec §3) — only the cosmetic
+// fields are ever company-editable.
 export const companyProfileSchema = z.object({
-  registered_name: z.string().trim().min(1, "Registered name is required."),
-  registered_address: z
-    .string()
-    .trim()
-    .min(1, "Registered address is required."),
-  company_type: z.string().trim().min(1, "Company type is required."),
   description: z.string(),
   website: optionalUrl,
   phone: optionalPhone,

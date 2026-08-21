@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { type ApiError } from "@/app/api/preconfig.axios";
 import {
   getCompanyControllerMeQueryKey,
-  useCompanyAuthControllerCheckIdentity,
   useCompanyAuthControllerRegister,
   useCompanyAuthControllerRegisterInvited,
   useCompanyAuthControllerOtpRequest,
@@ -20,10 +19,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OtpInput } from "@/components/ui/otp-input";
-import { AlertCircle, ArrowLeft, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-type Step = "identity" | "account" | "otp";
+type Step = "account" | "otp";
 
 interface InvitePeek {
   email: string;
@@ -31,14 +30,13 @@ interface InvitePeek {
   university: { id: string; registered_name: string };
   template: { id: string } | null;
   kind: "moa" | "listing";
-  tin_hint: string | null;
 }
 
 const CAREER_UNREACHABLE_MESSAGE =
   'Your account is ready, but we couldn\'t reach BetterInternship just now — use the "Post a listing" button below to continue.';
 
 function RegistrationLoader({ step, active }: { step: Step; active: boolean }) {
-  const progress = step === "identity" ? "w-1/2" : "w-full";
+  const progress = step === "account" ? "w-1/2" : "w-full";
 
   return (
     <div
@@ -87,11 +85,15 @@ interface InviteCompletionData {
 }
 
 /**
- * Shared post-registration redirect for the invite flow (plan §6.1) — used
- * by both registerInvited's immediate completion and the OTP-verify
+ * Shared post-registration redirect for the invite flow (plan §6.1, §11) —
+ * used by both registerInvited's immediate completion and the OTP-verify
  * completion reached when the submitted email differs from the invite's, so
  * the listing magic-link/conflict branch and the MOA dashboard-params
  * branch can't drift between the two entry points.
+ *
+ * The full invite-continuation stepper (`/invite/continue`) lands in a
+ * later pass — until then a MOA-kind invite just opens the Partners page on
+ * the invited university, same as any other post-registration landing.
  */
 function handleInviteCompletion(
   data: InviteCompletionData,
@@ -119,7 +121,6 @@ function handleInviteCompletion(
   if (data.university_id) {
     const params = new URLSearchParams({
       open_university_id: data.university_id,
-      complete_profile_after_queue: "1",
     });
     if (data.template_id) params.set("template_id", data.template_id);
     if (invitePeek?.invite_id) params.set("invite_id", invitePeek.invite_id);
@@ -136,10 +137,8 @@ function RegisterPageContent() {
   const inviteToken = searchParams.get("invite_token") ?? "";
   const prefillToken = searchParams.get("prefill") ?? "";
 
-  const [step, setStep] = useState<Step>("identity");
+  const [step, setStep] = useState<Step>("account");
   const [form, setForm] = useState({
-    tin: "",
-    legalIdentifier: "",
     repEmail: "",
     email: "",
     password: "",
@@ -150,18 +149,13 @@ function RegisterPageContent() {
   useEffect(() => {
     if (!prefillToken) return;
     const payload = peekPrefillPayload(prefillToken);
-    if (!payload) return;
-    setForm((prev) => ({
-      ...prev,
-      repEmail: prev.repEmail || (payload.email ?? ""),
-      legalIdentifier:
-        prev.legalIdentifier || (payload.name ?? "").toUpperCase(),
-    }));
+    if (!payload?.email) return;
+    setForm((prev) => ({ ...prev, repEmail: prev.repEmail || payload.email! }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prefillToken]);
+
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [tinTakenEmail, setTinTakenEmail] = useState("");
   const [resendIn, setResendIn] = useState(0);
 
   const { data: invitePeekRaw, isLoading: inviteLoading } =
@@ -170,14 +164,6 @@ function RegisterPageContent() {
       { query: { enabled: !!inviteToken, retry: false } },
     );
   const invitePeek = invitePeekRaw as InvitePeek | undefined;
-
-  // Register-form prefill for legacy-linked listing invites (§4.2's tin_hint)
-  // — editable, never clobbers what the user has already typed.
-  useEffect(() => {
-    if (!invitePeek?.tin_hint) return;
-    setForm((prev) => ({ ...prev, tin: prev.tin || invitePeek.tin_hint! }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invitePeek?.tin_hint]);
 
   // D6: the invite's account-email field defaults to invitePeek.email but
   // stays editable — this only fills it in once, never clobbers a value the
@@ -194,30 +180,6 @@ function RegisterPageContent() {
     return () => clearInterval(t);
   }, [resendIn]);
 
-  const checkIdentity = useCompanyAuthControllerCheckIdentity({
-    mutation: {
-      onSuccess: (data) => {
-        setForm((current) => ({
-          ...current,
-          legalIdentifier: data.registeredName,
-        }));
-        setStep("account");
-        setError("");
-        setTinTakenEmail("");
-      },
-      onError: (e: Error) => {
-        const err = e as ApiError;
-        if (err.code === "TIN_TAKEN") {
-          setTinTakenEmail(err.censoredEmail ?? "");
-          setError("");
-        } else {
-          setError(e.message);
-          setTinTakenEmail("");
-        }
-      },
-    },
-  });
-
   // Standard registration
   const register = useCompanyAuthControllerRegister({
     mutation: {
@@ -225,19 +187,8 @@ function RegisterPageContent() {
         setResendIn(data.resendIn ?? 60);
         setStep("otp");
         setError("");
-        setTinTakenEmail("");
       },
-      onError: (e: Error) => {
-        const err = e as ApiError;
-        if (err.code === "TIN_TAKEN") {
-          setTinTakenEmail(err.censoredEmail ?? "");
-          setStep("identity");
-          setError("");
-        } else {
-          setError(e.message);
-          setTinTakenEmail("");
-        }
-      },
+      onError: (e: Error) => setError(e.message),
     },
   });
 
@@ -251,7 +202,6 @@ function RegisterPageContent() {
           setResendIn(data.resendIn ?? 60);
           setStep("otp");
           setError("");
-          setTinTakenEmail("");
           return;
         }
 
@@ -260,17 +210,7 @@ function RegisterPageContent() {
         });
         handleInviteCompletion(data, invitePeek, router);
       },
-      onError: (e: Error) => {
-        const err = e as ApiError;
-        if (err.code === "TIN_TAKEN") {
-          setTinTakenEmail(err.censoredEmail ?? "");
-          setStep("identity");
-          setError("");
-        } else {
-          setError(e.message);
-          setTinTakenEmail("");
-        }
-      },
+      onError: (e: Error) => setError((e as ApiError).message ?? e.message),
     },
   });
 
@@ -335,129 +275,6 @@ function RegisterPageContent() {
       setForm({ ...form, [k]: e.target.value }),
   });
 
-  const identityValid = form.tin.length === 9 && !!form.legalIdentifier.trim();
-  const renderIdentityStep = (
-    description: React.ReactNode,
-    footer: React.ReactNode,
-  ) => (
-    <AuthShell
-      variant="split"
-      splitFlush
-      portal="Company"
-      title="Verify your company"
-      description={description}
-      progress={
-        <RegistrationLoader step="identity" active={checkIdentity.isPending} />
-      }
-      footer={footer}
-    >
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          setError("");
-          setTinTakenEmail("");
-          checkIdentity.mutate({
-            data: {
-              tin: form.tin,
-              legalIdentifier: form.legalIdentifier,
-            },
-          });
-        }}
-        className="space-y-4"
-      >
-        <FormError>{error}</FormError>
-
-        {tinTakenEmail && (
-          <div
-            role="alert"
-            className="border-destructive/30 bg-destructive/5 rounded-[0.33em] border p-3 text-sm"
-          >
-            <div className="flex items-start gap-2">
-              <AlertCircle className="text-destructive mt-0.5 h-4 w-4 shrink-0" />
-              <div className="space-y-1.5">
-                <p className="font-medium text-gray-900">
-                  This TIN is already registered
-                </p>
-                <p className="text-muted-foreground">
-                  It belongs to{" "}
-                  <span className="text-foreground font-mono font-medium">
-                    {tinTakenEmail}
-                  </span>
-                  .
-                </p>
-                {inviteToken ? (
-                  <Link
-                    href={`/company/login?invite_token=${encodeURIComponent(inviteToken)}`}
-                    className="text-primary inline-block font-medium underline underline-offset-2"
-                  >
-                    Sign in to accept this invite
-                  </Link>
-                ) : (
-                  <a
-                    href="mailto:hello@betterinternship.com"
-                    className="text-primary inline-block font-medium underline underline-offset-2"
-                  >
-                    Don&apos;t recognize it? Contact support
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="space-y-1.5">
-          <Label htmlFor="tin">Company TIN</Label>
-          <Input
-            id="tin"
-            inputMode="numeric"
-            placeholder="123456789"
-            maxLength={9}
-            value={form.tin}
-            onChange={(event) => {
-              setTinTakenEmail("");
-              setForm({
-                ...form,
-                tin: event.target.value.replace(/\D/g, "").slice(0, 9),
-              });
-            }}
-            required
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="legalIdentifier">BIR-registered name</Label>
-          <Input
-            id="legalIdentifier"
-            placeholder="ACME CORPORATION, INC."
-            className="uppercase"
-            value={form.legalIdentifier}
-            onChange={(event) => {
-              setTinTakenEmail("");
-              setForm({
-                ...form,
-                legalIdentifier: event.target.value.toUpperCase(),
-              });
-            }}
-            required
-          />
-          <p className="text-muted-foreground text-xs">
-            Must match your BIR registration exactly.
-          </p>
-        </div>
-
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full"
-          disabled={!identityValid || checkIdentity.isPending}
-        >
-          {checkIdentity.isPending && <Loader2 className="animate-spin" />}
-          {checkIdentity.isPending ? "Checking company…" : "Continue"}
-        </Button>
-      </form>
-    </AuthShell>
-  );
-
   // ── Invite flow ───────────────────────────────────────────────────────────
 
   if (inviteToken) {
@@ -500,23 +317,6 @@ function RegisterPageContent() {
     }
 
     const isListingInvite = invitePeek.kind === "listing";
-
-    if (step === "identity") {
-      return renderIdentityStep(
-        isListingInvite
-          ? `Confirm the legal identity of the company invited by ${invitePeek.university.registered_name} to post internship listings on BetterInternship.`
-          : `Confirm the legal identity of the company invited by ${invitePeek.university.registered_name}.`,
-        <>
-          Already registered?{" "}
-          <Link
-            href={`/company/login?invite_token=${encodeURIComponent(inviteToken)}`}
-            className="text-primary font-medium"
-          >
-            Sign in instead
-          </Link>
-        </>,
-      );
-    }
 
     if (step === "otp") {
       return (
@@ -654,12 +454,9 @@ function RegisterPageContent() {
           onSubmit={(e) => {
             e.preventDefault();
             setError("");
-            setTinTakenEmail("");
             registerInvited.mutate({
               data: {
                 token: inviteToken,
-                tin: form.tin,
-                legalIdentifier: form.legalIdentifier,
                 email: form.email,
                 password: form.password,
               },
@@ -668,25 +465,6 @@ function RegisterPageContent() {
           className="space-y-4"
         >
           <FormError>{error}</FormError>
-
-          <div className="rounded-[0.33em] border border-gray-200 bg-gray-50 p-3">
-            <p className="text-sm font-medium text-gray-900">
-              {form.legalIdentifier}
-            </p>
-            <p className="text-muted-foreground mt-0.5 font-mono text-xs">
-              TIN {form.tin}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setStep("identity");
-                setError("");
-              }}
-              className="text-primary mt-2 text-xs font-medium"
-            >
-              Change company
-            </button>
-          </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="email">Account email</Label>
@@ -721,33 +499,15 @@ function RegisterPageContent() {
             className="w-full"
             disabled={!inviteDetailsValid || registerInvited.isPending}
           >
-            {registerInvited.isPending ? (
-              <>
-                <Loader2 className="animate-spin" />
-                Verifying with BIR…
-              </>
-            ) : (
-              "Create account"
-            )}
+            {registerInvited.isPending && <Loader2 className="animate-spin" />}
+            {registerInvited.isPending ? "Creating account…" : "Create account"}
           </Button>
         </form>
       </AuthShell>
     );
   }
 
-  // ── Standard registration flow ────────────────────────────────────────────
-
-  if (step === "identity") {
-    return renderIdentityStep(
-      "Enter the company TIN and BIR-registered name so we can verify that the company is available.",
-      <>
-        Already registered?{" "}
-        <Link href="/login" className="text-primary font-medium">
-          Sign in
-        </Link>
-      </>,
-    );
-  }
+  // ── Standard registration flow (flow spec §3: email + password, then OTP) ──
 
   if (step === "otp") {
     return (
@@ -849,7 +609,7 @@ function RegisterPageContent() {
       progress={
         <RegistrationLoader step="account" active={register.isPending} />
       }
-      description="Add the representative email and password you will use to sign in."
+      description="Add the email and password you will use to sign in. You'll upload your documents next."
       footer={
         <>
           Already registered?{" "}
@@ -863,11 +623,8 @@ function RegisterPageContent() {
         onSubmit={(e) => {
           e.preventDefault();
           setError("");
-          setTinTakenEmail("");
           register.mutate({
             data: {
-              tin: form.tin,
-              legalIdentifier: form.legalIdentifier,
               repEmail: form.repEmail,
               password: form.password,
               ...(prefillToken ? { prefillToken } : {}),
@@ -878,32 +635,13 @@ function RegisterPageContent() {
       >
         <FormError>{error}</FormError>
 
-        <div className="rounded-[0.33em] border border-gray-200 bg-gray-50 p-3">
-          <p className="text-sm font-medium text-gray-900">
-            {form.legalIdentifier}
-          </p>
-          <p className="text-muted-foreground mt-0.5 font-mono text-xs">
-            TIN {form.tin}
-          </p>
-          <button
-            type="button"
-            onClick={() => {
-              setStep("identity");
-              setError("");
-            }}
-            className="text-primary mt-2 text-xs font-medium"
-          >
-            Change company
-          </button>
-        </div>
-
         <div className="space-y-1.5">
-          <Label htmlFor="repEmail">Representative email</Label>
+          <Label htmlFor="repEmail">Email</Label>
           <Input
             id="repEmail"
             type="email"
             autoComplete="email"
-            placeholder="rep@acme.com"
+            placeholder="you@company.com"
             {...field("repEmail")}
             required
           />
@@ -927,20 +665,9 @@ function RegisterPageContent() {
           className="w-full"
           disabled={!detailsValid || register.isPending}
         >
-          {register.isPending ? (
-            <>
-              <Loader2 className="animate-spin" />
-              Creating registration…
-            </>
-          ) : (
-            "Continue"
-          )}
+          {register.isPending && <Loader2 className="animate-spin" />}
+          {register.isPending ? "Creating registration…" : "Continue"}
         </Button>
-
-        <p className="text-muted-foreground flex items-center justify-center gap-1.5 text-xs">
-          <ShieldCheck className="h-3.5 w-3.5" />
-          We&apos;ll email a verification code after BIR check.
-        </p>
       </form>
     </AuthShell>
   );

@@ -14,6 +14,4 @@ export const AdminCompanyDetailVerificationDtoStatus = {
   incomplete: "incomplete",
   pending: "pending",
   verified: "verified",
-  expired: "expired",
-  rejected: "rejected",
 } as const;

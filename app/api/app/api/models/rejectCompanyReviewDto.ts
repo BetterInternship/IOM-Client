@@ -5,7 +5,9 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
+import type { RejectCompanyReviewDtoDocumentRejections } from "./rejectCompanyReviewDtoDocumentRejections";
 
 export interface RejectCompanyReviewDto {
+  document_rejections: RejectCompanyReviewDtoDocumentRejections;
   reason?: string;
 }

@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getCompanyControllerMeQueryKey,
-  useCompanyAuthControllerList,
   useCompanyAuthControllerLogin,
   companyControllerClaimInvite,
 } from "@/app/api";
@@ -13,14 +12,7 @@ import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Autocomplete } from "@/components/ui/autocomplete";
 import { Loader2 } from "lucide-react";
-
-interface CompanyListItem {
-  id: string;
-  registered_name: string;
-  censored_tin: string;
-}
 
 function LoginPageContent() {
   const router = useRouter();
@@ -31,19 +23,9 @@ function LoginPageContent() {
   // Only ever a same-origin relative path (avoids an open redirect).
   const next = nextParam.startsWith("/") ? nextParam : "";
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  const { data: companyListResponse } = useCompanyAuthControllerList();
-  const companyList = (companyListResponse?.companies ??
-    []) as CompanyListItem[];
-
-  const options = companyList.map((c) => ({
-    id: c.id,
-    name: c.registered_name,
-  }));
-  const selectedCompany = companyList.find((c) => c.id === selectedId) ?? null;
 
   const login = useCompanyAuthControllerLogin({
     mutation: {
@@ -81,7 +63,7 @@ function LoginPageContent() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    login.mutate({ data: { companyId: selectedId!, password } });
+    login.mutate({ data: { email, password } });
   };
 
   return (
@@ -93,7 +75,7 @@ function LoginPageContent() {
       description={
         inviteToken
           ? "Sign in to continue with your invitation."
-          : "Select your company and enter your password to access the portal."
+          : "Enter your email and password to access the portal."
       }
       footer={
         <>
@@ -115,26 +97,16 @@ function LoginPageContent() {
         <FormError>{error}</FormError>
 
         <div className="space-y-1.5">
-          <Label>Company name</Label>
-          <div>
-            <Autocomplete
-              options={options}
-              value={selectedId}
-              onChange={(id) => setSelectedId(id as string | null)}
-              placeholder="Search for your company…"
-              inputClassName="rounded-b-none"
-            />
-            <div className="flex items-center gap-2 rounded-b-[0.33em] border border-t-0 border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm">
-              <span className="text-muted-foreground text-xs font-medium">
-                TIN
-              </span>
-              <span className="font-mono text-gray-800">
-                {selectedCompany?.censored_tin ?? (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </span>
-            </div>
-          </div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
 
         <div className="space-y-1.5">
@@ -162,7 +134,7 @@ function LoginPageContent() {
           type="submit"
           size="lg"
           className="w-full"
-          disabled={login.isPending || !selectedId || !password}
+          disabled={login.isPending || !email || !password}
         >
           {login.isPending && <Loader2 className="animate-spin" />}
           {login.isPending ? "Signing in…" : "Sign in"}

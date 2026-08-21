@@ -20,6 +20,8 @@ export interface AdminTemplateDto {
   page_h: number;
   /** @nullable */
   is_deleted: boolean | null;
+  /** @nullable */
+  retired_at: string | null;
   created_at: string;
   updated_at: string;
 }
