@@ -5,7 +5,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type ApiError } from "@/app/api/preconfig.axios";
 import {
-  getCompanyControllerMeQueryKey,
   useCompanyAuthControllerRegister,
   useCompanyAuthControllerRegisterInvited,
   useCompanyAuthControllerOtpRequest,
@@ -198,9 +197,10 @@ function RegisterPageContent() {
           return;
         }
 
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerMeQueryKey(),
-        });
+        // Full clear, not a scoped invalidate — these query keys aren't
+        // scoped by company id, so a prior session's cache could otherwise
+        // leak into the freshly-registered account.
+        queryClient.clear();
         handleInviteCompletion(data, invitePeek, router);
       },
       onError: (e: Error) => setError((e as ApiError).message ?? e.message),
@@ -225,9 +225,10 @@ function RegisterPageContent() {
   const verifyInvite = useCompanyAuthControllerOtpVerify({
     mutation: {
       onSuccess: (data) => {
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerMeQueryKey(),
-        });
+        // Full clear, not a scoped invalidate — these query keys aren't
+        // scoped by company id, so a prior session's cache could otherwise
+        // leak into the freshly-registered account.
+        queryClient.clear();
         handleInviteCompletion(data, invitePeek, router);
       },
       onError: (e: Error) => {
@@ -240,10 +241,13 @@ function RegisterPageContent() {
   const verify = useCompanyAuthControllerOtpVerify({
     mutation: {
       onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerMeQueryKey(),
-        });
-        router.replace("/company/dashboard");
+        // Full clear, not a scoped invalidate — these query keys aren't
+        // scoped by company id, so a prior session's cache could otherwise
+        // leak into the freshly-registered account.
+        queryClient.clear();
+        // Standard registration always starts "incomplete" (no documents
+        // yet) — go straight to the upload gate instead of the dashboard.
+        router.replace("/verification");
       },
       onError: (e: Error) => {
         verifySubmittedRef.current = false;

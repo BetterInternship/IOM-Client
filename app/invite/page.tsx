@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowRight,
@@ -100,6 +101,7 @@ interface ExpiredInviteError extends ApiError {
 function InvitePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const modal = useIomModalRegistry();
   const { openModal, closeModal } = useModal();
   const token = searchParams.get("token") ?? "";
@@ -139,6 +141,10 @@ function InvitePageContent() {
   const loginViaInvite = useCompanyAuthControllerLoginViaInvite({
     mutation: {
       onSuccess: (response) => {
+        // Full clear, not a scoped invalidate — these query keys aren't
+        // scoped by company id, so a prior session's cache in this same
+        // browser could otherwise leak into this account.
+        queryClient.clear();
         if (response.kind === "listing") {
           // Seeds the employer name from the university's legacy-record hint
           // (plan §12) — this account may have no registered_name yet.

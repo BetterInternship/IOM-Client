@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  getCompanyControllerMeQueryKey,
   useCompanyAuthControllerLogin,
   companyControllerClaimInvite,
 } from "@/app/api";
@@ -30,9 +29,10 @@ function LoginPageContent() {
   const login = useCompanyAuthControllerLogin({
     mutation: {
       onSuccess: async () => {
-        queryClient.resetQueries({
-          queryKey: getCompanyControllerMeQueryKey(),
-        });
+        // Full clear, not a scoped invalidate — these query keys aren't
+        // scoped by company id, so a prior session's cache could otherwise
+        // leak into this account (e.g. switching between test accounts).
+        queryClient.clear();
 
         if (inviteToken) {
           try {
