@@ -255,21 +255,17 @@ function CompanyDashboardContent() {
 
   const hasCareerTask = !vLoading && !!verification?.canPostListing;
   const hasInviteTask = pendingInvites.length > 0;
-  const hasVerificationTask = !!status && status !== "verified";
+  // "Incomplete" already has a persistent notice in the header on every
+  // page (including this one) — showing it again here would be the
+  // duplicate banner. "Pending" has no header equivalent, so it still
+  // belongs here.
+  const hasVerificationTask = status === "pending";
   const notificationCount =
     (hasCareerTask ? 1 : 0) +
     (hasInviteTask ? 1 : 0) +
     (hasVerificationTask ? 1 : 0);
   const notificationBorderClass =
-    notificationCount > 1
-      ? "border-gray-200"
-      : status === "incomplete" &&
-          (verification?.reason === "rejected" ||
-            verification?.reason === "expired")
-        ? "border-destructive/30"
-        : status === "incomplete"
-          ? "border-warning/30"
-          : "border-primary/25";
+    notificationCount > 1 ? "border-gray-200" : "border-primary/25";
   const navigateToDetail = (uniId: string) => {
     router.push(`/partners/${uniId}`);
   };
@@ -283,14 +279,7 @@ function CompanyDashboardContent() {
       >
         {hasCareerTask && <CareerListingCta />}
 
-        {!vLoading && status && status !== "verified" && (
-          <CompanyProfileStatusNotice
-            status={status}
-            reason={verification?.reason}
-            documentRejections={verification?.documentRejections}
-            expiredDocument={verification?.expiredDocument}
-          />
-        )}
+        {hasVerificationTask && <CompanyProfileStatusNotice status="pending" />}
 
         {hasInviteTask &&
           (() => {

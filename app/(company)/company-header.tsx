@@ -36,9 +36,20 @@ export function CompanyHeader() {
   // Hide the app chrome on the unauthenticated pages.
   if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
 
+  // The verification page IS the "go fix your documents" destination this
+  // notice would send you to — showing it there is a CTA to the page you're
+  // already on.
+  const onVerificationPage = pathname.endsWith("/verification");
+
+  // Incomplete companies can't have any requests in flight yet (the
+  // dashboard's request CTA is locked until verification), and the landing
+  // guard bounces /requests back to /verification anyway — so don't
+  // surface a nav item that always redirects away.
   const nav: NavItem[] = [
     { href: "/dashboard", label: "Partners" },
-    { href: "/requests", label: "MOA Requests" },
+    ...(status === "incomplete"
+      ? []
+      : [{ href: "/requests", label: "MOA Requests" }]),
     {
       href: "/invites",
       label: "Invites",
@@ -59,14 +70,19 @@ export function CompanyHeader() {
         postLogoutPath="/login"
         profileHref="/profile"
       />
-      {status === "incomplete" && (
-        <CompanyProfileStatusNotice
-          status="incomplete"
-          reason={verification?.reason}
-          documentRejections={verification?.documentRejections}
-          expiredDocument={verification?.expiredDocument}
-          compactAttention
-        />
+      {status === "incomplete" && !onVerificationPage && (
+        // Flush edge-to-edge under the header — the notice's own rounded
+        // corners (meant for a notice sitting inside a padded page) look
+        // wrong here, so they're stripped via its data-slot.
+        <div className="[&>[data-slot=status-notice]]:rounded-none">
+          <CompanyProfileStatusNotice
+            status="incomplete"
+            reason={verification?.reason}
+            documentRejections={verification?.documentRejections}
+            expiredDocument={verification?.expiredDocument}
+            compactAttention
+          />
+        </div>
       )}
     </>
   );

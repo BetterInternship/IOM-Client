@@ -13,7 +13,6 @@ import {
   getCompanyControllerGetVerificationQueryKey,
   useCompanyControllerGetDocuments,
   useCompanyControllerPatchProfile,
-  useCompanyControllerUploadDocument,
   useCompanyControllerUploadDocuments,
   type CompanyDocumentDto,
 } from "@/app/api";
@@ -51,7 +50,7 @@ import {
   Loader2,
   Upload,
 } from "lucide-react";
-import { DocumentPreview } from "./document-preview";
+import { DocumentPreview } from "@/components/company/document-preview";
 
 const COSMETIC_KEYS = ["description", "website", "phone", "industry"];
 
@@ -111,26 +110,6 @@ export function CompanyProfileContent() {
     });
   };
 
-  const uploadSingle = useCompanyControllerUploadDocument({
-    mutation: {
-      onSuccess: (_data, variables) => {
-        setUploadingType(null);
-        invalidateDocuments();
-        const willComplete = pendingCompletionRef.current === variables.data.type;
-        toast(
-          willComplete
-            ? "All documents submitted — your account is now under review."
-            : "Document uploaded",
-          toastPresets.success,
-        );
-      },
-      onError: (e: Error) => {
-        setUploadingType(null);
-        toast(e.message, toastPresets.destructive);
-      },
-    },
-  });
-
   const uploadReplacement = useCompanyControllerUploadDocuments({
     mutation: {
       onSuccess: (_data, variables) => {
@@ -153,9 +132,6 @@ export function CompanyProfileContent() {
   });
 
   const [uploadingType, setUploadingType] = useState<string | null>(null);
-  // Set right before a singular upload fires, read back in its onSuccess —
-  // lets the toast tell "completed the set" apart from "just one more doc".
-  const pendingCompletionRef = useRef<string | null>(null);
 
   if (isLoading || !company) return null;
 
@@ -186,16 +162,11 @@ export function CompanyProfileContent() {
   }
 
   function handleFileSelected(type: string, file: File) {
+    // This page only ever renders once status has left "incomplete" — the
+    // landing guard sends onboarding companies to /verification instead,
+    // which owns the singular first-upload path.
     setUploadingType(type);
-    if (status === "incomplete") {
-      pendingCompletionRef.current =
-        docCount === REQUIRED_DOCUMENT_TYPES.length - 1 && !latestDoc(type)
-          ? type
-          : null;
-      uploadSingle.mutate({ data: { file, type } });
-    } else {
-      uploadReplacement.mutate({ data: { [type]: file } });
-    }
+    uploadReplacement.mutate({ data: { [type]: file } });
   }
 
   function fieldError(field: string) {
@@ -363,19 +334,6 @@ export function CompanyProfileContent() {
             contentClassName="space-y-4 px-5 pb-5"
           >
             <div id="documents" className="scroll-mt-24" />
-            {status === "incomplete" && (
-              <div className="flex max-w-xs items-center gap-3">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
-                  <div
-                    className="bg-primary h-full rounded-full"
-                    style={{ width: `${(docCount / REQUIRED_DOCUMENT_TYPES.length) * 100}%` }}
-                  />
-                </div>
-                <span className="text-muted-foreground text-xs">
-                  {docCount} of {REQUIRED_DOCUMENT_TYPES.length} uploaded
-                </span>
-              </div>
-            )}
             <div className="overflow-hidden rounded-[0.33em] border border-blue-100 bg-white">
               {REQUIRED_DOCUMENT_TYPES.map((type) => {
                 const label = documentLabel(type);

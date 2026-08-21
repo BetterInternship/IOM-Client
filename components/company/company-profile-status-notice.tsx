@@ -27,11 +27,14 @@ function CompanyProfileStatusNotice({
   compactAttention?: boolean;
 }) {
   const router = useRouter();
-  const navigateToProfile = () => router.push("/profile#documents");
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+  // Pending: documents are already complete, nothing to upload — send them
+  // to the read-only profile instead of the verification gate.
+  const navigateToProfile = () => router.push("/profile");
+  const navigateToVerification = () => router.push("/verification");
+  const keyDownTo = (navigate: () => void) => (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      navigateToProfile();
+      navigate();
     }
   };
 
@@ -46,7 +49,7 @@ function CompanyProfileStatusNotice({
         tabIndex={0}
         className="cursor-pointer"
         onClick={navigateToProfile}
-        onKeyDown={handleKeyDown}
+        onKeyDown={keyDownTo(navigateToProfile)}
       />
     );
   }
@@ -84,7 +87,7 @@ function CompanyProfileStatusNotice({
             className="w-full bg-transparent sm:bg-background"
           >
             <Link
-              href="/profile#documents"
+              href="/verification"
               onClick={(event) => event.stopPropagation()}
             >
               <ClipboardList aria-hidden="true" />
@@ -96,8 +99,8 @@ function CompanyProfileStatusNotice({
         role="alert"
         tabIndex={compactAttention ? undefined : 0}
         className={compactAttention ? undefined : "cursor-pointer"}
-        onClick={compactAttention ? undefined : navigateToProfile}
-        onKeyDown={compactAttention ? undefined : handleKeyDown}
+        onClick={compactAttention ? undefined : navigateToVerification}
+        onKeyDown={compactAttention ? undefined : keyDownTo(navigateToVerification)}
       />
     );
   }
@@ -122,7 +125,7 @@ function CompanyProfileStatusNotice({
             className="w-full bg-transparent sm:bg-background"
           >
             <Link
-              href="/profile#documents"
+              href="/verification"
               onClick={(event) => event.stopPropagation()}
             >
               <ClipboardList aria-hidden="true" />
@@ -134,8 +137,8 @@ function CompanyProfileStatusNotice({
         role="alert"
         tabIndex={compactAttention ? undefined : 0}
         className={compactAttention ? undefined : "cursor-pointer"}
-        onClick={compactAttention ? undefined : navigateToProfile}
-        onKeyDown={compactAttention ? undefined : handleKeyDown}
+        onClick={compactAttention ? undefined : navigateToVerification}
+        onKeyDown={compactAttention ? undefined : keyDownTo(navigateToVerification)}
       />
     );
   }
@@ -150,8 +153,8 @@ function CompanyProfileStatusNotice({
       role="alert"
       tabIndex={0}
       className="cursor-pointer"
-      onClick={navigateToProfile}
-      onKeyDown={handleKeyDown}
+      onClick={navigateToVerification}
+      onKeyDown={keyDownTo(navigateToVerification)}
       actionClassName="sm:flex sm:w-52 sm:justify-end"
       action={
         <Button
@@ -162,7 +165,7 @@ function CompanyProfileStatusNotice({
           className="w-full bg-transparent sm:bg-background"
         >
           <Link
-            href="/profile#documents"
+            href="/verification"
             onClick={(event) => event.stopPropagation()}
           >
             <ClipboardList aria-hidden="true" />

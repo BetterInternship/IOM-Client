@@ -11,10 +11,9 @@ export default function CompanyLayout({
   return (
     <CompanyProfileProvider>
       <PortalDocumentTitle portal="Company" />
-      <CompanyLandingGuard />
       <div className="flex min-h-screen flex-col">
         <CompanyHeader />
-        {children}
+        <CompanyLandingGuard>{children}</CompanyLandingGuard>
       </div>
     </CompanyProfileProvider>
   );

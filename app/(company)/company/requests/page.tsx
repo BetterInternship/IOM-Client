@@ -1,10 +1,7 @@
 "use client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  useCompanyProfile,
-  useCompanyVerification,
-} from "@/app/providers/company-profile.provider";
+import { useCompanyProfile } from "@/app/providers/company-profile.provider";
 import {
   getCompanyControllerListMoaRequestsQueryKey,
   useCompanyControllerCancelMoaRequest,
@@ -16,7 +13,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
-import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { X } from "lucide-react";
@@ -131,9 +127,6 @@ function RequestRow({
 
 export default function CompanyRequestsPage() {
   const { company, isLoading } = useCompanyProfile();
-  const { data: verification, isLoading: verificationLoading } =
-    useCompanyVerification(!!company);
-  const status = verification?.status;
   const queryClient = useQueryClient();
   const { confirmAction } = useIomModalRegistry();
 
@@ -167,7 +160,7 @@ export default function CompanyRequestsPage() {
     });
   };
 
-  if (isLoading || verificationLoading) {
+  if (isLoading) {
     return (
       <PageContainer className="space-y-6">
         <Skeleton className="h-8 w-40" />
@@ -188,16 +181,6 @@ export default function CompanyRequestsPage() {
         title="MOA Requests"
         description="Requests you've sent to universities, in flight and past."
       />
-
-      {status === "incomplete" && (
-        <CompanyProfileStatusNotice
-          status={status}
-          reason={verification?.reason}
-          documentRejections={verification?.documentRejections}
-          expiredDocument={verification?.expiredDocument}
-          compactAttention
-        />
-      )}
 
       {requestsLoading ? (
         <div className="space-y-4">

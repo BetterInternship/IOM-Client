@@ -59,15 +59,12 @@ export default function CompanyInvitesPage() {
         description="Universities that have invited your company to sign a MOA."
       />
 
-      {status === "incomplete" || status === "pending" ? (
-        <CompanyProfileStatusNotice
-          status={status}
-          reason={verification?.reason}
-          documentRejections={verification?.documentRejections}
-          expiredDocument={verification?.expiredDocument}
-          compactAttention
-        />
-      ) : null}
+      {/* "Incomplete" already has a persistent notice in the header on
+          every page — showing it again here would duplicate it. "Pending"
+          has no header equivalent, so it still belongs here. */}
+      {status === "pending" && (
+        <CompanyProfileStatusNotice status="pending" compactAttention />
+      )}
 
       {invitesLoading ? (
         <div className="space-y-4">
