@@ -3,6 +3,7 @@
 import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -63,6 +64,19 @@ const SUB_STEP_META: Record<StepId, { label: string; icon: LucideIcon }> = {
   details: { label: "Details", icon: CheckCircle2 },
 };
 
+const STEP_ORDER: StepId[] = ["documents", "who-signs", "details"];
+
+// Same slide + fade + easing as the Docs client's signing-flow stepper
+// (Docs-Client's app/docs/sign/page.tsx step transitions), adapted to
+// AnimatePresence since this page's content height varies per step rather
+// than living in a fixed-height shell.
+const stepVariants = {
+  enter: (direction: number) => ({ x: direction > 0 ? 24 : -24, opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({ x: direction > 0 ? -24 : 24, opacity: 0 }),
+};
+const stepTransition = { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const };
+
 type CreateRequestApiError = {
   code?: string;
   data?: { limit?: number };
@@ -93,7 +107,7 @@ function StepProgress({
           <div
             key={id}
             className={cn(
-              "flex min-w-0 items-center gap-2 rounded-[0.33em] border p-3",
+              "flex min-w-0 items-center gap-2 rounded-[0.33em] border p-3 transition-colors duration-300",
               active
                 ? "border-primary/60 bg-primary/5"
                 : done
@@ -104,7 +118,7 @@ function StepProgress({
           >
             <div
               className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
+                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors duration-300",
                 active ? "bg-primary/10" : "bg-gray-100",
               )}
             >
@@ -337,6 +351,7 @@ function InviteContinueContent() {
     invite?.template?.description ?? fallbackTemplate?.description ?? null;
 
   const [subStep, setSubStep] = useState<SubStep>("who-signs");
+  const [subStepDirection, setSubStepDirection] = useState(1);
   const [mode, setMode] = useState<RequestMode | null>(null);
   const [repName, setRepName] = useState("");
   const [repTitle, setRepTitle] = useState("");
@@ -348,6 +363,10 @@ function InviteContinueContent() {
   const [phase, setPhase] = useState<Phase>("form");
   const [outcomeMessage, setOutcomeMessage] = useState("");
   const [documentsDoneOverride, setDocumentsDoneOverride] = useState(false);
+  // Frozen the first time it's known (below) so finishing uploads — which
+  // flips verification.status away from "incomplete" — can't retroactively
+  // shrink the stepper from 3 phases to 2 while it's still on screen.
+  const hasDocumentsStepRef = useRef<boolean | null>(null);
 
   const createRequest = useCompanyControllerCreateMoaRequest();
 
@@ -379,9 +398,13 @@ function InviteContinueContent() {
   const university = invite.university!;
   const needsDocumentsStep =
     !documentsDoneOverride && verification?.status === "incomplete";
-  const steps: StepId[] = needsDocumentsStep
-    ? ["documents", "who-signs", "details"]
-    : ["who-signs", "details"];
+  if (hasDocumentsStepRef.current === null) {
+    hasDocumentsStepRef.current = verification?.status === "incomplete";
+  }
+  const hasDocumentsStep = hasDocumentsStepRef.current;
+  const steps: StepId[] = hasDocumentsStep
+    ? STEP_ORDER
+    : STEP_ORDER.filter((id) => id !== "documents");
   const currentStep: StepId = needsDocumentsStep ? "documents" : subStep;
 
   const handleSuccess = (res: {
@@ -520,202 +543,222 @@ function InviteContinueContent() {
   return (
     <PageContainer className="max-w-2xl space-y-6">
       <PageHeader
-        title="Finish your MOA request"
-        description={`with ${university.registered_name}`}
+        title={`Sign MOA with ${university.registered_name}`}
       />
 
       <StepProgress steps={steps} current={currentStep} />
 
-      {currentStep === "documents" && (
-        <DocumentsStep onAllUploaded={() => setDocumentsDoneOverride(true)} />
-      )}
+      <AnimatePresence mode="wait" initial={false} custom={subStepDirection}>
+        <motion.div
+          key={currentStep}
+          custom={subStepDirection}
+          variants={stepVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={stepTransition}
+        >
+          {currentStep === "documents" && (
+            <DocumentsStep
+              onAllUploaded={() => setDocumentsDoneOverride(true)}
+            />
+          )}
 
-      {currentStep === "who-signs" && (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-            {fallbackLoading && needsFallbackTemplate ? (
-              <Skeleton className="h-4 w-40" />
-            ) : (
-              <>
-                <span className="text-muted-foreground">Document:</span>
-                <span className="font-medium text-gray-900">
-                  {templateName ?? "None available"}
-                </span>
-                {templateName && (
+          {currentStep === "who-signs" && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                {fallbackLoading && needsFallbackTemplate ? (
+                  <Skeleton className="h-4 w-40" />
+                ) : (
                   <>
-                    <span className="text-muted-foreground">·</span>
-                    <button
-                      type="button"
-                      className="text-primary cursor-pointer underline underline-offset-2"
-                      onClick={() =>
-                        modal.previewTemplate.open({
-                          id: templateId!,
-                          name: templateName,
-                          description: templateDescription,
-                        })
-                      }
-                    >
-                      Preview
-                    </button>
+                    <span className="text-muted-foreground">Document:</span>
+                    <span className="font-medium text-gray-900">
+                      {templateName ?? "None available"}
+                    </span>
+                    {templateName && (
+                      <>
+                        <span className="text-muted-foreground">·</span>
+                        <button
+                          type="button"
+                          className="text-primary cursor-pointer underline underline-offset-2"
+                          onClick={() =>
+                            modal.previewTemplate.open({
+                              id: templateId!,
+                              name: templateName,
+                              description: templateDescription,
+                            })
+                          }
+                        >
+                          Preview
+                        </button>
+                      </>
+                    )}
                   </>
                 )}
-              </>
-            )}
-          </div>
+              </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setMode("self")}
-              className={cn(
-                "flex cursor-pointer flex-col items-start gap-2 rounded-[0.33em] border p-4 text-left transition-colors",
-                mode === "self"
-                  ? "border-primary bg-primary/5"
-                  : "border-gray-200 hover:border-gray-300",
-              )}
-            >
-              <span
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-full",
-                  mode === "self"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-gray-100 text-muted-foreground",
-                )}
-              >
-                <PenLine className="h-4.5 w-4.5" />
-              </span>
-              <span className="text-sm font-semibold text-gray-900">
-                I&apos;ll sign it myself
-              </span>
-              <span className="text-muted-foreground text-xs">
-                Enter your name, title, and signature now.
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("delegate")}
-              className={cn(
-                "flex cursor-pointer flex-col items-start gap-2 rounded-[0.33em] border p-4 text-left transition-colors",
-                mode === "delegate"
-                  ? "border-primary bg-primary/5"
-                  : "border-gray-200 hover:border-gray-300",
-              )}
-            >
-              <span
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-full",
-                  mode === "delegate"
-                    ? "bg-primary/10 text-primary"
-                    : "bg-gray-100 text-muted-foreground",
-                )}
-              >
-                <Send className="h-4.5 w-4.5" />
-              </span>
-              <span className="text-sm font-semibold text-gray-900">
-                Send it to someone else to sign
-              </span>
-              <span className="text-muted-foreground text-xs">
-                We&apos;ll email a signing link — no account needed.
-              </span>
-            </button>
-          </div>
-
-          <div className="flex justify-end">
-            <Button
-              onClick={() => setSubStep("details")}
-              disabled={!mode || !templateId}
-            >
-              Next <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {currentStep === "details" && (
-        <div className="space-y-4">
-          {mode === "self" ? (
-            <SignatoryCard title="Your details">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label className="text-xs" htmlFor="rep-name">
-                    Name
-                  </Label>
-                  <Input
-                    id="rep-name"
-                    value={repName}
-                    onChange={(e) => setRepName(e.target.value)}
-                    placeholder="Full name"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs" htmlFor="rep-title">
-                    Title
-                  </Label>
-                  <Input
-                    id="rep-title"
-                    value={repTitle}
-                    onChange={(e) => setRepTitle(e.target.value)}
-                    placeholder="e.g. CEO, HR Manager"
-                  />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setMode("self")}
+                  className={cn(
+                    "flex cursor-pointer flex-col items-start gap-2 rounded-[0.33em] border p-4 text-left transition-colors",
+                    mode === "self"
+                      ? "border-primary bg-primary/5"
+                      : "border-gray-200 hover:border-gray-300",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-full",
+                      mode === "self"
+                        ? "bg-primary/10 text-primary"
+                        : "bg-gray-100 text-muted-foreground",
+                    )}
+                  >
+                    <PenLine className="h-4.5 w-4.5" />
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    I&apos;ll sign it myself
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    Enter your name, title, and signature now.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("delegate")}
+                  className={cn(
+                    "flex cursor-pointer flex-col items-start gap-2 rounded-[0.33em] border p-4 text-left transition-colors",
+                    mode === "delegate"
+                      ? "border-primary bg-primary/5"
+                      : "border-gray-200 hover:border-gray-300",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex h-9 w-9 items-center justify-center rounded-full",
+                      mode === "delegate"
+                        ? "bg-primary/10 text-primary"
+                        : "bg-gray-100 text-muted-foreground",
+                    )}
+                  >
+                    <Send className="h-4.5 w-4.5" />
+                  </span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    Send it to someone else to sign
+                  </span>
+                  <span className="text-muted-foreground text-xs">
+                    We&apos;ll email a signing link — no account needed.
+                  </span>
+                </button>
               </div>
 
-              <MoaSignatureInput
-                mode={sigMode}
-                onModeChange={setSigMode}
-                text={sigText}
-                onTextChange={setSigText}
-                file={sigFile}
-                onFileChange={setSigFile}
-              />
-            </SignatoryCard>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 rounded-[0.33em] border border-gray-200 bg-gray-50 p-3">
-                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-muted-foreground">
-                  <Mail className="h-4 w-4" />
-                </span>
-                <p className="text-muted-foreground text-sm">
-                  Just the email — name, title, and signature are theirs to
-                  enter, since they&apos;re what gets printed on the document.
-                </p>
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => {
+                    setSubStepDirection(1);
+                    setSubStep("details");
+                  }}
+                  disabled={!mode || !templateId}
+                >
+                  Next <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
-
-              <SignatoryEmailInput
-                id="signatory-email"
-                value={signatoryEmail}
-                onChange={setSignatoryEmail}
-                suggestions={[]}
-              />
             </div>
           )}
 
-          {error && <FormError>{error}</FormError>}
+          {currentStep === "details" && (
+            <div className="space-y-4">
+              {mode === "self" ? (
+                <SignatoryCard title="Your details">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs" htmlFor="rep-name">
+                        Name
+                      </Label>
+                      <Input
+                        id="rep-name"
+                        value={repName}
+                        onChange={(e) => setRepName(e.target.value)}
+                        placeholder="Full name"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs" htmlFor="rep-title">
+                        Title
+                      </Label>
+                      <Input
+                        id="rep-title"
+                        value={repTitle}
+                        onChange={(e) => setRepTitle(e.target.value)}
+                        placeholder="e.g. CEO, HR Manager"
+                      />
+                    </div>
+                  </div>
 
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSubStep("who-signs");
-                setError(null);
-              }}
-            >
-              <ChevronLeft className="h-4 w-4" /> Back
-            </Button>
-            <Button
-              onClick={submitRequest}
-              disabled={!detailsReady || createRequest.isPending}
-            >
-              {createRequest.isPending && <Loader2 className="animate-spin" />}
-              {createRequest.isPending
-                ? "Submitting…"
-                : mode === "delegate"
-                  ? "Send signing request"
-                  : "Sign & request MOA"}
-            </Button>
-          </div>
-        </div>
-      )}
+                  <MoaSignatureInput
+                    mode={sigMode}
+                    onModeChange={setSigMode}
+                    text={sigText}
+                    onTextChange={setSigText}
+                    file={sigFile}
+                    onFileChange={setSigFile}
+                  />
+                </SignatoryCard>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 rounded-[0.33em] border border-gray-200 bg-gray-50 p-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-muted-foreground">
+                      <Mail className="h-4 w-4" />
+                    </span>
+                    <p className="text-muted-foreground text-sm">
+                      Just the email — name, title, and signature are theirs
+                      to enter, since they&apos;re what gets printed on the
+                      document.
+                    </p>
+                  </div>
+
+                  <SignatoryEmailInput
+                    id="signatory-email"
+                    value={signatoryEmail}
+                    onChange={setSignatoryEmail}
+                    suggestions={[]}
+                  />
+                </div>
+              )}
+
+              {error && <FormError>{error}</FormError>}
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSubStepDirection(-1);
+                    setSubStep("who-signs");
+                    setError(null);
+                  }}
+                >
+                  <ChevronLeft className="h-4 w-4" /> Back
+                </Button>
+                <Button
+                  onClick={submitRequest}
+                  disabled={!detailsReady || createRequest.isPending}
+                >
+                  {createRequest.isPending && (
+                    <Loader2 className="animate-spin" />
+                  )}
+                  {createRequest.isPending
+                    ? "Submitting…"
+                    : mode === "delegate"
+                      ? "Send signing request"
+                      : "Sign & request MOA"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </PageContainer>
   );
 }
