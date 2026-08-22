@@ -582,7 +582,7 @@ export function RequestDialog({
       </div>
     ) : mode === "self" ? (
       <div className="space-y-4">
-        <SignatoryCard title="Your details">
+        <SignatoryCard>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label className="text-xs" htmlFor="rep-name">

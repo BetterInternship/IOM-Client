@@ -668,7 +668,7 @@ function InviteContinueContent() {
           {currentStep === "details" && (
             <div className="space-y-4">
               {mode === "self" ? (
-                <SignatoryCard title="Your details">
+                <SignatoryCard>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1">
                       <Label className="text-xs" htmlFor="rep-name">

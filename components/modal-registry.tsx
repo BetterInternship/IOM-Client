@@ -7,6 +7,7 @@ import {
   type BulkInviteTargetInput,
 } from "@/components/university/bulk-invite-sheet";
 import type { BulkInviteAction } from "@/components/university/university-partners-table";
+import { DocumentPreviewPane } from "@/components/document-preview-pane";
 import { TemplatePreviewContent } from "@/components/moa-request-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,10 +35,11 @@ export function useIomModalRegistry() {
       open: (url: string, title: string) =>
         openModal(
           "preview-document",
-          <iframe
-            src={url}
-            className="h-full w-full border-none"
-            title={title}
+          <DocumentPreviewPane
+            url={url}
+            label={title}
+            dividerSide="none"
+            zoomStorageKey="iom-preview-document-zoom"
           />,
           {
             title,

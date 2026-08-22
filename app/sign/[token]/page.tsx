@@ -6,14 +6,17 @@ import { toast } from "sonner";
 import { useSignControllerResolve, useSignControllerSubmit } from "@/app/api";
 import type { ApiError } from "@/app/api/preconfig.axios";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { PageContainer, PageHeader } from "@/components/page-header";
+import { SignatoryCard } from "@/components/signatory-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   MoaSignatureInput,
   type MoaSignatureMode,
 } from "@/components/moa-signature-input";
-import { CheckCircle2, FileSignature, Link2Off, Loader2 } from "lucide-react";
+import { CheckCircle2, Eye, Link2Off, Loader2 } from "lucide-react";
 
 interface SignLinkError extends ApiError {
   reason?: "expired" | "already_signed" | "cancelled" | "not_found";
@@ -114,11 +117,10 @@ export default function SignTokenPage() {
 
   if (isLoading) {
     return (
-      <SignPageShell>
-        <div className="flex justify-center py-8">
-          <Loader2 className="text-primary size-8 animate-spin" />
-        </div>
-      </SignPageShell>
+      <PageContainer className="max-w-6xl space-y-6">
+        <Skeleton className="h-8 w-72" />
+        <Skeleton className="h-96 w-full rounded-[0.33em]" />
+      </PageContainer>
     );
   }
 
@@ -155,81 +157,90 @@ export default function SignTokenPage() {
   const { universityName, templateName, templatePdfUrl, requesterEmail } = data;
 
   return (
-    <SignPageShell>
-      <div className="text-center">
-        <span className="bg-primary/10 text-primary mx-auto flex size-14 items-center justify-center rounded-full">
-          <FileSignature className="size-6" aria-hidden="true" />
-        </span>
-        <h1 className="mt-4 text-lg leading-snug font-semibold text-gray-900">
-          {requesterEmail && (
-            <>
-              <span className="text-primary">{requesterEmail}</span>{" "}
-            </>
-          )}
-          is asking you to sign an MOA for a partnership with{" "}
-          <span className="text-primary">{universityName}</span>.
-        </h1>
-      </div>
+    <PageContainer className="max-w-6xl space-y-6">
+      <PageHeader
+        title={`Sign MOA with ${universityName}`}
+      />
 
-      <button
-        type="button"
-        onClick={() =>
-          previewDocument.open(
-            `/gcs-proxy?url=${encodeURIComponent(templatePdfUrl)}`,
-            templateName,
-          )
-        }
-        className="text-primary mt-4 block w-full cursor-pointer text-center text-sm font-medium hover:underline"
-      >
-        Preview {templateName}
-      </button>
+      <div className="rounded-[0.33em] bg-white max-w-6xl">
+        <div className="space-y-4">
+          <div>
+            This MOA was sent by <span className="font-mono opacity-60 text-sm">
+              {requesterEmail}
+            </span> for you to sign.<br />
+            You can review the template below before signing.<br /><br />
+            Enabling auto-sign signs all future requests from <span className="font-mono opacity-60 text-sm">
+              {requesterEmail}
+            </span> for this MOA template.
+            <br />
+          </div>
+          <SignatoryCard bordered>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label className="text-xs" htmlFor="sign-name">
+                  Name
+                </Label>
+                <Input
+                  id="sign-name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Full name"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs" htmlFor="sign-title">
+                  Title
+                </Label>
+                <Input
+                  id="sign-title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. CEO, HR Manager"
+                />
+              </div>
+            </div>
 
-      <div className="mt-6 space-y-4 border-t border-gray-200 pt-6">
-        <div className="space-y-1.5">
-          <Label htmlFor="sign-name">Your name</Label>
-          <Input
-            id="sign-name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
+            <MoaSignatureInput
+              mode={sigMode}
+              onModeChange={setSigMode}
+              text={sigText}
+              onTextChange={setSigText}
+              file={sigFile}
+              onFileChange={setSigFile}
+            />
+          </SignatoryCard>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="sign-title">Your title</Label>
-          <Input
-            id="sign-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
-        <MoaSignatureInput
-          mode={sigMode}
-          onModeChange={setSigMode}
-          text={sigText}
-          onTextChange={setSigText}
-          file={sigFile}
-          onFileChange={setSigFile}
-        />
-      </div>
 
-      <div className="mt-6 space-y-3">
-        <Button
-          size="lg"
-          className="w-full"
-          disabled={!canSubmit}
-          onClick={() => handleSubmit(true)}
-        >
-          {submit.isPending && <Loader2 className="animate-spin" />}
-          Sign this and auto-sign future MOAs
-        </Button>
-        <button
-          type="button"
-          disabled={!canSubmit}
-          onClick={() => handleSubmit(false)}
-          className="text-muted-foreground hover:text-primary block w-full cursor-pointer text-center text-sm font-medium underline disabled:pointer-events-none disabled:opacity-50"
-        >
-          Sign this MOA only
-        </button>
+        <div className="mt-4 flex flex-col items-end gap-3pt-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() =>
+                previewDocument.open(templatePdfUrl, templateName)
+              }
+            >
+              <Eye className="h-4 w-4" /> Preview
+            </Button>
+            <Button
+              size="lg"
+              disabled={!canSubmit}
+              onClick={() => handleSubmit(true)}
+            >
+              {submit.isPending && <Loader2 className="animate-spin" />}
+              Sign this and auto-sign future MOAs
+            </Button>
+          </div>
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={() => handleSubmit(false)}
+            className="text-muted-foreground hover:text-primary cursor-pointer text-sm font-medium underline disabled:pointer-events-none disabled:opacity-50"
+          >
+            Sign this MOA only
+          </button>
+        </div>
       </div>
-    </SignPageShell>
+    </PageContainer>
   );
 }
