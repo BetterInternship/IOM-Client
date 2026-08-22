@@ -455,9 +455,15 @@ function RejectCompanyForm({
   const { closeModal } = useModal();
   const [reasons, setReasons] = useState<Record<string, string>>({});
   const [note, setNote] = useState("");
+  const [showNote, setShowNote] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canSubmit = documentTypes.every((type) => !!reasons[type]?.trim());
+
+  const closeNote = () => {
+    setShowNote(false);
+    setNote("");
+  };
 
   const rejectCompany = async () => {
     if (!canSubmit) return;
@@ -498,12 +504,29 @@ function RejectCompanyForm({
           ))}
         </div>
       )}
-      <Textarea
-        rows={2}
-        placeholder="Additional note (optional — emailed to the company)"
-        value={note}
-        onChange={(event) => setNote(event.target.value)}
-      />
+      <div>
+        <button
+          type="button"
+          disabled={isSubmitting}
+          onClick={() => (showNote ? closeNote() : setShowNote(true))}
+          className="text-primary cursor-pointer text-sm hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {showNote ? "− Remove additional notes" : "+ Add additional notes"}
+        </button>
+        <MorphHeight>
+          {showNote ? (
+            <div className="pt-2">
+              <Textarea
+                rows={2}
+                placeholder="Additional note (optional — emailed to the company)"
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                autoFocus
+              />
+            </div>
+          ) : null}
+        </MorphHeight>
+      </div>
       <div className="flex justify-end gap-2">
         <Button
           variant="outline"
