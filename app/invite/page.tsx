@@ -52,11 +52,11 @@ function RequiredDocumentsModal({ onProceed }: { onProceed: () => void }) {
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
-        You'll be asked to upload the following documents to be able to sign the MOA with this university:
+        To be able to partner with a university, you'll be asked to upload the following documents:
       </p>
       <RequiredDocumentsList />
-      <p className="text-muted-foreground text-sm">
-        Please ensure you have them on-hand.
+      <p className="text-destructive text-sm font-bold">
+        Please ensure you have these files on-hand.
       </p>
       <Button className="w-full" onClick={onProceed}>
         Proceed

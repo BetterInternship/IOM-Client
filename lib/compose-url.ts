@@ -2,6 +2,8 @@
 // university's own webmail replaces sending through SES. Everything here is
 // pure/client-only: no network calls, safe to call on every render.
 
+import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
+
 export type ComposeProvider = "gmail" | "outlook";
 
 export const INVITE_CC_EMAIL = "invites@betterinternship.com";
@@ -96,6 +98,10 @@ export interface InviteMessageInput {
   accountHolderTitle?: string | null;
   personalMessage?: string | null;
   inviteLink: string;
+  // kind="moa" only — the invited email's existing company (if any) already
+  // has every required document on file, so the note below can be skipped.
+  // Undefined (kind="listing", or a brand-new company) is treated as false.
+  documentsComplete?: boolean;
 }
 
 // §8 — subject line by kind. Falls back if the profile's registered_name
@@ -123,6 +129,16 @@ export function buildInviteClosingIntro(kind: "moa" | "listing"): string {
     : "Students will see your listings on BetterInternship.\nPost them through:";
 }
 
+// Same document set + copy as the invite landing page's heads-up modal
+// (app/invite/page.tsx's RequiredDocumentsModal) — kept as its own function
+// so the two stay easy to compare.
+export function buildInviteDocumentsNote(): string {
+  const list = REQUIRED_DOCUMENT_TYPES.map(
+    (type) => `- ${documentLabel(type)}`,
+  ).join("\n");
+  return `You'll be asked to upload the following documents to complete your company verification:\n${list}`;
+}
+
 // §8 — plain text (the templates' HTML can't survive a `body` URL param,
 // and arguably shouldn't: a branded card undercuts the "a person at the
 // university wrote this" effect manual send is buying).
@@ -137,6 +153,10 @@ export function buildInviteBody(input: InviteMessageInput): string {
   paragraphs.push(
     `${buildInviteClosingIntro(input.kind)}\n${input.inviteLink}`,
   );
+
+  if (input.kind === "moa" && !input.documentsComplete) {
+    paragraphs.push(buildInviteDocumentsNote());
+  }
 
   if (hasAccountHolder) {
     const universityName = input.universityName || "the university";

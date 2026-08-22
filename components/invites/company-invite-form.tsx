@@ -362,7 +362,12 @@ export function CompanyInviteForm({
       : companyName.trim() || undefined;
 
   const sendMutationOptions = {
-    onSuccess: (res: { inviteLink: string; inviteId: string; superseded: boolean }) => {
+    onSuccess: (res: {
+      inviteLink: string;
+      inviteId: string;
+      superseded: boolean;
+      documentsComplete?: boolean;
+    }) => {
         const composeUrl = buildComposeUrl(provider, {
           to: invitedEmail,
           cc: INVITE_CC_EMAIL,
@@ -376,6 +381,7 @@ export function CompanyInviteForm({
               account?.university.account_holder_title ?? null,
             personalMessage: message.trim() || null,
             inviteLink: res.inviteLink,
+            documentsComplete: res.documentsComplete,
           }),
         });
         // Passing "noopener"/"noreferrer" as window features makes
