@@ -194,6 +194,7 @@ function ReviewDocumentCard({
   onExpiryChange: (value: string) => void;
   onExpiryValidityChange: (isValid: boolean) => void;
 }) {
+  const checkboxId = `accept-${type}`;
   return (
     <div className="border-b border-gray-100 px-4 py-4 last:border-b-0">
       <div className="flex items-center justify-between gap-3">
@@ -205,12 +206,25 @@ function ReviewDocumentCard({
             </p>
           )}
         </div>
-        <Checkbox
-          checked={accepted && !!document}
-          disabled={!document}
-          onCheckedChange={(checked) => onAcceptedChange(checked === true)}
-          aria-label={`Accept ${label}`}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          <Label
+            htmlFor={checkboxId}
+            className={cn(
+              "text-sm font-normal",
+              document ? "text-muted-foreground" : "text-muted-foreground/50",
+            )}
+          >
+            Accept?
+          </Label>
+          <Checkbox
+            id={checkboxId}
+            className="border-gray-400"
+            checked={accepted && !!document}
+            disabled={!document}
+            onCheckedChange={(checked) => onAcceptedChange(checked === true)}
+            aria-label={`Accept ${label}`}
+          />
+        </div>
       </div>
 
       <MorphHeight>

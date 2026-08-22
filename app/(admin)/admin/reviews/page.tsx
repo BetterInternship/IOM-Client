@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/resource-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useResourceTable } from "@/components/ui/use-resource-table";
-import { formatDateWithoutTime } from "@/lib/utils";
+import { formatTimeElapsed } from "@/lib/utils";
 
 interface ReviewRow {
   id: string;
@@ -41,7 +41,7 @@ const columns: Array<ResourceTableColumn<ReviewRow>> = [
     getSortValue: (review) => review.created_at,
     render: (review) => (
       <span className="text-muted-foreground">
-        {formatDateWithoutTime(review.created_at)}
+        {formatTimeElapsed(review.created_at)}
       </span>
     ),
   },
@@ -67,7 +67,7 @@ export default function AdminReviewsPage() {
         (review.company?.registered_name ?? "").toLowerCase().includes(query) ||
         review.created_at.toLowerCase().includes(query),
     },
-    sort: { initialColumn: "company", initialDirection: "asc" },
+    sort: { initialColumn: "submitted", initialDirection: "desc" },
     pagination: { pageSize: 20, pageSizeOptions: [10, 20, 50] },
   });
 
@@ -97,7 +97,7 @@ export default function AdminReviewsPage() {
                 {review.company?.email ?? "No account email"}
               </p>
               <p className="text-muted-foreground mt-3 text-xs">
-                Submitted {formatDateWithoutTime(review.created_at)}
+                Submitted {formatTimeElapsed(review.created_at)}
               </p>
             </article>
           )}
