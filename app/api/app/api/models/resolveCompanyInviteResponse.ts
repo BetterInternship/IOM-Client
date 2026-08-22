@@ -26,4 +26,5 @@ export interface ResolveCompanyInviteResponse {
   tin_hint: string | null;
   invite: InviteDetailDto;
   documents_complete: boolean;
+  missing_document_types?: string[];
 }

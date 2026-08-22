@@ -29,10 +29,10 @@ import { Button } from "@/components/ui/button";
 import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
 import { formatDateWithoutTime } from "@/lib/utils";
 
-function RequiredDocumentsList() {
+function RequiredDocumentsList({ types }: { types: readonly string[] }) {
   return (
     <ul className="space-y-1.5">
-      {REQUIRED_DOCUMENT_TYPES.map((type) => (
+      {types.map((type) => (
         <li
           key={type}
           className="flex items-center gap-2 text-sm text-[#121d3d]"
@@ -48,13 +48,19 @@ function RequiredDocumentsList() {
   );
 }
 
-function RequiredDocumentsModal({ onProceed }: { onProceed: () => void }) {
+function RequiredDocumentsModal({
+  types,
+  onProceed,
+}: {
+  types: readonly string[];
+  onProceed: () => void;
+}) {
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
         To be able to partner with a university, you'll be asked to upload the following documents:
       </p>
-      <RequiredDocumentsList />
+      <RequiredDocumentsList types={types} />
       <p className="text-destructive text-sm font-bold">
         Please ensure you have these files on-hand.
       </p>
@@ -91,6 +97,7 @@ interface InviteData {
   kind: "moa" | "listing";
   tin_hint: string | null;
   documents_complete: boolean;
+  missing_document_types?: string[];
 }
 
 interface ExpiredInviteError extends ApiError {
@@ -281,11 +288,13 @@ function InvitePageContent() {
     invite,
     kind,
     documents_complete,
+    missing_document_types,
   } = inviteData!;
   const registerHref = `/company/register?invite_token=${encodeURIComponent(token)}`;
   const companyLabel = company_name || "Your company";
   const isListing = kind === "listing";
   const isMoa = kind === "moa";
+  const missingDocumentTypes = missing_document_types ?? REQUIRED_DOCUMENT_TYPES;
 
   // Flow spec §11 — a heads-up shown right when they try to accept,
   // not on page load, so it doesn't compete with the rest of the page.
@@ -293,6 +302,7 @@ function InvitePageContent() {
     openModal(
       "invite-required-documents",
       <RequiredDocumentsModal
+        types={missingDocumentTypes}
         onProceed={() => {
           closeModal("invite-required-documents");
           onProceed();
@@ -387,13 +397,13 @@ function InvitePageContent() {
             </div>
           )}
 
-          {isMoa && (
+          {isMoa && missingDocumentTypes.length > 0 && (
             <div className="border-b border-slate-200 py-6 text-left">
               <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                 Documents you&apos;ll need
               </p>
               <div className="mt-3">
-                <RequiredDocumentsList />
+                <RequiredDocumentsList types={missingDocumentTypes} />
               </div>
             </div>
           )}
