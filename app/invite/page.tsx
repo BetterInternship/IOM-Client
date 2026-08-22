@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -48,16 +48,18 @@ function RequiredDocumentsList() {
   );
 }
 
-function RequiredDocumentsModal({ onDismiss }: { onDismiss: () => void }) {
+function RequiredDocumentsModal({ onProceed }: { onProceed: () => void }) {
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
-        Before this MOA can be issued, we&apos;ll need these three documents
-        on file. You can upload them right after you accept.
+        You'll be asked to upload the following documents to be able to sign the MOA with this university:
       </p>
       <RequiredDocumentsList />
-      <Button className="w-full" onClick={onDismiss}>
-        Got it
+      <p className="text-muted-foreground text-sm">
+        Please ensure you have them on-hand.
+      </p>
+      <Button className="w-full" onClick={onProceed}>
+        Proceed
       </Button>
     </div>
   );
@@ -173,23 +175,6 @@ function InvitePageContent() {
   const isWithdrawn = apiError?.code === "INVITE_WITHDRAWN";
   const isExpired = apiError?.code === "INVITE_EXPIRED";
 
-  // Flow spec §11 — a heads-up before they accept, shown only when
-  // documents are actually missing. Fires once per page load.
-  const docsModalShownRef = useRef(false);
-  useEffect(() => {
-    if (docsModalShownRef.current) return;
-    if (!inviteData || inviteData.kind !== "moa") return;
-    if (inviteData.documents_complete) return;
-    docsModalShownRef.current = true;
-    openModal(
-      "invite-required-documents",
-      <RequiredDocumentsModal
-        onDismiss={() => closeModal("invite-required-documents")}
-      />,
-      { title: "You'll need these documents", showHeaderDivider: false },
-    );
-  }, [inviteData, openModal, closeModal]);
-
   if ((isExpired || isWithdrawn) && apiError?.university) {
     const university = apiError.university;
     const title = isExpired ? "Invitation expired" : "Invitation withdrawn";
@@ -281,12 +266,34 @@ function InvitePageContent() {
     );
   }
 
-  const { company_name, email_status, university, template, invite, kind } =
-    inviteData!;
+  const {
+    company_name,
+    email_status,
+    university,
+    template,
+    invite,
+    kind,
+    documents_complete,
+  } = inviteData!;
   const registerHref = `/company/register?invite_token=${encodeURIComponent(token)}`;
   const companyLabel = company_name || "Your company";
   const isListing = kind === "listing";
   const isMoa = kind === "moa";
+
+  // Flow spec §11 — a heads-up shown right when they try to accept,
+  // not on page load, so it doesn't compete with the rest of the page.
+  const openRequiredDocumentsModal = (onProceed: () => void) => {
+    openModal(
+      "invite-required-documents",
+      <RequiredDocumentsModal
+        onProceed={() => {
+          closeModal("invite-required-documents");
+          onProceed();
+        }}
+      />,
+      { title: "Prepare these documents", showHeaderDivider: false },
+    );
+  };
 
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
@@ -394,7 +401,17 @@ function InvitePageContent() {
 
           {email_status === "not_registered" ? (
             <Button size="lg" className="w-full" asChild>
-              <Link href={registerHref}>
+              <Link
+                href={registerHref}
+                onClick={(e) => {
+                  if (isMoa && !documents_complete) {
+                    e.preventDefault();
+                    openRequiredDocumentsModal(() =>
+                      router.push(registerHref),
+                    );
+                  }
+                }}
+              >
                 Accept invitation
                 <ArrowRight aria-hidden="true" />
               </Link>
@@ -403,7 +420,15 @@ function InvitePageContent() {
             <Button
               size="lg"
               className="w-full"
-              onClick={() => loginViaInvite.mutate({ data: { token } })}
+              onClick={() => {
+                const proceed = () =>
+                  loginViaInvite.mutate({ data: { token } });
+                if (isMoa && !documents_complete) {
+                  openRequiredDocumentsModal(proceed);
+                } else {
+                  proceed();
+                }
+              }}
               disabled={loginViaInvite.isPending || careerListingLink.isPending}
             >
               {loginViaInvite.isPending || careerListingLink.isPending
