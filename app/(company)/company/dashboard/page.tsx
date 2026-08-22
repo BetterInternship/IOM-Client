@@ -1,5 +1,5 @@
 "use client";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCompanyProfile,
@@ -14,6 +14,7 @@ import {
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StatusNotice } from "@/components/ui/status-notice";
 import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -76,20 +77,36 @@ function NotificationCenter({
   );
 }
 
-function SectionHeading({
-  title,
-  description,
+// Mirrors the university side's partner tabs (app/(university)/university/partners/page.tsx's
+// PartnerTabs) so the two portals share the same tabbed-table structure.
+function DashboardTabs({
+  activeCount,
+  requestableCount,
 }: {
-  title: string;
-  description?: string;
+  activeCount: number;
+  requestableCount: number;
 }) {
   return (
-    <div className="space-y-1">
-      <h2 className="text-base font-semibold text-gray-900">{title}</h2>
-      {description && (
-        <p className="text-muted-foreground text-sm">{description}</p>
-      )}
-    </div>
+    <TabsList className="h-auto max-w-full justify-start overflow-x-auto rounded-none border-0 border-b border-gray-200 bg-transparent">
+      <TabsTrigger
+        value="active"
+        className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
+      >
+        Active partners
+        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-supportive group-data-[state=active]:text-supportive-foreground">
+          {activeCount}
+        </span>
+      </TabsTrigger>
+      <TabsTrigger
+        value="requestable"
+        className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
+      >
+        Available to request
+        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-gray-900 group-data-[state=active]:text-white">
+          {requestableCount}
+        </span>
+      </TabsTrigger>
+    </TabsList>
   );
 }
 
@@ -106,6 +123,9 @@ function CompanyDashboardContent() {
   const { company, isLoading } = useCompanyProfile();
   const router = useRouter();
   const { openModal, closeModal } = useModal();
+  const [dashboardTab, setDashboardTab] = useState<"active" | "requestable">(
+    "active",
+  );
 
   const updatePartnerQuery = (
     search: string,
@@ -352,42 +372,50 @@ function CompanyDashboardContent() {
         description="Active partnerships and universities available to request an MOA from."
       />
 
-      {partners.length > 0 && (
-        <div className="space-y-4">
-          <SectionHeading title="Active partners" />
-          {vLoading ? (
-            <div className="space-y-2.5">
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </div>
-          ) : (
-            <CompanyPartnersTable
-              partners={partners}
-              isLoading={moasLoading}
-              canRequest={!locked}
-              initialSearch={initialPartnerSearch}
-              initialStatuses={initialPartnerStatuses}
-              initialRanges={initialActiveMoaRanges}
-              initialPage={initialPartnerPage}
-              onPartnerClick={(partner) =>
-                navigateToDetail(partner.university.id)
-              }
-              onQueryChange={updatePartnerQuery}
-            />
-          )}
-        </div>
-      )}
-
-      <div className="space-y-4">
-        {partners.length > 0 && <SectionHeading title="Available to request" />}
-        <RequestableUniversitiesTable
-          universities={requestableUniversities}
-          isLoading={universitiesLoading || vLoading}
-          onRequest={openRequestDialog}
-          inFlightByUniversityId={inFlightByUniversityId}
-          locked={locked}
-        />
-      </div>
+      <Tabs
+        value={dashboardTab}
+        onValueChange={(value) =>
+          setDashboardTab(value === "requestable" ? "requestable" : "active")
+        }
+      >
+        <TabsContent value="active">
+          <CompanyPartnersTable
+            partners={partners}
+            isLoading={moasLoading || vLoading}
+            canRequest={!locked}
+            initialSearch={initialPartnerSearch}
+            initialStatuses={initialPartnerStatuses}
+            initialRanges={initialActiveMoaRanges}
+            initialPage={initialPartnerPage}
+            onPartnerClick={(partner) =>
+              navigateToDetail(partner.university.id)
+            }
+            onQueryChange={updatePartnerQuery}
+            onBrowseRequestable={() => setDashboardTab("requestable")}
+            toolbarStart={
+              <DashboardTabs
+                activeCount={partners.length}
+                requestableCount={requestableUniversities.length}
+              />
+            }
+          />
+        </TabsContent>
+        <TabsContent value="requestable">
+          <RequestableUniversitiesTable
+            universities={requestableUniversities}
+            isLoading={universitiesLoading || vLoading}
+            onRequest={openRequestDialog}
+            inFlightByUniversityId={inFlightByUniversityId}
+            locked={locked}
+            toolbarStart={
+              <DashboardTabs
+                activeCount={partners.length}
+                requestableCount={requestableUniversities.length}
+              />
+            }
+          />
+        </TabsContent>
+      </Tabs>
     </PageContainer>
   );
 }

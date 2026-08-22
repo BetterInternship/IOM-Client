@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { ArrowRight, MessageCircleQuestion } from "lucide-react";
 
 import type { CompanyUniversityDirectoryItemDto } from "@/app/api";
@@ -91,10 +92,17 @@ function InstantApprovalBadge() {
   );
 }
 
-function UniversitiesTableSkeleton() {
+function UniversitiesTableSkeleton({
+  toolbarStart,
+}: {
+  toolbarStart?: ReactNode;
+}) {
   return (
     <div className="space-y-4">
-      <Skeleton className="h-11 w-full max-w-xl" />
+      <div className="flex flex-wrap items-center gap-2">
+        {toolbarStart}
+        <Skeleton className="h-11 w-full max-w-xl" />
+      </div>
       <Skeleton className="h-36 w-full" />
       <Skeleton className="h-36 w-full" />
     </div>
@@ -147,6 +155,7 @@ export function RequestableUniversitiesTable({
   onRequest,
   inFlightByUniversityId,
   locked = false,
+  toolbarStart,
 }: {
   universities: CompanyUniversityDirectoryItemDto[];
   isLoading: boolean;
@@ -155,6 +164,7 @@ export function RequestableUniversitiesTable({
   inFlightByUniversityId?: Record<string, InFlightRequestStatus>;
   /** Documents incomplete — every button disabled with a tooltip (flow spec §7). */
   locked?: boolean;
+  toolbarStart?: ReactNode;
 }) {
   const inFlightFor = (universityId: string) =>
     inFlightByUniversityId?.[universityId];
@@ -231,11 +241,12 @@ export function RequestableUniversitiesTable({
     pagination: { pageSize: 20 },
   });
 
-  if (isLoading) return <UniversitiesTableSkeleton />;
+  if (isLoading) return <UniversitiesTableSkeleton toolbarStart={toolbarStart} />;
 
   return (
     <ResourceTable
       table={table}
+      toolbarStart={toolbarStart}
       onRowClick={(university) => {
         if (canRequestRow(university.id)) onRequest(university);
       }}
