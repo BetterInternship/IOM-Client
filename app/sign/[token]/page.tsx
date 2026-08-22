@@ -16,19 +16,46 @@ import {
   MoaSignatureInput,
   type MoaSignatureMode,
 } from "@/components/moa-signature-input";
+import { cn } from "@/lib/utils";
 import { CheckCircle2, Eye, Link2Off, Loader2 } from "lucide-react";
 
 interface SignLinkError extends ApiError {
   reason?: "expired" | "already_signed" | "cancelled" | "not_found";
 }
 
-function SignPageShell({ children }: { children: React.ReactNode }) {
+function OutcomeScreen({
+  tone,
+  icon,
+  title,
+  description,
+  children,
+}: {
+  tone: "neutral" | "supportive";
+  icon: React.ReactNode;
+  title: string;
+  description: React.ReactNode;
+  children?: React.ReactNode;
+}) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 py-10 sm:px-8">
-      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white px-5 py-8 shadow-sm sm:px-8">
-        {children}
-      </div>
-    </main>
+    <div className="mx-auto flex min-h-[20rem] w-full max-w-md flex-col items-center justify-center px-4 py-10 text-center">
+      <span
+        className={cn(
+          "mb-5 flex size-16 items-center justify-center rounded-full",
+          tone === "supportive"
+            ? "bg-supportive/10 text-supportive"
+            : "bg-slate-100 text-slate-500",
+        )}
+      >
+        {icon}
+      </span>
+      <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+        {title}
+      </h2>
+      <p className="text-muted-foreground mt-2 max-w-sm text-sm">
+        {description}
+      </p>
+      {children}
+    </div>
   );
 }
 
@@ -94,24 +121,22 @@ export default function SignTokenPage() {
 
   if (!token || (!isLoading && (error || !data))) {
     return (
-      <SignPageShell>
-        <div className="text-center">
-          <span className="mx-auto flex size-16 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-            <Link2Off className="size-8" aria-hidden="true" />
-          </span>
-          <h1 className="mt-4 text-lg font-semibold text-gray-900">
-            This signing link is no longer active
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm leading-6">
-            {apiError?.message ??
-              "This link is invalid — check that you copied the whole URL."}
-          </p>
-          <p className="text-muted-foreground mt-2 text-sm leading-6">
-            Contact whoever sent it to you for a new one.
-          </p>
+      <PageContainer className="max-w-2xl">
+        <OutcomeScreen
+          tone="neutral"
+          icon={<Link2Off className="h-8 w-8" aria-hidden="true" />}
+          title="This signing link is no longer active"
+          description={
+            <>
+              {apiError?.message ??
+                "This link is invalid — check that you copied the whole URL."}{" "}
+              Contact whoever sent it to you for a new one.
+            </>
+          }
+        >
           <HelpLine />
-        </div>
-      </SignPageShell>
+        </OutcomeScreen>
+      </PageContainer>
     );
   }
 
@@ -126,19 +151,17 @@ export default function SignTokenPage() {
 
   if (outcome) {
     return (
-      <SignPageShell>
-        <div className="text-center">
-          <span className="bg-supportive/10 text-supportive mx-auto flex size-16 items-center justify-center rounded-full">
-            <CheckCircle2 className="size-8" aria-hidden="true" />
-          </span>
-          <h1 className="mt-4 text-lg font-semibold text-gray-900">
-            {outcome.kind === "issued" ? "MOA signed!" : "MOA Requested!"}
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm leading-6">
-            {outcome.kind === "issued"
+      <PageContainer className="max-w-2xl">
+        <OutcomeScreen
+          tone="supportive"
+          icon={<CheckCircle2 className="h-8 w-8" aria-hidden="true" />}
+          title={outcome.kind === "issued" ? "MOA signed!" : "MOA Requested!"}
+          description={
+            outcome.kind === "issued"
               ? "The agreement has been issued. A copy has been emailed to you."
-              : "Thanks for signing — the company isn't verified yet, so this will issue automatically once they are. We'll email you when it does."}
-          </p>
+              : "Thanks for signing — the company isn't verified yet, so this will issue automatically once they are. We'll email you when it does."
+          }
+        >
           {outcome.kind === "issued" && outcome.verificationCode && (
             <p className="text-muted-foreground mt-4 text-xs">
               Verification code:{" "}
@@ -148,8 +171,8 @@ export default function SignTokenPage() {
             </p>
           )}
           <HelpLine />
-        </div>
-      </SignPageShell>
+        </OutcomeScreen>
+      </PageContainer>
     );
   }
 
@@ -211,7 +234,7 @@ export default function SignTokenPage() {
           </SignatoryCard>
         </div>
 
-        <div className="mt-4 flex flex-col items-end gap-3pt-4">
+        <div className="mt-4 flex flex-col items-end gap-3">
           <div className="flex items-center gap-3">
             <Button
               variant="outline"
