@@ -227,8 +227,8 @@ function DocumentsStep({
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
-        These three documents establish your company&apos;s identity before an
-        MOA can be issued. Upload them here to continue.
+        We use these three documents to verify the identity of your company.<br />
+        You will be emailed once we've verified all three documents you upload.
       </p>
       <div className="flex max-w-xs items-center gap-3">
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
@@ -384,10 +384,7 @@ function InviteContinueContent() {
   if (!invite) {
     return (
       <PageContainer className="max-w-2xl space-y-6">
-        <PageHeader
-          title="Nothing to continue"
-          description="This invitation may have already been used, or the link is out of date."
-        />
+        <PageHeader title="Invite expired or already used." />
         <Button onClick={() => router.push("/company/dashboard")}>
           Go to your dashboard
         </Button>
