@@ -149,6 +149,11 @@ function RegisterPageContent() {
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [resendIn, setResendIn] = useState(0);
+  // Set the instant an invite registration/verification succeeds, before the
+  // queryClient.clear() below wipes the invite-resolve query this component
+  // is still reading from — without it, the page re-renders into its "invite
+  // expired" fallback for a frame while the redirect is still in flight.
+  const [completingInvite, setCompletingInvite] = useState(false);
 
   const { data: invitePeekRaw, isLoading: inviteLoading } =
     useInviteControllerResolveCompanyInvite(
@@ -197,6 +202,7 @@ function RegisterPageContent() {
           return;
         }
 
+        setCompletingInvite(true);
         // Full clear, not a scoped invalidate — these query keys aren't
         // scoped by company id, so a prior session's cache could otherwise
         // leak into the freshly-registered account.
@@ -225,6 +231,7 @@ function RegisterPageContent() {
   const verifyInvite = useCompanyAuthControllerOtpVerify({
     mutation: {
       onSuccess: (data) => {
+        setCompletingInvite(true);
         // Full clear, not a scoped invalidate — these query keys aren't
         // scoped by company id, so a prior session's cache could otherwise
         // leak into the freshly-registered account.
@@ -275,11 +282,11 @@ function RegisterPageContent() {
   // ── Invite flow ───────────────────────────────────────────────────────────
 
   if (inviteToken) {
-    if (inviteLoading) {
+    if (inviteLoading || completingInvite) {
       return (
         <AuthShell
           portal="Company"
-          title="Loading invite…"
+          title={completingInvite ? "Setting up your account…" : "Loading invite…"}
           variant="split"
           splitFlush
         >

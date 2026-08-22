@@ -108,6 +108,12 @@ function InvitePageContent() {
   const { openModal, closeModal } = useModal();
   const token = searchParams.get("token") ?? "";
   const [loginError, setLoginError] = useState("");
+  // Set the instant sign-in-via-invite succeeds, before the queryClient.clear()
+  // below wipes the invite-resolve query this page is still reading from —
+  // without it, the page re-renders into its "invite not found" fallback for
+  // a frame while the redirect (or the listing career-link handoff) is still
+  // in flight.
+  const [completingInvite, setCompletingInvite] = useState(false);
 
   // Listing-invite handoff after sign-in — no MOA modal, straight to
   // create-listing (mirrors career-listing-cta.tsx's conflict handling).
@@ -143,6 +149,7 @@ function InvitePageContent() {
   const loginViaInvite = useCompanyAuthControllerLoginViaInvite({
     mutation: {
       onSuccess: (response) => {
+        setCompletingInvite(true);
         // Full clear, not a scoped invalidate — these query keys aren't
         // scoped by company id, so a prior session's cache in this same
         // browser could otherwise leak into this account.
@@ -223,7 +230,7 @@ function InvitePageContent() {
     );
   }
 
-  if (!token || (!isLoading && (error || !inviteData))) {
+  if (!completingInvite && (!token || (!isLoading && (error || !inviteData)))) {
     return (
       <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
         <div className="w-full max-w-md rounded-xl bg-white px-5 py-8 backdrop-blur-[2px] sm:px-0 md:bg-transparent md:py-12 md:backdrop-blur-none">
@@ -258,7 +265,7 @@ function InvitePageContent() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || completingInvite) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="text-primary size-8 animate-spin" />
