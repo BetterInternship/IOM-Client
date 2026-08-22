@@ -12,5 +12,5 @@ export interface UniversitySendInviteResponse {
   superseded: boolean;
   inviteId: string;
   inviteLink: string;
-  documentsComplete?: boolean;
+  missingDocumentTypes?: string[];
 }
