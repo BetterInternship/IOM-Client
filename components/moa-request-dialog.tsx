@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Stepper } from "@/components/ui/stepper";
 import { SignatoryCard } from "@/components/signatory-card";
 import { SignatoryEmailInput } from "@/components/signatory-email-input";
 import { FormError } from "@/components/auth-shell";
@@ -33,7 +34,6 @@ import { toastPresets } from "@/components/sonner-toaster";
 import { cn } from "@/lib/utils";
 import {
   Check,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Clock4,
@@ -688,8 +688,8 @@ export function RequestDialog({
     );
 
   const requestSteps = [
-    { title: "Who signs", icon: mode === "delegate" ? Send : PenLine },
-    { title: "Details", icon: CheckCircle2 },
+    { title: "Who signs" },
+    { title: "Details" },
   ];
   const currentStepIndex = step - 1;
 
@@ -702,50 +702,10 @@ export function RequestDialog({
             <span className="font-medium text-gray-900">{universityName}</span>.
           </p>
         )}
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-          {requestSteps.map((requestStep, index) => {
-            const Icon = requestStep.icon;
-            const active = index === currentStepIndex;
-            const done = index < currentStepIndex;
-
-            return (
-              <div
-                key={requestStep.title}
-                className={cn(
-                  "flex min-w-0 items-center gap-2 rounded-[0.33em] border p-3",
-                  active
-                    ? "border-primary/60 bg-primary/5"
-                    : done
-                      ? "border-supportive/40 bg-supportive/5"
-                      : "border-border/60",
-                )}
-                aria-current={active ? "step" : undefined}
-              >
-                <div
-                  className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-                    active ? "bg-primary/10" : "bg-gray-100",
-                  )}
-                >
-                  {done ? (
-                    <CheckCircle2 className="text-supportive h-5 w-5" />
-                  ) : (
-                    <Icon
-                      className={cn(
-                        "h-5 w-5",
-                        active ? "text-primary" : "text-muted-foreground",
-                      )}
-                    />
-                  )}
-                </div>
-                <div className="min-w-0 text-sm leading-tight font-medium">
-                  <div className="text-xs text-gray-400">Step {index + 1}</div>
-                  <div className="truncate">{requestStep.title}</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <Stepper
+          steps={requestSteps}
+          currentStep={currentStepIndex}
+        />
         {content}
       </div>
       <div className="sticky bottom-0 z-20 -mx-4 mt-4 border-t bg-white px-4 pt-3 pb-3 sm:pb-0">

@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
-import type { LucideIcon } from "lucide-react";
 import {
   CheckCircle2,
   ChevronLeft,
@@ -50,6 +49,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Stepper, type StepperStep } from "@/components/ui/stepper";
 import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
 import { cn } from "@/lib/utils";
 
@@ -58,10 +58,10 @@ type SubStep = "who-signs" | "details";
 type StepId = "documents" | SubStep;
 type Phase = "form" | "submitting" | "issued" | "submitted";
 
-const SUB_STEP_META: Record<StepId, { label: string; icon: LucideIcon }> = {
-  documents: { label: "Upload documents", icon: FileText },
-  "who-signs": { label: "Who signs", icon: PenLine },
-  details: { label: "Details", icon: CheckCircle2 },
+const SUB_STEP_META: Record<StepId, StepperStep> = {
+  documents: { title: "Upload documents" },
+  "who-signs": { title: "Who signs" },
+  details: { title: "Details" },
 };
 
 const STEP_ORDER: StepId[] = ["documents", "who-signs", "details"];
@@ -82,67 +82,6 @@ type CreateRequestApiError = {
   data?: { limit?: number };
   response?: { data?: { code?: string; data?: { limit?: number } } };
 };
-
-function StepProgress({
-  steps,
-  current,
-}: {
-  steps: StepId[];
-  current: StepId;
-}) {
-  const currentIndex = steps.indexOf(current);
-  return (
-    <div
-      className={cn(
-        "grid gap-2 sm:gap-3",
-        steps.length === 3 ? "grid-cols-3" : "grid-cols-2",
-      )}
-    >
-      {steps.map((id, index) => {
-        const meta = SUB_STEP_META[id];
-        const Icon = meta.icon;
-        const active = index === currentIndex;
-        const done = index < currentIndex;
-        return (
-          <div
-            key={id}
-            className={cn(
-              "flex min-w-0 items-center gap-2 rounded-[0.33em] border p-3 transition-colors duration-300",
-              active
-                ? "border-primary/60 bg-primary/5"
-                : done
-                  ? "border-supportive/40 bg-supportive/5"
-                  : "border-border/60",
-            )}
-            aria-current={active ? "step" : undefined}
-          >
-            <div
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors duration-300",
-                active ? "bg-primary/10" : "bg-gray-100",
-              )}
-            >
-              {done ? (
-                <CheckCircle2 className="text-supportive h-5 w-5" />
-              ) : (
-                <Icon
-                  className={cn(
-                    "h-5 w-5",
-                    active ? "text-primary" : "text-muted-foreground",
-                  )}
-                />
-              )}
-            </div>
-            <div className="min-w-0 text-sm leading-tight font-medium">
-              <div className="text-xs text-gray-400">Step {index + 1}</div>
-              <div className="truncate">{meta.label}</div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 function OutcomeScreen({
   icon,
@@ -543,7 +482,10 @@ function InviteContinueContent() {
         title={`Sign MOA with ${university.registered_name}`}
       />
 
-      <StepProgress steps={steps} current={currentStep} />
+      <Stepper
+        steps={steps.map((id) => SUB_STEP_META[id])}
+        currentStep={steps.indexOf(currentStep)}
+      />
 
       <AnimatePresence mode="wait" initial={false} custom={subStepDirection}>
         <motion.div

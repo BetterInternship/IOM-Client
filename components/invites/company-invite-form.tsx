@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   ChevronDown,
   Loader2,
-  Mail,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -57,14 +56,8 @@ import {
   saveInviteDraft,
   type ComposeProvider,
 } from "@/lib/compose-url";
-import { cn } from "@/lib/utils";
 
 export type CompanyInviteKind = "moa" | "listing";
-
-const inviteSteps = [
-  { title: "Choose company", icon: Building2 },
-  { title: "Invitation details", icon: Mail },
-];
 
 const PROVIDER_LABEL: Record<ComposeProvider, string> = {
   gmail: "Gmail",
@@ -519,51 +512,6 @@ export function CompanyInviteForm({
         >
           <X className="h-4 w-4 text-gray-500" />
         </button>
-      </div>
-
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-        {inviteSteps.map((inviteStep, index) => {
-          const Icon = inviteStep.icon;
-          const active = index === step - 1;
-          const done = index < step - 1;
-
-          return (
-            <div
-              key={inviteStep.title}
-              className={cn(
-                "flex min-w-0 items-center gap-2 rounded-[0.33em] border p-3",
-                active
-                  ? "border-primary/60 bg-primary/5"
-                  : done
-                    ? "border-supportive/40 bg-supportive/5"
-                    : "border-border/60",
-              )}
-              aria-current={active ? "step" : undefined}
-            >
-              <div
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-                  active ? "bg-primary/10" : "bg-gray-100",
-                )}
-              >
-                {done ? (
-                  <CheckCircle2 className="text-supportive h-5 w-5" />
-                ) : (
-                  <Icon
-                    className={cn(
-                      "h-5 w-5",
-                      active ? "text-primary" : "text-muted-foreground",
-                    )}
-                  />
-                )}
-              </div>
-              <div className="min-w-0 text-sm leading-tight font-medium">
-                <div className="text-xs text-gray-400">Step {index + 1}</div>
-                <div className="truncate">{inviteStep.title}</div>
-              </div>
-            </div>
-          );
-        })}
       </div>
 
       <MorphHeight>
