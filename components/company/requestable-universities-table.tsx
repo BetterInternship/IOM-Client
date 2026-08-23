@@ -198,7 +198,8 @@ export function RequestableUniversitiesTable({
         id: "university",
         header: "University",
         width: "w-[52%]",
-        getSortValue: (university) => university.registered_name,
+        getSortValue: (university) =>
+          `${inFlightFor(university.id) ? "1" : "0"}-${university.registered_name}`,
         render: (university) => (
           <div className="flex min-w-0 items-center gap-4">
             <UniversityLogo university={university} compact />
