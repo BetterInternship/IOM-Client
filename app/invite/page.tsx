@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   ArrowRight,
   CalendarDays,
-  ChevronRight,
+  Eye,
   FileText,
   Link2Off,
   Loader2,
@@ -29,22 +29,19 @@ import { Button } from "@/components/ui/button";
 import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
 import { formatDateWithoutTime } from "@/lib/utils";
 
-function RequiredDocumentsList({ types }: { types: readonly string[] }) {
+function RequiredDocumentsNotice({ types }: { types: readonly string[] }) {
   return (
-    <ul className="space-y-1.5">
-      {types.map((type) => (
-        <li
-          key={type}
-          className="flex items-center gap-2 text-sm text-[#121d3d]"
-        >
-          <FileText
-            className="text-muted-foreground h-3.5 w-3.5 shrink-0"
-            aria-hidden="true"
-          />
-          {documentLabel(type)}
-        </li>
-      ))}
-    </ul>
+    <div className="border-warning/30 bg-warning/5 rounded-[0.33em] border p-4">
+      <p className="text-sm font-semibold text-gray-900">
+        In the next steps, you’ll be asked to upload these documents to verify
+        your account.
+      </p>
+      <ul className="mt-3 w-fit list-disc space-y-1 pl-5 text-sm text-gray-700 marker:text-warning">
+        {types.map((type) => (
+          <li key={type}>{documentLabel(type)}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -57,13 +54,7 @@ function RequiredDocumentsModal({
 }) {
   return (
     <div className="space-y-4">
-      <p className="text-muted-foreground text-sm">
-        To be able to partner with a university, you'll be asked to upload the following documents:
-      </p>
-      <RequiredDocumentsList types={types} />
-      <p className="text-destructive text-sm font-bold">
-        Please ensure you have these files on-hand.
-      </p>
+      <RequiredDocumentsNotice types={types} />
       <Button className="w-full" onClick={onProceed}>
         Proceed
       </Button>
@@ -294,7 +285,8 @@ function InvitePageContent() {
   const companyLabel = company_name || "Your company";
   const isListing = kind === "listing";
   const isMoa = kind === "moa";
-  const missingDocumentTypes = missing_document_types ?? REQUIRED_DOCUMENT_TYPES;
+  const missingDocumentTypes =
+    missing_document_types ?? REQUIRED_DOCUMENT_TYPES;
 
   // Flow spec §11 — a heads-up shown right when they try to accept,
   // not on page load, so it doesn't compete with the rest of the page.
@@ -308,13 +300,19 @@ function InvitePageContent() {
           onProceed();
         }}
       />,
-      { title: "Prepare these documents", showHeaderDivider: false },
+      {
+        title: (
+          <h2 className="text-warning text-lg leading-snug font-semibold tracking-tight sm:text-2xl">
+            Please ensure you have these files on-hand.
+          </h2>
+        ),
+      },
     );
   };
 
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
-      <div className="w-full max-w-md rounded-xl bg-white px-5 py-8 backdrop-blur-[2px] sm:px-0 md:bg-transparent md:py-12 md:backdrop-blur-none">
+      <div className="w-full max-w-md space-y-8 rounded-xl bg-white px-5 py-8 backdrop-blur-[2px] sm:px-0 md:bg-transparent md:py-12 md:backdrop-blur-none">
         <section className="text-center">
           {university.logo_url && (
             // University logos are user-uploaded external assets.
@@ -340,16 +338,18 @@ function InvitePageContent() {
           </p>
         </section>
 
-        <div className="mt-8 border-t border-slate-200">
+        <div>
           {template && (
-            <div className="flex items-center gap-4 border-b border-slate-200 py-6">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => modal.previewTemplate.open(template)}
+              className="group h-auto w-full justify-start gap-4 rounded-none border-b border-slate-200 px-0 py-6 text-left whitespace-normal hover:bg-transparent hover:text-gray-700"
+            >
               <span className="bg-primary/5 text-primary flex size-14 shrink-0 items-center justify-center rounded-full">
-                <FileText className="size-6" aria-hidden="true" />
+                <FileText className="!size-6" aria-hidden="true" />
               </span>
               <div className="min-w-0 flex-1 text-left">
-                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Document
-                </p>
                 <p className="mt-1 font-semibold text-[#121d3d]">
                   {template.name}
                 </p>
@@ -359,57 +359,37 @@ function InvitePageContent() {
                     : `${template.term_months} months`}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => modal.previewTemplate.open(template)}
-                className="text-primary hidden shrink-0 cursor-pointer items-center gap-2 text-sm font-medium hover:underline sm:flex"
-              >
-                Preview template
-                <ChevronRight className="size-4" aria-hidden="true" />
-              </button>
-            </div>
-          )}
-
-          {template && (
-            <button
-              type="button"
-              onClick={() => modal.previewTemplate.open(template)}
-              className="text-primary flex w-full cursor-pointer items-center justify-center gap-2 border-b border-slate-200 py-3 text-sm font-medium sm:hidden"
-            >
-              Preview template
-              <ChevronRight className="size-4" aria-hidden="true" />
-            </button>
+              <span className="flex h-8 shrink-0 items-center gap-2 rounded-[0.33em] border border-gray-300 px-3 text-sm text-gray-700 transition-colors group-hover:bg-accent">
+                <Eye aria-hidden="true" />
+                Preview
+              </span>
+            </Button>
           )}
 
           {invite.personal_message && (
-            <div className="flex items-center gap-4 border-b border-slate-200 py-6">
+            <div className="flex items-center gap-4 py-6">
               <span className="bg-primary/5 text-primary flex size-14 shrink-0 items-center justify-center rounded-full">
-                <Quote className="size-7 fill-current" aria-hidden="true" />
+                <Quote className="size-6 fill-current" aria-hidden="true" />
               </span>
               <div className="min-w-0 text-left">
                 <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Message from {university.registered_name}
                 </p>
-                <p className="mt-2 whitespace-pre-line text-base leading-6 text-[#121d3d]">
-                  “{invite.personal_message}”
+                <p className="mt-2 whitespace-pre-line text-base leading-6 text-[#121d3d] italic">
+                  {invite.personal_message}
                 </p>
               </div>
             </div>
           )}
 
           {isMoa && missingDocumentTypes.length > 0 && (
-            <div className="border-b border-slate-200 py-6 text-left">
-              <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                Documents you&apos;ll need
-              </p>
-              <div className="mt-3">
-                <RequiredDocumentsList types={missingDocumentTypes} />
-              </div>
+            <div className="text-left">
+              <RequiredDocumentsNotice types={missingDocumentTypes} />
             </div>
           )}
         </div>
 
-        <div className="mt-8">
+        <div>
           {loginError && (
             <p className="text-destructive mb-3 rounded-md bg-red-50 px-3 py-2 text-sm">
               {loginError}
@@ -423,9 +403,7 @@ function InvitePageContent() {
                 onClick={(e) => {
                   if (isMoa && !documents_complete) {
                     e.preventDefault();
-                    openRequiredDocumentsModal(() =>
-                      router.push(registerHref),
-                    );
+                    openRequiredDocumentsModal(() => router.push(registerHref));
                   }
                 }}
               >
