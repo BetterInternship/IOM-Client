@@ -256,7 +256,8 @@ function ReviewDocumentCard({
 function MaterialFields({ entry }: { entry: AdminReviewHistoryItemDto }) {
   if (!entry.material) return null;
   const fields = Object.entries(entry.material).filter(
-    (field): field is [string, string] => typeof field[1] === "string" && field[1] !== "",
+    (field): field is [string, string] =>
+      typeof field[1] === "string" && field[1] !== "",
   );
   if (fields.length === 0) return null;
   return (
@@ -268,7 +269,9 @@ function MaterialFields({ entry }: { entry: AdminReviewHistoryItemDto }) {
           labelClassName="capitalize"
         >
           <p className="flex min-h-8 min-w-0 items-center break-words text-sm font-medium text-gray-900">
-            {key === "company_type" ? (COMPANY_TYPE_LABELS[value] ?? value) : value}
+            {key === "company_type"
+              ? (COMPANY_TYPE_LABELS[value] ?? value)
+              : value}
           </p>
         </DetailField>
       ))}
@@ -308,10 +311,14 @@ function CompactHistorySection({
 
 function PastReviewContent({ entry }: { entry: AdminReviewHistoryItemDto }) {
   const companyRows = Object.entries(entry.material ?? {})
-    .filter((field): field is [string, string] => typeof field[1] === "string" && !!field[1])
+    .filter(
+      (field): field is [string, string] =>
+        typeof field[1] === "string" && !!field[1],
+    )
     .map(([key, value]) => ({
       label: key.replace(/_/g, " "),
-      value: key === "company_type" ? (COMPANY_TYPE_LABELS[value] ?? value) : value,
+      value:
+        key === "company_type" ? (COMPANY_TYPE_LABELS[value] ?? value) : value,
     }));
   const reviewRows = Object.entries(entry.document_review_details ?? {})
     .map(([key, field]) => {
@@ -386,7 +393,10 @@ function ApproveSummaryModal({
   const rows: Array<[string, string]> = [
     ["Registered name", identity.registered_name],
     ["TIN", identity.tin],
-    ["Company type", COMPANY_TYPE_LABELS[identity.company_type] ?? identity.company_type],
+    [
+      "Company type",
+      COMPANY_TYPE_LABELS[identity.company_type] ?? identity.company_type,
+    ],
     ["Registered address", identity.registered_address],
     ["Date of incorporation", identity.date_of_incorporation],
     ["Company registry number", identity.company_registry_number],
@@ -495,8 +505,8 @@ function RejectCompanyForm({
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
-        {companyName} will be asked to update the flagged documents below.
-        Each reason is emailed to the company.
+        {companyName} will be asked to update the flagged documents below. Each
+        reason is emailed to the company.
       </p>
       {documentTypes.length > 0 && (
         <div className="space-y-3">
@@ -579,7 +589,9 @@ export default function AdminCompanyReviewPage() {
   const [dateValid, setDateValid] = useState(false);
   const [debouncedTin, setDebouncedTin] = useState("");
   const [expiryValues, setExpiryValues] = useState<Record<string, string>>({});
-  const [expiryValidity, setExpiryValidity] = useState<Record<string, boolean>>({});
+  const [expiryValidity, setExpiryValidity] = useState<Record<string, boolean>>(
+    {},
+  );
   const [acceptedDocs, setAcceptedDocs] = useState<Record<string, boolean>>({});
   const prefetchedReviewId = useRef<string | null>(null);
 
@@ -708,7 +720,9 @@ export default function AdminCompanyReviewPage() {
   useEffect(() => {
     if (!openEntry || prefetchedReviewId.current === openEntry.id) return;
     prefetchedReviewId.current = openEntry.id;
-    const priorApproval = data?.history.find((entry) => entry.status === "approved");
+    const priorApproval = data?.history.find(
+      (entry) => entry.status === "approved",
+    );
     const priorDetails = priorApproval?.document_review_details as
       | Record<string, { value?: unknown }>
       | null
@@ -717,7 +731,8 @@ export default function AdminCompanyReviewPage() {
     setIdentity({
       registered_name: company?.registered_name ?? "",
       tin: company?.tin ?? "",
-      company_type: (company?.company_type as ApproveCompanyReviewDtoCompanyType) ?? "",
+      company_type:
+        (company?.company_type as ApproveCompanyReviewDtoCompanyType) ?? "",
       registered_address: company?.registered_address ?? "",
       date_of_incorporation: asDisplayString(
         priorDetails?.["Date of Incorporation"]?.value,
@@ -779,7 +794,8 @@ export default function AdminCompanyReviewPage() {
             data: {
               registered_name: identity.registered_name.trim(),
               tin: identity.tin.trim(),
-              company_type: identity.company_type as ApproveCompanyReviewDtoCompanyType,
+              company_type:
+                identity.company_type as ApproveCompanyReviewDtoCompanyType,
               registered_address: identity.registered_address.trim(),
               date_of_incorporation: identity.date_of_incorporation.trim(),
               company_registry_number: identity.company_registry_number.trim(),
@@ -807,12 +823,17 @@ export default function AdminCompanyReviewPage() {
     openModal(
       "reject-company",
       <RejectCompanyForm
-        companyName={identity.registered_name || data?.company.email || "This company"}
+        companyName={
+          identity.registered_name || data?.company.email || "This company"
+        }
         documentTypes={documentTypes}
         onReject={(documentRejections, note) =>
           reject.mutateAsync({
             companyId,
-            data: { document_rejections: documentRejections, reason: note || undefined },
+            data: {
+              document_rejections: documentRejections,
+              reason: note || undefined,
+            },
           })
         }
       />,
@@ -915,7 +936,7 @@ export default function AdminCompanyReviewPage() {
                   <Input
                     id="identity-tin"
                     className="h-9 text-sm"
-                    placeholder="000-000-000-000"
+                    placeholder="000-000-000"
                     value={identity.tin}
                     onChange={(e) =>
                       setIdentity((v) => ({ ...v, tin: e.target.value }))
@@ -924,8 +945,8 @@ export default function AdminCompanyReviewPage() {
                   {tinConflict && (
                     <p className="text-destructive text-xs">
                       Already registered to{" "}
-                      {tinConflict.censoredEmail ?? "another company"} — sign
-                      in there instead.
+                      {tinConflict.censoredEmail ?? "another company"} — sign in
+                      there instead.
                     </p>
                   )}
                 </div>
@@ -958,7 +979,9 @@ export default function AdminCompanyReviewPage() {
               </DetailField>
 
               <DetailField
-                label={<Label htmlFor="identity-address">Registered address</Label>}
+                label={
+                  <Label htmlFor="identity-address">Registered address</Label>
+                }
                 labelClassName="sm:min-h-9"
               >
                 <Input

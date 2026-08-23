@@ -325,7 +325,7 @@ function CreateCompanyForm({ onClose }: { onClose: () => void }) {
           <Label htmlFor="tin">TIN (optional)</Label>
           <Input
             id="tin"
-            placeholder="000-000-000-000"
+            placeholder="000-000-000"
             value={form.tin}
             onChange={(e) => setForm({ ...form, tin: e.target.value })}
           />
