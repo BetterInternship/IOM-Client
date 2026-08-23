@@ -107,7 +107,9 @@ export function FileDropTarget({
     >
       {children}
       {isDragging && dragOverlay && (
-        <div className="absolute inset-0 z-10">{dragOverlay}</div>
+        <div className="bg-background absolute inset-0 z-10 rounded-[inherit]">
+          {dragOverlay}
+        </div>
       )}
     </div>
   );

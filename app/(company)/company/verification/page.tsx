@@ -1,26 +1,30 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronRight, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   useCompanyProfile,
   useCompanyVerification,
 } from "@/app/providers/company-profile.provider";
-import { PageContainer, PageHeader } from "@/components/page-header";
+import { PageContainer } from "@/components/page-header";
 import { CompanyDocumentUploader } from "@/components/company/company-document-uploader";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function VerificationPage() {
   const router = useRouter();
+  const [documentsUploaded, setDocumentsUploaded] = useState(false);
+  const initialVerificationStatus = useRef<string | null>(null);
   const { company, isLoading } = useCompanyProfile();
   const { data: verification, isLoading: verificationLoading } =
     useCompanyVerification(!!company);
   const status = verification?.status;
 
-  // Nothing left to verify — move on. Covers arriving here directly once
-  // already pending/verified, not just the just-finished-uploading case
-  // above (which redirects faster, without waiting on this refetch).
   useEffect(() => {
-    if (status && status !== "incomplete") router.replace("/company/dashboard");
+    if (!status || initialVerificationStatus.current) return;
+
+    initialVerificationStatus.current = status;
+    if (status !== "incomplete") router.replace("/company/dashboard");
   }, [status, router]);
 
   if (isLoading || verificationLoading || !company) {
@@ -37,21 +41,29 @@ export default function VerificationPage() {
   }
 
   return (
-    <div className="relative isolate flex-1 bg-slate-50/70">
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[url('/bg2.png')] bg-cover bg-center bg-no-repeat opacity-30" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-56 bg-gradient-to-b from-white/90 via-white/50 to-transparent" />
-      <PageContainer className="relative z-10 space-y-8 pb-12">
-        <PageHeader
-          title="Verify your company to start partnering with universities"
-          description="Upload your documents for your company. We will verify your account within a day."
-        />
+    <PageContainer className="flex min-h-[calc(100dvh-5rem)] max-w-6xl flex-col justify-center gap-20 pb-48">
+      <section className="text-center">
+        <div className="bg-primary/10 text-primary mx-auto flex size-24 items-center justify-center rounded-full sm:size-36">
+          <ShieldCheck className="size-10 sm:size-14" />
+        </div>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+          Verify your company to start partnering with universities
+        </h1>
+        <p className="text-muted-foreground mx-auto mt-2 text-sm">
+          We use these documents to verify your company. We'll email you once
+          the review is complete.
+        </p>
+      </section>
 
-        <CompanyDocumentUploader
-          onAllUploaded={() =>
-            window.setTimeout(() => router.replace("/company/dashboard"), 1200)
-          }
-        />
-      </PageContainer>
-    </div>
+      <CompanyDocumentUploader onCompletionChange={setDocumentsUploaded} />
+      <div className="flex justify-end">
+        <Button
+          disabled={!documentsUploaded}
+          onClick={() => router.replace("/company/dashboard")}
+        >
+          Next <ChevronRight />
+        </Button>
+      </div>
+    </PageContainer>
   );
 }
