@@ -25,6 +25,7 @@ import { FormError } from "@/components/auth-shell";
 import type { MoaSignatureMode } from "@/components/moa-signature-input";
 import { useResolvedFile } from "@/app/lib/resolve-file";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { TemplatePreviewRow } from "@/components/template-preview-row";
 import { toast } from "sonner";
 import { toastPresets } from "@/components/sonner-toaster";
 import { cn } from "@/lib/utils";
@@ -134,6 +135,8 @@ function MoaSubmittingState() {
 
 type RequestMode = CompanySignerMode;
 type RequestPhase = "form" | "submitting" | "issued" | "submitted";
+const DELEGATE_SIGNATORY_EMAIL_STORAGE_KEY =
+  "iom-company-delegate-signatory-email";
 
 interface Template {
   id: string;
@@ -283,6 +286,13 @@ export function RequestDialog({
   const [phase, setPhase] = useState<RequestPhase>("form");
   const [outcomeMessage, setOutcomeMessage] = useState("");
 
+  useEffect(() => {
+    const savedEmail = window.localStorage.getItem(
+      DELEGATE_SIGNATORY_EMAIL_STORAGE_KEY,
+    );
+    if (savedEmail) setSignatoryEmail(savedEmail);
+  }, []);
+
   const { data, isLoading } = useCompanyControllerGetRequestableTemplates(
     universityId,
     {
@@ -379,6 +389,13 @@ export function RequestDialog({
     setError(null);
     setPhase("submitting");
 
+    if (mode === "delegate") {
+      window.localStorage.setItem(
+        DELEGATE_SIGNATORY_EMAIL_STORAGE_KEY,
+        signatoryEmail.trim(),
+      );
+    }
+
     const requestData: CompanyControllerCreateMoaRequestBody = {
       universityId,
       templateId: selectedTemplateId,
@@ -416,68 +433,28 @@ export function RequestDialog({
 
   const content = (
     <div className="space-y-4">
-      <CompanySignerForm
-        mode={mode}
-        onModeChange={(nextMode) => {
-          setMode(nextMode);
-          setError(null);
-        }}
-        onModeChangingChange={setIsChangingMode}
-        repName={repName}
-        onRepNameChange={setRepName}
-        repTitle={repTitle}
-        onRepTitleChange={setRepTitle}
-        signatureMode={sigMode}
-        onSignatureModeChange={setSigMode}
-        signatureText={sigText}
-        onSignatureTextChange={setSigText}
-        signatureFile={sigFile}
-        onSignatureFileChange={setSigFile}
-        signatoryEmail={signatoryEmail}
-        onSignatoryEmailChange={setSignatoryEmail}
-      />
-
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-gray-200 pt-3 text-sm">
+      <div className="">
         {isLoading ? (
-          <Skeleton className="h-4 w-40" />
-        ) : (
-          <>
-            <span className="text-muted-foreground">Template:</span>
-            <span className="font-medium text-gray-900">
-              {selectedTemplateData?.name ?? "None available"}
-            </span>
-            {templates.length > 1 && (
-              <>
-                <span className="text-muted-foreground">·</span>
-                <button
-                  type="button"
-                  className="text-primary cursor-pointer underline underline-offset-2"
-                  onClick={() => setShowTemplatePicker((v) => !v)}
-                >
-                  Change
-                </button>
-              </>
-            )}
-            {selectedTemplateData && (
-              <>
-                <span className="text-muted-foreground">·</span>
-                <button
-                  type="button"
-                  className="text-primary cursor-pointer underline underline-offset-2"
-                  onClick={() =>
-                    modal.previewTemplate.open({
-                      id: selectedTemplateData.id,
-                      name: selectedTemplateData.name,
-                      description: selectedTemplateData.description,
-                    })
-                  }
-                >
-                  Preview
-                </button>
-              </>
-            )}
-          </>
-        )}
+          <Skeleton className="my-3 h-10 w-full" />
+        ) : selectedTemplateData ? (
+          <TemplatePreviewRow
+            name={selectedTemplateData.name}
+            termMonths={selectedTemplateData.term_months}
+            compact
+            onPreview={() =>
+              modal.previewTemplate.open({
+                id: selectedTemplateData.id,
+                name: selectedTemplateData.name,
+                description: selectedTemplateData.description,
+              })
+            }
+            onChange={
+              templates.length > 1
+                ? () => setShowTemplatePicker((visible) => !visible)
+                : undefined
+            }
+          />
+        ) : null}
       </div>
 
       {showTemplatePicker && (
@@ -523,6 +500,27 @@ export function RequestDialog({
         </div>
       )}
 
+      <CompanySignerForm
+        mode={mode}
+        onModeChange={(nextMode) => {
+          setMode(nextMode);
+          setError(null);
+        }}
+        onModeChangingChange={setIsChangingMode}
+        repName={repName}
+        onRepNameChange={setRepName}
+        repTitle={repTitle}
+        onRepTitleChange={setRepTitle}
+        signatureMode={sigMode}
+        onSignatureModeChange={setSigMode}
+        signatureText={sigText}
+        onSignatureTextChange={setSigText}
+        signatureFile={sigFile}
+        onSignatureFileChange={setSigFile}
+        signatoryEmail={signatoryEmail}
+        onSignatoryEmailChange={setSignatoryEmail}
+      />
+
       {!isLoading && templates.length === 0 && (
         <p className="text-muted-foreground text-sm">
           No available templates at this university.
@@ -555,15 +553,7 @@ export function RequestDialog({
 
   return (
     <div className="sm:w-[min(92vw,64rem)]">
-      <div className="space-y-4">
-        {universityName && (
-          <p className="text-muted-foreground text-sm">
-            Requesting a partnership with{" "}
-            <span className="font-medium text-gray-900">{universityName}</span>.
-          </p>
-        )}
-        {content}
-      </div>
+      <div className="space-y-4">{content}</div>
       <div className="sticky bottom-0 z-20 -mx-4 mt-4 border-t bg-white px-4 pt-3 pb-3 sm:pb-0">
         {footer}
       </div>

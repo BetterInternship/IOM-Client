@@ -142,7 +142,7 @@ function CompanySignerForm({
               <SignatoryCard>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1">
-                    <Label className="text-xs" htmlFor="rep-name">
+                    <Label className="mt-0.5" htmlFor="rep-name">
                       Name
                     </Label>
                     <Input
@@ -153,7 +153,7 @@ function CompanySignerForm({
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs" htmlFor="rep-title">
+                    <Label className="mt-0.5" htmlFor="rep-title">
                       Title
                     </Label>
                     <Input
