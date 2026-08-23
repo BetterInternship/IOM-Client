@@ -15,34 +15,20 @@ import {
   useCompanyControllerCreateMoaRequest,
   useCompanyControllerGetRequestableTemplates,
 } from "@/app/api";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Stepper } from "@/components/ui/stepper";
-import { SignatoryCard } from "@/components/signatory-card";
-import { SignatoryEmailInput } from "@/components/signatory-email-input";
-import { FormError } from "@/components/auth-shell";
 import {
-  MoaSignatureInput,
-  type MoaSignatureMode,
-} from "@/components/moa-signature-input";
+  CompanySignerForm,
+  type CompanySignerMode,
+} from "@/components/company-signer-form";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { FormError } from "@/components/auth-shell";
+import type { MoaSignatureMode } from "@/components/moa-signature-input";
 import { useResolvedFile } from "@/app/lib/resolve-file";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { toast } from "sonner";
 import { toastPresets } from "@/components/sonner-toaster";
 import { cn } from "@/lib/utils";
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Clock4,
-  FileText,
-  Loader2,
-  Mail,
-  PenLine,
-  Send,
-} from "lucide-react";
+import { Check, Clock4, FileText, Loader2 } from "lucide-react";
 
 function AnimatedCheck() {
   return (
@@ -141,14 +127,12 @@ function MoaSubmittingState() {
       <h2 className="text-3xl font-semibold tracking-tight text-foreground">
         Submitting your request
       </h2>
-      <p className="text-muted-foreground mt-2 max-w-sm text-sm">
-        One moment…
-      </p>
+      <p className="text-muted-foreground mt-2 max-w-sm text-sm">One moment…</p>
     </div>
   );
 }
 
-type RequestMode = "self" | "delegate";
+type RequestMode = CompanySignerMode;
 type RequestPhase = "form" | "submitting" | "issued" | "submitted";
 
 interface Template {
@@ -281,8 +265,8 @@ export function RequestDialog({
   const router = useRouter();
   const queryClient = useQueryClient();
   const modal = useIomModalRegistry();
-  const [step, setStep] = useState<1 | 2>(1);
   const [mode, setMode] = useState<RequestMode | null>(null);
+  const [isChangingMode, setIsChangingMode] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
     defaultTemplateId,
   );
@@ -324,7 +308,9 @@ export function RequestDialog({
       selectedTemplateId &&
       !templates.some((t) => t.id === selectedTemplateId)
     ) {
-      setSelectedTemplateId(data?.defaultTemplateId ?? templates[0]?.id ?? null);
+      setSelectedTemplateId(
+        data?.defaultTemplateId ?? templates[0]?.id ?? null,
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.templates, isLoading]);
@@ -428,251 +414,130 @@ export function RequestDialog({
     return <MoaSubmittedSuccess description={outcomeMessage} />;
   }
 
-  const content =
-    step === 1 ? (
-      <div className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => setMode("self")}
-            className={cn(
-              "flex flex-col items-start gap-2 rounded-[0.33em] border p-4 text-left transition-colors cursor-pointer",
-              mode === "self"
-                ? "border-primary bg-primary/5"
-                : "border-gray-200 hover:border-gray-300",
-            )}
-          >
-            <span
-              className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-full",
-                mode === "self"
-                  ? "bg-primary/10 text-primary"
-                  : "bg-gray-100 text-muted-foreground",
-              )}
-            >
-              <PenLine className="h-4.5 w-4.5" />
-            </span>
-            <span className="text-sm font-semibold text-gray-900">
-              I&apos;ll sign it myself
-            </span>
-            <span className="text-muted-foreground text-xs">
-              Enter your name, title, and signature now.
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("delegate")}
-            className={cn(
-              "flex flex-col items-start gap-2 rounded-[0.33em] border p-4 text-left transition-colors cursor-pointer",
-              mode === "delegate"
-                ? "border-primary bg-primary/5"
-                : "border-gray-200 hover:border-gray-300",
-            )}
-          >
-            <span
-              className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-full",
-                mode === "delegate"
-                  ? "bg-primary/10 text-primary"
-                  : "bg-gray-100 text-muted-foreground",
-              )}
-            >
-              <Send className="h-4.5 w-4.5" />
-            </span>
-            <span className="text-sm font-semibold text-gray-900">
-              Send it to someone else to sign
-            </span>
-            <span className="text-muted-foreground text-xs">
-              We&apos;ll email a signing link — no account needed.
-            </span>
-          </button>
-        </div>
+  const content = (
+    <div className="space-y-4">
+      <CompanySignerForm
+        mode={mode}
+        onModeChange={(nextMode) => {
+          setMode(nextMode);
+          setError(null);
+        }}
+        onModeChangingChange={setIsChangingMode}
+        repName={repName}
+        onRepNameChange={setRepName}
+        repTitle={repTitle}
+        onRepTitleChange={setRepTitle}
+        signatureMode={sigMode}
+        onSignatureModeChange={setSigMode}
+        signatureText={sigText}
+        onSignatureTextChange={setSigText}
+        signatureFile={sigFile}
+        onSignatureFileChange={setSigFile}
+        signatoryEmail={signatoryEmail}
+        onSignatoryEmailChange={setSignatoryEmail}
+      />
 
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-gray-200 pt-3 text-sm">
-          {isLoading ? (
-            <Skeleton className="h-4 w-40" />
-          ) : (
-            <>
-              <span className="text-muted-foreground">Template:</span>
-              <span className="font-medium text-gray-900">
-                {selectedTemplateData?.name ?? "None available"}
-              </span>
-              {templates.length > 1 && (
-                <>
-                  <span className="text-muted-foreground">·</span>
-                  <button
-                    type="button"
-                    className="text-primary cursor-pointer underline underline-offset-2"
-                    onClick={() => setShowTemplatePicker((v) => !v)}
-                  >
-                    Change
-                  </button>
-                </>
-              )}
-              {selectedTemplateData && (
-                <>
-                  <span className="text-muted-foreground">·</span>
-                  <button
-                    type="button"
-                    className="text-primary cursor-pointer underline underline-offset-2"
-                    onClick={() =>
-                      modal.previewTemplate.open({
-                        id: selectedTemplateData.id,
-                        name: selectedTemplateData.name,
-                        description: selectedTemplateData.description,
-                      })
-                    }
-                  >
-                    Preview
-                  </button>
-                </>
-              )}
-            </>
-          )}
-        </div>
-
-        {showTemplatePicker && (
-          <div className="space-y-1.5 rounded-[0.33em] border border-gray-200 p-2">
-            {templates.map((t) => {
-              const selected = t.id === selectedTemplateId;
-              return (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-gray-200 pt-3 text-sm">
+        {isLoading ? (
+          <Skeleton className="h-4 w-40" />
+        ) : (
+          <>
+            <span className="text-muted-foreground">Template:</span>
+            <span className="font-medium text-gray-900">
+              {selectedTemplateData?.name ?? "None available"}
+            </span>
+            {templates.length > 1 && (
+              <>
+                <span className="text-muted-foreground">·</span>
                 <button
-                  key={t.id}
                   type="button"
-                  onClick={() => {
-                    setSelectedTemplateId(t.id);
-                    setShowTemplatePicker(false);
-                  }}
+                  className="text-primary cursor-pointer underline underline-offset-2"
+                  onClick={() => setShowTemplatePicker((v) => !v)}
+                >
+                  Change
+                </button>
+              </>
+            )}
+            {selectedTemplateData && (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <button
+                  type="button"
+                  className="text-primary cursor-pointer underline underline-offset-2"
+                  onClick={() =>
+                    modal.previewTemplate.open({
+                      id: selectedTemplateData.id,
+                      name: selectedTemplateData.name,
+                      description: selectedTemplateData.description,
+                    })
+                  }
+                >
+                  Preview
+                </button>
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      {showTemplatePicker && (
+        <div className="space-y-1.5 rounded-[0.33em] border border-gray-200 p-2">
+          {templates.map((t) => {
+            const selected = t.id === selectedTemplateId;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => {
+                  setSelectedTemplateId(t.id);
+                  setShowTemplatePicker(false);
+                }}
+                className={cn(
+                  "flex w-full cursor-pointer items-start gap-2 rounded-[0.33em] px-3 py-2 text-left transition-colors",
+                  selected ? "bg-primary/5" : "hover:bg-gray-50",
+                )}
+              >
+                <span
                   className={cn(
-                    "flex w-full cursor-pointer items-start gap-2 rounded-[0.33em] px-3 py-2 text-left transition-colors",
-                    selected ? "bg-primary/5" : "hover:bg-gray-50",
+                    "mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border",
+                    selected
+                      ? "border-primary bg-primary text-white"
+                      : "border-gray-300",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border",
-                      selected
-                        ? "border-primary bg-primary text-white"
-                        : "border-gray-300",
-                    )}
-                  >
-                    {selected && <Check className="h-3 w-3" />}
+                  {selected && <Check className="h-3 w-3" />}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-gray-900">
+                    {t.name}
                   </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-medium text-gray-900">
-                      {t.name}
+                  {t.description && (
+                    <span className="text-muted-foreground mt-0.5 block text-xs">
+                      {t.description}
                     </span>
-                    {t.description && (
-                      <span className="text-muted-foreground mt-0.5 block text-xs">
-                        {t.description}
-                      </span>
-                    )}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {!isLoading && templates.length === 0 && (
-          <p className="text-muted-foreground text-sm">
-            No available templates at this university.
-          </p>
-        )}
-      </div>
-    ) : mode === "self" ? (
-      <div className="space-y-4">
-        <SignatoryCard>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
-              <Label className="text-xs" htmlFor="rep-name">
-                Name
-              </Label>
-              <Input
-                id="rep-name"
-                value={repName}
-                onChange={(e) => setRepName(e.target.value)}
-                placeholder="Full name"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs" htmlFor="rep-title">
-                Title
-              </Label>
-              <Input
-                id="rep-title"
-                value={repTitle}
-                onChange={(e) => setRepTitle(e.target.value)}
-                placeholder="e.g. CEO, HR Manager"
-              />
-            </div>
-          </div>
-
-          <MoaSignatureInput
-            mode={sigMode}
-            onModeChange={setSigMode}
-            text={sigText}
-            onTextChange={setSigText}
-            file={sigFile}
-            onFileChange={setSigFile}
-          />
-        </SignatoryCard>
-
-        <p className="text-muted-foreground text-sm">
-          These details will appear on the MOA document.
-        </p>
-
-        {error && <FormError>{error}</FormError>}
-      </div>
-    ) : (
-      <div className="space-y-4">
-        <div className="flex items-start gap-3 rounded-[0.33em] border border-gray-200 bg-gray-50 p-3">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-muted-foreground">
-            <Mail className="h-4 w-4" />
-          </span>
-          <p className="text-muted-foreground text-sm">
-            Just the email — name, title, and signature are theirs to enter,
-            since they&apos;re what gets printed on the document.
-          </p>
+                  )}
+                </span>
+              </button>
+            );
+          })}
         </div>
+      )}
 
-        <SignatoryEmailInput
-          id="signatory-email"
-          value={signatoryEmail}
-          onChange={setSignatoryEmail}
-          suggestions={[]}
-        />
+      {!isLoading && templates.length === 0 && (
+        <p className="text-muted-foreground text-sm">
+          No available templates at this university.
+        </p>
+      )}
+      {error && <FormError>{error}</FormError>}
+    </div>
+  );
 
-        {error && <FormError>{error}</FormError>}
-      </div>
-    );
-
-  const footer =
-    step === 1 ? (
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        {templates.length > 0 && (
-          <Button
-            onClick={() => setStep(2)}
-            disabled={!mode || !selectedTemplateId || isLoading}
-          >
-            Next <ChevronRight className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-    ) : (
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={() => {
-            setStep(1);
-            setError(null);
-          }}
-        >
-          <ChevronLeft className="h-4 w-4" /> Back
-        </Button>
+  const footer = (
+    <div className="flex justify-end gap-2">
+      <Button variant="outline" onClick={onClose}>
+        Cancel
+      </Button>
+      {mode && !isChangingMode && templates.length > 0 && (
         <Button
           onClick={submitRequest}
           disabled={!step2Ready || createRequest.isPending}
@@ -684,28 +549,19 @@ export function RequestDialog({
               ? "Send signing request"
               : "Sign & request MOA"}
         </Button>
-      </div>
-    );
-
-  const requestSteps = [
-    { title: "Who signs" },
-    { title: "Details" },
-  ];
-  const currentStepIndex = step - 1;
+      )}
+    </div>
+  );
 
   return (
     <div className="sm:w-[min(92vw,64rem)]">
       <div className="space-y-4">
-        {universityName && step === 1 && (
+        {universityName && (
           <p className="text-muted-foreground text-sm">
             Requesting a partnership with{" "}
             <span className="font-medium text-gray-900">{universityName}</span>.
           </p>
         )}
-        <Stepper
-          steps={requestSteps}
-          currentStep={currentStepIndex}
-        />
         {content}
       </div>
       <div className="sticky bottom-0 z-20 -mx-4 mt-4 border-t bg-white px-4 pt-3 pb-3 sm:pb-0">

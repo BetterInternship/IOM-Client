@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useSignControllerResolve, useSignControllerSubmit } from "@/app/api";
 import type { ApiError } from "@/app/api/preconfig.axios";
 import { useIomModalRegistry } from "@/components/modal-registry";
-import { PageContainer, PageHeader } from "@/components/page-header";
+import { PageContainer } from "@/components/page-header";
 import { SignatoryCard } from "@/components/signatory-card";
+import { TemplatePreviewRow } from "@/components/template-preview-row";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +19,7 @@ import {
   type MoaSignatureMode,
 } from "@/components/moa-signature-input";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Eye, Link2Off, Loader2 } from "lucide-react";
+import { CheckCircle2, Link2Off, Loader2 } from "lucide-react";
 
 interface SignLinkError extends ApiError {
   reason?: "expired" | "already_signed" | "cancelled" | "not_found";
@@ -37,7 +39,12 @@ function OutcomeScreen({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto flex min-h-[20rem] w-full max-w-md flex-col items-center justify-center px-4 py-10 text-center">
+    <motion.div
+      initial={{ opacity: 0, y: 16, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className="mx-auto flex w-full max-w-md flex-col items-center justify-center rounded-xl border border-gray-200 bg-white px-6 py-10 text-center shadow-sm sm:px-10"
+    >
       <span
         className={cn(
           "mb-5 flex size-16 items-center justify-center rounded-full",
@@ -55,7 +62,7 @@ function OutcomeScreen({
         {description}
       </p>
       {children}
-    </div>
+    </motion.div>
   );
 }
 
@@ -121,7 +128,7 @@ export default function SignTokenPage() {
 
   if (!token || (!isLoading && (error || !data))) {
     return (
-      <PageContainer className="max-w-2xl">
+      <PageContainer className="flex min-h-dvh max-w-2xl items-center justify-center">
         <OutcomeScreen
           tone="neutral"
           icon={<Link2Off className="h-8 w-8" aria-hidden="true" />}
@@ -151,7 +158,7 @@ export default function SignTokenPage() {
 
   if (outcome) {
     return (
-      <PageContainer className="max-w-2xl">
+      <PageContainer className="flex min-h-dvh max-w-2xl items-center justify-center">
         <OutcomeScreen
           tone="supportive"
           icon={<CheckCircle2 className="h-8 w-8" aria-hidden="true" />}
@@ -177,26 +184,43 @@ export default function SignTokenPage() {
   }
 
   if (!data) return null;
-  const { universityName, templateName, templatePdfUrl, requesterEmail } = data;
+  const {
+    universityName,
+    universityLogoUrl,
+    templateName,
+    templatePdfUrl,
+    requesterEmail,
+  } = data;
 
   return (
-    <PageContainer className="max-w-6xl space-y-6">
-      <PageHeader
-        title={`Sign MOA with ${universityName}`}
-      />
+    <PageContainer className="flex min-h-dvh max-w-6xl flex-col justify-center gap-20 pb-48">
+      <section className="text-center">
+        {universityLogoUrl && (
+          // University logos are user-uploaded external assets.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={universityLogoUrl}
+            alt={`${universityName} logo`}
+            className="mx-auto size-24 rounded-full border border-gray-200 object-contain sm:size-36"
+          />
+        )}
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+          Sign MOA with {universityName}
+        </h1>
+      </section>
 
-      <div className="rounded-[0.33em] bg-white max-w-6xl">
+      <div className="w-full space-y-6">
         <div className="space-y-4">
-          <div>
-            This MOA was sent by <span className="font-mono opacity-60 text-sm">
-              {requesterEmail}
-            </span> for you to sign.<br />
-            You can review the template below before signing.<br /><br />
-            Enabling auto-sign signs all future requests from <span className="font-mono opacity-60 text-sm">
-              {requesterEmail}
-            </span> for this MOA template.
-            <br />
-          </div>
+          <p className="text-muted-foreground text-sm leading-6">
+            This agreement was requested by{" "}
+            <span className="font-mono text-gray-900">{requesterEmail}</span>.
+            Review it before signing. Auto-signing will also sign future MOAs
+            from this company that use this template.
+          </p>
+          <TemplatePreviewRow
+            name={templateName}
+            onPreview={() => previewDocument.open(templatePdfUrl, templateName)}
+          />
           <SignatoryCard bordered>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
@@ -236,15 +260,6 @@ export default function SignTokenPage() {
 
         <div className="mt-4 flex flex-col items-end gap-3">
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() =>
-                previewDocument.open(templatePdfUrl, templateName)
-              }
-            >
-              <Eye className="h-4 w-4" /> Preview
-            </Button>
             <Button
               size="lg"
               disabled={!canSubmit}

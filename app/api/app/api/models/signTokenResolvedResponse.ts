@@ -10,6 +10,8 @@ export interface SignTokenResolvedResponse {
   success: boolean;
   message?: string;
   universityName: string;
+  /** @nullable */
+  universityLogoUrl: string | null;
   templateName: string;
   templatePdfUrl: string;
   /** @nullable */

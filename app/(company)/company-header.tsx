@@ -36,10 +36,10 @@ export function CompanyHeader() {
   // Hide the app chrome on the unauthenticated pages.
   if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
 
-  // The verification page IS the "go fix your documents" destination this
-  // notice would send you to — showing it there is a CTA to the page you're
-  // already on.
-  const onVerificationPage = pathname.endsWith("/verification");
+  // These pages already present the document uploader, so the global notice
+  // would duplicate their purpose and link back to the page in view.
+  const onDocumentUploadPage =
+    pathname.endsWith("/verification") || pathname.endsWith("/invite/continue");
 
   // Incomplete companies can't have any requests in flight yet (the
   // dashboard's request CTA is locked until verification), and the landing
@@ -70,7 +70,7 @@ export function CompanyHeader() {
         postLogoutPath="/login"
         profileHref="/profile"
       />
-      {status === "incomplete" && !onVerificationPage && (
+      {status === "incomplete" && !onDocumentUploadPage && (
         // Flush edge-to-edge under the header — the notice's own rounded
         // corners (meant for a notice sitting inside a padded page) look
         // wrong here, so they're stripped via its data-slot.

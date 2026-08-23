@@ -286,7 +286,9 @@ function RegisterPageContent() {
       return (
         <AuthShell
           portal="Company"
-          title={completingInvite ? "Setting up your account…" : "Loading invite…"}
+          title={
+            completingInvite ? "Setting up your account…" : "Loading invite…"
+          }
           variant="split"
           splitFlush
         >
@@ -352,10 +354,7 @@ function RegisterPageContent() {
           description={
             <>
               We sent a 6-digit code to{" "}
-              <span className="text-foreground font-medium">
-                {form.email}
-              </span>
-              .
+              <span className="text-foreground font-medium">{form.email}</span>.
             </>
           }
         >
@@ -436,7 +435,7 @@ function RegisterPageContent() {
             </span>
             .{" "}
             {inviteEmailMatchesInvite
-              ? "Your account email is pre-verified — no OTP needed."
+              ? ""
               : "We'll send a one-time code to verify this email."}
             {isListingInvite &&
               " You'll be able to post a listing on BetterInternship right after this."}
@@ -479,10 +478,6 @@ function RegisterPageContent() {
               {...field("email")}
               required
             />
-            <p className="text-muted-foreground text-xs">
-              Defaults to the address this invite was sent to — you can use a
-              different one. This will be your login email.
-            </p>
           </div>
 
           <div className="space-y-1.5">

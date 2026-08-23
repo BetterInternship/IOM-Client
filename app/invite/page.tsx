@@ -8,8 +8,6 @@ import { toast } from "sonner";
 import {
   ArrowRight,
   CalendarDays,
-  Eye,
-  FileText,
   Link2Off,
   Loader2,
   Quote,
@@ -23,6 +21,7 @@ import {
 import type { ApiError } from "@/app/api/preconfig.axios";
 import { getCareerHireUrl } from "@/components/career-listing-cta";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { TemplatePreviewRow } from "@/components/template-preview-row";
 import { useModal } from "@/app/providers/modal-provider";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
@@ -340,30 +339,11 @@ function InvitePageContent() {
 
         <div>
           {template && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => modal.previewTemplate.open(template)}
-              className="group h-auto w-full justify-start gap-4 rounded-none border-b border-slate-200 px-0 py-6 text-left whitespace-normal hover:bg-transparent hover:text-gray-700"
-            >
-              <span className="bg-primary/5 text-primary flex size-14 shrink-0 items-center justify-center rounded-full">
-                <FileText className="!size-6" aria-hidden="true" />
-              </span>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="mt-1 font-semibold text-[#121d3d]">
-                  {template.name}
-                </p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {template.term_months == null
-                    ? "Perpetual  •  No expiry"
-                    : `${template.term_months} months`}
-                </p>
-              </div>
-              <span className="flex h-8 shrink-0 items-center gap-2 rounded-[0.33em] border border-gray-300 px-3 text-sm text-gray-700 transition-colors group-hover:bg-accent">
-                <Eye aria-hidden="true" />
-                Preview
-              </span>
-            </Button>
+            <TemplatePreviewRow
+              name={template.name}
+              termMonths={template.term_months}
+              onPreview={() => modal.previewTemplate.open(template)}
+            />
           )}
 
           {invite.personal_message && (

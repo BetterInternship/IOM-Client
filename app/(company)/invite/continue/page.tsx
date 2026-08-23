@@ -12,59 +12,47 @@ import {
   Clock4,
   FileText,
   Loader2,
-  Mail,
-  PenLine,
-  Send,
-  Upload,
 } from "lucide-react";
 
 import {
   type CompanyControllerCreateMoaRequestBody,
   type CompanyPendingInvitesResponse,
-  getCompanyControllerGetDocumentsQueryKey,
-  getCompanyControllerGetVerificationQueryKey,
   getCompanyControllerListMoaRequestsQueryKey,
   getCompanyControllerListPendingInvitesQueryKey,
   useCompanyControllerCreateMoaRequest,
-  useCompanyControllerGetDocuments,
   useCompanyControllerGetRequestableTemplates,
   useCompanyControllerListPendingInvites,
-  useCompanyControllerUploadDocument,
 } from "@/app/api";
 import {
   useCompanyProfile,
   useCompanyVerification,
 } from "@/app/providers/company-profile.provider";
 import { FormError } from "@/components/auth-shell";
-import { useIomModalRegistry } from "@/components/modal-registry";
+import { CompanyDocumentUploader } from "@/components/company/company-document-uploader";
 import {
-  MoaSignatureInput,
-  type MoaSignatureMode,
-} from "@/components/moa-signature-input";
+  CompanySignerForm,
+  type CompanySignerMode,
+} from "@/components/company-signer-form";
+import { useIomModalRegistry } from "@/components/modal-registry";
+import { TemplatePreviewRow } from "@/components/template-preview-row";
+import type { MoaSignatureMode } from "@/components/moa-signature-input";
 import { PageContainer, PageHeader } from "@/components/page-header";
-import { SignatoryCard } from "@/components/signatory-card";
-import { SignatoryEmailInput } from "@/components/signatory-email-input";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Stepper, type StepperStep } from "@/components/ui/stepper";
-import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
 import { cn } from "@/lib/utils";
 
-type RequestMode = "self" | "delegate";
-type SubStep = "who-signs" | "details";
-type StepId = "documents" | SubStep;
+type RequestMode = CompanySignerMode;
+type StepId = "documents" | "who-signs";
 type Phase = "form" | "submitting" | "issued" | "submitted";
 
 const SUB_STEP_META: Record<StepId, StepperStep> = {
   documents: { title: "Upload documents" },
   "who-signs": { title: "Who signs" },
-  details: { title: "Details" },
 };
 
-const STEP_ORDER: StepId[] = ["documents", "who-signs", "details"];
+const STEP_ORDER: StepId[] = ["documents", "who-signs"];
 
 // Same slide + fade + easing as the Docs client's signing-flow stepper
 // (Docs-Client's app/docs/sign/page.tsx step transitions), adapted to
@@ -107,147 +95,39 @@ function OutcomeScreen({
 
 function DocumentsStep({
   onAllUploaded,
+  onCompletionChange,
+  onContinue,
+  canContinue,
+  stepper,
 }: {
   onAllUploaded: () => void;
+  onCompletionChange: (isComplete: boolean) => void;
+  onContinue: () => void;
+  canContinue: boolean;
+  stepper: React.ReactNode;
 }) {
-  const queryClient = useQueryClient();
-  const { data: verification } = useCompanyVerification(true);
-  const { data: docsData } = useCompanyControllerGetDocuments();
-  const [uploadingType, setUploadingType] = useState<string | null>(null);
-  // Set right before a singular upload fires, read back in its onSuccess —
-  // different document types can upload concurrently (only the matching
-  // type's button disables), so deriving "did this complete the set" live
-  // inside onSuccess would race a second upload's own invalidation.
-  const pendingCompletionRef = useRef(false);
-
-  const docs = docsData?.documents ?? [];
-  const latestDoc = (type: string) => docs.find((d) => d.type === type);
-  const docCount = REQUIRED_DOCUMENT_TYPES.filter((t) => latestDoc(t)).length;
-
-  const uploadSingle = useCompanyControllerUploadDocument({
-    mutation: {
-      onSuccess: () => {
-        setUploadingType(null);
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerGetDocumentsQueryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerGetVerificationQueryKey(),
-        });
-        if (pendingCompletionRef.current) {
-          toast(
-            "All documents submitted — your account is now under review.",
-            toastPresets.success,
-          );
-          onAllUploaded();
-        } else {
-          toast("Document uploaded", toastPresets.success);
-        }
-      },
-      onError: (e: Error) => {
-        setUploadingType(null);
-        toast(e.message, toastPresets.destructive);
-      },
-    },
-  });
-
-  function slotState(
-    type: string,
-  ): { kind: "missing" } | { kind: "rejected"; reason: string } | { kind: "on-file" } {
-    if (
-      verification?.reason === "rejected" &&
-      verification.documentRejections[type]
-    ) {
-      return { kind: "rejected", reason: verification.documentRejections[type] };
-    }
-    return latestDoc(type) ? { kind: "on-file" } : { kind: "missing" };
-  }
-
   return (
-    <div className="space-y-4">
-      <p className="text-muted-foreground text-sm">
-        We use these three documents to verify the identity of your company.<br />
-        You will be emailed once we've verified all three documents you upload.
-      </p>
-      <div className="flex max-w-xs items-center gap-3">
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
-          <div
-            className="bg-primary h-full rounded-full"
-            style={{
-              width: `${(docCount / REQUIRED_DOCUMENT_TYPES.length) * 100}%`,
-            }}
-          />
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold tracking-tight text-gray-900">
+            Upload your company documents
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            We use these documents to verify your company. We’ll email you once
+            the review is complete.
+          </p>
         </div>
-        <span className="text-muted-foreground text-xs">
-          {docCount} of {REQUIRED_DOCUMENT_TYPES.length} uploaded
-        </span>
+        {stepper}
       </div>
-
-      <div className="overflow-hidden rounded-[0.33em] border border-gray-200 bg-white">
-        {REQUIRED_DOCUMENT_TYPES.map((type) => {
-          const label = documentLabel(type);
-          const slot = slotState(type);
-          const busy = uploadingType === type;
-          return (
-            <div
-              key={type}
-              className="flex flex-col gap-2 border-b border-gray-100 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-800">{label}</p>
-                {slot.kind === "missing" && (
-                  <p className="text-muted-foreground mt-0.5 text-xs">
-                    Not uploaded
-                  </p>
-                )}
-                {slot.kind === "rejected" && (
-                  <p className="text-destructive mt-0.5 text-xs">
-                    Rejected: {slot.reason}
-                  </p>
-                )}
-                {slot.kind === "on-file" && (
-                  <p className="text-supportive mt-0.5 text-xs">On file</p>
-                )}
-              </div>
-              <div className="flex-shrink-0">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={busy}
-                  onClick={() =>
-                    document.getElementById(`invite-doc-${type}`)?.click()
-                  }
-                >
-                  {busy ? <Loader2 className="animate-spin" /> : <Upload />}
-                  {busy
-                    ? "Uploading…"
-                    : slot.kind === "on-file"
-                      ? "Replace"
-                      : "Upload"}
-                </Button>
-                <input
-                  id={`invite-doc-${type}`}
-                  type="file"
-                  accept="application/pdf"
-                  className="hidden"
-                  disabled={busy}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) {
-                      setUploadingType(type);
-                      pendingCompletionRef.current =
-                        docCount === REQUIRED_DOCUMENT_TYPES.length - 1 &&
-                        !latestDoc(type);
-                      uploadSingle.mutate({ data: { file, type } });
-                    }
-                    event.target.value = "";
-                  }}
-                />
-              </div>
-            </div>
-          );
-        })}
+      <CompanyDocumentUploader
+        onAllUploaded={onAllUploaded}
+        onCompletionChange={onCompletionChange}
+      />
+      <div className="flex justify-end">
+        <Button disabled={!canContinue} onClick={onContinue}>
+          Next <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
@@ -288,10 +168,11 @@ function InviteContinueContent() {
   const templateName = invite?.template?.name ?? fallbackTemplate?.name ?? null;
   const templateDescription =
     invite?.template?.description ?? fallbackTemplate?.description ?? null;
+  const templateTermMonths = fallbackTemplate?.term_months;
 
-  const [subStep, setSubStep] = useState<SubStep>("who-signs");
-  const [subStepDirection, setSubStepDirection] = useState(1);
+  const [stepDirection, setStepDirection] = useState(1);
   const [mode, setMode] = useState<RequestMode | null>(null);
+  const [isChangingMode, setIsChangingMode] = useState(false);
   const [repName, setRepName] = useState("");
   const [repTitle, setRepTitle] = useState("");
   const [sigMode, setSigMode] = useState<MoaSignatureMode>("type");
@@ -301,10 +182,11 @@ function InviteContinueContent() {
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("form");
   const [outcomeMessage, setOutcomeMessage] = useState("");
-  const [documentsDoneOverride, setDocumentsDoneOverride] = useState(false);
+  const [documentsUploaded, setDocumentsUploaded] = useState(false);
+  const [documentsStepCompleted, setDocumentsStepCompleted] = useState(false);
   // Frozen the first time it's known (below) so finishing uploads — which
   // flips verification.status away from "incomplete" — can't retroactively
-  // shrink the stepper from 3 phases to 2 while it's still on screen.
+  // shrink the stepper from 2 phases to 1 while it's still on screen.
   const hasDocumentsStepRef = useRef<boolean | null>(null);
 
   const createRequest = useCompanyControllerCreateMoaRequest();
@@ -332,8 +214,6 @@ function InviteContinueContent() {
   }
 
   const university = invite.university!;
-  const needsDocumentsStep =
-    !documentsDoneOverride && verification?.status === "incomplete";
   if (hasDocumentsStepRef.current === null) {
     hasDocumentsStepRef.current = verification?.status === "incomplete";
   }
@@ -341,7 +221,8 @@ function InviteContinueContent() {
   const steps: StepId[] = hasDocumentsStep
     ? STEP_ORDER
     : STEP_ORDER.filter((id) => id !== "documents");
-  const currentStep: StepId = needsDocumentsStep ? "documents" : subStep;
+  const currentStep: StepId =
+    hasDocumentsStep && !documentsStepCompleted ? "documents" : "who-signs";
 
   const handleSuccess = (res: {
     request?: { status?: string; moa_id?: string | null };
@@ -398,7 +279,10 @@ function InviteContinueContent() {
       );
     } else if (code === "DOCUMENTS_INCOMPLETE") {
       setError("Upload your documents before you can request MOAs.");
-      setDocumentsDoneOverride(false);
+      hasDocumentsStepRef.current = true;
+      setDocumentsUploaded(false);
+      setDocumentsStepCompleted(false);
+      setStepDirection(-1);
     } else if (code === "REQUEST_ALREADY_IN_FLIGHT") {
       setError("You already have a request in flight with this university.");
     } else if (code === "UNIVERSITY_NOT_REQUESTABLE") {
@@ -477,20 +361,26 @@ function InviteContinueContent() {
   }
 
   return (
-    <PageContainer className="max-w-2xl space-y-6">
-      <PageHeader
-        title={`Sign MOA with ${university.registered_name}`}
-      />
+    <PageContainer className="flex min-h-[calc(100dvh-5rem)] max-w-6xl flex-col justify-center gap-20 pb-48">
+      <section className="text-center">
+        {university.logo_url && (
+          // University logos are user-uploaded external assets.
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={university.logo_url}
+            alt={`${university.registered_name} logo`}
+            className="mx-auto size-24 rounded-full border border-gray-200 object-contain sm:size-36"
+          />
+        )}
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+          Sign MOA with {university.registered_name}
+        </h1>
+      </section>
 
-      <Stepper
-        steps={steps.map((id) => SUB_STEP_META[id])}
-        currentStep={steps.indexOf(currentStep)}
-      />
-
-      <AnimatePresence mode="wait" initial={false} custom={subStepDirection}>
+      <AnimatePresence mode="wait" initial={false} custom={stepDirection}>
         <motion.div
           key={currentStep}
-          custom={subStepDirection}
+          custom={stepDirection}
           variants={stepVariants}
           initial="enter"
           animate="center"
@@ -499,200 +389,107 @@ function InviteContinueContent() {
         >
           {currentStep === "documents" && (
             <DocumentsStep
-              onAllUploaded={() => setDocumentsDoneOverride(true)}
+              onAllUploaded={() => setDocumentsUploaded(true)}
+              onCompletionChange={setDocumentsUploaded}
+              canContinue={documentsUploaded}
+              onContinue={() => {
+                setDocumentsStepCompleted(true);
+                setStepDirection(1);
+              }}
+              stepper={
+                <Stepper
+                  steps={steps.map((id) => SUB_STEP_META[id])}
+                  currentStep={steps.indexOf(currentStep)}
+                />
+              }
             />
           )}
 
           {currentStep === "who-signs" && (
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <div className="w-full space-y-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-xl font-semibold tracking-tight text-gray-900">
+                    Who will sign the MOA?
+                  </h2>
+                </div>
+                <Stepper
+                  steps={steps.map((id) => SUB_STEP_META[id])}
+                  currentStep={steps.indexOf(currentStep)}
+                />
+              </div>
+              <div>
                 {fallbackLoading && needsFallbackTemplate ? (
-                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-20 w-full" />
+                ) : templateName && templateId ? (
+                  <TemplatePreviewRow
+                    name={templateName}
+                    termMonths={templateTermMonths}
+                    onPreview={() =>
+                      modal.previewTemplate.open({
+                        id: templateId,
+                        name: templateName,
+                        description: templateDescription,
+                      })
+                    }
+                  />
                 ) : (
-                  <>
-                    <span className="text-muted-foreground">Document:</span>
-                    <span className="font-medium text-gray-900">
-                      {templateName ?? "None available"}
-                    </span>
-                    {templateName && (
-                      <>
-                        <span className="text-muted-foreground">·</span>
-                        <button
-                          type="button"
-                          className="text-primary cursor-pointer underline underline-offset-2"
-                          onClick={() =>
-                            modal.previewTemplate.open({
-                              id: templateId!,
-                              name: templateName,
-                              description: templateDescription,
-                            })
-                          }
-                        >
-                          Preview
-                        </button>
-                      </>
-                    )}
-                  </>
+                  <p className="text-muted-foreground text-sm">
+                    Document: None available
+                  </p>
                 )}
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setMode("self")}
-                  className={cn(
-                    "flex cursor-pointer flex-col items-start gap-2 rounded-[0.33em] border p-4 text-left transition-colors",
-                    mode === "self"
-                      ? "border-primary bg-primary/5"
-                      : "border-gray-200 hover:border-gray-300",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-full",
-                      mode === "self"
-                        ? "bg-primary/10 text-primary"
-                        : "bg-gray-100 text-muted-foreground",
-                    )}
-                  >
-                    <PenLine className="h-4.5 w-4.5" />
-                  </span>
-                  <span className="text-sm font-semibold text-gray-900">
-                    I&apos;ll sign it myself
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    Enter your name, title, and signature now.
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("delegate")}
-                  className={cn(
-                    "flex cursor-pointer flex-col items-start gap-2 rounded-[0.33em] border p-4 text-left transition-colors",
-                    mode === "delegate"
-                      ? "border-primary bg-primary/5"
-                      : "border-gray-200 hover:border-gray-300",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-9 w-9 items-center justify-center rounded-full",
-                      mode === "delegate"
-                        ? "bg-primary/10 text-primary"
-                        : "bg-gray-100 text-muted-foreground",
-                    )}
-                  >
-                    <Send className="h-4.5 w-4.5" />
-                  </span>
-                  <span className="text-sm font-semibold text-gray-900">
-                    Send it to someone else to sign
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    We&apos;ll email a signing link — no account needed.
-                  </span>
-                </button>
-              </div>
-
-              <div className="flex justify-end">
-                <Button
-                  onClick={() => {
-                    setSubStepDirection(1);
-                    setSubStep("details");
-                  }}
-                  disabled={!mode || !templateId}
-                >
-                  Next <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {currentStep === "details" && (
-            <div className="space-y-4">
-              {mode === "self" ? (
-                <SignatoryCard>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs" htmlFor="rep-name">
-                        Name
-                      </Label>
-                      <Input
-                        id="rep-name"
-                        value={repName}
-                        onChange={(e) => setRepName(e.target.value)}
-                        placeholder="Full name"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs" htmlFor="rep-title">
-                        Title
-                      </Label>
-                      <Input
-                        id="rep-title"
-                        value={repTitle}
-                        onChange={(e) => setRepTitle(e.target.value)}
-                        placeholder="e.g. CEO, HR Manager"
-                      />
-                    </div>
-                  </div>
-
-                  <MoaSignatureInput
-                    mode={sigMode}
-                    onModeChange={setSigMode}
-                    text={sigText}
-                    onTextChange={setSigText}
-                    file={sigFile}
-                    onFileChange={setSigFile}
-                  />
-                </SignatoryCard>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 rounded-[0.33em] border border-gray-200 bg-gray-50 p-3">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                    </span>
-                    <p className="text-muted-foreground text-sm">
-                      Just the email — name, title, and signature are theirs
-                      to enter, since they&apos;re what gets printed on the
-                      document.
-                    </p>
-                  </div>
-
-                  <SignatoryEmailInput
-                    id="signatory-email"
-                    value={signatoryEmail}
-                    onChange={setSignatoryEmail}
-                    suggestions={[]}
-                  />
-                </div>
-              )}
+              <CompanySignerForm
+                mode={mode}
+                onModeChange={(nextMode) => {
+                  setMode(nextMode);
+                  setError(null);
+                }}
+                onModeChangingChange={setIsChangingMode}
+                repName={repName}
+                onRepNameChange={setRepName}
+                repTitle={repTitle}
+                onRepTitleChange={setRepTitle}
+                signatureMode={sigMode}
+                onSignatureModeChange={setSigMode}
+                signatureText={sigText}
+                onSignatureTextChange={setSigText}
+                signatureFile={sigFile}
+                onSignatureFileChange={setSigFile}
+                signatoryEmail={signatoryEmail}
+                onSignatoryEmailChange={setSignatoryEmail}
+              />
 
               {error && <FormError>{error}</FormError>}
 
               <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSubStepDirection(-1);
-                    setSubStep("who-signs");
-                    setError(null);
-                  }}
-                >
-                  <ChevronLeft className="h-4 w-4" /> Back
-                </Button>
-                <Button
-                  onClick={submitRequest}
-                  disabled={!detailsReady || createRequest.isPending}
-                >
-                  {createRequest.isPending && (
-                    <Loader2 className="animate-spin" />
-                  )}
-                  {createRequest.isPending
-                    ? "Submitting…"
-                    : mode === "delegate"
-                      ? "Send signing request"
-                      : "Sign & request MOA"}
-                </Button>
+                {hasDocumentsStep && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setDocumentsStepCompleted(false);
+                      setStepDirection(-1);
+                    }}
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Back
+                  </Button>
+                )}
+                {mode && !isChangingMode && (
+                  <Button
+                    onClick={submitRequest}
+                    disabled={!detailsReady || createRequest.isPending}
+                  >
+                    {createRequest.isPending && (
+                      <Loader2 className="animate-spin" />
+                    )}
+                    {createRequest.isPending
+                      ? "Submitting…"
+                      : mode === "delegate"
+                        ? "Send signing request"
+                        : "Sign & request MOA"}
+                  </Button>
+                )}
               </div>
             </div>
           )}
