@@ -86,6 +86,15 @@ function HelpLine() {
   );
 }
 
+function getVerificationUrl(verificationCode: string) {
+  const docsUrl =
+    process.env.LOCAL_DEVELOPMENT === "true"
+      ? "https://dev.docs.betterinternship.com"
+      : "https://docs.betterinternship.com";
+
+  return `${docsUrl}/?verification-code=${encodeURIComponent(verificationCode)}`;
+}
+
 function SigningPageShell({
   children,
   className,
@@ -140,8 +149,14 @@ export default function SignTokenPage() {
 
   const submit = useSignControllerSubmit({
     mutation: {
-      onSuccess: (res) =>
-        setOutcome({ kind: res.kind, verificationCode: res.verificationCode }),
+      onSuccess: (res) => {
+        if (res.kind === "issued" && res.verificationCode) {
+          window.location.assign(getVerificationUrl(res.verificationCode));
+          return;
+        }
+
+        setOutcome({ kind: res.kind, verificationCode: res.verificationCode });
+      },
       onError: (e: Error) => toast.error(e.message),
     },
   });
