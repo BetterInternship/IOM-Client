@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ArrowRight, MessageCircleQuestion } from "lucide-react";
+import { ArrowRight, Clock3, MessageCircleQuestion } from "lucide-react";
 
 import type { CompanyUniversityDirectoryItemDto } from "@/app/api";
 import { cn } from "@/lib/utils";
@@ -110,18 +110,33 @@ function UniversitiesTableSkeleton({
 }
 
 /** In-flight status text for a university that already has a request (flow spec §7). */
-export type InFlightRequestStatus = "awaiting_signature" | "awaiting_verification";
+export type InFlightRequestStatus =
+  | "awaiting_signature"
+  | "awaiting_verification";
 
-const IN_FLIGHT_LABELS: Record<InFlightRequestStatus, string> = {
-  awaiting_signature: "Requested · waiting for signature",
-  awaiting_verification: "Requested · pending verification",
-};
+const IN_FLIGHT_LABELS: Record<InFlightRequestStatus, { description: string }> =
+  {
+    awaiting_signature: { description: "Awaiting signature" },
+    awaiting_verification: { description: "Pending verification" },
+  };
 
 function InFlightBadge({ status }: { status: InFlightRequestStatus }) {
+  const { description } = IN_FLIGHT_LABELS[status];
+
   return (
-    <span className="border-border bg-muted text-muted-foreground inline-flex items-center rounded-full border px-3 py-2 text-sm font-medium">
-      {IN_FLIGHT_LABELS[status]}
-    </span>
+    <div className="inline-flex w-52 items-center gap-2 rounded-[0.33em] border border-gray-200 bg-gray-50 px-3 py-2 text-left">
+      <span className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-full">
+        <Clock3 className="size-4" aria-hidden="true" />
+      </span>
+      <span>
+        <span className="block text-sm font-medium text-gray-900">
+          Request sent
+        </span>
+        <span className="text-muted-foreground block text-xs">
+          {description}
+        </span>
+      </span>
+    </div>
   );
 }
 
@@ -130,8 +145,14 @@ function LockedRequestButton({ mobile = false }: { mobile?: boolean }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className={cn("inline-flex cursor-not-allowed", mobile && "w-full")}>
-          <Button size="md" disabled className={mobile ? "w-full" : undefined}>
+        <span
+          className={cn("inline-flex cursor-not-allowed", mobile && "w-full")}
+        >
+          <Button
+            size="md"
+            disabled
+            className={cn("justify-center", mobile ? "w-full" : "w-52")}
+          >
             Request MOA
             <ArrowRight />
           </Button>
@@ -213,6 +234,7 @@ export function RequestableUniversitiesTable({
           return (
             <Button
               size="md"
+              className="w-52 justify-center"
               onClick={(event) => {
                 event.stopPropagation();
                 onRequest(university);
@@ -241,7 +263,8 @@ export function RequestableUniversitiesTable({
     pagination: { pageSize: 20 },
   });
 
-  if (isLoading) return <UniversitiesTableSkeleton toolbarStart={toolbarStart} />;
+  if (isLoading)
+    return <UniversitiesTableSkeleton toolbarStart={toolbarStart} />;
 
   return (
     <ResourceTable
