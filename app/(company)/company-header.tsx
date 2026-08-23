@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
 import { AppHeader, type NavItem } from "@/components/app-header";
 import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import {
@@ -49,10 +50,11 @@ export function CompanyHeader() {
     { href: "/dashboard", label: "Partners" },
     ...(status === "incomplete"
       ? []
-      : [{ href: "/requests", label: "MOA Requests" }]),
+      : [{ href: "/requests", label: "Outgoing", icon: ArrowUpRight }]),
     {
       href: "/invites",
-      label: "Invites",
+      label: "Incoming",
+      icon: ArrowDownLeft,
       ...(pendingInviteCount > 0 ? { badge: pendingInviteCount } : {}),
     },
   ];

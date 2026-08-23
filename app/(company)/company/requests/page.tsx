@@ -8,7 +8,11 @@ import {
   useCompanyControllerListMoaRequests,
   type CompanyMoaRequestDto,
 } from "@/app/api";
-import { PageContainer, PageHeader, EmptyState } from "@/components/page-header";
+import {
+  PageContainer,
+  PageHeader,
+  EmptyState,
+} from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +26,9 @@ const IN_FLIGHT_STATUSES = ["awaiting_signature", "awaiting_verification"];
 // is silent by decision — the row simply never appears (flow spec §10).
 const HISTORY_STATUSES = ["cancelled", "expired"];
 
-const STATUS_BADGE: Partial<Record<CompanyMoaRequestDto["status"], { status: string; label: string }>> = {
+const STATUS_BADGE: Partial<
+  Record<CompanyMoaRequestDto["status"], { status: string; label: string }>
+> = {
   awaiting_signature: { status: "pending", label: "Waiting for signature" },
   awaiting_verification: { status: "pending", label: "Pending verification" },
   cancelled: { status: "cancelled", label: "Cancelled" },
@@ -130,9 +136,10 @@ export default function CompanyRequestsPage() {
   const queryClient = useQueryClient();
   const { confirmAction } = useIomModalRegistry();
 
-  const { data, isLoading: requestsLoading } = useCompanyControllerListMoaRequests({
-    query: { enabled: !!company },
-  });
+  const { data, isLoading: requestsLoading } =
+    useCompanyControllerListMoaRequests({
+      query: { enabled: !!company },
+    });
 
   const cancel = useCompanyControllerCancelMoaRequest({
     mutation: {
@@ -171,15 +178,19 @@ export default function CompanyRequestsPage() {
   if (!company) return null;
 
   const allRequests = data?.requests ?? [];
-  const inFlight = allRequests.filter((r) => IN_FLIGHT_STATUSES.includes(r.status));
-  const history = allRequests.filter((r) => HISTORY_STATUSES.includes(r.status));
+  const inFlight = allRequests.filter((r) =>
+    IN_FLIGHT_STATUSES.includes(r.status),
+  );
+  const history = allRequests.filter((r) =>
+    HISTORY_STATUSES.includes(r.status),
+  );
   const requests = [...inFlight, ...history];
 
   return (
     <PageContainer className="space-y-6">
       <PageHeader
-        title="MOA Requests"
-        description="Requests you've sent to universities, in flight and past."
+        title="Outgoing MOA Requests"
+        description="Track the status of MOA requests sent to universities."
       />
 
       {requestsLoading ? (
@@ -189,24 +200,21 @@ export default function CompanyRequestsPage() {
         </div>
       ) : requests.length === 0 ? (
         <EmptyState
-          title="No MOA requests yet"
+          title="No outgoing MOA requests yet"
           description="Requests you send from the Partners page will show up here."
         />
       ) : (
         <div className="space-y-8">
           {inFlight.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-900">In flight</h2>
-              <div className="space-y-3">
-                {inFlight.map((request) => (
-                  <RequestRow
-                    key={request.id}
-                    request={request}
-                    onCancel={() => requestCancel(request)}
-                    isCancelling={cancel.isPending}
-                  />
-                ))}
-              </div>
+              {inFlight.map((request) => (
+                <RequestRow
+                  key={request.id}
+                  request={request}
+                  onCancel={() => requestCancel(request)}
+                  isCancelling={cancel.isPending}
+                />
+              ))}
             </div>
           )}
 

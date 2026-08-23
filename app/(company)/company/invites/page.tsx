@@ -55,8 +55,8 @@ export default function CompanyInvitesPage() {
   return (
     <PageContainer className="space-y-6">
       <PageHeader
-        title="Invitations"
-        description="Universities that have invited your company to sign a MOA."
+        title="Incoming MOA Invitations"
+        description="MOA invitations from universities for your company to sign."
       />
 
       {/* "Incomplete" already has a persistent notice in the header on
@@ -73,7 +73,7 @@ export default function CompanyInvitesPage() {
         </div>
       ) : invites.length === 0 ? (
         <EmptyState
-          title="No pending invitations"
+          title="No incoming MOA invitations"
           description="When a university invites you to sign a MOA, it will appear here."
         />
       ) : (
