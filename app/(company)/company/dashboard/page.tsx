@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCompanyProfile,
@@ -126,6 +126,7 @@ function CompanyDashboardContent() {
   const [dashboardTab, setDashboardTab] = useState<"active" | "requestable">(
     "active",
   );
+  const hasSelectedDefaultTab = useRef(false);
 
   const updatePartnerQuery = (
     search: string,
@@ -175,6 +176,16 @@ function CompanyDashboardContent() {
   const { data: verification, isLoading: vLoading } =
     useCompanyVerification(!!company);
   const status = verification?.status;
+  const hasActivePartners = (moasData?.moas ?? []).some(
+    (moa) => moa.status === "active" && !moa.is_expired,
+  );
+
+  useEffect(() => {
+    if (!company || moasLoading || hasSelectedDefaultTab.current) return;
+
+    hasSelectedDefaultTab.current = true;
+    if (!hasActivePartners) setDashboardTab("requestable");
+  }, [company, hasActivePartners, moasLoading]);
 
   const openRequestDialog = (university: {
     id: string;
@@ -246,7 +257,10 @@ function CompanyDashboardContent() {
   const inFlightByUniversityId: Record<string, InFlightRequestStatus> = {};
   for (const r of requests) {
     if (!r.university) continue;
-    if (r.status !== "awaiting_signature" && r.status !== "awaiting_verification")
+    if (
+      r.status !== "awaiting_signature" &&
+      r.status !== "awaiting_verification"
+    )
       continue;
     inFlightByUniversityId[r.university.id] = r.status;
 
