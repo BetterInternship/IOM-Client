@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -15,11 +16,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   MoaSignatureInput,
   type MoaSignatureMode,
 } from "@/components/moa-signature-input";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Link2Off, Loader2 } from "lucide-react";
+import { CheckCircle2, CircleHelp, Link2Off, Loader2 } from "lucide-react";
 
 interface SignLinkError extends ApiError {
   reason?: "expired" | "already_signed" | "cancelled" | "not_found";
@@ -80,6 +86,39 @@ function HelpLine() {
   );
 }
 
+function SigningPageShell({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className="relative min-h-dvh">
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 sm:top-6 sm:left-6">
+        <Image
+          src="/betterinternship-logo.png"
+          alt="BetterInternship"
+          width={25}
+          height={25}
+          className="flex-none"
+        />
+        <span className="font-display text-lg font-bold text-gray-900">
+          Partners
+        </span>
+      </div>
+      <PageContainer
+        className={cn(
+          "flex min-h-dvh flex-col items-center justify-center",
+          className,
+        )}
+      >
+        {children}
+      </PageContainer>
+    </div>
+  );
+}
+
 export default function SignTokenPage() {
   const { token } = useParams<{ token: string }>();
   const { previewDocument } = useIomModalRegistry();
@@ -128,7 +167,7 @@ export default function SignTokenPage() {
 
   if (!token || (!isLoading && (error || !data))) {
     return (
-      <PageContainer className="flex min-h-dvh max-w-2xl items-center justify-center">
+      <SigningPageShell className="max-w-2xl">
         <OutcomeScreen
           tone="neutral"
           icon={<Link2Off className="h-8 w-8" aria-hidden="true" />}
@@ -143,22 +182,22 @@ export default function SignTokenPage() {
         >
           <HelpLine />
         </OutcomeScreen>
-      </PageContainer>
+      </SigningPageShell>
     );
   }
 
   if (isLoading) {
     return (
-      <PageContainer className="max-w-6xl space-y-6">
+      <SigningPageShell className="max-w-2xl space-y-4">
         <Skeleton className="h-8 w-72" />
         <Skeleton className="h-96 w-full rounded-[0.33em]" />
-      </PageContainer>
+      </SigningPageShell>
     );
   }
 
   if (outcome) {
     return (
-      <PageContainer className="flex min-h-dvh max-w-2xl items-center justify-center">
+      <SigningPageShell className="max-w-2xl">
         <OutcomeScreen
           tone="supportive"
           icon={<CheckCircle2 className="h-8 w-8" aria-hidden="true" />}
@@ -179,7 +218,7 @@ export default function SignTokenPage() {
           )}
           <HelpLine />
         </OutcomeScreen>
-      </PageContainer>
+      </SigningPageShell>
     );
   }
 
@@ -193,7 +232,7 @@ export default function SignTokenPage() {
   } = data;
 
   return (
-    <PageContainer className="flex min-h-dvh max-w-6xl flex-col justify-center gap-20 pb-48">
+    <SigningPageShell className="max-w-6xl gap-12 pt-20 pb-16">
       <section className="text-center">
         {universityLogoUrl && (
           // University logos are user-uploaded external assets.
@@ -204,18 +243,23 @@ export default function SignTokenPage() {
             className="mx-auto size-24 rounded-full border border-gray-200 object-contain sm:size-36"
           />
         )}
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+        <h1
+          className={cn(
+            "text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl",
+            universityLogoUrl && "mt-4",
+          )}
+        >
           Sign MOA with {universityName}
         </h1>
       </section>
 
       <div className="w-full space-y-6">
         <div className="space-y-4">
-          <p className="text-muted-foreground text-sm leading-6">
-            This agreement was requested by{" "}
-            <span className="font-mono text-gray-900">{requesterEmail}</span>.
-            Review it before signing. Auto-signing will also sign future MOAs
-            from this company that use this template.
+          <p className="text-muted-foreground text-center text-sm">
+            Requested by{" "}
+            <span className="font-mono font-medium text-gray-900">
+              {requesterEmail}
+            </span>
           </p>
           <TemplatePreviewRow
             name={templateName}
@@ -260,6 +304,21 @@ export default function SignTokenPage() {
 
         <div className="mt-4 flex flex-col items-end gap-3">
           <div className="flex items-center gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-muted-foreground hover:text-primary flex size-8 cursor-help items-center justify-center rounded-full transition-colors"
+                  aria-label="About auto-signing"
+                >
+                  <CircleHelp className="size-4" aria-hidden="true" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" sideOffset={6} className="max-w-64">
+                Automatically signs future MOAs from this company that use this
+                template.
+              </TooltipContent>
+            </Tooltip>
             <Button
               size="lg"
               disabled={!canSubmit}
@@ -279,6 +338,6 @@ export default function SignTokenPage() {
           </button>
         </div>
       </div>
-    </PageContainer>
+    </SigningPageShell>
   );
 }
