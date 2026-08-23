@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OtpInput } from "@/components/ui/otp-input";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 type Step = "account" | "otp";
@@ -33,27 +33,6 @@ interface InvitePeek {
 
 const CAREER_UNREACHABLE_MESSAGE =
   'Your account is ready, but we couldn\'t reach BetterInternship just now — use the "Post a listing" button below to continue.';
-
-function RegistrationLoader({ step, active }: { step: Step; active: boolean }) {
-  const progress = step === "account" ? "w-1/2" : "w-full";
-
-  return (
-    <div
-      className="h-1.5 w-24 overflow-hidden rounded-full bg-gray-200"
-      role="status"
-      aria-live="polite"
-      aria-label={active ? "Loading" : "Registration progress"}
-    >
-      <div
-        className={`bg-primary relative h-full rounded-full transition-all duration-300 ${progress}`}
-      >
-        {active && (
-          <span className="absolute inset-0 animate-pulse bg-white/35" />
-        )}
-      </div>
-    </div>
-  );
-}
 
 /**
  * Reads (never verifies) the career → new-IOM prefill JWT's payload for
@@ -330,32 +309,27 @@ function RegisterPageContent() {
           variant="split"
           splitFlush
           portal="Company"
-          title="Verify your email"
           headerBefore={
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => {
                 setStep("account");
                 setError("");
                 setCode("");
                 verifyInviteSubmittedRef.current = false;
               }}
-              className="text-muted-foreground hover:text-primary mb-3 inline-flex items-center gap-1 text-sm"
+              className="mb-3"
             >
-              <ArrowLeft className="h-3.5 w-3.5" /> Back to details
-            </button>
-          }
-          progress={
-            <RegistrationLoader
-              step="otp"
-              active={verifyInvite.isPending || resend.isPending}
-            />
+              <ChevronLeft className="gap-1" /> Back
+            </Button>
           }
           description={
-            <>
+            <span className="block text-center">
               We sent a 6-digit code to{" "}
               <span className="text-foreground font-medium">{form.email}</span>.
-            </>
+            </span>
           }
         >
           <form
@@ -420,13 +394,7 @@ function RegisterPageContent() {
         variant="split"
         splitFlush
         portal="Company"
-        title="Create your account"
-        progress={
-          <RegistrationLoader
-            step="account"
-            active={registerInvited.isPending}
-          />
-        }
+        title="Register"
         description={
           <>
             Invited by{" "}
@@ -514,33 +482,28 @@ function RegisterPageContent() {
         variant="split"
         splitFlush
         portal="Company"
-        title="Verify your email"
         headerBefore={
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={() => {
               setStep("account");
               setError("");
               setCode("");
               verifySubmittedRef.current = false;
             }}
-            className="text-muted-foreground hover:text-primary mb-3 inline-flex items-center gap-1 text-sm"
+            className="gap-1"
           >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to details
-          </button>
-        }
-        progress={
-          <RegistrationLoader
-            step="otp"
-            active={verify.isPending || resend.isPending}
-          />
+            <ChevronLeft /> Back
+          </Button>
         }
         description={
-          <>
+          <span className="block text-center">
             We sent a 6-digit code to{" "}
             <span className="text-foreground font-medium">{form.repEmail}</span>
             .
-          </>
+          </span>
         }
       >
         <form
@@ -604,11 +567,7 @@ function RegisterPageContent() {
       variant="split"
       splitFlush
       portal="Company"
-      title="Create your account"
-      progress={
-        <RegistrationLoader step="account" active={register.isPending} />
-      }
-      description="Add the email and password you will use to sign in. You'll upload your documents next."
+      title="Register"
       footer={
         <>
           Already registered?{" "}
