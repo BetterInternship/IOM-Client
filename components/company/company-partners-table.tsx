@@ -107,6 +107,10 @@ function PartnerStatusBadge({
   );
 }
 
+function isPendingPartner(partner: CompanyPartnerUniversity) {
+  return partner.activeCount === 0 && partner.pendingCount > 0;
+}
+
 function MoaCounts({ partner }: { partner: CompanyPartnerUniversity }) {
   return (
     <span className="inline-flex items-center gap-3 text-left">
@@ -218,33 +222,45 @@ export function CompanyPartnersTable({
       defaultSortDirection: "desc",
       getSortValue: (partner) =>
         partner.activeCount > 0 ? 2 : partner.pendingCount > 0 ? 1 : 0,
-      render: (partner) => (
-        <Link
-          href={partnerHref(partner)}
-          onClick={(event) => event.stopPropagation()}
-          className="inline-flex text-inherit"
-        >
+      render: (partner) =>
+        isPendingPartner(partner) ? (
           <PartnerStatusBadge partner={partner} />
-        </Link>
-      ),
+        ) : (
+          <Link
+            href={partnerHref(partner)}
+            onClick={(event) => event.stopPropagation()}
+            className="inline-flex text-inherit"
+          >
+            <PartnerStatusBadge partner={partner} />
+          </Link>
+        ),
     },
     {
       id: "university",
       header: "University",
       width: "w-[25%]",
       getSortValue: (partner) => partner.university.registered_name,
-      render: (partner) => (
-        <Link
-          href={partnerHref(partner)}
-          onClick={(event) => event.stopPropagation()}
-          className="flex min-w-0 items-center gap-3 text-inherit"
-        >
-          <PartnerLogo partner={partner} />
-          <TruncatedTooltip className="text-sm font-semibold text-gray-900">
-            {partner.university.registered_name}
-          </TruncatedTooltip>
-        </Link>
-      ),
+      render: (partner) => {
+        const content = (
+          <div className="flex min-w-0 items-center gap-3 text-inherit">
+            <PartnerLogo partner={partner} />
+            <TruncatedTooltip className="text-sm font-semibold text-gray-900">
+              {partner.university.registered_name}
+            </TruncatedTooltip>
+          </div>
+        );
+        return isPendingPartner(partner) ? (
+          content
+        ) : (
+          <Link
+            href={partnerHref(partner)}
+            onClick={(event) => event.stopPropagation()}
+            className="min-w-0"
+          >
+            {content}
+          </Link>
+        );
+      },
     },
     {
       id: "active-moas",
@@ -252,15 +268,18 @@ export function CompanyPartnersTable({
       width: "w-[20%]",
       defaultSortDirection: "desc",
       getSortValue: (partner) => partner.activeCount + partner.pendingCount,
-      render: (partner) => (
-        <Link
-          href={partnerHref(partner)}
-          onClick={(event) => event.stopPropagation()}
-          className="inline-flex text-inherit"
-        >
+      render: (partner) =>
+        isPendingPartner(partner) ? (
           <MoaCounts partner={partner} />
-        </Link>
-      ),
+        ) : (
+          <Link
+            href={partnerHref(partner)}
+            onClick={(event) => event.stopPropagation()}
+            className="inline-flex text-inherit"
+          >
+            <MoaCounts partner={partner} />
+          </Link>
+        ),
     },
     {
       id: "action",
@@ -268,19 +287,20 @@ export function CompanyPartnersTable({
       width: "w-[10%]",
       align: "right",
       sortable: false,
-      render: (partner) => (
-        <Link
-          href={partnerHref(partner)}
-          onClick={(event) => event.stopPropagation()}
-          aria-label={`Open ${partner.university.registered_name}`}
-          className="text-primary ml-auto inline-flex h-9 w-9 items-center justify-center"
-        >
-          <ChevronRight
-            className="h-5 w-5 transition-transform group-hover:translate-x-0.5"
-            aria-hidden="true"
-          />
-        </Link>
-      ),
+      render: (partner) =>
+        isPendingPartner(partner) ? null : (
+          <Link
+            href={partnerHref(partner)}
+            onClick={(event) => event.stopPropagation()}
+            aria-label={`Open ${partner.university.registered_name}`}
+            className="text-primary ml-auto inline-flex h-9 w-9 items-center justify-center"
+          >
+            <ChevronRight
+              className="h-5 w-5 transition-transform group-hover:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </Link>
+        ),
     },
   ];
 
@@ -385,32 +405,50 @@ export function CompanyPartnersTable({
     <ResourceTable
       table={table}
       toolbarStart={toolbarStart}
-      onRowClick={onPartnerClick}
-      renderMobileRow={(partner) => (
-        <Link
-          href={partnerHref(partner)}
-          className="group flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-primary/[0.035] focus-visible:bg-primary/[0.035] focus-visible:outline-none"
-        >
-          <PartnerLogo partner={partner} />
-          <div className="min-w-0 flex-1">
-            <TruncatedTooltip className="text-sm font-semibold text-gray-900">
-              {partner.university.registered_name}
-            </TruncatedTooltip>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <PartnerStatusBadge partner={partner} />
-              <span className="text-muted-foreground text-xs whitespace-nowrap">
-                {[
-                  partner.activeCount > 0 && `${partner.activeCount} active`,
-                  partner.pendingCount > 0 && `${partner.pendingCount} pending`,
-                ]
-                  .filter(Boolean)
-                  .join(" · ") || "No MOAs"}
-              </span>
+      onRowClick={(partner) => {
+        if (!isPendingPartner(partner)) onPartnerClick(partner);
+      }}
+      getRowClassName={(partner) =>
+        isPendingPartner(partner) ? "cursor-default hover:bg-transparent" : undefined
+      }
+      renderMobileRow={(partner) => {
+        const pending = isPendingPartner(partner);
+        const content = (
+          <>
+            <PartnerLogo partner={partner} />
+            <div className="min-w-0 flex-1">
+              <TruncatedTooltip className="text-sm font-semibold text-gray-900">
+                {partner.university.registered_name}
+              </TruncatedTooltip>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <PartnerStatusBadge partner={partner} />
+                <span className="text-muted-foreground text-xs whitespace-nowrap">
+                  {[
+                    partner.activeCount > 0 && `${partner.activeCount} active`,
+                    partner.pendingCount > 0 && `${partner.pendingCount} pending`,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || "No MOAs"}
+                </span>
+              </div>
             </div>
+            {!pending && <ChevronRight className="text-primary h-4 w-4 shrink-0" />}
+          </>
+        );
+
+        return pending ? (
+          <div className="flex w-full items-center gap-3 px-4 py-4 text-left">
+            {content}
           </div>
-          <ChevronRight className="text-primary h-4 w-4 shrink-0" />
-        </Link>
-      )}
+        ) : (
+          <Link
+            href={partnerHref(partner)}
+            className="group flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-primary/[0.035] focus-visible:bg-primary/[0.035] focus-visible:outline-none"
+          >
+            {content}
+          </Link>
+        );
+      }}
       emptyState={{
         title: "No partner universities yet",
         description: canRequest
