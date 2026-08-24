@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCompanyProfile } from "@/app/providers/company-profile.provider";
@@ -19,8 +20,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { useModal } from "@/app/providers/modal-provider";
 import { formatDateWithoutTime } from "@/lib/utils";
-import { ChevronDown, X } from "lucide-react";
+import { CheckCircle2, ChevronDown, Clock4, Mail, X } from "lucide-react";
 
 const IN_FLIGHT_STATUSES = ["awaiting_signature", "awaiting_verification"];
 // issued leaves the page for Partners → the university; a fire-time failure
@@ -35,6 +37,56 @@ const STATUS_BADGE: Partial<
   cancelled: { status: "cancelled", label: "Cancelled" },
   expired: { status: "expired", label: "Expired" },
 };
+
+type InviteResult = "signed" | "submitted" | "signing-request";
+
+function InviteResultContent({
+  result,
+  onClose,
+}: {
+  result: InviteResult;
+  onClose: () => void;
+}) {
+  const details =
+    result === "signed"
+      ? {
+          icon: CheckCircle2,
+          title: "MOA signed",
+          description:
+            "The agreement is now active and available from Partners.",
+        }
+      : result === "signing-request"
+        ? {
+            icon: Mail,
+            title: "Signing request sent",
+            description:
+              "We emailed the signatory. This request will remain here until it is signed.",
+          }
+        : {
+            icon: Clock4,
+            title: "Request submitted",
+            description:
+              "Your company verification is pending. The MOA will issue automatically once it is approved.",
+          };
+  const Icon = details.icon;
+
+  return (
+    <div className="text-center">
+      <span className="bg-supportive/10 text-supportive mx-auto flex size-16 items-center justify-center rounded-full">
+        <Icon className="size-8" aria-hidden="true" />
+      </span>
+      <h2 className="mt-5 text-xl font-semibold tracking-tight text-gray-950">
+        {details.title}
+      </h2>
+      <p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-6">
+        {details.description}
+      </p>
+      <Button className="mt-6 w-full" onClick={onClose}>
+        Continue
+      </Button>
+    </div>
+  );
+}
 
 function universityInitials(name: string) {
   return name
@@ -172,9 +224,43 @@ function RequestRow({
 }
 
 export default function CompanyRequestsPage() {
+  const router = useRouter();
   const { company, isLoading } = useCompanyProfile();
   const queryClient = useQueryClient();
   const { confirmAction } = useIomModalRegistry();
+  const { openModal, closeModal } = useModal();
+  const hasShownInviteResult = useRef(false);
+
+  useEffect(() => {
+    if (hasShownInviteResult.current) return;
+
+    const result = new URLSearchParams(window.location.search).get(
+      "invite_result",
+    );
+    if (
+      result !== "signed" &&
+      result !== "submitted" &&
+      result !== "signing-request"
+    ) {
+      return;
+    }
+
+    hasShownInviteResult.current = true;
+    openModal(
+      "invite-request-result",
+      <InviteResultContent
+        result={result}
+        onClose={() => closeModal("invite-request-result")}
+      />,
+      {
+        hasClose: false,
+        panelClassName: "!w-full sm:!max-w-md",
+        contentClassName: "px-6 pb-6 pt-5 sm:px-8 sm:pb-7",
+        showHeaderDivider: false,
+      },
+    );
+    router.replace("/company/requests");
+  }, [closeModal, openModal, router]);
 
   const { data, isLoading: requestsLoading } =
     useCompanyControllerListMoaRequests({

@@ -34,8 +34,13 @@ export function CompanyHeader() {
     (inv) => inv.university !== null,
   ).length;
 
-  // Hide the app chrome on the unauthenticated pages.
-  if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
+  // The auth flow and invite signing flow provide their own focused chrome.
+  if (
+    AUTH_SUFFIXES.some((s) => pathname.endsWith(s)) ||
+    pathname.endsWith("/invite/continue")
+  ) {
+    return null;
+  }
 
   // These pages already present the document uploader, so the global notice
   // would duplicate their purpose and link back to the page in view.

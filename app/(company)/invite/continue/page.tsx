@@ -4,19 +4,10 @@ import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { toast } from "sonner";
-import {
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
-  Clock4,
-  FileText,
-  Loader2,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Loader2 } from "lucide-react";
 
 import {
   type CompanyControllerCreateMoaRequestBody,
-  type CompanyPendingInvitesResponse,
   getCompanyControllerListMoaRequestsQueryKey,
   getCompanyControllerListPendingInvitesQueryKey,
   useCompanyControllerCreateMoaRequest,
@@ -37,7 +28,6 @@ import { useIomModalRegistry } from "@/components/modal-registry";
 import { TemplatePreviewRow } from "@/components/template-preview-row";
 import type { MoaSignatureMode } from "@/components/moa-signature-input";
 import { PageContainer, PageHeader } from "@/components/page-header";
-import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Stepper, type StepperStep } from "@/components/ui/stepper";
@@ -45,7 +35,7 @@ import { cn } from "@/lib/utils";
 
 type RequestMode = CompanySignerMode;
 type StepId = "documents" | "who-signs";
-type Phase = "form" | "submitting" | "issued" | "submitted";
+type Phase = "form" | "submitting" | "redirecting";
 
 const SUB_STEP_META: Record<StepId, StepperStep> = {
   documents: { title: "Upload documents" },
@@ -181,7 +171,6 @@ function InviteContinueContent() {
   const [signatoryEmail, setSignatoryEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("form");
-  const [outcomeMessage, setOutcomeMessage] = useState("");
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
   const [documentsStepCompleted, setDocumentsStepCompleted] = useState(false);
   // Frozen the first time it's known (below) so finishing uploads — which
@@ -201,6 +190,22 @@ function InviteContinueContent() {
     );
   }
   if (!company) return null;
+
+  if (phase === "submitting" || phase === "redirecting") {
+    return (
+      <PageContainer className="max-w-2xl">
+        <OutcomeScreen
+          icon={<FileText className="text-primary h-9 w-9" />}
+          title={
+            phase === "redirecting"
+              ? "Opening your requests"
+              : "Submitting your request"
+          }
+          description="One moment…"
+        />
+      </PageContainer>
+    );
+  }
 
   if (!invite) {
     return (
@@ -227,44 +232,21 @@ function InviteContinueContent() {
   const handleSuccess = (res: {
     request?: { status?: string; moa_id?: string | null };
   }) => {
+    setPhase("redirecting");
     queryClient.invalidateQueries({
       queryKey: getCompanyControllerListMoaRequestsQueryKey(),
     });
-    queryClient.setQueriesData<CompanyPendingInvitesResponse>(
-      { queryKey: getCompanyControllerListPendingInvitesQueryKey() },
-      (current) =>
-        current
-          ? {
-              ...current,
-              invites: current.invites.filter((inv) => inv.id !== invite.id),
-            }
-          : current,
-    );
-
     const status = res.request?.status;
-    if (status === "issued" && res.request?.moa_id) {
-      setPhase("issued");
-      window.setTimeout(() => {
-        router.push(`/company/moas/${res.request!.moa_id}?issued=1`);
-      }, 550);
-      return;
-    }
-
-    const message =
-      mode === "delegate"
-        ? `We emailed ${signatoryEmail} a link to sign — you'll see it here once it's signed.`
-        : "Signed and on file — it will issue automatically once your company is verified.";
-    setOutcomeMessage(message);
-    setPhase("submitted");
-    toast(
-      mode === "delegate"
-        ? "Signature request sent."
-        : "MOA request submitted.",
-      toastPresets.success,
-    );
-    window.setTimeout(() => {
-      router.push("/company/requests");
-    }, 1400);
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerListPendingInvitesQueryKey(),
+    });
+    const result =
+      status === "issued"
+        ? "signed"
+        : mode === "delegate"
+          ? "signing-request"
+          : "submitted";
+    router.replace(`/company/requests?invite_result=${result}`);
   };
 
   const handleError = (e: unknown) => {
@@ -325,40 +307,6 @@ function InviteContinueContent() {
   const selfReady = !!repName.trim() && !!repTitle.trim() && sigReady;
   const delegateReady = /\S+@\S+\.\S+/.test(signatoryEmail.trim());
   const detailsReady = mode === "self" ? selfReady : delegateReady;
-
-  if (phase === "submitting") {
-    return (
-      <PageContainer className="max-w-2xl">
-        <OutcomeScreen
-          icon={<FileText className="text-primary h-9 w-9" />}
-          title="Submitting your request"
-          description="One moment…"
-        />
-      </PageContainer>
-    );
-  }
-  if (phase === "issued") {
-    return (
-      <PageContainer className="max-w-2xl">
-        <OutcomeScreen
-          icon={<CheckCircle2 className="text-supportive h-9 w-9" />}
-          title="MOA issued"
-          description="Opening your MOA…"
-        />
-      </PageContainer>
-    );
-  }
-  if (phase === "submitted") {
-    return (
-      <PageContainer className="max-w-2xl">
-        <OutcomeScreen
-          icon={<Clock4 className="text-supportive h-9 w-9" />}
-          title="Request submitted"
-          description={outcomeMessage}
-        />
-      </PageContainer>
-    );
-  }
 
   return (
     <PageContainer className="flex min-h-[calc(100dvh-5rem)] max-w-6xl flex-col justify-center gap-20 pb-48">
