@@ -26,8 +26,6 @@ import type { MoaSignatureMode } from "@/components/moa-signature-input";
 import { useResolvedFile } from "@/app/lib/resolve-file";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { TemplatePreviewRow } from "@/components/template-preview-row";
-import { toast } from "sonner";
-import { toastPresets } from "@/components/sonner-toaster";
 import { cn } from "@/lib/utils";
 import { Check, Clock4, FileText, Loader2 } from "lucide-react";
 
@@ -57,10 +55,12 @@ function OutcomeShell({
   icon,
   title,
   description,
+  action,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="mx-auto flex min-h-[20rem] w-full flex-col items-center justify-center px-4 py-10 text-center sm:w-[30rem]">
@@ -88,6 +88,7 @@ function OutcomeShell({
       <p className="text-muted-foreground mt-2 max-w-sm text-sm">
         {description}
       </p>
+      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }
@@ -102,12 +103,19 @@ function MoaIssuedSuccess() {
   );
 }
 
-function MoaSubmittedSuccess({ description }: { description: string }) {
+function MoaSubmittedSuccess({
+  description,
+  onDismiss,
+}: {
+  description: string;
+  onDismiss: () => void;
+}) {
   return (
     <OutcomeShell
       icon={<Clock4 className="text-supportive h-9 w-9" />}
       title="Request submitted"
       description={description}
+      action={<Button onClick={onDismiss}>Dismiss</Button>}
     />
   );
 }
@@ -349,16 +357,6 @@ export function RequestDialog({
         : "Signed and on file — it will issue automatically once your company is verified.";
     setOutcomeMessage(message);
     setPhase("submitted");
-    toast(
-      mode === "delegate"
-        ? "Signature request sent."
-        : "MOA request submitted.",
-      toastPresets.success,
-    );
-    window.setTimeout(() => {
-      onSuccessClose();
-      router.push(successHref);
-    }, 1400);
   };
 
   const handleError = (e: unknown) => {
@@ -428,7 +426,15 @@ export function RequestDialog({
   if (phase === "submitting") return <MoaSubmittingState />;
   if (phase === "issued") return <MoaIssuedSuccess />;
   if (phase === "submitted") {
-    return <MoaSubmittedSuccess description={outcomeMessage} />;
+    return (
+      <MoaSubmittedSuccess
+        description={outcomeMessage}
+        onDismiss={() => {
+          onSuccessClose();
+          router.push(successHref);
+        }}
+      />
+    );
   }
 
   const content = (
