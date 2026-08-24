@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
@@ -79,6 +80,32 @@ function OutcomeScreen({
       <p className="text-muted-foreground mt-2 max-w-sm text-sm">
         {description}
       </p>
+    </div>
+  );
+}
+
+function InviteContinueShell({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className="relative min-h-dvh">
+      <div className="absolute top-4 left-4 z-10 flex items-center gap-2 sm:top-6 sm:left-6">
+        <Image
+          src="/betterinternship-logo.png"
+          alt="BetterInternship"
+          width={25}
+          height={25}
+          className="flex-none"
+        />
+        <span className="font-display text-lg font-bold text-gray-900">
+          Partners
+        </span>
+      </div>
+      <PageContainer className={className}>{children}</PageContainer>
     </div>
   );
 }
@@ -182,18 +209,18 @@ function InviteContinueContent() {
 
   if (companyLoading || verificationLoading || invitesLoading) {
     return (
-      <PageContainer className="max-w-2xl space-y-6">
+      <InviteContinueShell className="max-w-2xl space-y-6">
         <Skeleton className="h-8 w-56" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-64 w-full" />
-      </PageContainer>
+      </InviteContinueShell>
     );
   }
   if (!company) return null;
 
   if (phase === "submitting" || phase === "redirecting") {
     return (
-      <PageContainer className="max-w-2xl">
+      <InviteContinueShell className="max-w-2xl">
         <OutcomeScreen
           icon={<FileText className="text-primary h-9 w-9" />}
           title={
@@ -203,18 +230,18 @@ function InviteContinueContent() {
           }
           description="One moment…"
         />
-      </PageContainer>
+      </InviteContinueShell>
     );
   }
 
   if (!invite) {
     return (
-      <PageContainer className="max-w-2xl space-y-6">
+      <InviteContinueShell className="max-w-2xl space-y-6">
         <PageHeader title="Invite expired or already used." />
         <Button onClick={() => router.push("/company/dashboard")}>
           Go to your dashboard
         </Button>
-      </PageContainer>
+      </InviteContinueShell>
     );
   }
 
@@ -309,7 +336,7 @@ function InviteContinueContent() {
   const detailsReady = mode === "self" ? selfReady : delegateReady;
 
   return (
-    <PageContainer className="flex min-h-[calc(100dvh-5rem)] max-w-6xl flex-col justify-center gap-20 pb-48">
+    <InviteContinueShell className="flex min-h-[calc(100dvh-5rem)] max-w-6xl flex-col justify-center gap-20 pb-48">
       <section className="text-center">
         {university.logo_url && (
           // University logos are user-uploaded external assets.
@@ -443,7 +470,7 @@ function InviteContinueContent() {
           )}
         </motion.div>
       </AnimatePresence>
-    </PageContainer>
+    </InviteContinueShell>
   );
 }
 
@@ -451,10 +478,10 @@ export default function InviteContinuePage() {
   return (
     <Suspense
       fallback={
-        <PageContainer className="max-w-2xl space-y-6">
+        <InviteContinueShell className="max-w-2xl space-y-6">
           <Skeleton className="h-8 w-56" />
           <Skeleton className="h-64 w-full" />
-        </PageContainer>
+        </InviteContinueShell>
       }
     >
       <InviteContinueContent />
