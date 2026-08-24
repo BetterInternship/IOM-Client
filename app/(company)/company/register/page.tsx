@@ -394,7 +394,7 @@ function RegisterPageContent() {
         variant="split"
         splitFlush
         portal="Company"
-        title="Register"
+        title="Set a secure password"
         description={
           <>
             Invited by{" "}

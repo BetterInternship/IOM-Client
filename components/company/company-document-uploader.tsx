@@ -137,13 +137,13 @@ function CompanyDocumentUploader({
             disabled={busy}
             onFiles={([file]) => file && handleFileSelected(type, file)}
             dragOverlay={
-              <div className="text-primary border-primary/50 bg-primary/5 flex min-h-[19rem] w-full flex-col items-center justify-center gap-2 rounded-[0.5em] border-2 border-dashed text-sm font-medium">
+              <div className="text-primary border-primary/50 bg-primary/5 flex min-h-44 w-full flex-col items-center justify-center gap-2 rounded-[0.5em] border-2 border-dashed text-sm font-medium sm:min-h-[19rem]">
                 <Upload className="h-6 w-6" />
                 Drop PDF to {slot.kind === "on-file" ? "replace" : "upload"}
               </div>
             }
             className={cn(
-              "flex min-h-[19rem] flex-col items-center justify-center gap-4 rounded-[0.5em] border-2 border-dashed px-6 py-10 text-center transition-colors",
+              "flex min-h-44 flex-col items-center justify-center gap-3 rounded-[0.5em] border-2 border-dashed px-4 py-6 text-center transition-colors sm:min-h-[19rem] sm:gap-4 sm:px-6 sm:py-10",
               slot.kind === "on-file"
                 ? "border-supportive/40 bg-supportive/12 hover:border-supportive/60"
                 : "border-gray-300 bg-white hover:border-primary/40",
@@ -151,7 +151,7 @@ function CompanyDocumentUploader({
           >
             <span
               className={cn(
-                "flex h-16 w-16 items-center justify-center rounded-full",
+                "flex h-12 w-12 items-center justify-center rounded-full sm:h-16 sm:w-16",
                 slot.kind === "on-file"
                   ? "bg-supportive/10 text-supportive"
                   : flagged
@@ -160,11 +160,11 @@ function CompanyDocumentUploader({
               )}
             >
               {slot.kind === "on-file" ? (
-                <CircleCheck className="h-7 w-7" />
+                <CircleCheck className="h-6 w-6 sm:h-7 sm:w-7" />
               ) : flagged ? (
-                <CircleAlert className="h-7 w-7" />
+                <CircleAlert className="h-6 w-6 sm:h-7 sm:w-7" />
               ) : (
-                <Upload className="h-8 w-8" />
+                <Upload className="h-6 w-6 sm:h-8 sm:w-8" />
               )}
             </span>
 
