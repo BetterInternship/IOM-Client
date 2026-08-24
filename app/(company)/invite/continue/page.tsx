@@ -5,7 +5,13 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, FileText, Loader2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  FileText,
+  Loader2,
+} from "lucide-react";
 
 import {
   type CompanyControllerCreateMoaRequestBody,
@@ -31,17 +37,10 @@ import type { MoaSignatureMode } from "@/components/moa-signature-input";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Stepper, type StepperStep } from "@/components/ui/stepper";
-import { cn } from "@/lib/utils";
 
 type RequestMode = CompanySignerMode;
 type StepId = "documents" | "who-signs";
 type Phase = "form" | "submitting" | "redirecting";
-
-const SUB_STEP_META: Record<StepId, StepperStep> = {
-  documents: { title: "Upload documents" },
-  "who-signs": { title: "Sign MOA" },
-};
 
 const STEP_ORDER: StepId[] = ["documents", "who-signs"];
 
@@ -115,28 +114,14 @@ function DocumentsStep({
   onCompletionChange,
   onContinue,
   canContinue,
-  stepper,
 }: {
   onAllUploaded: () => void;
   onCompletionChange: (isComplete: boolean) => void;
   onContinue: () => void;
   canContinue: boolean;
-  stepper: React.ReactNode;
 }) {
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <h2 className="text-xl font-semibold tracking-tight text-gray-900">
-            Upload your company documents
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            We use these documents to verify your company. We’ll email you once
-            the review is complete.
-          </p>
-        </div>
-        {stepper}
-      </div>
       <CompanyDocumentUploader
         onAllUploaded={onAllUploaded}
         onCompletionChange={onCompletionChange}
@@ -202,7 +187,7 @@ function InviteContinueContent() {
   const [documentsStepCompleted, setDocumentsStepCompleted] = useState(false);
   // Frozen the first time it's known (below) so finishing uploads — which
   // flips verification.status away from "incomplete" — can't retroactively
-  // shrink the stepper from 2 phases to 1 while it's still on screen.
+  // change the active flow from 2 phases to 1 while it is still on screen.
   const hasDocumentsStepRef = useRef<boolean | null>(null);
 
   const createRequest = useCompanyControllerCreateMoaRequest();
@@ -255,6 +240,7 @@ function InviteContinueContent() {
     : STEP_ORDER.filter((id) => id !== "documents");
   const currentStep: StepId =
     hasDocumentsStep && !documentsStepCompleted ? "documents" : "who-signs";
+  const currentStepNumber = steps.indexOf(currentStep) + 1;
 
   const handleSuccess = (res: {
     request?: { status?: string; moa_id?: string | null };
@@ -336,20 +322,35 @@ function InviteContinueContent() {
   const detailsReady = mode === "self" ? selfReady : delegateReady;
 
   return (
-    <InviteContinueShell className="flex min-h-[calc(100dvh-5rem)] max-w-6xl flex-col justify-center gap-20 pb-48">
-      <section className="text-center">
-        {university.logo_url && (
-          // University logos are user-uploaded external assets.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={university.logo_url}
-            alt={`${university.registered_name} logo`}
-            className="mx-auto size-24 rounded-full border border-gray-200 object-contain sm:size-36"
-          />
-        )}
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
-          Sign MOA with {university.registered_name}
+    <InviteContinueShell className="flex min-h-[calc(100dvh-5rem)] max-w-6xl flex-col gap-10 pt-28 sm:gap-16">
+      <section className="text-left sm:text-center">
+        <div className="flex justify-start sm:h-36 sm:justify-center">
+          {currentStep === "who-signs" && university.logo_url && (
+            // University logos are user-uploaded external assets.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={university.logo_url}
+              alt={`${university.registered_name} logo`}
+              className="mb-4 size-24 rounded-full border border-gray-200 object-contain sm:mb-0 sm:size-36"
+            />
+          )}
+        </div>
+        <h1 className="mt-0 text-2xl font-semibold tracking-tight text-gray-900 sm:mt-4 sm:text-4xl">
+          Step {currentStepNumber}/{steps.length}:{" "}
+          {currentStep === "documents"
+            ? "Upload your documents"
+            : `Sign MOA with ${university.registered_name}`}
+          {" "}
+          <span className="bg-primary/5 text-primary inline-flex h-8 items-center gap-1.5 rounded-full px-3 align-middle text-sm font-semibold sm:h-11 sm:px-4 sm:text-base">
+            <Clock3 className="size-4" aria-hidden="true" /> 1 min
+          </span>
         </h1>
+        {currentStep === "documents" && (
+          <p className="text-muted-foreground mt-2 text-sm">
+            We use these documents to verify your company. We&apos;ll email you
+            once the review is complete.
+          </p>
+        )}
       </section>
 
       <AnimatePresence mode="wait" initial={false} custom={stepDirection}>
@@ -371,28 +372,11 @@ function InviteContinueContent() {
                 setDocumentsStepCompleted(true);
                 setStepDirection(1);
               }}
-              stepper={
-                <Stepper
-                  steps={steps.map((id) => SUB_STEP_META[id])}
-                  currentStep={steps.indexOf(currentStep)}
-                />
-              }
             />
           )}
 
           {currentStep === "who-signs" && (
             <div className="w-full space-y-4">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-1">
-                  <h2 className="text-xl font-semibold tracking-tight text-gray-900">
-                    Who will sign the MOA?
-                  </h2>
-                </div>
-                <Stepper
-                  steps={steps.map((id) => SUB_STEP_META[id])}
-                  currentStep={steps.indexOf(currentStep)}
-                />
-              </div>
               <div>
                 {fallbackLoading && needsFallbackTemplate ? (
                   <Skeleton className="h-20 w-full" />
@@ -414,6 +398,10 @@ function InviteContinueContent() {
                   </p>
                 )}
               </div>
+
+              <h2 className="text-lg font-semibold tracking-tight text-gray-900 sm:text-xl">
+                Who will sign the MOA?
+              </h2>
 
               <CompanySignerForm
                 mode={mode}
