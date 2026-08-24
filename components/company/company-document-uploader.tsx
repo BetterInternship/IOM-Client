@@ -62,13 +62,7 @@ function CompanyDocumentUploader({
         });
 
         if (pendingCompletionRef.current) {
-          toast(
-            "All documents submitted — your account is now under review.",
-            toastPresets.success,
-          );
           onAllUploaded?.();
-        } else {
-          toast("Document uploaded", toastPresets.success);
         }
       },
       onError: (error: Error) => {
