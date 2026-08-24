@@ -131,15 +131,48 @@ export function buildInviteClosingIntro(kind: "moa" | "listing"): string {
     : "Students will see your listings on BetterInternship.\nPost them through:";
 }
 
+const BOLD_UPPER_START = 0x1d5d4; // Mathematical Sans-Serif Bold Capital A
+const BOLD_LOWER_START = 0x1d5ee; // Mathematical Sans-Serif Bold Small A
+const BOLD_DIGIT_START = 0x1d7ec; // Mathematical Sans-Serif Bold Digit 0
+
+// The compose `body` param is inert plain text (see buildInviteBody's note
+// below) — an actual <strong>/<b> tag would show up as literal characters,
+// not formatting. Unicode's bold math-alphanumeric glyphs are the only way
+// to get bold-looking text through that channel; punctuation like the
+// apostrophe/colon has no bold variant and is left as-is, which reads fine.
+function toUnicodeBold(text: string): string {
+  return Array.from(text)
+    .map((char) => {
+      const code = char.codePointAt(0) ?? 0;
+      if (code >= 65 && code <= 90) {
+        return String.fromCodePoint(BOLD_UPPER_START + (code - 65));
+      }
+      if (code >= 97 && code <= 122) {
+        return String.fromCodePoint(BOLD_LOWER_START + (code - 97));
+      }
+      if (code >= 48 && code <= 57) {
+        return String.fromCodePoint(BOLD_DIGIT_START + (code - 48));
+      }
+      return char;
+    })
+    .join("");
+}
+
 // Same copy as the invite landing page's heads-up modal (app/invite/page.tsx's
-// RequiredDocumentsModal) — kept as its own function so the two stay easy to
-// compare. Takes the specific missing types rather than always listing all
-// of REQUIRED_DOCUMENT_TYPES, so a company that already has some documents
-// on file (e.g. re-invited by a different university) only sees what it's
+// RequiredDocumentsModal, which bolds the same line via font-semibold) —
+// kept as its own function so the two stay easy to compare. Takes the
+// specific missing types rather than always listing all of
+// REQUIRED_DOCUMENT_TYPES, so a company that already has some documents on
+// file (e.g. re-invited by a different university) only sees what it's
 // actually still short.
 export function buildInviteDocumentsNote(documentTypes: readonly string[]): string {
-  const list = documentTypes.map((type) => `- ${documentLabel(type)}`).join("\n");
-  return `You'll be asked to upload the following documents to complete your company verification:\n${list}`;
+  const list = documentTypes
+    .map((type, i) => toUnicodeBold(`${i + 1}. ${documentLabel(type)}`))
+    .join("\n");
+  const intro = toUnicodeBold(
+    "You'll be asked to upload the following documents to verify your company:",
+  );
+  return `${intro}\n\n${list}`;
 }
 
 // §8 — plain text (the templates' HTML can't survive a `body` URL param,
@@ -165,15 +198,19 @@ export function buildInviteBody(input: InviteMessageInput): string {
     paragraphs.push(buildInviteDocumentsNote(missingDocumentTypes));
   }
 
-  if (hasAccountHolder) {
-    const universityName = input.universityName || "the university";
-    // Blank paragraph in place of the old "valid for 7 days" line — keeps
-    // the extra breathing room before the sign-off without the text.
-    paragraphs.push("");
-    paragraphs.push(
-      `${input.accountHolderName}\n${input.accountHolderTitle}, ${universityName}`,
-    );
-  }
+  const universityName = input.universityName || "the university";
+
+  // Blank paragraph in place of the old "valid for 7 days" line — keeps
+  // the extra breathing room before the sign-off without the text. Always
+  // present (not just when hasAccountHolder) so the recipient can tell
+  // which university this came from even when nobody's filled in a name/
+  // title on the account.
+  paragraphs.push("");
+  paragraphs.push(
+    hasAccountHolder
+      ? `${input.accountHolderName}\n${input.accountHolderTitle}, ${universityName}`
+      : `Regards,\n${universityName}`,
+  );
 
   return paragraphs.join("\n\n");
 }

@@ -52,9 +52,8 @@ export default function SignRevokeTokenPage() {
         Turn off auto-sign?
       </h1>
       <p className="text-muted-foreground mt-2 text-sm leading-6">
-        You gave standing authorisation to sign future MOAs in your name.
-        Turning it off doesn't undo anything already signed — future requests
-        will be sent to you as a normal signing email instead.
+        You enabled auto-sign for future MOAs under your name.
+        Turning it off doesn't affect already signed MOAs, but future requests will now be sent to your email for manual signing instead.
       </p>
       {error && (
         <p className="text-destructive mt-3 text-sm leading-6">{error}</p>

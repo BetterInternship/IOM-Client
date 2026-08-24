@@ -755,15 +755,23 @@ export function CompanyInviteForm({
                     {buildInviteClosingIntro(kind)}{" "}
                     <span className="italic">(invite link)</span>
                   </p>
-                  {!!account?.university.account_holder_name &&
-                    !!account?.university.account_holder_title && (
-                      <p className="mt-4">
+                  <p className="mt-4">
+                    {!!account?.university.account_holder_name &&
+                    !!account?.university.account_holder_title ? (
+                      <>
                         {account.university.account_holder_name}
                         <br />
                         {account.university.account_holder_title},{" "}
                         {universityName || "the university"}
-                      </p>
+                      </>
+                    ) : (
+                      <>
+                        Regards,
+                        <br />
+                        {universityName || "the university"}
+                      </>
                     )}
+                  </p>
                 </div>
               </div>
               <p className="text-muted-foreground text-right text-xs">
