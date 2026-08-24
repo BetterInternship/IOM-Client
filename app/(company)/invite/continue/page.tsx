@@ -40,7 +40,7 @@ type Phase = "form" | "submitting" | "redirecting";
 
 const SUB_STEP_META: Record<StepId, StepperStep> = {
   documents: { title: "Upload documents" },
-  "who-signs": { title: "Who signs" },
+  "who-signs": { title: "Sign MOA" },
 };
 
 const STEP_ORDER: StepId[] = ["documents", "who-signs"];
