@@ -175,6 +175,7 @@ export function RequestableUniversitiesTable({
   isLoading,
   onRequest,
   inFlightByUniversityId,
+  hasActiveMoaByUniversityId,
   locked = false,
   toolbarStart,
 }: {
@@ -183,12 +184,16 @@ export function RequestableUniversitiesTable({
   onRequest: (university: CompanyUniversityDirectoryItemDto) => void;
   /** University id -> in-flight request status, if any (flow spec §7). */
   inFlightByUniversityId?: Record<string, InFlightRequestStatus>;
+  /** University id -> whether the company already has an active MOA. */
+  hasActiveMoaByUniversityId?: Record<string, boolean>;
   /** Documents incomplete — every button disabled with a tooltip (flow spec §7). */
   locked?: boolean;
   toolbarStart?: ReactNode;
 }) {
   const inFlightFor = (universityId: string) =>
     inFlightByUniversityId?.[universityId];
+  const hasActiveMoaFor = (universityId: string) =>
+    hasActiveMoaByUniversityId?.[universityId];
   const canRequestRow = (universityId: string) =>
     !locked && !inFlightFor(universityId);
 
@@ -199,7 +204,7 @@ export function RequestableUniversitiesTable({
         header: "University",
         width: "w-[52%]",
         getSortValue: (university) =>
-          `${inFlightFor(university.id) ? "1" : "0"}-${university.registered_name}`,
+          `${hasActiveMoaFor(university.id) ? "2" : inFlightFor(university.id) ? "1" : "0"}-${university.registered_name}`,
         render: (university) => (
           <div className="flex min-w-0 items-center gap-4">
             <UniversityLogo university={university} compact />
@@ -230,18 +235,21 @@ export function RequestableUniversitiesTable({
         sortable: false,
         render: (university) => {
           const inFlight = inFlightFor(university.id);
+          const hasActiveMoa = hasActiveMoaFor(university.id);
           if (inFlight) return <InFlightBadge status={inFlight} />;
           if (locked) return <LockedRequestButton />;
           return (
             <Button
               size="md"
+              variant={hasActiveMoa ? "outline" : "default"}
+              scheme={hasActiveMoa ? "primary" : undefined}
               className="w-52 justify-center"
               onClick={(event) => {
                 event.stopPropagation();
                 onRequest(university);
               }}
             >
-              Request MOA
+              {hasActiveMoa ? "Request another MOA" : "Request MOA"}
               <ArrowRight />
             </Button>
           );
@@ -276,6 +284,7 @@ export function RequestableUniversitiesTable({
       }}
       renderMobileRow={(university) => {
         const inFlight = inFlightFor(university.id);
+        const hasActiveMoa = hasActiveMoaFor(university.id);
         const clickable = canRequestRow(university.id);
         return (
           <article
@@ -311,13 +320,15 @@ export function RequestableUniversitiesTable({
               ) : (
                 <Button
                   size="md"
+                  variant={hasActiveMoa ? "outline" : "default"}
+                  scheme={hasActiveMoa ? "primary" : undefined}
                   className="w-full lg:w-auto"
                   onClick={(event) => {
                     event.stopPropagation();
                     onRequest(university);
                   }}
                 >
-                  Request MOA
+                  {hasActiveMoa ? "Request another MOA" : "Request MOA"}
                   <ArrowRight />
                 </Button>
               )}

@@ -286,6 +286,11 @@ function CompanyDashboardContent() {
   const requestableUniversities = (universitiesData?.universities ?? []).filter(
     (u): u is CompanyUniversityDirectoryItemDto => u.requestable,
   );
+  const hasActiveMoaByUniversityId = Object.fromEntries(
+    moas
+      .filter((moa) => moa.status === "active" && !moa.is_expired)
+      .map((moa) => [moa.university.id, true]),
+  );
 
   const hasCareerTask = !vLoading && !!verification?.canPostListing;
   const hasInviteTask = pendingInvites.length > 0;
@@ -420,6 +425,7 @@ function CompanyDashboardContent() {
             isLoading={universitiesLoading || vLoading}
             onRequest={openRequestDialog}
             inFlightByUniversityId={inFlightByUniversityId}
+            hasActiveMoaByUniversityId={hasActiveMoaByUniversityId}
             locked={locked}
             toolbarStart={
               <DashboardTabs
