@@ -3,12 +3,11 @@
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowRight,
   CalendarDays,
-  ChevronRight,
-  FileText,
   Link2Off,
   Loader2,
   Quote,
@@ -22,9 +21,45 @@ import {
 import type { ApiError } from "@/app/api/preconfig.axios";
 import { getCareerHireUrl } from "@/components/career-listing-cta";
 import { useIomModalRegistry } from "@/components/modal-registry";
+import { TemplatePreviewRow } from "@/components/template-preview-row";
+import { useModal } from "@/app/providers/modal-provider";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
+import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
 import { formatDateWithoutTime } from "@/lib/utils";
+
+function RequiredDocumentsNotice({ types }: { types: readonly string[] }) {
+  return (
+    <div className="border-warning/30 bg-warning/5 rounded-[0.33em] border p-4">
+      <p className="text-sm font-semibold text-gray-900">
+        In the next steps, you’ll be asked to upload these documents to verify
+        your account.
+      </p>
+      <ul className="mt-3 w-fit list-disc space-y-1 pl-5 text-sm text-gray-700 marker:text-warning">
+        {types.map((type) => (
+          <li key={type}>{documentLabel(type)}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function RequiredDocumentsModal({
+  types,
+  onProceed,
+}: {
+  types: readonly string[];
+  onProceed: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <RequiredDocumentsNotice types={types} />
+      <Button className="w-full" onClick={onProceed}>
+        Proceed
+      </Button>
+    </div>
+  );
+}
 
 const CAREER_UNREACHABLE_MESSAGE =
   'Your account is ready, but we couldn\'t reach BetterInternship just now — use the "Post a listing" button on your dashboard to continue.';
@@ -51,6 +86,8 @@ interface InviteData {
   invite: { personal_message: string | null; expires_at: string };
   kind: "moa" | "listing";
   tin_hint: string | null;
+  documents_complete: boolean;
+  missing_document_types?: string[];
 }
 
 interface ExpiredInviteError extends ApiError {
@@ -63,9 +100,17 @@ interface ExpiredInviteError extends ApiError {
 function InvitePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const modal = useIomModalRegistry();
+  const { openModal, closeModal } = useModal();
   const token = searchParams.get("token") ?? "";
   const [loginError, setLoginError] = useState("");
+  // Set the instant sign-in-via-invite succeeds, before the queryClient.clear()
+  // below wipes the invite-resolve query this page is still reading from —
+  // without it, the page re-renders into its "invite not found" fallback for
+  // a frame while the redirect (or the listing career-link handoff) is still
+  // in flight.
+  const [completingInvite, setCompletingInvite] = useState(false);
 
   // Listing-invite handoff after sign-in — no MOA modal, straight to
   // create-listing (mirrors career-listing-cta.tsx's conflict handling).
@@ -101,16 +146,22 @@ function InvitePageContent() {
   const loginViaInvite = useCompanyAuthControllerLoginViaInvite({
     mutation: {
       onSuccess: (response) => {
+        setCompletingInvite(true);
+        // Full clear, not a scoped invalidate — these query keys aren't
+        // scoped by company id, so a prior session's cache in this same
+        // browser could otherwise leak into this account.
+        queryClient.clear();
         if (response.kind === "listing") {
-          careerListingLink.mutate();
+          // Seeds the employer name from the university's legacy-record hint
+          // (plan §12) — this account may have no registered_name yet.
+          careerListingLink.mutate({
+            data: { displayName: inviteData?.company_name ?? undefined },
+          });
           return;
         }
-        const params = new URLSearchParams();
-        params.set("open_university_id", response.university_id);
-        if (response.template_id)
-          params.set("template_id", response.template_id);
-        if (response.invite_id) params.set("invite_id", response.invite_id);
-        router.replace(`/company/dashboard?${params}`);
+        router.replace(
+          `/invite/continue?invite_id=${encodeURIComponent(response.invite_id)}`,
+        );
       },
       onError: (error: Error) => setLoginError(error.message),
     },
@@ -176,7 +227,7 @@ function InvitePageContent() {
     );
   }
 
-  if (!token || (!isLoading && (error || !inviteData))) {
+  if (!completingInvite && (!token || (!isLoading && (error || !inviteData)))) {
     return (
       <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
         <div className="w-full max-w-md rounded-xl bg-white px-5 py-8 backdrop-blur-[2px] sm:px-0 md:bg-transparent md:py-12 md:backdrop-blur-none">
@@ -211,7 +262,7 @@ function InvitePageContent() {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || completingInvite) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="text-primary size-8 animate-spin" />
@@ -219,15 +270,48 @@ function InvitePageContent() {
     );
   }
 
-  const { company_name, email_status, university, template, invite, kind } =
-    inviteData!;
+  const {
+    company_name,
+    email_status,
+    university,
+    template,
+    invite,
+    kind,
+    documents_complete,
+    missing_document_types,
+  } = inviteData!;
   const registerHref = `/company/register?invite_token=${encodeURIComponent(token)}`;
   const companyLabel = company_name || "Your company";
   const isListing = kind === "listing";
+  const isMoa = kind === "moa";
+  const missingDocumentTypes =
+    missing_document_types ?? REQUIRED_DOCUMENT_TYPES;
+
+  // Flow spec §11 — a heads-up shown right when they try to accept,
+  // not on page load, so it doesn't compete with the rest of the page.
+  const openRequiredDocumentsModal = (onProceed: () => void) => {
+    openModal(
+      "invite-required-documents",
+      <RequiredDocumentsModal
+        types={missingDocumentTypes}
+        onProceed={() => {
+          closeModal("invite-required-documents");
+          onProceed();
+        }}
+      />,
+      {
+        title: (
+          <h2 className="text-warning text-lg leading-snug font-semibold tracking-tight sm:text-2xl">
+            Please ensure you have these files on-hand.
+          </h2>
+        ),
+      },
+    );
+  };
 
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
-      <div className="w-full max-w-md rounded-xl bg-white px-5 py-8 backdrop-blur-[2px] sm:px-0 md:bg-transparent md:py-12 md:backdrop-blur-none">
+      <div className="w-full max-w-md space-y-8 rounded-xl bg-white px-5 py-8 backdrop-blur-[2px] sm:px-0 md:bg-transparent md:py-12 md:backdrop-blur-none">
         <section className="text-center">
           {university.logo_url && (
             // University logos are user-uploaded external assets.
@@ -253,65 +337,39 @@ function InvitePageContent() {
           </p>
         </section>
 
-        <div className="mt-8 border-t border-slate-200">
+        <div>
           {template && (
-            <div className="flex items-center gap-4 border-b border-slate-200 py-6">
-              <span className="bg-primary/5 text-primary flex size-14 shrink-0 items-center justify-center rounded-full">
-                <FileText className="size-6" aria-hidden="true" />
-              </span>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                  Document
-                </p>
-                <p className="mt-1 font-semibold text-[#121d3d]">
-                  {template.name}
-                </p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  {template.term_months == null
-                    ? "Perpetual  •  No expiry"
-                    : `${template.term_months} months`}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => modal.previewTemplate.open(template)}
-                className="text-primary hidden shrink-0 cursor-pointer items-center gap-2 text-sm font-medium hover:underline sm:flex"
-              >
-                Preview template
-                <ChevronRight className="size-4" aria-hidden="true" />
-              </button>
-            </div>
-          )}
-
-          {template && (
-            <button
-              type="button"
-              onClick={() => modal.previewTemplate.open(template)}
-              className="text-primary flex w-full cursor-pointer items-center justify-center gap-2 border-b border-slate-200 py-3 text-sm font-medium sm:hidden"
-            >
-              Preview template
-              <ChevronRight className="size-4" aria-hidden="true" />
-            </button>
+            <TemplatePreviewRow
+              name={template.name}
+              termMonths={template.term_months}
+              onPreview={() => modal.previewTemplate.open(template)}
+            />
           )}
 
           {invite.personal_message && (
-            <div className="flex items-center gap-4 border-b border-slate-200 py-6">
+            <div className="flex items-center gap-4 py-6">
               <span className="bg-primary/5 text-primary flex size-14 shrink-0 items-center justify-center rounded-full">
-                <Quote className="size-7 fill-current" aria-hidden="true" />
+                <Quote className="size-6 fill-current" aria-hidden="true" />
               </span>
               <div className="min-w-0 text-left">
                 <p className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
                   Message from {university.registered_name}
                 </p>
-                <p className="mt-2 whitespace-pre-line text-base leading-6 text-[#121d3d]">
-                  “{invite.personal_message}”
+                <p className="mt-2 whitespace-pre-line text-base leading-6 text-[#121d3d] italic">
+                  {invite.personal_message}
                 </p>
               </div>
             </div>
           )}
+
+          {isMoa && missingDocumentTypes.length > 0 && (
+            <div className="text-left">
+              <RequiredDocumentsNotice types={missingDocumentTypes} />
+            </div>
+          )}
         </div>
 
-        <div className="mt-8">
+        <div>
           {loginError && (
             <p className="text-destructive mb-3 rounded-md bg-red-50 px-3 py-2 text-sm">
               {loginError}
@@ -320,7 +378,15 @@ function InvitePageContent() {
 
           {email_status === "not_registered" ? (
             <Button size="lg" className="w-full" asChild>
-              <Link href={registerHref}>
+              <Link
+                href={registerHref}
+                onClick={(e) => {
+                  if (isMoa && !documents_complete) {
+                    e.preventDefault();
+                    openRequiredDocumentsModal(() => router.push(registerHref));
+                  }
+                }}
+              >
                 Accept invitation
                 <ArrowRight aria-hidden="true" />
               </Link>
@@ -329,7 +395,15 @@ function InvitePageContent() {
             <Button
               size="lg"
               className="w-full"
-              onClick={() => loginViaInvite.mutate({ data: { token } })}
+              onClick={() => {
+                const proceed = () =>
+                  loginViaInvite.mutate({ data: { token } });
+                if (isMoa && !documents_complete) {
+                  openRequiredDocumentsModal(proceed);
+                } else {
+                  proceed();
+                }
+              }}
               disabled={loginViaInvite.isPending || careerListingLink.isPending}
             >
               {loginViaInvite.isPending || careerListingLink.isPending

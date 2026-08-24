@@ -27,6 +27,7 @@ export function AdminHeader() {
         { href: "/companies", label: "Companies" },
         { href: "/templates", label: "MOA Templates" },
         ...(pendingReviewCount > 0 ? [{ href: "/reviews", label: "Company Reviews", badge: pendingReviewCount }] : []),
+        { href: "/settings", label: "Settings" },
       ]}
       userPrimary="Administrator"
       logout={adminAuthControllerLogout}

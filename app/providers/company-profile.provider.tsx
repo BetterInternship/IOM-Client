@@ -8,9 +8,10 @@ import {
 
 interface CompanyProfile {
   id: string;
-  tin: string;
+  // Only bound at admin approval now — a fresh company has neither (plan §3).
+  tin: string | null;
   email: string;
-  registered_name: string;
+  registered_name: string | null;
   company_type: string | null;
   registered_address: string | null;
   cosmetic: Record<string, unknown>;
@@ -31,16 +32,17 @@ export function useCompanyProfile() {
   return useContext(CompanyProfileContext);
 }
 
-export type VerificationStatus =
-  | "incomplete"
-  | "pending"
-  | "verified"
-  | "expired"
-  | "rejected";
+// Rejected and expired are reasons attached to "incomplete" now, not
+// separate statuses (flow spec §1) — the same state wearing a different
+// banner.
+export type VerificationStatus = "incomplete" | "pending" | "verified";
+export type VerificationReason = "rejected" | "expired" | null;
 
 export interface CompanyVerification {
   status: VerificationStatus;
-  rejectionReason: string | null;
+  reason: VerificationReason;
+  documentRejections: Record<string, string>;
+  expiredDocument: string | null;
   canPostListing: boolean;
   approvalExpiresAt: string | null;
 }

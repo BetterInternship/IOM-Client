@@ -6,13 +6,18 @@
  * OpenAPI spec version: 1.0
  */
 import type { CompanyVerificationResponseStatus } from "./companyVerificationResponseStatus";
+import type { CompanyVerificationResponseReason } from "./companyVerificationResponseReason";
+import type { CompanyVerificationResponseDocumentRejections } from "./companyVerificationResponseDocumentRejections";
 
 export interface CompanyVerificationResponse {
   success: boolean;
   message?: string;
   status: CompanyVerificationResponseStatus;
   /** @nullable */
-  rejectionReason: string | null;
+  reason: CompanyVerificationResponseReason;
+  documentRejections: CompanyVerificationResponseDocumentRejections;
+  /** @nullable */
+  expiredDocument: string | null;
   canPostListing: boolean;
   /** @nullable */
   approvalExpiresAt: string | null;

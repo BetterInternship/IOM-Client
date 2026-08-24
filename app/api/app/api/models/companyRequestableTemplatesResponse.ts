@@ -15,4 +15,6 @@ export interface CompanyRequestableTemplatesResponse {
   /** @nullable */
   university: CompanyRequestableTemplatesResponseUniversity;
   requestable?: boolean;
+  /** @nullable */
+  defaultTemplateId?: string | null;
 }

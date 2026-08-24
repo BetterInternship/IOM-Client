@@ -5,12 +5,8 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
-import type { PatchCompanyProfileDtoCompanyType } from "./patchCompanyProfileDtoCompanyType";
 
 export interface PatchCompanyProfileDto {
-  registered_name?: string;
-  company_type?: PatchCompanyProfileDtoCompanyType;
-  registered_address?: string;
   description?: string;
   website?: string;
   phone?: string;

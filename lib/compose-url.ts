@@ -2,6 +2,8 @@
 // university's own webmail replaces sending through SES. Everything here is
 // pure/client-only: no network calls, safe to call on every render.
 
+import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
+
 export type ComposeProvider = "gmail" | "outlook";
 
 export const INVITE_CC_EMAIL = "invites@betterinternship.com";
@@ -96,6 +98,12 @@ export interface InviteMessageInput {
   accountHolderTitle?: string | null;
   personalMessage?: string | null;
   inviteLink: string;
+  // kind="moa" only — the required document types the invited email's
+  // existing company (if any) doesn't already have on file; an empty array
+  // means an existing company that's already fully verified, so the note
+  // below is skipped. Undefined (kind="listing", or an unexpectedly stale
+  // response) falls back to the full list, same as a brand-new company.
+  missingDocumentTypes?: string[];
 }
 
 // §8 — subject line by kind. Falls back if the profile's registered_name
@@ -123,6 +131,17 @@ export function buildInviteClosingIntro(kind: "moa" | "listing"): string {
     : "Students will see your listings on BetterInternship.\nPost them through:";
 }
 
+// Same copy as the invite landing page's heads-up modal (app/invite/page.tsx's
+// RequiredDocumentsModal) — kept as its own function so the two stay easy to
+// compare. Takes the specific missing types rather than always listing all
+// of REQUIRED_DOCUMENT_TYPES, so a company that already has some documents
+// on file (e.g. re-invited by a different university) only sees what it's
+// actually still short.
+export function buildInviteDocumentsNote(documentTypes: readonly string[]): string {
+  const list = documentTypes.map((type) => `- ${documentLabel(type)}`).join("\n");
+  return `You'll be asked to upload the following documents to complete your company verification:\n${list}`;
+}
+
 // §8 — plain text (the templates' HTML can't survive a `body` URL param,
 // and arguably shouldn't: a branded card undercuts the "a person at the
 // university wrote this" effect manual send is buying).
@@ -137,6 +156,14 @@ export function buildInviteBody(input: InviteMessageInput): string {
   paragraphs.push(
     `${buildInviteClosingIntro(input.kind)}\n${input.inviteLink}`,
   );
+
+  const missingDocumentTypes =
+    input.kind === "moa"
+      ? (input.missingDocumentTypes ?? REQUIRED_DOCUMENT_TYPES)
+      : [];
+  if (missingDocumentTypes.length > 0) {
+    paragraphs.push(buildInviteDocumentsNote(missingDocumentTypes));
+  }
 
   if (hasAccountHolder) {
     const universityName = input.universityName || "the university";

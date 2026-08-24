@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { ArrowUpRight, Mail } from "lucide-react";
 import { AppHeader, type NavItem } from "@/components/app-header";
 import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import {
@@ -24,28 +25,43 @@ export function CompanyHeader() {
   const { company } = useCompanyProfile();
   const { data: verification } = useCompanyVerification(!!company);
   const status = verification?.status;
-  const canRequestMoa = !!status;
-  const canViewInvites = !!status;
 
+  // Three fixed tabs always (flow spec §2) — no status-derived gating.
   const { data: invitesData } = useCompanyControllerListPendingInvites({
-    query: {
-      enabled: !!company && canViewInvites,
-      staleTime: 30_000,
-    },
+    query: { enabled: !!company, staleTime: 30_000 },
   });
   const pendingInviteCount = (invitesData?.invites ?? []).filter(
     (inv) => inv.university !== null,
   ).length;
 
-  // Hide the app chrome on the unauthenticated pages.
-  if (AUTH_SUFFIXES.some((s) => pathname.endsWith(s))) return null;
+  // The auth flow and invite signing flow provide their own focused chrome.
+  if (
+    AUTH_SUFFIXES.some((s) => pathname.endsWith(s)) ||
+    pathname.endsWith("/invite/continue")
+  ) {
+    return null;
+  }
 
+  // These pages already present the document uploader, so the global notice
+  // would duplicate their purpose and link back to the page in view.
+  const onDocumentUploadPage =
+    pathname.endsWith("/verification") || pathname.endsWith("/invite/continue");
+
+  // Incomplete companies can't have any requests in flight yet (the
+  // dashboard's request CTA is locked until verification), and the landing
+  // guard bounces /requests back to /verification anyway — so don't
+  // surface a nav item that always redirects away.
   const nav: NavItem[] = [
-    ...(status ? [{ href: "/dashboard", label: "Partners" }] : []),
-    ...(canRequestMoa ? [{ href: "/universities", label: "Request MOA" }] : []),
-    ...(canViewInvites && pendingInviteCount > 0
-      ? [{ href: "/invites", label: "Invitations", badge: pendingInviteCount }]
-      : []),
+    { href: "/dashboard", label: "Partners" },
+    ...(status === "incomplete"
+      ? []
+      : [{ href: "/requests", label: "Outgoing", icon: ArrowUpRight }]),
+    {
+      href: "/invites",
+      label: "Invites",
+      icon: Mail,
+      ...(pendingInviteCount > 0 ? { badge: pendingInviteCount } : {}),
+    },
   ];
 
   return (
@@ -54,14 +70,26 @@ export function CompanyHeader() {
         portal="Company"
         homeHref="/dashboard"
         nav={nav}
-        userPrimary={company?.registered_name ?? undefined}
+        // Identity before approval is the account email (flow spec §3).
+        userPrimary={company?.registered_name ?? company?.email ?? undefined}
         userSecondary={company?.email ?? undefined}
         logout={companyAuthControllerLogout}
         postLogoutPath="/login"
-        profileHref={status === "incomplete" ? "/complete-profile" : "/profile"}
+        profileHref="/profile"
       />
-      {status === "expired" && (
-        <CompanyProfileStatusNotice status="expired" compactAttention />
+      {status === "incomplete" && !onDocumentUploadPage && (
+        // Flush edge-to-edge under the header — the notice's own rounded
+        // corners (meant for a notice sitting inside a padded page) look
+        // wrong here, so they're stripped via its data-slot.
+        <div className="[&>[data-slot=status-notice]]:rounded-none">
+          <CompanyProfileStatusNotice
+            status="incomplete"
+            reason={verification?.reason}
+            documentRejections={verification?.documentRejections}
+            expiredDocument={verification?.expiredDocument}
+            compactAttention
+          />
+        </div>
       )}
     </>
   );

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 interface AuthShellProps {
   portal?: string;
-  title: string;
+  title?: string;
   description?: React.ReactNode;
   headerBefore?: React.ReactNode;
   progress?: React.ReactNode;
@@ -145,12 +145,16 @@ export function AuthShell({
 
               <div className="mb-7 space-y-2">
                 {headerBefore}
-                <div className="flex items-center justify-between gap-4">
-                  <h1 className="text-3xl font-bold tracking-tight text-gray-700">
-                    {title}
-                  </h1>
-                  {progress}
-                </div>
+                {(title || progress) && (
+                  <div className="flex items-center justify-between gap-4">
+                    {title && (
+                      <h1 className="text-3xl font-bold tracking-tight text-gray-700">
+                        {title}
+                      </h1>
+                    )}
+                    {progress}
+                  </div>
+                )}
                 {description && (
                   <p className="text-muted-foreground text-sm leading-6">
                     {description}
@@ -189,14 +193,18 @@ export function AuthShell({
             className,
           )}
         >
-          <div className="mb-6 space-y-1.5">
-            <h1 className="text-xl font-semibold tracking-tight text-gray-900">
-              {title}
-            </h1>
-            {description && (
-              <p className="text-muted-foreground text-sm">{description}</p>
-            )}
-          </div>
+          {(title || description) && (
+            <div className="mb-6 space-y-1.5">
+              {title && (
+                <h1 className="text-xl font-semibold tracking-tight text-gray-900">
+                  {title}
+                </h1>
+              )}
+              {description && (
+                <p className="text-muted-foreground text-sm">{description}</p>
+              )}
+            </div>
+          )}
           {children}
         </div>
 

@@ -16,12 +16,14 @@ export function SignatoryEmailInput({
   onChange,
   suggestions,
   error,
+  required = false,
 }: {
   id?: string;
   value: string;
   onChange: (value: string) => void;
   suggestions: string[];
   error?: string;
+  required?: boolean;
 }) {
   const [query, setQuery] = useState(value);
   const [isOpen, setIsOpen] = useState(false);
@@ -48,12 +50,13 @@ export function SignatoryEmailInput({
 
   return (
     <div className="relative space-y-1" ref={containerRef}>
-      <Label className="text-xs" htmlFor={id}>
-        Email <span className="font-normal text-slate-400">(optional)</span>
+      <Label className="text-sm" htmlFor={id}>
+        Email{" "}
       </Label>
       <Input
         id={id}
         type="email"
+        required={required}
         value={query}
         onChange={(e) => {
           setQuery(e.target.value);

@@ -100,11 +100,17 @@ export function FileDropTarget({
       {...props}
       {...dropProps}
       className={cn(
+        "relative",
         className,
         isDragging && "ring-2 ring-primary/30 ring-inset",
       )}
     >
-      {isDragging && dragOverlay ? dragOverlay : children}
+      {children}
+      {isDragging && dragOverlay && (
+        <div className="bg-background absolute inset-0 z-10 rounded-[inherit]">
+          {dragOverlay}
+        </div>
+      )}
     </div>
   );
 }

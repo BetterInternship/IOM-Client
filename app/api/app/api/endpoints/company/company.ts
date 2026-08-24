@@ -24,25 +24,25 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  BaseResponse,
+  CareerListingLinkDto,
   ClaimInviteDto,
   CompanyCareerLinkStatusResponse,
   CompanyCareerListingLinkResponse,
   CompanyClaimInviteResponse,
-  CompanyControllerCreateQueuedMoaBody,
+  CompanyControllerCreateMoaRequestBody,
   CompanyControllerListMoasParams,
-  CompanyControllerRequestMoaBody,
   CompanyControllerUploadDocumentBody,
   CompanyControllerUploadDocumentsBody,
   CompanyControllerUploadLogoBody,
-  CompanyCreateQueuedMoaResponse,
+  CompanyCreateMoaRequestResponse,
   CompanyDocumentsResponse,
   CompanyMeResponse,
   CompanyMoaDetailResponse,
+  CompanyMoaRequestsResponse,
   CompanyMoasResponse,
   CompanyPatchProfileResponse,
   CompanyPendingInvitesResponse,
-  CompanyQueuedMoasResponse,
-  CompanyRequestMoaResponse,
   CompanyRequestableTemplatesResponse,
   CompanyUniversitiesResponse,
   CompanyUploadDocumentResponse,
@@ -908,10 +908,15 @@ export function useCompanyControllerCareerLinkStatusSuspense<
   return query;
 }
 
-export const companyControllerCareerListingLink = (signal?: AbortSignal) => {
+export const companyControllerCareerListingLink = (
+  careerListingLinkDto: CareerListingLinkDto,
+  signal?: AbortSignal,
+) => {
   return preconfiguredAxiosFunction<CompanyCareerListingLinkResponse>({
     url: `/api/company/career-listing-link`,
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: careerListingLinkDto,
     signal,
   });
 };
@@ -923,13 +928,13 @@ export const getCompanyControllerCareerListingLinkMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof companyControllerCareerListingLink>>,
     TError,
-    void,
+    { data: CareerListingLinkDto },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof companyControllerCareerListingLink>>,
   TError,
-  void,
+  { data: CareerListingLinkDto },
   TContext
 > => {
   const mutationKey = ["companyControllerCareerListingLink"];
@@ -943,9 +948,11 @@ export const getCompanyControllerCareerListingLinkMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof companyControllerCareerListingLink>>,
-    void
-  > = () => {
-    return companyControllerCareerListingLink();
+    { data: CareerListingLinkDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return companyControllerCareerListingLink(data);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -954,7 +961,8 @@ export const getCompanyControllerCareerListingLinkMutationOptions = <
 export type CompanyControllerCareerListingLinkMutationResult = NonNullable<
   Awaited<ReturnType<typeof companyControllerCareerListingLink>>
 >;
-
+export type CompanyControllerCareerListingLinkMutationBody =
+  CareerListingLinkDto;
 export type CompanyControllerCareerListingLinkMutationError = ErrorResponse;
 
 export const useCompanyControllerCareerListingLink = <
@@ -965,7 +973,7 @@ export const useCompanyControllerCareerListingLink = <
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof companyControllerCareerListingLink>>,
       TError,
-      void,
+      { data: CareerListingLinkDto },
       TContext
     >;
   },
@@ -973,7 +981,7 @@ export const useCompanyControllerCareerListingLink = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof companyControllerCareerListingLink>>,
   TError,
-  void,
+  { data: CareerListingLinkDto },
   TContext
 > => {
   const mutationOptions =
@@ -1414,11 +1422,8 @@ export const companyControllerUploadDocuments = (
   signal?: AbortSignal,
 ) => {
   const formData = new FormData();
-  if (companyControllerUploadDocumentsBody.business_permit !== undefined) {
-    formData.append(
-      `business_permit`,
-      companyControllerUploadDocumentsBody.business_permit,
-    );
+  if (companyControllerUploadDocumentsBody.bir_2303 !== undefined) {
+    formData.append(`bir_2303`, companyControllerUploadDocumentsBody.bir_2303);
   }
   if (companyControllerUploadDocumentsBody.sec_dti_registration !== undefined) {
     formData.append(
@@ -2065,49 +2070,56 @@ export function useCompanyControllerGetRequestableTemplatesSuspense<
   return query;
 }
 
-export const companyControllerRequestMoa = (
-  companyControllerRequestMoaBody: CompanyControllerRequestMoaBody,
+export const companyControllerCreateMoaRequest = (
+  companyControllerCreateMoaRequestBody: CompanyControllerCreateMoaRequestBody,
   signal?: AbortSignal,
 ) => {
   const formData = new FormData();
-  formData.append(`universityId`, companyControllerRequestMoaBody.universityId);
-  formData.append(`templateId`, companyControllerRequestMoaBody.templateId);
-  if (companyControllerRequestMoaBody.repName !== undefined) {
-    formData.append(`repName`, companyControllerRequestMoaBody.repName);
+  formData.append(
+    `universityId`,
+    companyControllerCreateMoaRequestBody.universityId,
+  );
+  formData.append(
+    `templateId`,
+    companyControllerCreateMoaRequestBody.templateId,
+  );
+  formData.append(`mode`, companyControllerCreateMoaRequestBody.mode);
+  if (companyControllerCreateMoaRequestBody.inviteId !== undefined) {
+    formData.append(`inviteId`, companyControllerCreateMoaRequestBody.inviteId);
   }
-  if (companyControllerRequestMoaBody.repTitle !== undefined) {
-    formData.append(`repTitle`, companyControllerRequestMoaBody.repTitle);
-  }
-  if (companyControllerRequestMoaBody.repSignatureText !== undefined) {
+  if (companyControllerCreateMoaRequestBody.signatoryName !== undefined) {
     formData.append(
-      `repSignatureText`,
-      companyControllerRequestMoaBody.repSignatureText,
+      `signatoryName`,
+      companyControllerCreateMoaRequestBody.signatoryName,
     );
   }
-  if (companyControllerRequestMoaBody.rep2Name !== undefined) {
-    formData.append(`rep2Name`, companyControllerRequestMoaBody.rep2Name);
-  }
-  if (companyControllerRequestMoaBody.rep2Title !== undefined) {
-    formData.append(`rep2Title`, companyControllerRequestMoaBody.rep2Title);
-  }
-  if (companyControllerRequestMoaBody.rep2SignatureText !== undefined) {
+  if (companyControllerCreateMoaRequestBody.signatoryTitle !== undefined) {
     formData.append(
-      `rep2SignatureText`,
-      companyControllerRequestMoaBody.rep2SignatureText,
+      `signatoryTitle`,
+      companyControllerCreateMoaRequestBody.signatoryTitle,
     );
   }
-  if (companyControllerRequestMoaBody.invite_id !== undefined) {
-    formData.append(`invite_id`, companyControllerRequestMoaBody.invite_id);
+  if (companyControllerCreateMoaRequestBody.signatureText !== undefined) {
+    formData.append(
+      `signatureText`,
+      companyControllerCreateMoaRequestBody.signatureText,
+    );
   }
-  if (companyControllerRequestMoaBody.signature !== undefined) {
-    formData.append(`signature`, companyControllerRequestMoaBody.signature);
+  if (companyControllerCreateMoaRequestBody.signatoryEmail !== undefined) {
+    formData.append(
+      `signatoryEmail`,
+      companyControllerCreateMoaRequestBody.signatoryEmail,
+    );
   }
-  if (companyControllerRequestMoaBody.signature2 !== undefined) {
-    formData.append(`signature2`, companyControllerRequestMoaBody.signature2);
+  if (companyControllerCreateMoaRequestBody.signature !== undefined) {
+    formData.append(
+      `signature`,
+      companyControllerCreateMoaRequestBody.signature,
+    );
   }
 
-  return preconfiguredAxiosFunction<CompanyRequestMoaResponse>({
-    url: `/api/company/moas`,
+  return preconfiguredAxiosFunction<CompanyCreateMoaRequestResponse>({
+    url: `/api/company/moa-requests`,
     method: "POST",
     headers: { "Content-Type": "multipart/form-data" },
     data: formData,
@@ -2115,23 +2127,23 @@ export const companyControllerRequestMoa = (
   });
 };
 
-export const getCompanyControllerRequestMoaMutationOptions = <
+export const getCompanyControllerCreateMoaRequestMutationOptions = <
   TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof companyControllerRequestMoa>>,
+    Awaited<ReturnType<typeof companyControllerCreateMoaRequest>>,
     TError,
-    { data: CompanyControllerRequestMoaBody },
+    { data: CompanyControllerCreateMoaRequestBody },
     TContext
   >;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof companyControllerRequestMoa>>,
+  Awaited<ReturnType<typeof companyControllerCreateMoaRequest>>,
   TError,
-  { data: CompanyControllerRequestMoaBody },
+  { data: CompanyControllerCreateMoaRequestBody },
   TContext
 > => {
-  const mutationKey = ["companyControllerRequestMoa"];
+  const mutationKey = ["companyControllerCreateMoaRequest"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -2141,45 +2153,382 @@ export const getCompanyControllerRequestMoaMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof companyControllerRequestMoa>>,
-    { data: CompanyControllerRequestMoaBody }
+    Awaited<ReturnType<typeof companyControllerCreateMoaRequest>>,
+    { data: CompanyControllerCreateMoaRequestBody }
   > = (props) => {
     const { data } = props ?? {};
 
-    return companyControllerRequestMoa(data);
+    return companyControllerCreateMoaRequest(data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type CompanyControllerRequestMoaMutationResult = NonNullable<
-  Awaited<ReturnType<typeof companyControllerRequestMoa>>
+export type CompanyControllerCreateMoaRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerCreateMoaRequest>>
 >;
-export type CompanyControllerRequestMoaMutationBody =
-  CompanyControllerRequestMoaBody;
-export type CompanyControllerRequestMoaMutationError = ErrorResponse;
+export type CompanyControllerCreateMoaRequestMutationBody =
+  CompanyControllerCreateMoaRequestBody;
+export type CompanyControllerCreateMoaRequestMutationError = ErrorResponse;
 
-export const useCompanyControllerRequestMoa = <
+export const useCompanyControllerCreateMoaRequest = <
   TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof companyControllerRequestMoa>>,
+      Awaited<ReturnType<typeof companyControllerCreateMoaRequest>>,
       TError,
-      { data: CompanyControllerRequestMoaBody },
+      { data: CompanyControllerCreateMoaRequestBody },
       TContext
     >;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
-  Awaited<ReturnType<typeof companyControllerRequestMoa>>,
+  Awaited<ReturnType<typeof companyControllerCreateMoaRequest>>,
   TError,
-  { data: CompanyControllerRequestMoaBody },
+  { data: CompanyControllerCreateMoaRequestBody },
   TContext
 > => {
   const mutationOptions =
-    getCompanyControllerRequestMoaMutationOptions(options);
+    getCompanyControllerCreateMoaRequestMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const companyControllerListMoaRequests = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<CompanyMoaRequestsResponse>({
+    url: `/api/company/moa-requests`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getCompanyControllerListMoaRequestsQueryKey = () => {
+  return [`/api/company/moa-requests`] as const;
+};
+
+export const getCompanyControllerListMoaRequestsQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerListMoaRequestsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerListMoaRequests>>
+  > = ({ signal }) => companyControllerListMoaRequests(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerListMoaRequestsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerListMoaRequests>>
+>;
+export type CompanyControllerListMoaRequestsQueryError = ErrorResponse;
+
+export function useCompanyControllerListMoaRequests<
+  TData = Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+  TError = ErrorResponse,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerListMoaRequests>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListMoaRequests<
+  TData = Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerListMoaRequests>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListMoaRequests<
+  TData = Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerListMoaRequests<
+  TData = Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getCompanyControllerListMoaRequestsQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getCompanyControllerListMoaRequestsSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerListMoaRequestsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerListMoaRequests>>
+  > = ({ signal }) => companyControllerListMoaRequests(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerListMoaRequestsSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerListMoaRequests>>
+>;
+export type CompanyControllerListMoaRequestsSuspenseQueryError = ErrorResponse;
+
+export function useCompanyControllerListMoaRequestsSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+  TError = ErrorResponse,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListMoaRequestsSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerListMoaRequestsSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerListMoaRequestsSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerListMoaRequests>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getCompanyControllerListMoaRequestsSuspenseQueryOptions(options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const companyControllerCancelMoaRequest = (
+  requestId: string | undefined | null,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<BaseResponse>({
+    url: `/api/company/moa-requests/${requestId}/cancel`,
+    method: "POST",
+    signal,
+  });
+};
+
+export const getCompanyControllerCancelMoaRequestMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyControllerCancelMoaRequest>>,
+    TError,
+    { requestId: string | undefined | null },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyControllerCancelMoaRequest>>,
+  TError,
+  { requestId: string | undefined | null },
+  TContext
+> => {
+  const mutationKey = ["companyControllerCancelMoaRequest"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyControllerCancelMoaRequest>>,
+    { requestId: string | undefined | null }
+  > = (props) => {
+    const { requestId } = props ?? {};
+
+    return companyControllerCancelMoaRequest(requestId);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyControllerCancelMoaRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerCancelMoaRequest>>
+>;
+
+export type CompanyControllerCancelMoaRequestMutationError = ErrorResponse;
+
+export const useCompanyControllerCancelMoaRequest = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyControllerCancelMoaRequest>>,
+      TError,
+      { requestId: string | undefined | null },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyControllerCancelMoaRequest>>,
+  TError,
+  { requestId: string | undefined | null },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyControllerCancelMoaRequestMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };
@@ -3079,401 +3428,6 @@ export function useCompanyControllerListPendingInvitesSuspense<
 } {
   const queryOptions =
     getCompanyControllerListPendingInvitesSuspenseQueryOptions(options);
-
-  const query = useSuspenseQuery(
-    queryOptions,
-    queryClient,
-  ) as UseSuspenseQueryResult<TData, TError> & {
-    queryKey: DataTag<QueryKey, TData, TError>;
-  };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-export const companyControllerCreateQueuedMoa = (
-  companyControllerCreateQueuedMoaBody: CompanyControllerCreateQueuedMoaBody,
-  signal?: AbortSignal,
-) => {
-  const formData = new FormData();
-  formData.append(
-    `universityId`,
-    companyControllerCreateQueuedMoaBody.universityId,
-  );
-  formData.append(
-    `templateId`,
-    companyControllerCreateQueuedMoaBody.templateId,
-  );
-  if (companyControllerCreateQueuedMoaBody.repName !== undefined) {
-    formData.append(`repName`, companyControllerCreateQueuedMoaBody.repName);
-  }
-  if (companyControllerCreateQueuedMoaBody.repTitle !== undefined) {
-    formData.append(`repTitle`, companyControllerCreateQueuedMoaBody.repTitle);
-  }
-  if (companyControllerCreateQueuedMoaBody.repSignatureText !== undefined) {
-    formData.append(
-      `repSignatureText`,
-      companyControllerCreateQueuedMoaBody.repSignatureText,
-    );
-  }
-  if (companyControllerCreateQueuedMoaBody.rep2Name !== undefined) {
-    formData.append(`rep2Name`, companyControllerCreateQueuedMoaBody.rep2Name);
-  }
-  if (companyControllerCreateQueuedMoaBody.rep2Title !== undefined) {
-    formData.append(
-      `rep2Title`,
-      companyControllerCreateQueuedMoaBody.rep2Title,
-    );
-  }
-  if (companyControllerCreateQueuedMoaBody.rep2SignatureText !== undefined) {
-    formData.append(
-      `rep2SignatureText`,
-      companyControllerCreateQueuedMoaBody.rep2SignatureText,
-    );
-  }
-  if (companyControllerCreateQueuedMoaBody.invite_id !== undefined) {
-    formData.append(
-      `invite_id`,
-      companyControllerCreateQueuedMoaBody.invite_id,
-    );
-  }
-  if (companyControllerCreateQueuedMoaBody.signature !== undefined) {
-    formData.append(
-      `signature`,
-      companyControllerCreateQueuedMoaBody.signature,
-    );
-  }
-  if (companyControllerCreateQueuedMoaBody.signature2 !== undefined) {
-    formData.append(
-      `signature2`,
-      companyControllerCreateQueuedMoaBody.signature2,
-    );
-  }
-
-  return preconfiguredAxiosFunction<CompanyCreateQueuedMoaResponse>({
-    url: `/api/company/queued-moas`,
-    method: "POST",
-    headers: { "Content-Type": "multipart/form-data" },
-    data: formData,
-    signal,
-  });
-};
-
-export const getCompanyControllerCreateQueuedMoaMutationOptions = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
-    TError,
-    { data: CompanyControllerCreateQueuedMoaBody },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
-  TError,
-  { data: CompanyControllerCreateQueuedMoaBody },
-  TContext
-> => {
-  const mutationKey = ["companyControllerCreateQueuedMoa"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
-    { data: CompanyControllerCreateQueuedMoaBody }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return companyControllerCreateQueuedMoa(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type CompanyControllerCreateQueuedMoaMutationResult = NonNullable<
-  Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>
->;
-export type CompanyControllerCreateQueuedMoaMutationBody =
-  CompanyControllerCreateQueuedMoaBody;
-export type CompanyControllerCreateQueuedMoaMutationError = ErrorResponse;
-
-export const useCompanyControllerCreateQueuedMoa = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
-      TError,
-      { data: CompanyControllerCreateQueuedMoaBody },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof companyControllerCreateQueuedMoa>>,
-  TError,
-  { data: CompanyControllerCreateQueuedMoaBody },
-  TContext
-> => {
-  const mutationOptions =
-    getCompanyControllerCreateQueuedMoaMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
-export const companyControllerListQueuedMoas = (signal?: AbortSignal) => {
-  return preconfiguredAxiosFunction<CompanyQueuedMoasResponse>({
-    url: `/api/company/queued-moas`,
-    method: "GET",
-    signal,
-  });
-};
-
-export const getCompanyControllerListQueuedMoasQueryKey = () => {
-  return [`/api/company/queued-moas`] as const;
-};
-
-export const getCompanyControllerListQueuedMoasQueryOptions = <
-  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = ErrorResponse,
->(options?: {
-  query?: Partial<
-    UseQueryOptions<
-      Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-      TError,
-      TData
-    >
-  >;
-}) => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getCompanyControllerListQueuedMoasQueryKey();
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
-  > = ({ signal }) => companyControllerListQueuedMoas(signal);
-
-  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
-    Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type CompanyControllerListQueuedMoasQueryResult = NonNullable<
-  Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
->;
-export type CompanyControllerListQueuedMoasQueryError = ErrorResponse;
-
-export function useCompanyControllerListQueuedMoas<
-  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = ErrorResponse,
->(
-  options: {
-    query: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        DefinedInitialDataOptions<
-          Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-          TError,
-          Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
-        >,
-        "initialData"
-      >;
-  },
-  queryClient?: QueryClient,
-): DefinedUseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useCompanyControllerListQueuedMoas<
-  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = ErrorResponse,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-        TError,
-        TData
-      >
-    > &
-      Pick<
-        UndefinedInitialDataOptions<
-          Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-          TError,
-          Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
-        >,
-        "initialData"
-      >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useCompanyControllerListQueuedMoas<
-  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = ErrorResponse,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-
-export function useCompanyControllerListQueuedMoas<
-  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = ErrorResponse,
->(
-  options?: {
-    query?: Partial<
-      UseQueryOptions<
-        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions = getCompanyControllerListQueuedMoasQueryOptions(options);
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
-    TData,
-    TError
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = queryOptions.queryKey;
-
-  return query;
-}
-
-export const getCompanyControllerListQueuedMoasSuspenseQueryOptions = <
-  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = ErrorResponse,
->(options?: {
-  query?: Partial<
-    UseSuspenseQueryOptions<
-      Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-      TError,
-      TData
-    >
-  >;
-}) => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getCompanyControllerListQueuedMoasQueryKey();
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
-  > = ({ signal }) => companyControllerListQueuedMoas(signal);
-
-  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
-    Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-    TError,
-    TData
-  > & { queryKey: DataTag<QueryKey, TData, TError> };
-};
-
-export type CompanyControllerListQueuedMoasSuspenseQueryResult = NonNullable<
-  Awaited<ReturnType<typeof companyControllerListQueuedMoas>>
->;
-export type CompanyControllerListQueuedMoasSuspenseQueryError = ErrorResponse;
-
-export function useCompanyControllerListQueuedMoasSuspense<
-  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = ErrorResponse,
->(
-  options: {
-    query: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useCompanyControllerListQueuedMoasSuspense<
-  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = ErrorResponse,
->(
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-export function useCompanyControllerListQueuedMoasSuspense<
-  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = ErrorResponse,
->(
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-};
-
-export function useCompanyControllerListQueuedMoasSuspense<
-  TData = Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-  TError = ErrorResponse,
->(
-  options?: {
-    query?: Partial<
-      UseSuspenseQueryOptions<
-        Awaited<ReturnType<typeof companyControllerListQueuedMoas>>,
-        TError,
-        TData
-      >
-    >;
-  },
-  queryClient?: QueryClient,
-): UseSuspenseQueryResult<TData, TError> & {
-  queryKey: DataTag<QueryKey, TData, TError>;
-} {
-  const queryOptions =
-    getCompanyControllerListQueuedMoasSuspenseQueryOptions(options);
 
   const query = useSuspenseQuery(
     queryOptions,

@@ -7,5 +7,6 @@
  */
 
 export interface UniversityInviteRegisteredCompanyDto {
-  registered_name: string;
+  /** @nullable */
+  registered_name: string | null;
 }

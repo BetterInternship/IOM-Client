@@ -6,9 +6,16 @@
  * OpenAPI spec version: 1.0
  */
 import type { AdminCompanyDetailVerificationDtoStatus } from "./adminCompanyDetailVerificationDtoStatus";
+import type { AdminCompanyDetailVerificationDtoReason } from "./adminCompanyDetailVerificationDtoReason";
+import type { AdminCompanyDetailVerificationDtoDocumentRejections } from "./adminCompanyDetailVerificationDtoDocumentRejections";
 
 export interface AdminCompanyDetailVerificationDto {
   status: AdminCompanyDetailVerificationDtoStatus;
   /** @nullable */
-  rejectionReason: string | null;
+  reason: AdminCompanyDetailVerificationDtoReason;
+  documentRejections: AdminCompanyDetailVerificationDtoDocumentRejections;
+  /** @nullable */
+  expiredDocument: string | null;
+  /** @nullable */
+  approvalExpiresAt: string | null;
 }

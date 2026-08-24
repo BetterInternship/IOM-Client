@@ -7,7 +7,7 @@
  */
 
 export type CompanyControllerUploadDocumentsBody = {
-  business_permit?: Blob;
+  bir_2303?: Blob;
   sec_dti_registration?: Blob;
   mayor_permit?: Blob;
 };

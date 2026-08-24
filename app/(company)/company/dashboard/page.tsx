@@ -1,19 +1,20 @@
 "use client";
-import { type ReactNode, Suspense, useEffect } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import {
   useCompanyProfile,
   useCompanyVerification,
 } from "@/app/providers/company-profile.provider";
 import {
   useCompanyControllerListMoas,
-  useCompanyControllerListQueuedMoas,
+  useCompanyControllerListMoaRequests,
   useCompanyControllerListPendingInvites,
+  useCompanyControllerListUniversities,
+  type CompanyUniversityDirectoryItemDto,
 } from "@/app/api";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StatusNotice } from "@/components/ui/status-notice";
 import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,12 +26,12 @@ import {
   type CompanyPartnerUniversity,
   type PartnerStatus,
 } from "@/components/company/company-partners-table";
-import { useModal } from "@/app/providers/modal-provider";
-import { useIomModalRegistry } from "@/components/modal-registry";
 import {
-  AlertCircle,
-  FileSignature,
-} from "lucide-react";
+  RequestableUniversitiesTable,
+  type InFlightRequestStatus,
+} from "@/components/company/requestable-universities-table";
+import { useModal } from "@/app/providers/modal-provider";
+import { FileSignature } from "lucide-react";
 import { RequestDialog } from "@/components/moa-request-dialog";
 import { CareerListingCta } from "@/components/career-listing-cta";
 
@@ -60,7 +61,7 @@ function NotificationCenter({
   className,
 }: {
   count: number;
-  children: ReactNode;
+  children: React.ReactNode;
   className?: string;
 }) {
   if (count === 0) return null;
@@ -73,6 +74,39 @@ function NotificationCenter({
         {children}
       </div>
     </section>
+  );
+}
+
+// Mirrors the university side's partner tabs (app/(university)/university/partners/page.tsx's
+// PartnerTabs) so the two portals share the same tabbed-table structure.
+function DashboardTabs({
+  activeCount,
+  requestableCount,
+}: {
+  activeCount: number;
+  requestableCount: number;
+}) {
+  return (
+    <TabsList className="h-auto max-w-full justify-start overflow-x-auto rounded-none border-0 border-b border-gray-200 bg-transparent">
+      <TabsTrigger
+        value="active"
+        className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
+      >
+        Active partners
+        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-supportive group-data-[state=active]:text-supportive-foreground">
+          {activeCount}
+        </span>
+      </TabsTrigger>
+      <TabsTrigger
+        value="requestable"
+        className="group h-12 shrink-0 border-0 border-b-2 border-transparent bg-transparent! px-4 opacity-100 hover:bg-transparent! data-[state=active]:border-primary data-[state=active]:shadow-none [&>div]:bg-transparent! [&>div]:p-0"
+      >
+        Available to request
+        <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-700 group-data-[state=active]:bg-gray-900 group-data-[state=active]:text-white">
+          {requestableCount}
+        </span>
+      </TabsTrigger>
+    </TabsList>
   );
 }
 
@@ -89,16 +123,10 @@ function CompanyDashboardContent() {
   const { company, isLoading } = useCompanyProfile();
   const router = useRouter();
   const { openModal, closeModal } = useModal();
-  const { approvalPending } = useIomModalRegistry();
-  const openUniversityId = searchParams.get("open_university_id");
-  const inviteTemplateId = searchParams.get("template_id");
-  const inviteId = searchParams.get("invite_id");
-  const completeProfileAfterQueue =
-    searchParams.get("complete_profile_after_queue") === "1";
-  const showApprovalPending =
-    searchParams.get("approval_pending") === "1" ||
-    (process.env.NODE_ENV !== "production" &&
-      searchParams.get("debug_approval_pending") === "1");
+  const [dashboardTab, setDashboardTab] = useState<"active" | "requestable">(
+    "active",
+  );
+  const hasSelectedDefaultTab = useRef(false);
 
   const updatePartnerQuery = (
     search: string,
@@ -132,9 +160,14 @@ function CompanyDashboardContent() {
       { query: { enabled: !!company } },
     );
 
-  const { data: queuedData } = useCompanyControllerListQueuedMoas({
+  const { data: requestsData } = useCompanyControllerListMoaRequests({
     query: { enabled: !!company },
   });
+
+  const { data: universitiesData, isLoading: universitiesLoading } =
+    useCompanyControllerListUniversities({
+      query: { enabled: !!company },
+    });
 
   const { data: invitesData } = useCompanyControllerListPendingInvites({
     query: { enabled: !!company },
@@ -143,55 +176,32 @@ function CompanyDashboardContent() {
   const { data: verification, isLoading: vLoading } =
     useCompanyVerification(!!company);
   const status = verification?.status;
-  const verified = verification?.status === "verified";
-  const canRequest = !!status;
-  const openUniversityName = (invitesData?.invites ?? []).find(
-    (invite) =>
-      (inviteId && invite.id === inviteId) ||
-      invite.university?.id === openUniversityId,
-  )?.university?.registered_name;
+  const hasActivePartners = (moasData?.moas ?? []).some(
+    (moa) => moa.status === "active" && !moa.is_expired,
+  );
 
   useEffect(() => {
-    if (!showApprovalPending) return;
-    approvalPending.open({
-      onQueueMoa: () => router.replace("/company/universities"),
-      onClose: () => router.replace("/company/dashboard"),
-    });
-  }, [router, showApprovalPending]);
+    if (!company || moasLoading || hasSelectedDefaultTab.current) return;
 
-  useEffect(() => {
-    if (!openUniversityId) {
-      closeModal("request-moa");
-      return;
-    }
-    if (vLoading) return;
-    if (!canRequest) {
-      closeModal("request-moa");
-      return;
-    }
+    hasSelectedDefaultTab.current = true;
+    if (!hasActivePartners) setDashboardTab("requestable");
+  }, [company, hasActivePartners, moasLoading]);
 
+  const openRequestDialog = (university: {
+    id: string;
+    registered_name: string;
+  }) => {
     openModal(
       "request-moa",
       <RequestDialog
-        universityId={openUniversityId}
-        defaultTemplateId={inviteTemplateId}
-        inviteId={inviteId}
-        verified={verified}
-        queuedSuccessHref={
-          completeProfileAfterQueue ? "/complete-profile" : "/company/dashboard"
-        }
+        universityId={university.id}
         onClose={() => closeModal("request-moa")}
-        onSuccessClose={() =>
-          closeModal("request-moa", { skipOnClose: true })
-        }
       />,
       {
         title: (
           <h2 className="text-lg leading-snug font-semibold tracking-tight sm:text-2xl">
             Requesting a MOA with{" "}
-            <span className="text-primary">
-              {openUniversityName ?? "this university"}
-            </span>
+            <span className="text-primary">{university.registered_name}</span>
           </h2>
         ),
         description:
@@ -199,22 +209,13 @@ function CompanyDashboardContent() {
         panelClassName: "sm:!max-w-none",
         headerClassName: "request-moa-header",
         exitAnimation: "fade",
-        onClose: () => router.replace("/company/dashboard"),
       },
     );
-  }, [
-    closeModal,
-    completeProfileAfterQueue,
-    inviteId,
-    inviteTemplateId,
-    openModal,
-    openUniversityId,
-    openUniversityName,
-    router,
-    verified,
-    canRequest,
-    vLoading,
-  ]);
+  };
+
+  const pendingInvites = (invitesData?.invites ?? []).filter(
+    (inv) => inv.university !== null,
+  );
 
   if (isLoading) {
     return (
@@ -232,12 +233,7 @@ function CompanyDashboardContent() {
   if (!company) return null;
 
   const moas = (moasData?.moas ?? []) as unknown as Moa[];
-  const pendingQueued = (queuedData?.queued ?? []).filter(
-    (q) => q.status === "pending",
-  );
-  const failedQueued = (queuedData?.queued ?? []).filter(
-    (q) => q.status === "failed",
-  );
+  const requests = requestsData?.requests ?? [];
 
   // Group MOAs by university into partner rows (newest MOA first within each).
   const byUni = new Map<string, PartnerUniversity>();
@@ -255,19 +251,31 @@ function CompanyDashboardContent() {
     if (m.status === "active" && !m.is_expired) entry.activeCount += 1;
     byUni.set(m.university.id, entry);
   }
-  for (const queued of pendingQueued) {
-    if (!queued.university) continue;
+
+  // In-flight requests contribute to both a partner row's pending count and
+  // the requestable table's per-university "already requested" state.
+  const inFlightByUniversityId: Record<string, InFlightRequestStatus> = {};
+  for (const r of requests) {
+    if (!r.university) continue;
+    if (
+      r.status !== "awaiting_signature" &&
+      r.status !== "awaiting_verification"
+    )
+      continue;
+    inFlightByUniversityId[r.university.id] = r.status;
+
     const entry =
-      byUni.get(queued.university.id) ??
+      byUni.get(r.university.id) ??
       ({
-        university: queued.university,
+        university: r.university,
         moas: [],
         activeCount: 0,
         pendingCount: 0,
       } as PartnerUniversity);
     entry.pendingCount += 1;
-    byUni.set(queued.university.id, entry);
+    byUni.set(r.university.id, entry);
   }
+
   const partners = [...byUni.values()].sort(
     (a, b) =>
       b.activeCount - a.activeCount ||
@@ -275,29 +283,32 @@ function CompanyDashboardContent() {
       a.university.registered_name.localeCompare(b.university.registered_name),
   );
 
-  const pendingInvites = (invitesData?.invites ?? []).filter(
-    (inv) => inv.university !== null,
+  const requestableUniversities = (universitiesData?.universities ?? []).filter(
+    (u): u is CompanyUniversityDirectoryItemDto => u.requestable,
   );
-  const hasCareerTask = true;
+  const hasActiveMoaByUniversityId = Object.fromEntries(
+    moas
+      .filter((moa) => moa.status === "active" && !moa.is_expired)
+      .map((moa) => [moa.university.id, true]),
+  );
+
+  const hasCareerTask = !vLoading && !!verification?.canPostListing;
   const hasInviteTask = pendingInvites.length > 0;
-  const hasFailedQueueTask = failedQueued.length > 0;
-  const hasVerificationTask = !!status && status !== "verified";
+  // "Incomplete" already has a persistent notice in the header on every
+  // page (including this one) — showing it again here would be the
+  // duplicate banner. "Pending" has no header equivalent, so it still
+  // belongs here.
+  const hasVerificationTask = status === "pending";
   const notificationCount =
     (hasCareerTask ? 1 : 0) +
     (hasInviteTask ? 1 : 0) +
-    (hasFailedQueueTask ? 1 : 0) +
     (hasVerificationTask ? 1 : 0);
   const notificationBorderClass =
-    notificationCount > 1
-      ? "border-gray-200"
-      : hasFailedQueueTask || status === "rejected" || status === "expired"
-        ? "border-destructive/30"
-        : status === "incomplete" || status === "pending"
-          ? "border-warning/30"
-          : "border-primary/25";
+    notificationCount > 1 ? "border-gray-200" : "border-primary/25";
   const navigateToDetail = (uniId: string) => {
     router.push(`/partners/${uniId}`);
   };
+  const locked = status === "incomplete";
 
   return (
     <PageContainer className="space-y-8">
@@ -307,22 +318,11 @@ function CompanyDashboardContent() {
       >
         {hasCareerTask && <CareerListingCta />}
 
-        {!vLoading && status && status !== "verified" && (
-          <CompanyProfileStatusNotice
-            status={status}
-            rejectionReason={verification?.rejectionReason ?? null}
-          />
-        )}
+        {hasVerificationTask && <CompanyProfileStatusNotice status="pending" />}
 
         {hasInviteTask &&
           (() => {
             const invite = pendingInvites[0];
-            const params = new URLSearchParams({
-              open_university_id: invite.university!.id,
-              invite_id: invite.id,
-            });
-            if (invite.template) params.set("template_id", invite.template.id);
-            const href = `/company/dashboard?${params}`;
             return (
               <StatusNotice
                 media={
@@ -355,112 +355,87 @@ function CompanyDashboardContent() {
                 }
                 action={
                   <Button
-                    asChild
                     variant="outline"
                     scheme="primary"
                     expandIcon
                     className="w-full bg-transparent sm:shrink-0 sm:bg-background"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      router.push(`/invite/continue?invite_id=${invite.id}`);
+                    }}
                   >
-                    <Link
-                      href={href}
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <FileSignature aria-hidden="true" />
-                      <span className="button-label">Sign MOA</span>
-                    </Link>
+                    <FileSignature aria-hidden="true" />
+                    <span className="button-label">Sign MOA</span>
                   </Button>
                 }
                 className="cursor-pointer"
                 key={invite.id}
-                role="link"
+                role="button"
                 tabIndex={0}
-                onClick={() => router.push(href)}
+                onClick={() =>
+                  router.push(`/invite/continue?invite_id=${invite.id}`)
+                }
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    router.push(href);
+                    router.push(`/invite/continue?invite_id=${invite.id}`);
                   }
                 }}
               />
             );
           })()}
-
-        {hasFailedQueueTask && (
-          <StatusNotice
-            icon={AlertCircle}
-            title={
-              failedQueued.length === 1
-                ? "A queued MOA failed"
-                : `${failedQueued.length} queued MOAs failed`
-            }
-            description={
-              <>
-                Please contact us for help at{" "}
-                <a
-                  href="mailto:hello@betterinternship.com"
-                  className="text-primary underline"
-                  onClick={(event) => event.stopPropagation()}
-                >
-                  hello@betterinternship.com
-                </a>
-                .
-              </>
-            }
-            variant="destructive"
-            className="cursor-pointer"
-            role="link"
-            tabIndex={0}
-            onClick={() => {
-              window.location.href = "mailto:hello@betterinternship.com";
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                window.location.href = "mailto:hello@betterinternship.com";
-              }
-            }}
-          />
-        )}
-
       </NotificationCenter>
 
       <PageHeader
         title="Partners"
-        description="Universities you have MOAs with."
-        actionsClassName="self-center sm:self-auto"
-      >
-        {canRequest && (
-          <Button
-            asChild
-            size="icon"
-            className="sm:h-8 sm:w-auto sm:px-[1em] sm:py-[0.33em]"
-          >
-            <Link href="/universities" aria-label="Request MOA">
-              <FileSignature />
-              <span className="hidden sm:inline">Request MOA</span>
-            </Link>
-          </Button>
-        )}
-      </PageHeader>
+        description="Active partnerships and universities available to request an MOA from."
+      />
 
-      {vLoading ? (
-        <div className="space-y-2.5">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      ) : (
-        <CompanyPartnersTable
-          partners={partners}
-          isLoading={moasLoading}
-          canRequest={canRequest}
-          initialSearch={initialPartnerSearch}
-          initialStatuses={initialPartnerStatuses}
-          initialRanges={initialActiveMoaRanges}
-          initialPage={initialPartnerPage}
-          onPartnerClick={(partner) => navigateToDetail(partner.university.id)}
-          onQueryChange={updatePartnerQuery}
-        />
-      )}
+      <Tabs
+        value={dashboardTab}
+        onValueChange={(value) =>
+          setDashboardTab(value === "requestable" ? "requestable" : "active")
+        }
+      >
+        <TabsContent value="active">
+          <CompanyPartnersTable
+            partners={partners}
+            isLoading={moasLoading || vLoading}
+            canRequest={!locked}
+            initialSearch={initialPartnerSearch}
+            initialStatuses={initialPartnerStatuses}
+            initialRanges={initialActiveMoaRanges}
+            initialPage={initialPartnerPage}
+            onPartnerClick={(partner) =>
+              navigateToDetail(partner.university.id)
+            }
+            onQueryChange={updatePartnerQuery}
+            onBrowseRequestable={() => setDashboardTab("requestable")}
+            toolbarStart={
+              <DashboardTabs
+                activeCount={partners.length}
+                requestableCount={requestableUniversities.length}
+              />
+            }
+          />
+        </TabsContent>
+        <TabsContent value="requestable">
+          <RequestableUniversitiesTable
+            universities={requestableUniversities}
+            isLoading={universitiesLoading || vLoading}
+            onRequest={openRequestDialog}
+            inFlightByUniversityId={inFlightByUniversityId}
+            hasActiveMoaByUniversityId={hasActiveMoaByUniversityId}
+            locked={locked}
+            toolbarStart={
+              <DashboardTabs
+                activeCount={partners.length}
+                requestableCount={requestableUniversities.length}
+              />
+            }
+          />
+        </TabsContent>
+      </Tabs>
     </PageContainer>
   );
 }

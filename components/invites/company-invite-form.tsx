@@ -9,8 +9,8 @@ import {
   CheckCircle2,
   ChevronDown,
   Loader2,
-  Mail,
   X,
+  ChevronLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -57,14 +57,8 @@ import {
   saveInviteDraft,
   type ComposeProvider,
 } from "@/lib/compose-url";
-import { cn } from "@/lib/utils";
 
 export type CompanyInviteKind = "moa" | "listing";
-
-const inviteSteps = [
-  { title: "Choose company", icon: Building2 },
-  { title: "Invitation details", icon: Mail },
-];
 
 const PROVIDER_LABEL: Record<ComposeProvider, string> = {
   gmail: "Gmail",
@@ -202,14 +196,15 @@ function InviteSendConfirmationContent({
       </div>
 
       <div className="mt-6 flex items-center justify-between border-t border-gray-100 pt-4">
-        <button
+        <Button
+          variant="link"
+          className="h-auto p-0 text-muted-foreground hover:text-destructive"
           type="button"
           onClick={() => setConfirmingCancel((v) => !v)}
           aria-expanded={confirmingCancel}
-          className="text-muted-foreground hover:text-destructive cursor-pointer text-sm hover:underline"
         >
           Never sent it? Cancel invite
-        </button>
+        </Button>
         <div className="flex items-center gap-2">
           <AnimatePresence initial={false}>
             {confirmingCancel && (
@@ -343,11 +338,13 @@ export function CompanyInviteForm({
     (t) => t.is_available,
   );
 
+  // Pre-approval companies have no registered_name yet (flow spec §3) — the
+  // account email is their identity until an admin transcribes a name.
   const companyOptions = useMemo(
     () =>
       (companiesData?.companies ?? []).map((c) => ({
         id: c.id,
-        name: c.registered_name,
+        name: c.registered_name ?? c.email ?? "Unregistered company",
       })),
     [companiesData],
   );
@@ -356,93 +353,100 @@ export function CompanyInviteForm({
     mode === "registered" ? (selectedCompany?.email ?? "") : email.trim();
   const invitedName =
     mode === "registered"
-      ? selectedCompany?.registered_name
+      ? (selectedCompany?.registered_name ??
+        selectedCompany?.email ??
+        undefined)
       : companyName.trim() || undefined;
 
   const sendMutationOptions = {
-    onSuccess: (res: { inviteLink: string; inviteId: string; superseded: boolean }) => {
-        const composeUrl = buildComposeUrl(provider, {
-          to: invitedEmail,
-          cc: INVITE_CC_EMAIL,
-          subject: buildInviteSubject({ kind, universityName }),
-          body: buildInviteBody({
-            kind,
-            universityName,
-            companyName: invitedName ?? null,
-            accountHolderName: account?.university.account_holder_name ?? null,
-            accountHolderTitle:
-              account?.university.account_holder_title ?? null,
-            personalMessage: message.trim() || null,
-            inviteLink: res.inviteLink,
-          }),
-        });
-        // Passing "noopener"/"noreferrer" as window features makes
-        // window.open() always return null per spec — whether or not the
-        // popup actually opened — so that can't double as the blocked-
-        // popup check below. Sever window.opener by hand instead (same
-        // tabnabbing protection `rel="noopener"` gives an <a>), which
-        // leaves the returned handle meaningful.
-        const composeWindow = window.open(composeUrl, "_blank");
-        if (composeWindow) composeWindow.opener = null;
+    onSuccess: (res: {
+      inviteLink: string;
+      inviteId: string;
+      superseded: boolean;
+      missingDocumentTypes?: string[];
+    }) => {
+      const composeUrl = buildComposeUrl(provider, {
+        to: invitedEmail,
+        cc: INVITE_CC_EMAIL,
+        subject: buildInviteSubject({ kind, universityName }),
+        body: buildInviteBody({
+          kind,
+          universityName,
+          companyName: invitedName ?? null,
+          accountHolderName: account?.university.account_holder_name ?? null,
+          accountHolderTitle: account?.university.account_holder_title ?? null,
+          personalMessage: message.trim() || null,
+          inviteLink: res.inviteLink,
+          missingDocumentTypes: res.missingDocumentTypes,
+        }),
+      });
+      // Passing "noopener"/"noreferrer" as window features makes
+      // window.open() always return null per spec — whether or not the
+      // popup actually opened — so that can't double as the blocked-
+      // popup check below. Sever window.opener by hand instead (same
+      // tabnabbing protection `rel="noopener"` gives an <a>), which
+      // leaves the returned handle meaningful.
+      const composeWindow = window.open(composeUrl, "_blank");
+      if (composeWindow) composeWindow.opener = null;
 
-        onSent();
-        onClose();
+      onSent();
+      onClose();
 
-        if (!composeWindow) {
-          openAfterModalCloses(() =>
-            openModal(
-              "invite-blocked",
-              <InviteBlockedContent
-                provider={PROVIDER_LABEL[provider]}
-                onClose={() => closeModal("invite-blocked")}
-              />,
-              {
-                // No title — InviteBlockedContent renders its own centered
-                // heading below the icon, matching universityProfileComplete/
-                // approvalPending's layout below.
-                panelClassName: "!w-full sm:!max-w-xl",
-                headerClassName: "pb-0",
-                contentClassName: "px-6 pb-6 sm:px-8 sm:pb-7",
-                // The click that refocuses the tab/window (Alt-Tab into it,
-                // click the taskbar entry, etc.) can land on the page as a
-                // real click the instant this backdrop mounts, dismissing
-                // it before the coordinator ever sees it. The header close
-                // button and "Got it" are still there for an intentional
-                // dismiss.
-                allowBackdropClick: false,
-              },
-            ),
-          );
-          return;
-        }
-
-        scheduleSendConfirmation(() =>
-          openAfterModalCloses(() =>
-            openModal(
-              "invite-send-confirmation",
-              <InviteSendConfirmationContent
-                companyLabel={invitedName || invitedEmail}
-                inviteId={res.inviteId}
-                kind={kind}
-                superseded={res.superseded}
-                onCancelled={onSent}
-                onClose={() => closeModal("invite-send-confirmation")}
-              />,
-              {
-                // No title — InviteSendConfirmationContent renders its own
-                // centered heading below the icon.
-                panelClassName: "!w-full sm:!max-w-xl",
-                headerClassName: "pb-0",
-                contentClassName: "px-6 pb-6 sm:px-8 sm:pb-7",
-                // Same reasoning as invite-blocked above — this one in
-                // particular opens right as the coordinator refocuses the
-                // tab, which is exactly when a stray click is most likely.
-                allowBackdropClick: false,
-              },
-            ),
+      if (!composeWindow) {
+        openAfterModalCloses(() =>
+          openModal(
+            "invite-blocked",
+            <InviteBlockedContent
+              provider={PROVIDER_LABEL[provider]}
+              onClose={() => closeModal("invite-blocked")}
+            />,
+            {
+              // No title — InviteBlockedContent renders its own centered
+              // heading below the icon, matching universityProfileComplete/
+              // approvalPending's layout below.
+              panelClassName: "!w-full sm:!max-w-xl",
+              headerClassName: "pb-0",
+              contentClassName: "px-6 pb-6 sm:px-8 sm:pb-7",
+              // The click that refocuses the tab/window (Alt-Tab into it,
+              // click the taskbar entry, etc.) can land on the page as a
+              // real click the instant this backdrop mounts, dismissing
+              // it before the coordinator ever sees it. The header close
+              // button and "Got it" are still there for an intentional
+              // dismiss.
+              allowBackdropClick: false,
+            },
           ),
         );
-      },
+        return;
+      }
+
+      scheduleSendConfirmation(() =>
+        openAfterModalCloses(() =>
+          openModal(
+            "invite-send-confirmation",
+            <InviteSendConfirmationContent
+              companyLabel={invitedName || invitedEmail}
+              inviteId={res.inviteId}
+              kind={kind}
+              superseded={res.superseded}
+              onCancelled={onSent}
+              onClose={() => closeModal("invite-send-confirmation")}
+            />,
+            {
+              // No title — InviteSendConfirmationContent renders its own
+              // centered heading below the icon.
+              panelClassName: "!w-full sm:!max-w-xl",
+              headerClassName: "pb-0",
+              contentClassName: "px-6 pb-6 sm:px-8 sm:pb-7",
+              // Same reasoning as invite-blocked above — this one in
+              // particular opens right as the coordinator refocuses the
+              // tab, which is exactly when a stray click is most likely.
+              allowBackdropClick: false,
+            },
+          ),
+        ),
+      );
+    },
     onError: (e: Error) => setError(e.message ?? "Failed to send invitation."),
   };
   // Kind is fixed for the form's lifetime (see prop doc above), so exactly
@@ -503,59 +507,16 @@ export function CompanyInviteForm({
             ? "Invite to sign an MOA"
             : "Invite to post an internship"}
         </h2>
-        <button
+        <Button
           type="button"
           aria-label="Close"
           onClick={onClose}
-          className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full hover:bg-gray-100 active:bg-gray-200"
+          variant="ghost"
+          size="icon"
+          className="size-8 rounded-full hover:bg-gray-100 active:bg-gray-200"
         >
           <X className="h-4 w-4 text-gray-500" />
-        </button>
-      </div>
-
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-        {inviteSteps.map((inviteStep, index) => {
-          const Icon = inviteStep.icon;
-          const active = index === step - 1;
-          const done = index < step - 1;
-
-          return (
-            <div
-              key={inviteStep.title}
-              className={cn(
-                "flex min-w-0 items-center gap-2 rounded-[0.33em] border p-3",
-                active
-                  ? "border-primary/60 bg-primary/5"
-                  : done
-                    ? "border-supportive/40 bg-supportive/5"
-                    : "border-border/60",
-              )}
-              aria-current={active ? "step" : undefined}
-            >
-              <div
-                className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full",
-                  active ? "bg-primary/10" : "bg-gray-100",
-                )}
-              >
-                {done ? (
-                  <CheckCircle2 className="text-supportive h-5 w-5" />
-                ) : (
-                  <Icon
-                    className={cn(
-                      "h-5 w-5",
-                      active ? "text-primary" : "text-muted-foreground",
-                    )}
-                  />
-                )}
-              </div>
-              <div className="min-w-0 text-sm leading-tight font-medium">
-                <div className="text-xs text-gray-400">Step {index + 1}</div>
-                <div className="truncate">{inviteStep.title}</div>
-              </div>
-            </div>
-          );
-        })}
+        </Button>
       </div>
 
       <MorphHeight>
@@ -577,9 +538,9 @@ export function CompanyInviteForm({
                         placeholder="Search companies..."
                       />
                     )}
-                    <button type="button" className="text-primary text-sm">
+                    <Button variant="link" className="h-auto p-0">
                       Company not listed? Invite by email
-                    </button>
+                    </Button>
                   </>
                 ) : (
                   <>
@@ -599,9 +560,9 @@ export function CompanyInviteForm({
                         placeholder="rep@company.com"
                       />
                     </div>
-                    <button type="button" className="text-primary text-sm">
-                      ← Search registered companies
-                    </button>
+                    <Button variant="link" className="h-auto p-0">
+                      <ChevronLeft /> Go back to company search
+                    </Button>
                   </>
                 )}
               </div>
@@ -634,16 +595,16 @@ export function CompanyInviteForm({
                     />
                   )}
                   {allowSearch && (
-                    <button
-                      type="button"
-                      className="text-primary cursor-pointer text-sm hover:underline"
+                    <Button
+                      variant="link"
+                      className="h-auto p-0"
                       onClick={() => {
                         setSelectedCompany(null);
                         switchMode("new");
                       }}
                     >
                       Company not listed? Invite by email
-                    </button>
+                    </Button>
                   )}
                 </>
               ) : (
@@ -654,7 +615,7 @@ export function CompanyInviteForm({
                       id="invite-company-name"
                       placeholder="Acme Corporation"
                       value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
+                      onChange={(e) => setCompanyName(e.target.value.toUpperCase())}
                       autoFocus
                     />
                   </div>
@@ -671,17 +632,18 @@ export function CompanyInviteForm({
                     />
                   </div>
                   {allowSearch && (
-                    <button
-                      type="button"
-                      className="text-primary cursor-pointer text-sm hover:underline"
+                    <Button
+                      variant="link"
+                      className="h-auto p-0"
                       onClick={() => {
                         setCompanyName("");
                         setEmail("");
                         switchMode("registered");
                       }}
                     >
-                      ← Search registered companies
-                    </button>
+                      <ChevronLeft />
+                      Go back to company search
+                    </Button>
                   )}
                 </>
               )}
@@ -699,14 +661,10 @@ export function CompanyInviteForm({
                 </span>
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-gray-900 uppercase">
-                    {mode === "registered" && selectedCompany
-                      ? selectedCompany.registered_name
-                      : companyName}
+                    {mode === "registered" ? invitedName : companyName}
                   </p>
                   <p className="text-muted-foreground truncate text-xs">
-                    {mode === "registered" && selectedCompany
-                      ? selectedCompany.email
-                      : email}
+                    {mode === "registered" ? invitedEmail : email}
                   </p>
                 </div>
               </div>

@@ -623,6 +623,7 @@ export function UniversityProfileContent({
                     <SignatoryCard
                       key={field.formRowId}
                       title={`Signatory ${index + 1}`}
+                      bordered
                       complete={isComplete}
                       actions={
                         <div className="flex items-center gap-1">

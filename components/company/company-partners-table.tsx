@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronRight, FileText } from "lucide-react";
 
@@ -129,20 +130,29 @@ function MoaCounts({ partner }: { partner: CompanyPartnerUniversity }) {
   );
 }
 
-function PartnersTableSkeleton() {
+function PartnersTableSkeleton({ toolbarStart }: { toolbarStart?: ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-[0.33em] border border-gray-200 bg-white">
-      <Skeleton className="h-11 w-full rounded-none" />
-      {[0, 1, 2, 3, 4].map((i) => (
-        <div key={i} className="flex h-24 items-center gap-4 border-t px-5">
-          <Skeleton className="h-12 w-12 shrink-0" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-48 max-w-full" />
-          </div>
-          <Skeleton className="hidden h-4 w-20 md:block" />
-          <Skeleton className="hidden h-4 w-12 md:block" />
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        {toolbarStart}
+        <div className="flex min-w-0 flex-1 justify-end gap-2">
+          <Skeleton className="h-11 w-full max-w-xl" />
+          <Skeleton className="h-11 w-11 shrink-0" />
         </div>
-      ))}
+      </div>
+      <div className="overflow-hidden rounded-[0.33em] border border-gray-200 bg-white">
+        <Skeleton className="h-11 w-full rounded-none" />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex h-24 items-center gap-4 border-t px-5">
+            <Skeleton className="h-12 w-12 shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-48 max-w-full" />
+            </div>
+            <Skeleton className="hidden h-4 w-20 md:block" />
+            <Skeleton className="hidden h-4 w-12 md:block" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -157,6 +167,8 @@ export function CompanyPartnersTable({
   initialPage,
   onPartnerClick,
   onQueryChange,
+  onBrowseRequestable,
+  toolbarStart,
 }: {
   partners: CompanyPartnerUniversity[];
   isLoading: boolean;
@@ -172,6 +184,9 @@ export function CompanyPartnersTable({
     ranges: ActiveMoaRange[],
     page: number,
   ) => void;
+  /** Switches the dashboard to the "Available to request" tab, if it's tabbed. */
+  onBrowseRequestable?: () => void;
+  toolbarStart?: ReactNode;
 }) {
   const statusCounts = {
     active: partners.filter((partner) => partner.activeCount > 0).length,
@@ -362,13 +377,14 @@ export function CompanyPartnersTable({
     },
   });
 
-  if (isLoading) return <PartnersTableSkeleton />;
+  if (isLoading) return <PartnersTableSkeleton toolbarStart={toolbarStart} />;
 
   const hasFilters = (table.filters?.activeCount ?? 0) > 0;
 
   return (
     <ResourceTable
       table={table}
+      toolbarStart={toolbarStart}
       onRowClick={onPartnerClick}
       renderMobileRow={(partner) => (
         <Link
@@ -401,9 +417,19 @@ export function CompanyPartnersTable({
           ? "Browse partner universities and request your first memorandum of agreement. Pending companies can queue requests for automatic issuance after approval."
           : "Complete your company verification requirements to request MOAs from partner universities.",
         action: canRequest ? (
-          <Button asChild variant="outline" scheme="primary">
-            <Link href="/universities">Browse universities</Link>
-          </Button>
+          onBrowseRequestable ? (
+            <Button
+              variant="outline"
+              scheme="primary"
+              onClick={onBrowseRequestable}
+            >
+              Browse universities
+            </Button>
+          ) : (
+            <Button asChild variant="outline" scheme="primary">
+              <Link href="/dashboard">Browse universities</Link>
+            </Button>
+          )
         ) : undefined,
       }}
       noResultsState={{

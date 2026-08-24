@@ -8,7 +8,8 @@
 
 export interface UniversityRegisteredCompanyDto {
   id: string;
-  registered_name: string;
+  /** @nullable */
+  registered_name: string | null;
   /** @nullable */
   email: string | null;
 }

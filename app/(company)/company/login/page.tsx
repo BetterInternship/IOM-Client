@@ -4,23 +4,15 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  getCompanyControllerMeQueryKey,
-  useCompanyAuthControllerList,
   useCompanyAuthControllerLogin,
   companyControllerClaimInvite,
+  companyControllerGetVerification,
 } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Autocomplete } from "@/components/ui/autocomplete";
 import { Loader2 } from "lucide-react";
-
-interface CompanyListItem {
-  id: string;
-  registered_name: string;
-  censored_tin: string;
-}
 
 function LoginPageContent() {
   const router = useRouter();
@@ -31,26 +23,17 @@ function LoginPageContent() {
   // Only ever a same-origin relative path (avoids an open redirect).
   const next = nextParam.startsWith("/") ? nextParam : "";
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-
-  const { data: companyListResponse } = useCompanyAuthControllerList();
-  const companyList = (companyListResponse?.companies ??
-    []) as CompanyListItem[];
-
-  const options = companyList.map((c) => ({
-    id: c.id,
-    name: c.registered_name,
-  }));
-  const selectedCompany = companyList.find((c) => c.id === selectedId) ?? null;
 
   const login = useCompanyAuthControllerLogin({
     mutation: {
       onSuccess: async () => {
-        queryClient.resetQueries({
-          queryKey: getCompanyControllerMeQueryKey(),
-        });
+        // Full clear, not a scoped invalidate — these query keys aren't
+        // scoped by company id, so a prior session's cache could otherwise
+        // leak into this account (e.g. switching between test accounts).
+        queryClient.clear();
 
         if (inviteToken) {
           try {
@@ -59,17 +42,29 @@ function LoginPageContent() {
             });
 
             if (res.university_id) {
-              const params = new URLSearchParams({
-                open_university_id: res.university_id,
-              });
-              if (res.template_id) params.set("template_id", res.template_id);
-              if (res.invite_id) params.set("invite_id", res.invite_id);
-              router.replace(`/company/dashboard?${params}`);
+              router.replace(
+                `/invite/continue?invite_id=${encodeURIComponent(res.invite_id)}`,
+              );
               return;
             }
           } catch {
             // Invite expired or already claimed — fall through to dashboard
           }
+        }
+
+        // Missing, rejected, or expired documents all collapse into
+        // "incomplete" — send those straight to the upload gate instead of
+        // wherever login was headed, so an unverified company never lands
+        // on a page that just lets it sit there unverified.
+        try {
+          const verification = await companyControllerGetVerification();
+          if (verification.status === "incomplete") {
+            router.replace("/verification");
+            return;
+          }
+        } catch {
+          // Can't tell — fall through. The client-side guard will still
+          // catch it on whatever page we land on.
         }
 
         router.replace(next || "/company/dashboard");
@@ -81,7 +76,7 @@ function LoginPageContent() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    login.mutate({ data: { companyId: selectedId!, password } });
+    login.mutate({ data: { email, password } });
   };
 
   return (
@@ -93,7 +88,7 @@ function LoginPageContent() {
       description={
         inviteToken
           ? "Sign in to continue with your invitation."
-          : "Select your company and enter your password to access the portal."
+          : "Enter your email and password to access the portal."
       }
       footer={
         <>
@@ -115,26 +110,16 @@ function LoginPageContent() {
         <FormError>{error}</FormError>
 
         <div className="space-y-1.5">
-          <Label>Company name</Label>
-          <div>
-            <Autocomplete
-              options={options}
-              value={selectedId}
-              onChange={(id) => setSelectedId(id as string | null)}
-              placeholder="Search for your company…"
-              inputClassName="rounded-b-none"
-            />
-            <div className="flex items-center gap-2 rounded-b-[0.33em] border border-t-0 border-gray-200 bg-gray-50 px-2.5 py-1.5 text-sm">
-              <span className="text-muted-foreground text-xs font-medium">
-                TIN
-              </span>
-              <span className="font-mono text-gray-800">
-                {selectedCompany?.censored_tin ?? (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </span>
-            </div>
-          </div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
 
         <div className="space-y-1.5">
@@ -162,7 +147,7 @@ function LoginPageContent() {
           type="submit"
           size="lg"
           className="w-full"
-          disabled={login.isPending || !selectedId || !password}
+          disabled={login.isPending || !email || !password}
         >
           {login.isPending && <Loader2 className="animate-spin" />}
           {login.isPending ? "Signing in…" : "Sign in"}

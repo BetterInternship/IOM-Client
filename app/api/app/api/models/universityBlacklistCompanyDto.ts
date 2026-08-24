@@ -8,5 +8,6 @@
 
 export interface UniversityBlacklistCompanyDto {
   id: string;
-  registered_name: string;
+  /** @nullable */
+  registered_name: string | null;
 }
