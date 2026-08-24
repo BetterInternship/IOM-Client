@@ -110,10 +110,10 @@ function CompanySignerForm({
               <Send className="h-8 w-8" />
             </span>
             <span className="text-base font-semibold text-gray-900">
-              Send it to someone else to sign
+              Send it to someone else in the company
             </span>
             <span className="text-muted-foreground text-sm">
-              We'll email a signing link — no account needed.
+              We'll email them a link to sign the MOA.
             </span>
           </button>
         </div>
