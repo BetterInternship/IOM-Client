@@ -24,6 +24,9 @@ interface Template {
   name: string;
   description: string | null;
   term_months: number | null;
+  // Immutable templates (plan §13) — a retired row is a past version,
+  // superseded by a republish; it stays listed for history.
+  retired_at: string | null;
 }
 
 function ActionsCell({ template }: { template: Template }) {
@@ -84,7 +87,14 @@ const columns: Array<ResourceTableColumn<Template>> = [
     getSortValue: (template) => template.name,
     render: (template) => (
       <div className="min-w-0">
-        <p className="font-medium text-gray-900">{template.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="font-medium text-gray-900">{template.name}</p>
+          {template.retired_at && (
+            <Badge type="default" strength="medium">
+              Retired
+            </Badge>
+          )}
+        </div>
         {template.description && (
           <p className="text-muted-foreground truncate text-xs">
             {template.description}
@@ -169,7 +179,14 @@ export default function AdminTemplatesPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-semibold text-gray-900">{template.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-semibold text-gray-900">{template.name}</p>
+                    {template.retired_at && (
+                      <Badge type="default" strength="medium">
+                        Retired
+                      </Badge>
+                    )}
+                  </div>
                   {template.description && (
                     <p className="text-muted-foreground mt-1 text-sm leading-5">
                       {template.description}

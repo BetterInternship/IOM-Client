@@ -25,6 +25,35 @@ export const formatDateWithoutTime = (dateString?: string | null) => {
 };
 
 /**
+ * Return the elapsed time since a date, e.g. "42 minutes ago", "3 hours
+ * ago", or "5 days ago". Precision steps down from minutes to hours to days
+ * as each threshold is crossed.
+ */
+export const formatTimeElapsed = (dateString?: string | null) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  if (!isValid(date)) return "-";
+
+  const diffMinutes = Math.max(
+    0,
+    Math.floor((Date.now() - date.getTime()) / 60_000),
+  );
+
+  if (diffMinutes < 1) return "Just now";
+  if (diffMinutes < 60) {
+    return `${diffMinutes} minute${diffMinutes === 1 ? "" : "s"} ago`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+};
+
+/**
  * Return a formatted date + time string, e.g. for audit logs.
  */
 export const formatDateTime = (dateString?: string | null) => {

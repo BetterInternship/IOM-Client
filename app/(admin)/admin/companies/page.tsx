@@ -3,20 +3,12 @@ import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  Plus,
-  Upload,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, Plus, Upload } from "lucide-react";
 import {
   getAdminControllerListCompaniesQueryKey,
   useAdminControllerBulkCreateCompanies,
   useAdminControllerCreateCompany,
   useAdminControllerListCompanies,
-  useAdminControllerVerifyTin,
   type AdminCompanyListItemDto,
   type CreateCompanyAdminDtoCompanyType,
 } from "@/app/api";
@@ -53,16 +45,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatDateWithoutTime } from "@/lib/utils";
 
-type VerificationStatus =
-  | "incomplete"
+type CompanyStatusTab =
+  | "all"
+  | "deactivated"
   | "pending"
   | "verified"
-  | "expired"
-  | "rejected";
-type CompanyStatusTab = "all" | "deactivated" | VerificationStatus;
-type CompanyListItem = AdminCompanyListItemDto & {
-  verification_status: VerificationStatus;
-};
+  | "incomplete"
+  | "rejected"
+  | "expired";
+type CompanyListItem = AdminCompanyListItemDto;
+
+function companyDisplayName(company: CompanyListItem): string {
+  return company.registered_name ?? company.email ?? "Unregistered";
+}
 
 const STATUS_TABS: Array<{
   value: CompanyStatusTab;
@@ -113,8 +108,16 @@ const STATUS_TABS: Array<{
   },
 ];
 
+// Rejected and expired are reasons attached to "incomplete" now (flow spec
+// §1), not separate statuses — split back out here only for this page's tabs.
 function companyStatus(company: CompanyListItem): CompanyStatusTab {
-  return company.is_deactivated ? "deactivated" : company.verification_status;
+  if (company.is_deactivated) return "deactivated";
+  if (company.verification_status === "incomplete") {
+    if (company.verification_reason === "rejected") return "rejected";
+    if (company.verification_reason === "expired") return "expired";
+    return "incomplete";
+  }
+  return company.verification_status;
 }
 
 function CompanyStatusBadge({ company }: { company: CompanyListItem }) {
@@ -149,7 +152,7 @@ const columns: Array<ResourceTableColumn<CompanyListItem>> = [
     id: "name",
     header: "Company",
     width: "w-[34%]",
-    getSortValue: (company) => company.registered_name,
+    getSortValue: (company) => companyDisplayName(company),
     render: (company) => (
       <div className="flex items-center gap-2 min-w-0">
         <TruncatedTooltip
@@ -157,7 +160,7 @@ const columns: Array<ResourceTableColumn<CompanyListItem>> = [
           className="text-sm font-medium text-gray-900"
           contentClassName="text-left"
         >
-          {company.registered_name}
+          {companyDisplayName(company)}
         </TruncatedTooltip>
       </div>
     ),
@@ -199,7 +202,7 @@ const columns: Array<ResourceTableColumn<CompanyListItem>> = [
           className="h-5 w-5 transition-transform group-hover:translate-x-0.5"
           aria-hidden="true"
         />
-        <span className="sr-only">Open {company.registered_name}</span>
+        <span className="sr-only">Open {companyDisplayName(company)}</span>
       </div>
     ),
   },
@@ -264,11 +267,6 @@ function CreateCompanyForm({ onClose }: { onClose: () => void }) {
     registered_address: "",
   });
   const [error, setError] = useState("");
-  const [verifyState, setVerifyState] = useState<{
-    loading: boolean;
-    result: "idle" | "verified" | "failed";
-    message?: string;
-  }>({ loading: false, result: "idle" });
 
   const create = useAdminControllerCreateCompany({
     mutation: {
@@ -280,33 +278,6 @@ function CreateCompanyForm({ onClose }: { onClose: () => void }) {
         onClose();
       },
       onError: (e: Error) => setError(e.message),
-    },
-  });
-
-  const verify = useAdminControllerVerifyTin({
-    mutation: {
-      onSuccess: (data) => {
-        if (data.valid) {
-          setVerifyState({
-            loading: false,
-            result: "verified",
-            message: data.message,
-          });
-        } else {
-          setVerifyState({
-            loading: false,
-            result: "failed",
-            message: data.message,
-          });
-        }
-      },
-      onError: (e: Error) => {
-        setVerifyState({
-          loading: false,
-          result: "failed",
-          message: e.message,
-        });
-      },
     },
   });
 
@@ -352,44 +323,12 @@ function CreateCompanyForm({ onClose }: { onClose: () => void }) {
 
         <div className="space-y-1.5">
           <Label htmlFor="tin">TIN (optional)</Label>
-          <div className="flex gap-2">
-            <Input
-              id="tin"
-              placeholder="000-000-000-000"
-              value={form.tin}
-              onChange={(e) => setForm({ ...form, tin: e.target.value })}
-              className="flex-1"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={!form.tin || !form.registered_name || verify.isPending}
-              title={!form.tin ? "Enter a TIN to verify" : undefined}
-              onClick={() => {
-                setVerifyState({ loading: true, result: "idle" });
-                verify.mutate({
-                  data: {
-                    tin: form.tin,
-                    registered_name: form.registered_name,
-                  },
-                });
-              }}
-            >
-              {verify.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Check className="h-4 w-4" />
-              )}
-              Verify
-            </Button>
-          </div>
-          {verifyState.result === "verified" && (
-            <p className="text-xs text-green-600">{verifyState.message}</p>
-          )}
-          {verifyState.result === "failed" && (
-            <p className="text-xs text-red-600">{verifyState.message}</p>
-          )}
+          <Input
+            id="tin"
+            placeholder="000-000-000"
+            value={form.tin}
+            onChange={(e) => setForm({ ...form, tin: e.target.value })}
+          />
         </div>
 
         <div className="space-y-1.5">
@@ -642,7 +581,7 @@ export default function AdminCompaniesPage() {
       placeholder: "Search companies...",
       ariaLabel: "Search companies",
       matches: (company, query) =>
-        company.registered_name.toLowerCase().includes(query) ||
+        companyDisplayName(company).toLowerCase().includes(query) ||
         !!company.email?.toLowerCase().includes(query) ||
         formatDateWithoutTime(company.created_at).toLowerCase().includes(query),
     },
@@ -687,7 +626,7 @@ export default function AdminCompaniesPage() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-gray-900">
-                    {company.registered_name}
+                    {companyDisplayName(company)}
                   </p>
                   <p className="text-muted-foreground mt-1 break-all text-sm">
                     {company.email || "Record only"}

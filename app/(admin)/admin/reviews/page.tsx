@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/resource-table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useResourceTable } from "@/components/ui/use-resource-table";
-import { formatDateWithoutTime } from "@/lib/utils";
+import { formatTimeElapsed } from "@/lib/utils";
 
 interface ReviewRow {
   id: string;
@@ -27,16 +27,11 @@ const columns: Array<ResourceTableColumn<ReviewRow>> = [
     id: "company",
     header: "Company",
     width: "w-[70%]",
-    getSortValue: (review) => review.company?.registered_name ?? "",
+    getSortValue: (review) => review.company?.email ?? "",
     render: (review) => (
-      <div className="min-w-0">
-        <p className="font-medium text-gray-900">
-          {review.company?.registered_name ?? "Unknown company"}
-        </p>
-        <p className="text-muted-foreground truncate text-xs">
-          {review.company?.email}
-        </p>
-      </div>
+      <p className="truncate font-medium text-gray-900">
+        {review.company?.email ?? "No account email"}
+      </p>
     ),
   },
   {
@@ -46,7 +41,7 @@ const columns: Array<ResourceTableColumn<ReviewRow>> = [
     getSortValue: (review) => review.created_at,
     render: (review) => (
       <span className="text-muted-foreground">
-        {formatDateWithoutTime(review.created_at)}
+        {formatTimeElapsed(review.created_at)}
       </span>
     ),
   },
@@ -68,10 +63,11 @@ export default function AdminReviewsPage() {
       placeholder: "Search companies...",
       ariaLabel: "Search company reviews",
       matches: (review, query) =>
+        (review.company?.email ?? "").toLowerCase().includes(query) ||
         (review.company?.registered_name ?? "").toLowerCase().includes(query) ||
         review.created_at.toLowerCase().includes(query),
     },
-    sort: { initialColumn: "company", initialDirection: "asc" },
+    sort: { initialColumn: "submitted", initialDirection: "desc" },
     pagination: { pageSize: 20, pageSizeOptions: [10, 20, 50] },
   });
 
@@ -98,13 +94,10 @@ export default function AdminReviewsPage() {
               }
             >
               <p className="font-semibold text-gray-900">
-                {review.company?.registered_name ?? "Unknown company"}
-              </p>
-              <p className="text-muted-foreground mt-1 truncate text-sm">
-                {review.company?.email}
+                {review.company?.email ?? "No account email"}
               </p>
               <p className="text-muted-foreground mt-3 text-xs">
-                Submitted {formatDateWithoutTime(review.created_at)}
+                Submitted {formatTimeElapsed(review.created_at)}
               </p>
             </article>
           )}

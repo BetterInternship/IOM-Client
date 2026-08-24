@@ -35,18 +35,21 @@ import type {
   AdminControllerBulkCreateLegacyCompaniesFromZipBody,
   AdminControllerCreateTemplateBody,
   AdminControllerCreateUniversityLegacyCompanyBody,
+  AdminControllerTinAvailableParams,
+  AdminControllerUploadWitnessSignatureBody,
   AdminCreateCompanyResponse,
   AdminCreateTemplateResponse,
   AdminCreateUniversityResponse,
   AdminOverviewResponse,
   AdminPatchCompanyResponse,
   AdminPatchTemplateResponse,
+  AdminSettingsResponse,
   AdminSuperadminReassignResponse,
   AdminTemplatesResponse,
+  AdminTinAvailableResponse,
   AdminUniversitiesResponse,
   AdminUniversityDetailResponse,
   AdminUniversityPartnersResponse,
-  AdminVerifyTinResponse,
   AppendLegacyMoasDto,
   ApproveCompanyReviewDto,
   BaseResponse,
@@ -54,7 +57,9 @@ import type {
   CreateUniversityDto,
   ErrorResponse,
   PatchCompanyAdminDto,
+  PatchSettingsDto,
   PatchTemplateDto,
+  PublishTemplateDto,
   RejectCompanyReviewDto,
   SeedSuperadminDto,
   UniversityBulkResultResponse,
@@ -63,7 +68,6 @@ import type {
   UniversityMoaDetailResponse,
   UniversityPartnerLegacyCompanyResponse,
   UniversityPartnerMoasResponse,
-  VerifyTinDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
@@ -884,7 +888,7 @@ export const adminControllerApproveCompany = (
   signal?: AbortSignal,
 ) => {
   return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/admin/companies/${companyId}/approve`,
+    url: `/api/admin/companies/${companyId}/review/approve`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: approveCompanyReviewDto,
@@ -965,7 +969,7 @@ export const adminControllerRejectCompany = (
   signal?: AbortSignal,
 ) => {
   return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/admin/companies/${companyId}/reject`,
+    url: `/api/admin/companies/${companyId}/review/reject`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
     data: rejectCompanyReviewDto,
@@ -1040,83 +1044,293 @@ export const useAdminControllerRejectCompany = <
 
   return useMutation(mutationOptions, queryClient);
 };
-export const adminControllerCareerNudge = (
-  companyId: string | undefined | null,
+export const adminControllerTinAvailable = (
+  params?: AdminControllerTinAvailableParams,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/admin/companies/${companyId}/career-nudge`,
-    method: "POST",
+  return preconfiguredAxiosFunction<AdminTinAvailableResponse>({
+    url: `/api/admin/companies/tin-available`,
+    method: "GET",
+    params,
     signal,
   });
 };
 
-export const getAdminControllerCareerNudgeMutationOptions = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminControllerCareerNudge>>,
-    TError,
-    { companyId: string | undefined | null },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof adminControllerCareerNudge>>,
-  TError,
-  { companyId: string | undefined | null },
-  TContext
-> => {
-  const mutationKey = ["adminControllerCareerNudge"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminControllerCareerNudge>>,
-    { companyId: string | undefined | null }
-  > = (props) => {
-    const { companyId } = props ?? {};
-
-    return adminControllerCareerNudge(companyId);
-  };
-
-  return { mutationFn, ...mutationOptions };
+export const getAdminControllerTinAvailableQueryKey = (
+  params?: AdminControllerTinAvailableParams,
+) => {
+  return [
+    `/api/admin/companies/tin-available`,
+    ...(params ? [params] : []),
+  ] as const;
 };
 
-export type AdminControllerCareerNudgeMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminControllerCareerNudge>>
->;
-
-export type AdminControllerCareerNudgeMutationError = ErrorResponse;
-
-export const useAdminControllerCareerNudge = <
+export const getAdminControllerTinAvailableQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminControllerTinAvailable>>,
   TError = ErrorResponse,
-  TContext = unknown,
 >(
+  params?: AdminControllerTinAvailableParams,
   options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof adminControllerCareerNudge>>,
-      TError,
-      { companyId: string | undefined | null },
-      TContext
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminControllerTinAvailableQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminControllerTinAvailable>>
+  > = ({ signal }) => adminControllerTinAvailable(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminControllerTinAvailableQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerTinAvailable>>
+>;
+export type AdminControllerTinAvailableQueryError = ErrorResponse;
+
+export function useAdminControllerTinAvailable<
+  TData = Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+  TError = ErrorResponse,
+>(
+  params: undefined | AdminControllerTinAvailableParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+          TError,
+          Awaited<ReturnType<typeof adminControllerTinAvailable>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerTinAvailable<
+  TData = Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+  TError = ErrorResponse,
+>(
+  params?: AdminControllerTinAvailableParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+          TError,
+          Awaited<ReturnType<typeof adminControllerTinAvailable>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerTinAvailable<
+  TData = Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+  TError = ErrorResponse,
+>(
+  params?: AdminControllerTinAvailableParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+        TError,
+        TData
+      >
     >;
   },
   queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof adminControllerCareerNudge>>,
-  TError,
-  { companyId: string | undefined | null },
-  TContext
-> => {
-  const mutationOptions = getAdminControllerCareerNudgeMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
 };
+
+export function useAdminControllerTinAvailable<
+  TData = Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+  TError = ErrorResponse,
+>(
+  params?: AdminControllerTinAvailableParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminControllerTinAvailableQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getAdminControllerTinAvailableSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+  TError = ErrorResponse,
+>(
+  params?: AdminControllerTinAvailableParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminControllerTinAvailableQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminControllerTinAvailable>>
+  > = ({ signal }) => adminControllerTinAvailable(params, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminControllerTinAvailableSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerTinAvailable>>
+>;
+export type AdminControllerTinAvailableSuspenseQueryError = ErrorResponse;
+
+export function useAdminControllerTinAvailableSuspense<
+  TData = Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+  TError = ErrorResponse,
+>(
+  params: undefined | AdminControllerTinAvailableParams,
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerTinAvailableSuspense<
+  TData = Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+  TError = ErrorResponse,
+>(
+  params?: AdminControllerTinAvailableParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerTinAvailableSuspense<
+  TData = Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+  TError = ErrorResponse,
+>(
+  params?: AdminControllerTinAvailableParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useAdminControllerTinAvailableSuspense<
+  TData = Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+  TError = ErrorResponse,
+>(
+  params?: AdminControllerTinAvailableParams,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerTinAvailable>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminControllerTinAvailableSuspenseQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export const adminControllerListUniversities = (signal?: AbortSignal) => {
   return preconfiguredAxiosFunction<AdminUniversitiesResponse>({
     url: `/api/admin/universities`,
@@ -4577,85 +4791,6 @@ export function useAdminControllerGetPartnerLegacyCompanySuspense<
   return query;
 }
 
-export const adminControllerVerifyTin = (
-  verifyTinDto: VerifyTinDto,
-  signal?: AbortSignal,
-) => {
-  return preconfiguredAxiosFunction<AdminVerifyTinResponse>({
-    url: `/api/admin/companies/verify-tin`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: verifyTinDto,
-    signal,
-  });
-};
-
-export const getAdminControllerVerifyTinMutationOptions = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof adminControllerVerifyTin>>,
-    TError,
-    { data: VerifyTinDto },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof adminControllerVerifyTin>>,
-  TError,
-  { data: VerifyTinDto },
-  TContext
-> => {
-  const mutationKey = ["adminControllerVerifyTin"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminControllerVerifyTin>>,
-    { data: VerifyTinDto }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return adminControllerVerifyTin(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type AdminControllerVerifyTinMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminControllerVerifyTin>>
->;
-export type AdminControllerVerifyTinMutationBody = VerifyTinDto;
-export type AdminControllerVerifyTinMutationError = ErrorResponse;
-
-export const useAdminControllerVerifyTin = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof adminControllerVerifyTin>>,
-      TError,
-      { data: VerifyTinDto },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof adminControllerVerifyTin>>,
-  TError,
-  { data: VerifyTinDto },
-  TContext
-> => {
-  const mutationOptions = getAdminControllerVerifyTinMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
 export const adminControllerCreateCompany = (
   createCompanyAdminDto: CreateCompanyAdminDto,
   signal?: AbortSignal,
@@ -6054,6 +6189,508 @@ export const useAdminControllerDeleteTemplate = <
 > => {
   const mutationOptions =
     getAdminControllerDeleteTemplateMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const adminControllerPublishTemplate = (
+  templateId: string | undefined | null,
+  publishTemplateDto: PublishTemplateDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<AdminPatchTemplateResponse>({
+    url: `/api/admin/templates/${templateId}/publish`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: publishTemplateDto,
+    signal,
+  });
+};
+
+export const getAdminControllerPublishTemplateMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerPublishTemplate>>,
+    TError,
+    { templateId: string | undefined | null; data: PublishTemplateDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminControllerPublishTemplate>>,
+  TError,
+  { templateId: string | undefined | null; data: PublishTemplateDto },
+  TContext
+> => {
+  const mutationKey = ["adminControllerPublishTemplate"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminControllerPublishTemplate>>,
+    { templateId: string | undefined | null; data: PublishTemplateDto }
+  > = (props) => {
+    const { templateId, data } = props ?? {};
+
+    return adminControllerPublishTemplate(templateId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminControllerPublishTemplateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerPublishTemplate>>
+>;
+export type AdminControllerPublishTemplateMutationBody = PublishTemplateDto;
+export type AdminControllerPublishTemplateMutationError = ErrorResponse;
+
+export const useAdminControllerPublishTemplate = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof adminControllerPublishTemplate>>,
+      TError,
+      { templateId: string | undefined | null; data: PublishTemplateDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof adminControllerPublishTemplate>>,
+  TError,
+  { templateId: string | undefined | null; data: PublishTemplateDto },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminControllerPublishTemplateMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const adminControllerGetSettings = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<AdminSettingsResponse>({
+    url: `/api/admin/settings`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getAdminControllerGetSettingsQueryKey = () => {
+  return [`/api/admin/settings`] as const;
+};
+
+export const getAdminControllerGetSettingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminControllerGetSettings>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof adminControllerGetSettings>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminControllerGetSettingsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminControllerGetSettings>>
+  > = ({ signal }) => adminControllerGetSettings(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminControllerGetSettings>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminControllerGetSettingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerGetSettings>>
+>;
+export type AdminControllerGetSettingsQueryError = ErrorResponse;
+
+export function useAdminControllerGetSettings<
+  TData = Awaited<ReturnType<typeof adminControllerGetSettings>>,
+  TError = ErrorResponse,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetSettings>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminControllerGetSettings>>,
+          TError,
+          Awaited<ReturnType<typeof adminControllerGetSettings>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerGetSettings<
+  TData = Awaited<ReturnType<typeof adminControllerGetSettings>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetSettings>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof adminControllerGetSettings>>,
+          TError,
+          Awaited<ReturnType<typeof adminControllerGetSettings>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerGetSettings<
+  TData = Awaited<ReturnType<typeof adminControllerGetSettings>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetSettings>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useAdminControllerGetSettings<
+  TData = Awaited<ReturnType<typeof adminControllerGetSettings>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetSettings>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getAdminControllerGetSettingsQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getAdminControllerGetSettingsSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminControllerGetSettings>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof adminControllerGetSettings>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminControllerGetSettingsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminControllerGetSettings>>
+  > = ({ signal }) => adminControllerGetSettings(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof adminControllerGetSettings>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type AdminControllerGetSettingsSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerGetSettings>>
+>;
+export type AdminControllerGetSettingsSuspenseQueryError = ErrorResponse;
+
+export function useAdminControllerGetSettingsSuspense<
+  TData = Awaited<ReturnType<typeof adminControllerGetSettings>>,
+  TError = ErrorResponse,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetSettings>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerGetSettingsSuspense<
+  TData = Awaited<ReturnType<typeof adminControllerGetSettings>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetSettings>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useAdminControllerGetSettingsSuspense<
+  TData = Awaited<ReturnType<typeof adminControllerGetSettings>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetSettings>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useAdminControllerGetSettingsSuspense<
+  TData = Awaited<ReturnType<typeof adminControllerGetSettings>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof adminControllerGetSettings>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getAdminControllerGetSettingsSuspenseQueryOptions(options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const adminControllerPatchSettings = (
+  patchSettingsDto: PatchSettingsDto,
+) => {
+  return preconfiguredAxiosFunction<AdminSettingsResponse>({
+    url: `/api/admin/settings`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: patchSettingsDto,
+  });
+};
+
+export const getAdminControllerPatchSettingsMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerPatchSettings>>,
+    TError,
+    { data: PatchSettingsDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminControllerPatchSettings>>,
+  TError,
+  { data: PatchSettingsDto },
+  TContext
+> => {
+  const mutationKey = ["adminControllerPatchSettings"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminControllerPatchSettings>>,
+    { data: PatchSettingsDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminControllerPatchSettings(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminControllerPatchSettingsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerPatchSettings>>
+>;
+export type AdminControllerPatchSettingsMutationBody = PatchSettingsDto;
+export type AdminControllerPatchSettingsMutationError = ErrorResponse;
+
+export const useAdminControllerPatchSettings = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof adminControllerPatchSettings>>,
+      TError,
+      { data: PatchSettingsDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof adminControllerPatchSettings>>,
+  TError,
+  { data: PatchSettingsDto },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminControllerPatchSettingsMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const adminControllerUploadWitnessSignature = (
+  adminControllerUploadWitnessSignatureBody: AdminControllerUploadWitnessSignatureBody,
+  signal?: AbortSignal,
+) => {
+  const formData = new FormData();
+  formData.append(`file`, adminControllerUploadWitnessSignatureBody.file);
+
+  return preconfiguredAxiosFunction<AdminSettingsResponse>({
+    url: `/api/admin/settings/witness-signature`,
+    method: "POST",
+    headers: { "Content-Type": "multipart/form-data" },
+    data: formData,
+    signal,
+  });
+};
+
+export const getAdminControllerUploadWitnessSignatureMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminControllerUploadWitnessSignature>>,
+    TError,
+    { data: AdminControllerUploadWitnessSignatureBody },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminControllerUploadWitnessSignature>>,
+  TError,
+  { data: AdminControllerUploadWitnessSignatureBody },
+  TContext
+> => {
+  const mutationKey = ["adminControllerUploadWitnessSignature"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminControllerUploadWitnessSignature>>,
+    { data: AdminControllerUploadWitnessSignatureBody }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminControllerUploadWitnessSignature(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminControllerUploadWitnessSignatureMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminControllerUploadWitnessSignature>>
+>;
+export type AdminControllerUploadWitnessSignatureMutationBody =
+  AdminControllerUploadWitnessSignatureBody;
+export type AdminControllerUploadWitnessSignatureMutationError = ErrorResponse;
+
+export const useAdminControllerUploadWitnessSignature = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof adminControllerUploadWitnessSignature>>,
+      TError,
+      { data: AdminControllerUploadWitnessSignatureBody },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof adminControllerUploadWitnessSignature>>,
+  TError,
+  { data: AdminControllerUploadWitnessSignatureBody },
+  TContext
+> => {
+  const mutationOptions =
+    getAdminControllerUploadWitnessSignatureMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

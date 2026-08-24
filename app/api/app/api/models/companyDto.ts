@@ -13,7 +13,8 @@ export interface CompanyDto {
   tin: string | null;
   /** @nullable */
   email: string | null;
-  registered_name: string;
+  /** @nullable */
+  registered_name: string | null;
   /** @nullable */
   company_type: string | null;
   /** @nullable */

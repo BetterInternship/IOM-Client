@@ -9,6 +9,7 @@ import {
   usePdfPageRenderer,
 } from "@betterinternship/core/pdf-viewer";
 import { FileText } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function PdfPage({
   pdfDoc,
@@ -94,17 +95,26 @@ export function DocumentPreviewPane({
   label,
   filename = label,
   zoomStorageKey = "iom-document-preview-zoom",
+  dividerSide = "left",
 }: {
   url: string;
   label: string;
   filename?: string;
   zoomStorageKey?: string;
+  /** Which edge carries the divider border against the neighboring pane, or "none" standalone (e.g. inside a modal). */
+  dividerSide?: "left" | "right" | "none";
 }) {
   const proxiedUrl = `/gcs-proxy?url=${encodeURIComponent(url)}`;
   const isImage = /\.(png|jpe?g|gif|webp)$/i.test(filename);
 
   return (
-    <aside className="relative h-[70vh] min-h-[520px] overflow-hidden border-l border-gray-200 bg-slate-100 lg:h-full lg:min-h-0">
+    <aside
+      className={cn(
+        "relative h-[70vh] min-h-[520px] overflow-hidden bg-slate-100 lg:h-full lg:min-h-0",
+        dividerSide === "left" && "border-l border-gray-200",
+        dividerSide === "right" && "border-r border-gray-200",
+      )}
+    >
       {isImage ? (
         // User-uploaded document image.
         // eslint-disable-next-line @next/next/no-img-element

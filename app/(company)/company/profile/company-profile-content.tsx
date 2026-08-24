@@ -1,9 +1,6 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import {
   useCompanyProfile,
@@ -12,32 +9,14 @@ import {
 import {
   getCompanyControllerGetDocumentsQueryKey,
   getCompanyControllerGetVerificationQueryKey,
-  getCompanyControllerMeQueryKey,
   useCompanyControllerGetDocuments,
-  useCompanyControllerPatchProfile,
-  useCompanyControllerUploadDocument,
   useCompanyControllerUploadDocuments,
   type CompanyDocumentDto,
-  type CompanyVerificationResponse,
-  type PatchCompanyProfileDto,
 } from "@/app/api";
-import { cn } from "@/lib/utils";
-import {
-  companyProfileSchema,
-  type CompanyProfileDraft,
-} from "@/lib/profile-validation";
-import { PageContainer } from "@/components/page-header";
+import { formatDateWithoutTime } from "@/lib/utils";
+import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { FileDropTarget } from "@/components/ui/use-file-drop";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import {
   CollapsibleCardGroup,
   CollapsibleCardSection,
@@ -50,8 +29,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useModal } from "@/app/providers/modal-provider";
-import { useIomModalRegistry } from "@/components/modal-registry";
 import { toastPresets } from "@/components/sonner-toaster";
+import { REQUIRED_DOCUMENT_TYPES, documentLabel } from "@/lib/document-types";
 import {
   Building2,
   CircleAlert,
@@ -62,277 +41,51 @@ import {
   Loader2,
   Upload,
 } from "lucide-react";
-import { DocumentPreview } from "./document-preview";
-import { ProfileHeader } from "./profile-header";
+import { DocumentPreview } from "@/components/company/document-preview";
 
-type SectionKey = "company" | "documents";
+const COMPANY_TYPE_LABELS: Record<string, string> = {
+  corporation: "Corporation",
+  partnership: "Partnership",
+  sole_proprietorship: "Sole Proprietorship",
+  government_agency: "Government Agency",
+};
 
-const COSMETIC_KEYS = ["description", "website", "phone", "industry"];
-const COMPANY_PROFILE_DRAFT_KEY = "iom:company-profile-draft";
-
-const COMPANY_TYPES = [
-  { value: "corporation", label: "Corporation" },
-  { value: "partnership", label: "Partnership" },
-  { value: "sole_proprietorship", label: "Sole Proprietorship" },
-  { value: "government_agency", label: "Government Agency" },
-];
-const DOC_TYPES = [
-  { value: "business_permit", label: "Business Permit" },
-  { value: "sec_dti_registration", label: "SEC/DTI Registration" },
-  { value: "mayor_permit", label: "Mayor's Permit" },
-];
-
-type CompanyProfileMode = "setup" | "profile";
-
-function readCompanyProfileDraft(key: string): Partial<CompanyProfileDraft> {
-  try {
-    const draft = JSON.parse(localStorage.getItem(key) ?? "null");
-    if (!draft || typeof draft !== "object") return {};
-
-    return Object.fromEntries(
-      Object.entries(draft).filter(([, value]) => typeof value === "string"),
-    ) as Partial<CompanyProfileDraft>;
-  } catch {
-    return {};
-  }
-}
-
-export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
+export function CompanyProfileContent() {
   const { openModal } = useModal();
-  const { approvalPending, confirmAction } = useIomModalRegistry();
-  const inviteUniId = searchParams.get("invite_uni");
-  const inviteTemplateId = searchParams.get("invite_template");
-  const inviteId = searchParams.get("invite_id");
-
   const { company, isLoading } = useCompanyProfile();
   const queryClient = useQueryClient();
 
-  const [isEditing, setIsEditing] = useState(false);
-  const form = useForm<CompanyProfileDraft>({
-    resolver: zodResolver(companyProfileSchema),
-    mode: "onChange",
-    defaultValues: {
-      registered_name: "",
-      registered_address: "",
-      company_type: "",
-      description: "",
-      website: "",
-      phone: "",
-      industry: "",
-    },
-  });
-
-  const [uploadingType, setUploadingType] = useState<string | null>(null);
-  const [replacementFiles, setReplacementFiles] = useState<
-    Record<string, File>
-  >({});
-  const [awaitingCompletionReview, setAwaitingCompletionReview] =
-    useState(false);
   const documentInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const { data: docsData } = useCompanyControllerGetDocuments({
     query: { enabled: !!company },
   });
 
-  const { data: verification, isLoading: vLoading } =
-    useCompanyVerification(!!company);
-  const verified = verification?.status === "verified";
-  const isSetupMode = mode === "setup";
-  const profileDraftKey = company
-    ? `${COMPANY_PROFILE_DRAFT_KEY}:${company.id}`
-    : null;
-  const watched = form.watch();
-  const hasUnsavedChanges =
-    Boolean(
-      isSetupMode
-        ? form.formState.isDirty
-        : form.formState.dirtyFields.registered_address ||
-            form.formState.dirtyFields.company_type,
-    ) || Object.keys(replacementFiles).length > 0;
+  const { data: verification } = useCompanyVerification(!!company);
+  const status = verification?.status;
 
-  useEffect(() => {
-    const warnBeforeLeave = (event: BeforeUnloadEvent) => {
-      if (!hasUnsavedChanges) return;
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", warnBeforeLeave);
-    return () => window.removeEventListener("beforeunload", warnBeforeLeave);
-  }, [hasUnsavedChanges]);
+  const invalidateDocuments = () => {
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerGetDocumentsQueryKey(),
+    });
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerGetVerificationQueryKey(),
+    });
+  };
 
-  useEffect(() => {
-    if (!hasUnsavedChanges) return;
-    const warnInternalNavigation = (event: MouseEvent) => {
-      if (
-        event.defaultPrevented ||
-        event.button !== 0 ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.shiftKey ||
-        event.altKey
-      )
-        return;
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const anchor = target.closest<HTMLAnchorElement>("a[href]");
-      if (!anchor) return;
-      const destination = new URL(anchor.href, window.location.href);
-      if (
-        destination.pathname === window.location.pathname &&
-        destination.search === window.location.search
-      )
-        return;
-      if (
-        !window.confirm("Leave this page? Your unsaved changes will be lost.")
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    };
-    document.addEventListener("click", warnInternalNavigation, true);
-    return () =>
-      document.removeEventListener("click", warnInternalNavigation, true);
-  }, [hasUnsavedChanges]);
-
-  useEffect(() => {
-    if (!company) return;
-    const seed: CompanyProfileDraft = {
-      registered_name: company.registered_name ?? "",
-      registered_address: company.registered_address ?? "",
-      company_type: company.company_type ?? "",
-      description: String(company.cosmetic?.description ?? ""),
-      website: String(company.cosmetic?.website ?? ""),
-      phone: String(company.cosmetic?.phone ?? ""),
-      industry: String(company.cosmetic?.industry ?? ""),
-    };
-    const draft =
-      isSetupMode && profileDraftKey
-        ? readCompanyProfileDraft(profileDraftKey)
-        : {};
-    form.reset(seed);
-    for (const key of Object.keys(draft) as (keyof CompanyProfileDraft)[]) {
-      const value = draft[key];
-      if (value !== undefined && value !== seed[key]) {
-        form.setValue(key, value, { shouldDirty: true });
-      }
-    }
-    void form.trigger();
-  }, [company, form, isSetupMode, profileDraftKey]);
-
-  useEffect(() => {
-    if (!isSetupMode || !profileDraftKey || !form.formState.isDirty) return;
-    localStorage.setItem(profileDraftKey, JSON.stringify(watched));
-  }, [form.formState.isDirty, isSetupMode, profileDraftKey, watched]);
-
-  // Continue an invitation only after the server has confirmed setup completion.
-  useEffect(() => {
-    if (
-      !isSetupMode ||
-      !inviteUniId ||
-      isLoading ||
-      vLoading ||
-      !company ||
-      !verification
-    )
-      return;
-    if (verification.status === "incomplete") return;
-    if (awaitingCompletionReview && verification.status === "pending") return;
-    const params = new URLSearchParams({ open_university_id: inviteUniId });
-    if (inviteTemplateId) params.set("template_id", inviteTemplateId);
-    if (inviteId) params.set("invite_id", inviteId);
-    router.replace(`/dashboard?${params}`);
-  }, [
-    awaitingCompletionReview,
-    inviteUniId,
-    isLoading,
-    isSetupMode,
-    vLoading,
-    company,
-    verification,
-    inviteTemplateId,
-    inviteId,
-    router,
-  ]);
-
-  useEffect(() => {
-    if (
-      !isSetupMode ||
-      !awaitingCompletionReview ||
-      vLoading ||
-      verification?.status !== "pending"
-    )
-      return;
-    const params = new URLSearchParams({ approval_pending: "1" });
-    if (inviteUniId) params.set("open_university_id", inviteUniId);
-    if (inviteTemplateId) params.set("template_id", inviteTemplateId);
-    if (inviteId) params.set("invite_id", inviteId);
-    router.replace(`/universities?${params}`);
-  }, [
-    awaitingCompletionReview,
-    inviteId,
-    inviteTemplateId,
-    inviteUniId,
-    isSetupMode,
-    router,
-    verification?.status,
-    vLoading,
-  ]);
-
-  useEffect(() => {
-    if (
-      !isSetupMode ||
-      inviteUniId ||
-      isLoading ||
-      vLoading ||
-      !verification ||
-      verification.status === "incomplete" ||
-      (awaitingCompletionReview && verification.status === "pending")
-    )
-      return;
-    router.replace("/profile");
-  }, [
-    awaitingCompletionReview,
-    inviteUniId,
-    isLoading,
-    isSetupMode,
-    router,
-    verification,
-    vLoading,
-  ]);
-
-  const save = useCompanyControllerPatchProfile({
+  const uploadReplacement = useCompanyControllerUploadDocuments({
     mutation: {
       onSuccess: (_data, variables) => {
-        form.reset(variables.data as CompanyProfileDraft);
-        if (isSetupMode && profileDraftKey)
-          localStorage.removeItem(profileDraftKey);
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerMeQueryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerGetVerificationQueryKey(),
-        });
-        setAwaitingCompletionReview(isSetupMode);
-        toast("Profile saved", toastPresets.success);
-      },
-      onError: (e: Error) => toast.error(e.message),
-    },
-  });
-
-  const uploadDoc = useCompanyControllerUploadDocument({
-    mutation: {
-      onSuccess: () => {
+        const type = Object.keys(variables.data)[0];
         setUploadingType(null);
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerGetDocumentsQueryKey(),
-        });
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerGetVerificationQueryKey(),
-        });
-        setAwaitingCompletionReview(isSetupMode);
-        toast("Document uploaded", toastPresets.success);
+        invalidateDocuments();
+        toast(
+          status === "verified"
+            ? "Document replaced — your verification stays active while it's reviewed."
+            : "Document replaced — still under review.",
+          toastPresets.success,
+        );
+        void type;
       },
       onError: (e: Error) => {
         setUploadingType(null);
@@ -341,520 +94,172 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
     },
   });
 
-  const uploadDocuments = useCompanyControllerUploadDocuments({
-    mutation: {
-      onSuccess: () => {
-        setReplacementFiles({});
-        setIsEditing(false);
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerGetDocumentsQueryKey(),
-        });
-        queryClient.setQueryData<CompanyVerificationResponse>(
-          getCompanyControllerGetVerificationQueryKey(),
-          (current) =>
-            current
-              ? {
-                  ...current,
-                  status: "pending",
-                  approvalExpiresAt: null,
-                  rejectionReason: null,
-                }
-              : current,
-        );
-        queryClient.invalidateQueries({
-          queryKey: getCompanyControllerGetVerificationQueryKey(),
-        });
-        confirmAction.close();
-        approvalPending.open({
-          onQueueMoa: () => router.push("/universities"),
-          onClose: () => undefined,
-          reapproval: true,
-        });
-      },
-      onError: (e: Error) => toast(e.message, toastPresets.destructive),
-    },
-  });
+  const [uploadingType, setUploadingType] = useState<string | null>(null);
 
   if (isLoading || !company) return null;
 
-  function persisted(key: string): string {
-    if (COSMETIC_KEYS.includes(key))
-      return String(company!.cosmetic?.[key] ?? "");
-    return String(company?.[key as keyof NonNullable<typeof company>] ?? "");
-  }
-  async function attemptSave() {
-    if (
-      save.isPending ||
-      uploadDoc.isPending ||
-      uploadDocuments.isPending ||
-      (isSetupMode && !documentsComplete) ||
-      !form.formState.isValid
-    )
-      return;
-    const submit = async () => {
-      if (
-        save.isPending ||
-        uploadDoc.isPending ||
-        uploadDocuments.isPending ||
-        (isSetupMode && !documentsComplete)
-      )
-        return;
-      if (form.formState.isDirty) {
-        const values = form.getValues();
-        await save.mutateAsync({
-          data: {
-            ...values,
-            company_type:
-              values.company_type as PatchCompanyProfileDto["company_type"],
-          },
-        });
-      }
-      if (replacementCount > 0) {
-        await uploadDocuments.mutateAsync({ data: replacementFiles });
-      } else {
-        setIsEditing(false);
-      }
-    };
-    if (!isSetupMode && replacementCount > 0) {
-      confirmAction.open({
-        title: "Save document changes?",
-        description:
-          "Uploading a new document will require your company to go through approval again. Do you want to save these changes? Existing MOAs will remain valid while your company is reviewed.",
-        confirmLabel: "Save changes",
-        onConfirm: submit,
-        isPending: save.isPending || uploadDocuments.isPending,
-        tone: "alert",
-      });
-    } else {
-      await submit();
+  const docs = docsData?.documents ?? [];
+  const latestDoc = (type: string) => docs.find((d) => d.type === type);
+  const docCount = REQUIRED_DOCUMENT_TYPES.filter((type) => latestDoc(type)).length;
+  const documentsComplete = docCount === REQUIRED_DOCUMENT_TYPES.length;
+
+  function slotState(
+    type: string,
+  ):
+    | { kind: "missing" }
+    | { kind: "rejected"; reason: string }
+    | { kind: "expired"; reason: string }
+    | { kind: "on-file"; doc: CompanyDocumentDto } {
+    if (verification?.reason === "rejected" && verification.documentRejections[type]) {
+      return { kind: "rejected", reason: verification.documentRejections[type] };
     }
+    if (verification?.reason === "expired" && verification.expiredDocument === type) {
+      return {
+        kind: "expired",
+        reason:
+          verification.documentRejections[type] ?? "This document expired.",
+      };
+    }
+    const doc = latestDoc(type);
+    return doc ? { kind: "on-file", doc } : { kind: "missing" };
   }
 
-  function fieldError(field: string) {
-    return form.formState.errors[field as keyof CompanyProfileDraft]?.message;
-  }
-
-  function attemptUploadDoc(file: File, type: string) {
-    const upload = () => {
-      setUploadingType(type);
-      uploadDoc.mutate({ data: { file, type } });
-    };
-    if (verified) {
-      confirmAction.open({
-        title: "This change requires re-verification",
-        description:
-          "Changing this will require re-verification by the platform team. You won't be able to request new MOAs until you're re-approved. Your existing MOAs stay valid.",
-        confirmLabel: "Upload anyway",
-        onConfirm: upload,
-        isPending: uploadDoc.isPending,
-      });
-    } else {
-      upload();
-    }
+  function handleFileSelected(type: string, file: File) {
+    // This page only ever renders once status has left "incomplete" — the
+    // landing guard sends onboarding companies to /verification instead,
+    // which owns the singular first-upload path.
+    setUploadingType(type);
+    uploadReplacement.mutate({ data: { [type]: file } });
   }
 
   function preview(doc: CompanyDocumentDto) {
-    const documentTitle =
-      DOC_TYPES.find(({ value }) => value === doc.type)?.label ??
-      "Legal Document";
-
     openModal("preview-doc", <DocumentPreview docId={doc.id} />, {
-      title: documentTitle,
+      title: documentLabel(doc.type),
       panelClassName: "!w-full sm:!max-w-4xl",
-      contentClassName:
-        "h-[75dvh] overflow-hidden sm:h-[75vh] sm:min-h-[32rem]",
+      contentClassName: "h-[75dvh] overflow-hidden sm:h-[75vh] sm:min-h-[32rem]",
       showHeaderDivider: false,
     });
   }
-
-  const docs = docsData?.documents ?? [];
-  const latestDoc = (type: string) => docs.find((d) => d.type === type);
-  const docCount = DOC_TYPES.filter(({ value }) => latestDoc(value)).length;
-  const companyInfoComplete = Boolean(
-    company.registered_name &&
-    watched.registered_address?.trim() &&
-    watched.company_type,
-  );
-  const documentsComplete = docCount === DOC_TYPES.length;
-  const replacementCount = Object.keys(replacementFiles).length;
-
-  // ── small renderers (plain functions, NOT components, to preserve input focus) ─
-  const textField = (
-    sectionKey: SectionKey,
-    field: string,
-    label: string,
-    help?: string,
-  ) => {
-    const fieldIsEditable =
-      (isSetupMode || isEditing) &&
-      (sectionKey !== "company" || field !== "registered_name");
-    return (
-      <DetailField label={<Label htmlFor={field}>{label}</Label>}>
-        <div className="min-w-0 flex-1 space-y-1">
-          {fieldIsEditable ? (
-            <Input
-              id={field}
-              aria-invalid={!!fieldError(field)}
-              aria-describedby={
-                fieldError(field) ? `${field}-error` : undefined
-              }
-              {...form.register(field as keyof CompanyProfileDraft)}
-            />
-          ) : (
-            <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
-              {persisted(field) || (
-                <span className="text-muted-foreground font-normal">
-                  Not set
-                </span>
-              )}
-            </p>
-          )}
-          {fieldIsEditable && fieldError(field) && (
-            <p id={`${field}-error`} className="text-destructive text-xs">
-              {fieldError(field)}
-            </p>
-          )}
-          {help && <p className="text-muted-foreground text-xs">{help}</p>}
-        </div>
-      </DetailField>
-    );
-  };
 
   return (
     <div className="relative isolate flex-1 bg-slate-50/70">
       <div className="pointer-events-none absolute inset-0 z-0 bg-[url('/bg2.png')] bg-cover bg-center bg-no-repeat opacity-30" />
       <div className="pointer-events-none absolute inset-x-0 top-0 z-0 h-56 bg-gradient-to-b from-white/90 via-white/50 to-transparent" />
-      <PageContainer className={cn("relative z-10 space-y-8 pb-12")}>
-        <ProfileHeader
-          companyName={company.registered_name}
-          isSetupMode={isSetupMode}
-          isEditing={isEditing}
-          companyInfoComplete={companyInfoComplete}
-          documentsComplete={documentsComplete}
-          isSaveDisabled={
-            save.isPending ||
-            uploadDoc.isPending ||
-            uploadDocuments.isPending ||
-            !form.formState.isValid ||
-            (!form.formState.isDirty && replacementCount === 0)
+      <PageContainer className="relative z-10 space-y-8 pb-12">
+        <PageHeader
+          title={company.registered_name ?? company.email}
+          description={
+            company.registered_name
+              ? undefined
+              : "An admin will transcribe your registered name when your company is verified."
           }
-          isSaving={save.isPending || uploadDocuments.isPending}
-          onEdit={() => setIsEditing(true)}
-          onCancel={() => {
-            form.reset();
-            setReplacementFiles({});
-            setIsEditing(false);
-          }}
-          onSave={attemptSave}
         />
 
-        {isSetupMode && inviteUniId && (
-          <div className="border-primary/30 bg-primary/5 rounded-[0.33em] border px-4 py-3 text-sm text-gray-700">
-            You have a pending MOA invitation. Complete your company profile and
-            upload all required documents to proceed.
-          </div>
-        )}
-
-        <CollapsibleCardGroup
-          type="multiple"
-          defaultValue={["company", "documents"]}
-          variant={isSetupMode ? "separate" : "grouped"}
-        >
-          {/* 1 — Company Profile */}
-          <CollapsibleCardSection
-            value="company"
-            trigger={
-              <CollapsibleCardSectionTitle
-                icon={Building2}
-                title={isSetupMode ? "Company Information" : "Company Profile"}
-                requiredComplete={
-                  isSetupMode || isEditing ? companyInfoComplete : undefined
-                }
-              />
-            }
-            contentClassName="space-y-4 px-5 pb-5"
-          >
-            <DetailField label="Account email">
-              <p className="flex min-h-8 items-center break-all text-sm font-medium text-gray-900">
-                {company.email}
-              </p>
-            </DetailField>
-            <DetailField label="Legal / registered name">
-              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
-                {company.registered_name}
-              </p>
-            </DetailField>
-            {textField("company", "registered_address", "Registered address")}
-            <DetailField label="Company type">
-              <div className="min-w-0 flex-1">
-                {isSetupMode || isEditing ? (
-                  <Select
-                    value={form.watch("company_type") || undefined}
-                    onValueChange={(v) =>
-                      form.setValue("company_type", v, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      })
-                    }
-                  >
-                    <SelectTrigger
-                      className="w-full"
-                      aria-invalid={!!fieldError("company_type")}
-                    >
-                      <SelectValue placeholder="Select a type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {COMPANY_TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
-                    {COMPANY_TYPES.find(
-                      ({ value }) => value === company.company_type,
-                    )?.label ?? "Not set"}
-                  </p>
-                )}
-                {fieldError("company_type") && (
-                  <p className="text-destructive mt-1 text-xs">
-                    {fieldError("company_type")}
-                  </p>
-                )}
-              </div>
-            </DetailField>
-            {verified && verification.approvalExpiresAt && (
-              <DetailField label="Verified until">
-                <div className="flex min-h-8 items-center gap-2 text-sm font-medium text-gray-900">
-                  <span>
-                    {new Date(
-                      verification.approvalExpiresAt,
-                    ).toLocaleDateString("en-PH", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                      timeZone: "Asia/Manila",
-                    })}
-                  </span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        aria-label="About this verification expiry"
-                        className="text-muted-foreground hover:text-primary focus-visible:ring-primary/30 inline-flex rounded-full outline-none focus-visible:ring-2"
-                      >
-                        <Info className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="top"
-                      sideOffset={6}
-                      className="max-w-64"
-                    >
-                      This reflects the latest expiry date recorded for one of
-                      your documents. We&apos;ll notify you when it&apos;s time
-                      to renew.
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </DetailField>
-            )}
-          </CollapsibleCardSection>
-
-          {/* 2 — Required Documents */}
+        <CollapsibleCardGroup type="multiple" defaultValue={["documents", "company"]} variant="grouped">
+          {/* 1 — Required documents: three named slots, per-slot state */}
           <CollapsibleCardSection
             value="documents"
             trigger={
               <CollapsibleCardSectionTitle
                 icon={FileText}
-                title={isSetupMode ? "Legal Documents" : "Required Documents"}
-                requiredComplete={
-                  isSetupMode || isEditing ? documentsComplete : undefined
-                }
+                title="Required Documents"
+                requiredComplete={documentsComplete}
               />
             }
             contentClassName="space-y-4 px-5 pb-5"
           >
             <div id="documents" className="scroll-mt-24" />
-            {isSetupMode && (
-              <div className="space-y-2">
-                <div className="flex max-w-xs items-center gap-3">
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-gray-200">
-                    <div
-                      className="bg-primary h-full rounded-full"
-                      style={{
-                        width: `${(docCount / DOC_TYPES.length) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-muted-foreground text-xs">
-                    {docCount} of {DOC_TYPES.length} uploaded
-                  </span>
-                </div>
-              </div>
-            )}
             <div className="overflow-hidden rounded-[0.33em] border border-blue-100 bg-white">
-              {DOC_TYPES.map(({ value, label }) => {
-                const existing = latestDoc(value);
+              {REQUIRED_DOCUMENT_TYPES.map((type) => {
+                const label = documentLabel(type);
+                const slot = slotState(type);
+                const busy = uploadingType === type;
                 return (
                   <FileDropTarget
-                    key={value}
+                    key={type}
                     accept="application/pdf"
-                    disabled={
-                      isSetupMode
-                        ? uploadDoc.isPending
-                        : !isEditing || uploadDocuments.isPending
-                    }
-                    onFiles={([file]) => {
-                      if (!file) return;
-                      if (isSetupMode) attemptUploadDoc(file, value);
-                      else
-                        setReplacementFiles((current) => ({
-                          ...current,
-                          [value]: file,
-                        }));
-                    }}
+                    disabled={busy}
+                    onFiles={([file]) => file && handleFileSelected(type, file)}
                     dragOverlay={
                       <div className="text-primary flex min-h-[72px] w-full items-center justify-center gap-2 rounded-[0.33em] border-2 border-dashed border-primary/50 bg-primary/5 text-sm font-medium">
                         <Upload className="h-4 w-4" />
-                        Drop PDF to {existing ? "replace" : "upload"}
+                        Drop PDF to {slot.kind === "on-file" ? "replace" : "upload"}
                       </div>
                     }
                     className="flex min-h-[72px] flex-col gap-2 border-b border-gray-100 px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:gap-0 sm:py-0"
                   >
-                    {existing ? (
+                    {slot.kind === "on-file" ? (
                       <CircleCheck className="text-supportive" />
                     ) : (
                       <CircleAlert className="text-warning" />
                     )}
                     <div className="flex min-w-0 flex-1 flex-col gap-2 rounded-[0.16em] p-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-800">
-                          {label}
-                        </p>
-                        <p className="text-muted-foreground mt-0.5 text-xs">
-                          {replacementFiles[value]
-                            ? `Selected: ${replacementFiles[value].name}`
-                            : existing
-                              ? `Uploaded ${new Date(existing.uploaded_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`
-                              : "Not uploaded"}
-                        </p>
-                      </div>
-                      <div
-                        className={cn(
-                          "flex w-full flex-shrink-0 gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end",
-                          isEditing
-                            ? "flex-row items-stretch"
-                            : "flex-col items-stretch",
+                        <p className="text-sm font-medium text-gray-800">{label}</p>
+                        {slot.kind === "on-file" && (
+                          <p className="text-muted-foreground mt-0.5 text-xs">
+                            Uploaded{" "}
+                            {formatDateWithoutTime(slot.doc.uploaded_at)}
+                            {slot.doc.expires_at &&
+                              ` · Expires ${formatDateWithoutTime(slot.doc.expires_at)}`}
+                          </p>
                         )}
-                      >
-                        {isSetupMode ? (
-                          <>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="w-full sm:w-auto"
-                              disabled={uploadDoc.isPending}
-                              onClick={() =>
-                                documentInputRefs.current[value]?.click()
-                              }
-                            >
-                              {uploadingType === value ? (
-                                <Loader2 className="animate-spin" />
-                              ) : (
-                                <Upload />
-                              )}
-                              {uploadingType === value
-                                ? "Uploading..."
-                                : existing
-                                  ? "Drop or replace"
-                                  : "Drop or upload"}
-                            </Button>
-                            {replacementFiles[value] && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="w-full sm:w-auto"
-                                disabled={uploadDocuments.isPending}
-                                onClick={() =>
-                                  setReplacementFiles((current) => {
-                                    const next = { ...current };
-                                    delete next[value];
-                                    return next;
-                                  })
-                                }
-                              >
-                                Undo
-                              </Button>
-                            )}
-                            <input
-                              ref={(input) => {
-                                documentInputRefs.current[value] = input;
-                              }}
-                              type="file"
-                              accept="application/pdf"
-                              className="hidden"
-                              disabled={uploadDoc.isPending}
-                              onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                if (file) attemptUploadDoc(file, value);
-                                event.target.value = "";
-                              }}
-                            />
-                          </>
-                        ) : isEditing ? (
-                          <>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 sm:flex-none"
-                              disabled={uploadDocuments.isPending}
-                              onClick={() =>
-                                documentInputRefs.current[value]?.click()
-                              }
-                            >
-                              <Upload />
-                              {replacementFiles[value]
-                                ? "Replace selected"
-                                : existing
-                                  ? "Replace"
-                                  : "Upload"}
-                            </Button>
-                            <input
-                              ref={(input) => {
-                                documentInputRefs.current[value] = input;
-                              }}
-                              type="file"
-                              accept="application/pdf"
-                              className="hidden"
-                              disabled={uploadDocuments.isPending}
-                              onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                if (file)
-                                  setReplacementFiles((current) => ({
-                                    ...current,
-                                    [value]: file,
-                                  }));
-                                event.target.value = "";
-                              }}
-                            />
-                          </>
-                        ) : null}
-                        {existing && (
+                        {slot.kind === "missing" && (
+                          <p className="text-muted-foreground mt-0.5 text-xs">
+                            Not uploaded
+                          </p>
+                        )}
+                        {slot.kind === "rejected" && (
+                          <p className="text-destructive mt-0.5 text-xs">
+                            Rejected: {slot.reason}
+                          </p>
+                        )}
+                        {slot.kind === "expired" && (
+                          <p className="text-destructive mt-0.5 text-xs">
+                            {slot.reason}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex w-full flex-shrink-0 flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full sm:w-auto"
+                          disabled={busy}
+                          onClick={() => documentInputRefs.current[type]?.click()}
+                        >
+                          {busy ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <Upload />
+                          )}
+                          {busy
+                            ? "Uploading..."
+                            : slot.kind === "on-file"
+                              ? "Drop or replace"
+                              : "Drop or upload"}
+                        </Button>
+                        <input
+                          ref={(input) => {
+                            documentInputRefs.current[type] = input;
+                          }}
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          disabled={busy}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) handleFileSelected(type, file);
+                            event.target.value = "";
+                          }}
+                        />
+                        {slot.kind === "on-file" && (
                           <Button
                             variant="outline"
                             size="sm"
-                            className={
-                              isEditing
-                                ? "flex-1 sm:flex-none"
-                                : "w-full sm:w-auto"
-                            }
-                            onClick={() => preview(existing)}
+                            className="w-full sm:w-auto"
+                            onClick={() => preview(slot.doc)}
                           >
                             <Eye /> View
                           </Button>
@@ -866,24 +271,88 @@ export function CompanyProfileContent({ mode }: { mode: CompanyProfileMode }) {
               })}
             </div>
           </CollapsibleCardSection>
-        </CollapsibleCardGroup>
 
-        {isSetupMode && (
-          <div className="flex justify-end gap-2">
-            <Button
-              onClick={attemptSave}
-              disabled={
-                save.isPending ||
-                uploadDoc.isPending ||
-                !documentsComplete ||
-                !form.formState.isValid
-              }
-            >
-              {save.isPending && <Loader2 className="animate-spin" />}
-              Save changes
-            </Button>
-          </div>
-        )}
+          {/* 2 — Company identity, read-only (admin-owned per flow spec §3) */}
+          <CollapsibleCardSection
+            value="company"
+            trigger={
+              <CollapsibleCardSectionTitle icon={Building2} title="Company Profile" />
+            }
+            contentClassName="space-y-4 px-5 pb-5"
+          >
+            <DetailField label="Account email">
+              <p className="flex min-h-8 items-center break-all text-sm font-medium text-gray-900">
+                {company.email}
+              </p>
+            </DetailField>
+            <DetailField label="Registered name">
+              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+                {company.registered_name ?? (
+                  <span className="text-muted-foreground font-normal">
+                    Set by an admin at verification
+                  </span>
+                )}
+              </p>
+            </DetailField>
+            <DetailField label="TIN">
+              <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
+                {company.tin ?? (
+                  <span className="text-muted-foreground font-normal">
+                    Set by an admin at verification
+                  </span>
+                )}
+              </p>
+            </DetailField>
+            <DetailField label="Company type">
+              <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
+                {company.company_type
+                  ? (COMPANY_TYPE_LABELS[company.company_type] ?? company.company_type)
+                  : (
+                      <span className="text-muted-foreground font-normal">
+                        Set by an admin at verification
+                      </span>
+                    )}
+              </p>
+            </DetailField>
+            <DetailField label="Registered address">
+              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+                {company.registered_address ?? (
+                  <span className="text-muted-foreground font-normal">
+                    Set by an admin at verification
+                  </span>
+                )}
+              </p>
+            </DetailField>
+            {status === "verified" && verification?.approvalExpiresAt && (
+              <DetailField label="Verified until">
+                <div className="flex min-h-8 items-center gap-2 text-sm font-medium text-gray-900">
+                  <span>
+                    {new Date(verification.approvalExpiresAt).toLocaleDateString(
+                      "en-PH",
+                      { year: "numeric", month: "long", day: "numeric", timeZone: "Asia/Manila" },
+                    )}
+                  </span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="About this verification expiry"
+                        className="text-muted-foreground hover:text-primary focus-visible:ring-primary/30 inline-flex cursor-help rounded-full outline-none focus-visible:ring-2"
+                      >
+                        <Info className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" sideOffset={6} className="max-w-64">
+                      This reflects the earliest expiry date recorded across
+                      your documents. We&apos;ll notify you when it&apos;s
+                      time to renew.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </DetailField>
+            )}
+          </CollapsibleCardSection>
+        </CollapsibleCardGroup>
       </PageContainer>
     </div>
   );

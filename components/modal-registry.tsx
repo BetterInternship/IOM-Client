@@ -7,8 +7,10 @@ import {
   type BulkInviteTargetInput,
 } from "@/components/university/bulk-invite-sheet";
 import type { BulkInviteAction } from "@/components/university/university-partners-table";
+import { DocumentPreviewPane } from "@/components/document-preview-pane";
 import { TemplatePreviewContent } from "@/components/moa-request-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,
@@ -33,10 +35,11 @@ export function useIomModalRegistry() {
       open: (url: string, title: string) =>
         openModal(
           "preview-document",
-          <iframe
-            src={url}
-            className="h-full w-full border-none"
-            title={title}
+          <DocumentPreviewPane
+            url={url}
+            label={title}
+            dividerSide="none"
+            zoomStorageKey="iom-preview-document-zoom"
           />,
           {
             title,
@@ -203,6 +206,28 @@ export function useIomModalRegistry() {
           },
         ),
       close: () => closeModal("university-profile-complete"),
+    },
+    // First-time self-serve "Post a listing" naming prompt (plan §12) — a
+    // display name is a hire-side concept, asked exactly when it starts to
+    // mattering. Never shown once the company has a registered_name.
+    promptDisplayName: {
+      open: (opts: {
+        onSubmit: (displayName: string) => void;
+        isPending?: boolean;
+      }) =>
+        openModal(
+          "prompt-display-name",
+          <DisplayNameForm
+            onSubmit={opts.onSubmit}
+            isPending={opts.isPending}
+            close={() => closeModal("prompt-display-name")}
+          />,
+          {
+            title: "What should students see your company called?",
+            showHeaderDivider: false,
+          },
+        ),
+      close: () => closeModal("prompt-display-name"),
     },
     confirmAction: {
       open: (opts: {
@@ -380,6 +405,46 @@ function BlacklistForm({
         >
           {isPending && <Loader2 className="animate-spin" />}
           {isPending ? "Blacklisting…" : "Blacklist company"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function DisplayNameForm({
+  onSubmit,
+  isPending,
+  close,
+}: {
+  onSubmit: (displayName: string) => void;
+  isPending?: boolean;
+  close: () => void;
+}) {
+  const [name, setName] = useState("");
+
+  return (
+    <div className="space-y-3">
+      <p className="text-muted-foreground text-sm">
+        This is a hire-side display name — it&apos;s separate from your
+        registered legal name, which an admin sets when your company is
+        verified.
+      </p>
+      <Input
+        autoFocus
+        placeholder="Acme Corporation"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={close}>
+          Cancel
+        </Button>
+        <Button
+          disabled={!name.trim() || isPending}
+          onClick={() => onSubmit(name.trim())}
+        >
+          {isPending && <Loader2 className="animate-spin" />}
+          {isPending ? "Setting up…" : "Continue"}
         </Button>
       </div>
     </div>

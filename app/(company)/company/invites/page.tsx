@@ -1,9 +1,9 @@
 "use client";
+import { useRouter } from "next/navigation";
 import {
   useCompanyProfile,
   useCompanyVerification,
 } from "@/app/providers/company-profile.provider";
-import { useModal } from "@/app/providers/modal-provider";
 import { useCompanyControllerListPendingInvites } from "@/app/api";
 import {
   PageContainer,
@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
-import { RequestDialog } from "@/components/moa-request-dialog";
 import { ArrowRight } from "lucide-react";
 
 function universityInitials(name: string) {
@@ -28,12 +27,11 @@ function universityInitials(name: string) {
 }
 
 export default function CompanyInvitesPage() {
+  const router = useRouter();
   const { company, isLoading } = useCompanyProfile();
   const { data: verification, isLoading: verificationLoading } =
     useCompanyVerification(!!company);
-  const verified = verification?.status === "verified";
   const status = verification?.status;
-  const { openModal, closeModal } = useModal();
 
   const { data, isLoading: invitesLoading } =
     useCompanyControllerListPendingInvites({
@@ -43,32 +41,6 @@ export default function CompanyInvitesPage() {
   const invites = (data?.invites ?? []).filter(
     (inv) => inv.university !== null,
   );
-
-  const openInviteDialog = (invite: (typeof invites)[number]) => {
-    openModal(
-      "request-moa",
-      <RequestDialog
-        universityId={invite.university!.id}
-        defaultTemplateId={invite.template?.id ?? null}
-        inviteId={invite.id}
-        verified={verified}
-        onClose={() => closeModal("request-moa")}
-      />,
-      {
-        title: (
-          <h2 className="text-2xl leading-snug font-semibold tracking-tight">
-            Signing a MOA with{" "}
-            <span className="text-primary">
-              {invite.university!.registered_name}
-            </span>
-          </h2>
-        ),
-        panelClassName: "sm:!max-w-none",
-        headerClassName: "request-moa-header",
-        exitAnimation: "fade",
-      },
-    );
-  };
 
   if (isLoading || verificationLoading) {
     return (
@@ -83,16 +55,15 @@ export default function CompanyInvitesPage() {
   return (
     <PageContainer className="space-y-6">
       <PageHeader
-        title="Invitations"
-        description="Universities that have invited your company to sign a MOA."
+        title="Incoming MOA Invitations"
+        description="MOA invitations from universities for your company to sign."
       />
 
-      {status && status !== "verified" && (
-        <CompanyProfileStatusNotice
-          status={status}
-          rejectionReason={verification?.rejectionReason}
-          compactAttention
-        />
+      {/* "Incomplete" already has a persistent notice in the header on
+          every page — showing it again here would duplicate it. "Pending"
+          has no header equivalent, so it still belongs here. */}
+      {status === "pending" && (
+        <CompanyProfileStatusNotice status="pending" compactAttention />
       )}
 
       {invitesLoading ? (
@@ -102,7 +73,7 @@ export default function CompanyInvitesPage() {
         </div>
       ) : invites.length === 0 ? (
         <EmptyState
-          title="No pending invitations"
+          title="No incoming MOA invitations"
           description="When a university invites you to sign a MOA, it will appear here."
         />
       ) : (
@@ -133,7 +104,9 @@ export default function CompanyInvitesPage() {
                 <Button
                   size="md"
                   className="w-full md:w-auto"
-                  onClick={() => openInviteDialog(invite)}
+                  onClick={() =>
+                    router.push(`/invite/continue?invite_id=${invite.id}`)
+                  }
                 >
                   Sign MOA
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />

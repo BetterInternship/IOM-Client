@@ -6,129 +6,173 @@ import { useRouter } from "next/navigation";
 import { AlertCircle, ClipboardList, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusNotice } from "@/components/ui/status-notice";
+import { documentLabel } from "@/lib/document-types";
 
-type CompanyProfileNoticeStatus =
-  | "incomplete"
-  | "pending"
-  | "rejected"
-  | "expired";
+// Rejected and expired are reasons attached to "incomplete" now, not
+// separate statuses (flow spec §1) — this is the same state wearing a
+// different banner.
+type CompanyProfileNoticeStatus = "incomplete" | "pending";
 
 function CompanyProfileStatusNotice({
   status,
-  rejectionReason,
+  reason,
+  documentRejections,
+  expiredDocument,
   compactAttention = false,
 }: {
   status: CompanyProfileNoticeStatus;
-  rejectionReason?: string | null;
+  reason?: "rejected" | "expired" | null;
+  documentRejections?: Record<string, string> | null;
+  expiredDocument?: string | null;
   compactAttention?: boolean;
 }) {
   const router = useRouter();
-  const profileHref =
-    status === "incomplete" ? "/complete-profile" : "/profile";
-  const navigateToProfile = () => router.push(profileHref);
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+  // Pending: documents are already complete, nothing to upload — send them
+  // to the read-only profile instead of the verification gate.
+  const navigateToProfile = () => router.push("/profile");
+  const navigateToVerification = () => router.push("/verification");
+  const keyDownTo = (navigate: () => void) => (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      navigateToProfile();
+      navigate();
     }
   };
-
-  if (status === "incomplete") {
-    return (
-      <StatusNotice
-        icon={ClipboardList}
-        title="Finish setting up your account"
-        description="You can sign and queue MOA requests now, but they won't be issued until you complete your profile and the platform team approves your company."
-        variant="warning"
-        role="alert"
-        tabIndex={0}
-        className="cursor-pointer"
-        onClick={navigateToProfile}
-        onKeyDown={handleKeyDown}
-        actionClassName="sm:flex sm:w-52 sm:justify-end"
-        action={
-          <Button
-            asChild
-            variant="outline"
-            scheme="primary"
-            expandIcon
-            className="w-full bg-transparent sm:bg-background"
-          >
-            <Link
-              href="/complete-profile"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <ClipboardList aria-hidden="true" />
-              <span className="button-label">Complete profile</span>
-            </Link>
-          </Button>
-        }
-      />
-    );
-  }
 
   if (status === "pending") {
     return (
       <StatusNotice
         icon={Clock}
         title="Pending approval"
-        description="You can submit MOA requests now. They'll be queued and issued automatically once the platform team verifies your company."
+        description="You can request MOAs now — they'll issue automatically once the platform team verifies your company."
         variant="warning"
         role="alert"
         tabIndex={0}
         className="cursor-pointer"
         onClick={navigateToProfile}
-        onKeyDown={handleKeyDown}
+        onKeyDown={keyDownTo(navigateToProfile)}
       />
     );
   }
 
-  const expired = status === "expired";
+  // status === "incomplete"
+  if (reason === "rejected") {
+    const entries = Object.entries(documentRejections ?? {});
+    return (
+      <StatusNotice
+        compact={compactAttention}
+        icon={AlertCircle}
+        title="Verification needs attention"
+        description={
+          entries.length ? (
+            <ul className="space-y-1">
+              {entries.map(([type, docReason]) => (
+                <li key={type}>
+                  <span className="font-medium text-gray-800">
+                    {documentLabel(type)}:
+                  </span>{" "}
+                  {docReason}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            "Your company could not be verified. Please review your documents."
+          )
+        }
+        action={
+          <Button
+            asChild
+            variant="outline"
+            scheme="destructive"
+            expandIcon
+            className="w-full bg-transparent sm:bg-background"
+          >
+            <Link
+              href="/verification"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <ClipboardList aria-hidden="true" />
+              <span className="button-label">Update documents</span>
+            </Link>
+          </Button>
+        }
+        variant="destructive"
+        role="alert"
+        tabIndex={compactAttention ? undefined : 0}
+        className={compactAttention ? undefined : "cursor-pointer"}
+        onClick={compactAttention ? undefined : navigateToVerification}
+        onKeyDown={compactAttention ? undefined : keyDownTo(navigateToVerification)}
+      />
+    );
+  }
+
+  if (reason === "expired") {
+    return (
+      <StatusNotice
+        compact={compactAttention}
+        icon={AlertCircle}
+        title="Verification lapsed"
+        description={
+          expiredDocument
+            ? `Your ${documentLabel(expiredDocument)} expired. Upload a current one to restore verification.`
+            : "A document on file has expired. Upload a current one to restore verification."
+        }
+        action={
+          <Button
+            asChild
+            variant="outline"
+            scheme="destructive"
+            expandIcon
+            className="w-full bg-transparent sm:bg-background"
+          >
+            <Link
+              href="/verification"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <ClipboardList aria-hidden="true" />
+              <span className="button-label">Update documents</span>
+            </Link>
+          </Button>
+        }
+        variant="destructive"
+        role="alert"
+        tabIndex={compactAttention ? undefined : 0}
+        className={compactAttention ? undefined : "cursor-pointer"}
+        onClick={compactAttention ? undefined : navigateToVerification}
+        onKeyDown={compactAttention ? undefined : keyDownTo(navigateToVerification)}
+      />
+    );
+  }
+
+  // reason absent — first run, nothing uploaded yet
   return (
     <StatusNotice
-      compact={compactAttention}
-      icon={AlertCircle}
-      title={expired ? "Verification expired" : "Verification needs attention"}
-      description={
-        expired ? (
-          <>
-            <p>Your company verification has expired.</p>
-            <p className="mt-2 border-l-2 border-destructive/50 pl-3 font-medium text-gray-800">
-              Your MOA requests will not be approved until you are verified by
-              the platform admin.
-            </p>
-          </>
-        ) : (
-          <>
-            {rejectionReason + "." ||
-              "Your company could not be verified. Please review your profile and documents."}{" "}
-            New MOA requests will stay queued until you are approved.{" "}
-          </>
-        )
-      }
+      icon={ClipboardList}
+      title="Finish setting up your account"
+      description="Upload your three required documents to start requesting MOAs."
+      variant="warning"
+      role="alert"
+      tabIndex={0}
+      className="cursor-pointer"
+      onClick={navigateToVerification}
+      onKeyDown={keyDownTo(navigateToVerification)}
+      actionClassName="sm:flex sm:w-52 sm:justify-end"
       action={
         <Button
           asChild
           variant="outline"
-          scheme="destructive"
+          scheme="primary"
           expandIcon
           className="w-full bg-transparent sm:bg-background"
         >
           <Link
-            href="/profile#documents"
+            href="/verification"
             onClick={(event) => event.stopPropagation()}
           >
             <ClipboardList aria-hidden="true" />
-            <span className="button-label">Update profile</span>
+            <span className="button-label">Upload documents</span>
           </Link>
         </Button>
       }
-      variant="destructive"
-      role="alert"
-      tabIndex={compactAttention ? undefined : 0}
-      className={compactAttention ? undefined : "cursor-pointer"}
-      onClick={compactAttention ? undefined : navigateToProfile}
-      onKeyDown={compactAttention ? undefined : handleKeyDown}
     />
   );
 }

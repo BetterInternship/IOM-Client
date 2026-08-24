@@ -7,5 +7,5 @@
  */
 
 export interface CompanyForgotDto {
-  companyId: string;
+  email: string;
 }

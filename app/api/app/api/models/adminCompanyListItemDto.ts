@@ -6,10 +6,12 @@
  * OpenAPI spec version: 1.0
  */
 import type { AdminCompanyListItemDtoVerificationStatus } from "./adminCompanyListItemDtoVerificationStatus";
+import type { AdminCompanyListItemDtoVerificationReason } from "./adminCompanyListItemDtoVerificationReason";
 
 export interface AdminCompanyListItemDto {
   id: string;
-  registered_name: string;
+  /** @nullable */
+  registered_name: string | null;
   /** @nullable */
   registered_address: string | null;
   /** @nullable */
@@ -24,4 +26,6 @@ export interface AdminCompanyListItemDto {
   has_pending_review: boolean;
   is_profile_incomplete: boolean;
   verification_status: AdminCompanyListItemDtoVerificationStatus;
+  /** @nullable */
+  verification_reason: AdminCompanyListItemDtoVerificationReason;
 }
