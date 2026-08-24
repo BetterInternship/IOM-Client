@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   ArrowRight,
   CalendarDays,
+  Clock3,
   Link2Off,
   Loader2,
   Quote,
@@ -25,35 +26,31 @@ import { TemplatePreviewRow } from "@/components/template-preview-row";
 import { useModal } from "@/app/providers/modal-provider";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
-import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
+import { REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
 import { formatDateWithoutTime } from "@/lib/utils";
 
-function RequiredDocumentsNotice({ types }: { types: readonly string[] }) {
+function RequiredDocumentsNotice() {
   return (
-    <div className="border-warning/30 bg-warning/5 rounded-[0.33em] border p-4">
-      <p className="text-sm font-semibold text-gray-900">
-        In the next steps, you’ll be asked to upload these documents to verify
-        your account.
-      </p>
-      <ul className="mt-3 w-fit list-disc space-y-1 pl-5 text-sm text-gray-700 marker:text-warning">
-        {types.map((type) => (
-          <li key={type}>{documentLabel(type)}</li>
-        ))}
-      </ul>
+    <div className="flex items-center gap-4 text-left">
+      <span className="bg-primary/5 text-primary flex size-14 shrink-0 items-center justify-center rounded-full">
+        <Clock3 className="size-6" aria-hidden="true" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-muted-foreground mt-2 text-sm leading-5">
+          This process takes about{" "}
+          <span className="text-primary font-semibold">5 minutes</span>.
+          You&apos;ll upload your documents and sign the MOA. Your MOA will be
+          approved once we verify your documents.
+        </p>
+      </div>
     </div>
   );
 }
 
-function RequiredDocumentsModal({
-  types,
-  onProceed,
-}: {
-  types: readonly string[];
-  onProceed: () => void;
-}) {
+function RequiredDocumentsModal({ onProceed }: { onProceed: () => void }) {
   return (
     <div className="space-y-4">
-      <RequiredDocumentsNotice types={types} />
+      <RequiredDocumentsNotice />
       <Button className="w-full" onClick={onProceed}>
         Proceed
       </Button>
@@ -293,7 +290,6 @@ function InvitePageContent() {
     openModal(
       "invite-required-documents",
       <RequiredDocumentsModal
-        types={missingDocumentTypes}
         onProceed={() => {
           closeModal("invite-required-documents");
           onProceed();
@@ -302,7 +298,7 @@ function InvitePageContent() {
       {
         title: (
           <h2 className="text-warning text-lg leading-snug font-semibold tracking-tight sm:text-2xl">
-            Please ensure you have these files on-hand.
+            Before you get started
           </h2>
         ),
       },
@@ -364,7 +360,7 @@ function InvitePageContent() {
 
           {isMoa && missingDocumentTypes.length > 0 && (
             <div className="text-left">
-              <RequiredDocumentsNotice types={missingDocumentTypes} />
+              <RequiredDocumentsNotice />
             </div>
           )}
         </div>
@@ -387,7 +383,7 @@ function InvitePageContent() {
                   }
                 }}
               >
-                Accept invitation
+                Next
                 <ArrowRight aria-hidden="true" />
               </Link>
             </Button>
@@ -408,7 +404,7 @@ function InvitePageContent() {
             >
               {loginViaInvite.isPending || careerListingLink.isPending
                 ? "Signing in…"
-                : "Accept invitation"}
+                : "Next"}
               {loginViaInvite.isPending || careerListingLink.isPending ? (
                 <Loader2 className="animate-spin" />
               ) : (
@@ -416,11 +412,6 @@ function InvitePageContent() {
               )}
             </Button>
           )}
-          <p className="text-muted-foreground mt-3 text-center text-sm">
-            {isListing
-              ? "You'll set up your account and can start posting right away."
-              : "You'll be able to review the agreement before signing."}
-          </p>
         </div>
       </div>
     </main>
