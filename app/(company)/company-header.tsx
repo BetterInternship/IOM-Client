@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Mail } from "lucide-react";
 import { AppHeader, type NavItem } from "@/components/app-header";
 import { CompanyProfileStatusNotice } from "@/components/company/company-profile-status-notice";
 import {
@@ -58,8 +58,8 @@ export function CompanyHeader() {
       : [{ href: "/requests", label: "Outgoing", icon: ArrowUpRight }]),
     {
       href: "/invites",
-      label: "Incoming",
-      icon: ArrowDownLeft,
+      label: "Invites",
+      icon: Mail,
       ...(pendingInviteCount > 0 ? { badge: pendingInviteCount } : {}),
     },
   ];
