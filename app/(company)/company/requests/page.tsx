@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCompanyProfile } from "@/app/providers/company-profile.provider";
@@ -19,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { formatDateWithoutTime } from "@/lib/utils";
-import { X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 
 const IN_FLIGHT_STATUSES = ["awaiting_signature", "awaiting_verification"];
 // issued leaves the page for Partners → the university; a fire-time failure
@@ -74,59 +75,98 @@ function RequestRow({
   onCancel: () => void;
   isCancelling: boolean;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const badge = STATUS_BADGE[request.status];
   if (!badge) return null;
   const university = request.university;
   const inFlight = IN_FLIGHT_STATUSES.includes(request.status);
+  const subtitle = requestSubtitle(request);
+  const toggleDetails = () => setDetailsOpen((open) => !open);
 
   return (
-    <Card className="grid gap-4 border-gray-200 bg-white p-5 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-      <div className="flex min-w-0 items-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[0.33em] border border-gray-200 bg-gray-50 text-sm font-semibold text-gray-600">
-          {university?.logo_url ? (
-            // University logos are user-uploaded external assets.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={university.logo_url}
-              alt={`${university.registered_name} logo`}
-              className="h-full w-full object-contain p-1.5"
-            />
-          ) : (
-            <span aria-hidden="true">
-              {universityInitials(university?.registered_name ?? "?")}
-            </span>
-          )}
-        </div>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-semibold text-gray-900">
+    <Card className="gap-0 overflow-hidden border-gray-200 bg-white py-0 transition-colors hover:border-gray-300 hover:bg-gray-50/40">
+      <button
+        type="button"
+        className="grid w-full cursor-pointer gap-4 p-5 text-left md:grid-cols-[minmax(0,1fr)_auto] md:items-center"
+        onClick={toggleDetails}
+        aria-expanded={detailsOpen}
+      >
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[0.33em] border border-gray-200 bg-gray-50 text-lg font-semibold text-gray-600">
+            {university?.logo_url ? (
+              // University logos are user-uploaded external assets.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={university.logo_url}
+                alt={`${university.registered_name} logo`}
+                className="h-full w-full object-contain p-1.5"
+              />
+            ) : (
+              <span aria-hidden="true">
+                {universityInitials(university?.registered_name ?? "?")}
+              </span>
+            )}
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-gray-900 sm:text-lg">
               {university?.registered_name ?? "Unknown university"}
             </h2>
-            <PartnershipStatusBadge status={badge.status} label={badge.label} />
           </div>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {request.template?.name ?? "MOA"}
-            {requestSubtitle(request) ? ` · ${requestSubtitle(request)}` : ""}
-          </p>
-          <p className="text-muted-foreground mt-1 text-xs">
-            Requested {formatDateWithoutTime(request.created_at)}
-          </p>
         </div>
-      </div>
 
-      <div className="flex items-center gap-2 md:justify-self-end">
-        {inFlight && (
-          <Button
-            variant="outline"
-            scheme="destructive"
-            size="sm"
-            disabled={isCancelling}
-            onClick={onCancel}
-          >
-            <X /> Cancel
-          </Button>
-        )}
-      </div>
+        <div className="flex items-center gap-3 md:justify-self-end">
+          <PartnershipStatusBadge status={badge.status} label={badge.label} />
+          <ChevronDown
+            className={`text-muted-foreground size-5 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          />
+        </div>
+      </button>
+
+      {detailsOpen && (
+        <div className="border-t border-gray-200 bg-gray-50/50 px-5 py-4">
+          <div className="grid gap-4 text-sm sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+            <dl className="contents">
+              <div className="space-y-1">
+                <dt className="text-muted-foreground text-xs">Template</dt>
+                <dd className="font-medium text-gray-900">
+                  {request.template?.name ?? "MOA"}
+                </dd>
+              </div>
+              <div className="space-y-1">
+                <dt className="text-muted-foreground text-xs">
+                  Signing status
+                </dt>
+                <dd className="text-gray-900">
+                  {subtitle || "Not yet signed"}
+                </dd>
+              </div>
+              <div className="space-y-1">
+                <dt className="text-muted-foreground text-xs">Requested</dt>
+                <dd className="text-gray-900">
+                  {formatDateWithoutTime(request.created_at)}
+                </dd>
+              </div>
+            </dl>
+            {inFlight && (
+              <div className="flex sm:justify-end">
+                <Button
+                  variant="outline"
+                  scheme="destructive"
+                  size="sm"
+                  disabled={isCancelling}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onCancel();
+                  }}
+                >
+                  <X /> Cancel request
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
