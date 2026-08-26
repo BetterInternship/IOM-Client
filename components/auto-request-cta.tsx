@@ -107,23 +107,25 @@ export function AutoRequestCta({
   const content = (
     <div className="space-y-4">
       <div className="space-y-2.5">
-        <label className="flex cursor-pointer items-start gap-2.5">
-          <Checkbox
-            checked={proactive}
-            onCheckedChange={(checked) => setProactive(checked === true)}
-            className="mt-0.5"
-          />
-          <span className="text-sm text-gray-800">
-            <span className="font-medium">
-              Sign automatically with new universities
+        {!offer.proactive && (
+          <label className="flex cursor-pointer items-start gap-2.5">
+            <Checkbox
+              checked={proactive}
+              onCheckedChange={(checked) => setProactive(checked === true)}
+              className="mt-0.5"
+            />
+            <span className="text-sm text-gray-800">
+              <span className="font-medium">
+                Sign automatically with new universities
+              </span>
+              <span className="text-muted-foreground block text-xs">
+                Automatically sign MOAs from new universities that
+                use this same template.
+              </span>
             </span>
-            <span className="text-muted-foreground block text-xs">
-              Automatically sign MOAs from new universities that 
-              use this same template.
-            </span>
-          </span>
-        </label>
-        {!offer.isPerpetual && (
+          </label>
+        )}
+        {!offer.isPerpetual && !offer.autoRenew && (
           <label className="flex cursor-pointer items-start gap-2.5">
             <Checkbox
               checked={autoRenew}
@@ -152,7 +154,7 @@ export function AutoRequestCta({
             onDismiss?.();
           }}
         >
-          Not now
+          Deny
         </Button>
         <Button
           size="sm"

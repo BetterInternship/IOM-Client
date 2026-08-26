@@ -530,7 +530,13 @@ function PermissionsSection() {
   const { confirmAction } = useIomModalRegistry();
   const { data, isLoading } = useCompanyControllerGetPermissions();
   const consents = data?.consents ?? [];
-  const offers = data?.offers ?? [];
+  // A partially-enabled template appears in both arrays now (it still
+  // "offers" completing the missing capability) — its own ConsentRow
+  // already exposes that checkbox, so skip the redundant OfferRow here.
+  const consentTemplateIds = new Set(consents.map((c) => c.templateId));
+  const offers = (data?.offers ?? []).filter(
+    (o) => !consentTemplateIds.has(o.templateId),
+  );
 
   const invalidate = () =>
     queryClient.invalidateQueries({

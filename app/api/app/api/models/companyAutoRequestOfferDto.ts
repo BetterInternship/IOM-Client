@@ -11,6 +11,8 @@ export interface CompanyAutoRequestOfferDto {
   templateId: string;
   templateName: string;
   isPerpetual: boolean;
+  proactive: boolean;
+  autoRenew: boolean;
   signatoryName: string;
   signatoryTitle: string;
   signatureType: CompanyAutoRequestOfferDtoSignatureType;

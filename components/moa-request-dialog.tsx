@@ -365,7 +365,7 @@ export function RequestDialog({
       // be seen and used.
       const hasCta = mode === "self" && !!selectedTemplateId;
       window.setTimeout(() => {
-        router.push(`/company/moas/${res.request!.moa_id}?issued=1`);
+        router.push(`/company/moas/${res.request!.moa_id}`);
       }, 550);
       // No CTA to wait on (delegate mode, or no template) — nothing else
       // will ever close this modal, so tidy it away shortly after arrival
@@ -459,7 +459,7 @@ export function RequestDialog({
               variant="plain"
               onDismiss={() => {
                 onSuccessClose();
-                router.push(`/company/moas/${issuedMoaId}?issued=1`);
+                router.push(`/company/moas/${issuedMoaId}`);
               }}
             />
           ) : undefined
