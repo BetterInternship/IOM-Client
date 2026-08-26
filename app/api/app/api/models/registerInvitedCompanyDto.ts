@@ -9,5 +9,4 @@
 export interface RegisterInvitedCompanyDto {
   token: string;
   email: string;
-  password: string;
 }

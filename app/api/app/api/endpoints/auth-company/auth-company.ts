@@ -15,10 +15,9 @@ import type {
 
 import type {
   BaseResponse,
-  CompanyForgotDto,
-  CompanyForgotResponse,
-  CompanyLoginDto,
   CompanyLoginInviteResponse,
+  CompanyLoginOtpRequestDto,
+  CompanyLoginOtpVerifyDto,
   CompanyOtpRequestDto,
   CompanyOtpRequestResponse,
   CompanyOtpVerifyDto,
@@ -26,7 +25,6 @@ import type {
   CompanyRegisterDto,
   CompanyRegisterInvitedResponse,
   CompanyRegisterResponse,
-  CompanyResetDto,
   ErrorResponse,
   LoginViaInviteDto,
   RegisterInvitedCompanyDto,
@@ -274,36 +272,36 @@ export const useCompanyAuthControllerOtpVerify = <
 
   return useMutation(mutationOptions, queryClient);
 };
-export const companyAuthControllerLogin = (
-  companyLoginDto: CompanyLoginDto,
+export const companyAuthControllerLoginOtpRequest = (
+  companyLoginOtpRequestDto: CompanyLoginOtpRequestDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/auth/company/login`,
+  return preconfiguredAxiosFunction<CompanyOtpRequestResponse>({
+    url: `/api/auth/company/login/otp/request`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: companyLoginDto,
+    data: companyLoginOtpRequestDto,
     signal,
   });
 };
 
-export const getCompanyAuthControllerLoginMutationOptions = <
+export const getCompanyAuthControllerLoginOtpRequestMutationOptions = <
   TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof companyAuthControllerLogin>>,
+    Awaited<ReturnType<typeof companyAuthControllerLoginOtpRequest>>,
     TError,
-    { data: CompanyLoginDto },
+    { data: CompanyLoginOtpRequestDto },
     TContext
   >;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof companyAuthControllerLogin>>,
+  Awaited<ReturnType<typeof companyAuthControllerLoginOtpRequest>>,
   TError,
-  { data: CompanyLoginDto },
+  { data: CompanyLoginOtpRequestDto },
   TContext
 > => {
-  const mutationKey = ["companyAuthControllerLogin"];
+  const mutationKey = ["companyAuthControllerLoginOtpRequest"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -313,43 +311,126 @@ export const getCompanyAuthControllerLoginMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof companyAuthControllerLogin>>,
-    { data: CompanyLoginDto }
+    Awaited<ReturnType<typeof companyAuthControllerLoginOtpRequest>>,
+    { data: CompanyLoginOtpRequestDto }
   > = (props) => {
     const { data } = props ?? {};
 
-    return companyAuthControllerLogin(data);
+    return companyAuthControllerLoginOtpRequest(data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type CompanyAuthControllerLoginMutationResult = NonNullable<
-  Awaited<ReturnType<typeof companyAuthControllerLogin>>
+export type CompanyAuthControllerLoginOtpRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyAuthControllerLoginOtpRequest>>
 >;
-export type CompanyAuthControllerLoginMutationBody = CompanyLoginDto;
-export type CompanyAuthControllerLoginMutationError = ErrorResponse;
+export type CompanyAuthControllerLoginOtpRequestMutationBody =
+  CompanyLoginOtpRequestDto;
+export type CompanyAuthControllerLoginOtpRequestMutationError = ErrorResponse;
 
-export const useCompanyAuthControllerLogin = <
+export const useCompanyAuthControllerLoginOtpRequest = <
   TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof companyAuthControllerLogin>>,
+      Awaited<ReturnType<typeof companyAuthControllerLoginOtpRequest>>,
       TError,
-      { data: CompanyLoginDto },
+      { data: CompanyLoginOtpRequestDto },
       TContext
     >;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
-  Awaited<ReturnType<typeof companyAuthControllerLogin>>,
+  Awaited<ReturnType<typeof companyAuthControllerLoginOtpRequest>>,
   TError,
-  { data: CompanyLoginDto },
+  { data: CompanyLoginOtpRequestDto },
   TContext
 > => {
-  const mutationOptions = getCompanyAuthControllerLoginMutationOptions(options);
+  const mutationOptions =
+    getCompanyAuthControllerLoginOtpRequestMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const companyAuthControllerLoginOtpVerify = (
+  companyLoginOtpVerifyDto: CompanyLoginOtpVerifyDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<BaseResponse>({
+    url: `/api/auth/company/login/otp/verify`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: companyLoginOtpVerifyDto,
+    signal,
+  });
+};
+
+export const getCompanyAuthControllerLoginOtpVerifyMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyAuthControllerLoginOtpVerify>>,
+    TError,
+    { data: CompanyLoginOtpVerifyDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyAuthControllerLoginOtpVerify>>,
+  TError,
+  { data: CompanyLoginOtpVerifyDto },
+  TContext
+> => {
+  const mutationKey = ["companyAuthControllerLoginOtpVerify"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyAuthControllerLoginOtpVerify>>,
+    { data: CompanyLoginOtpVerifyDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return companyAuthControllerLoginOtpVerify(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyAuthControllerLoginOtpVerifyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyAuthControllerLoginOtpVerify>>
+>;
+export type CompanyAuthControllerLoginOtpVerifyMutationBody =
+  CompanyLoginOtpVerifyDto;
+export type CompanyAuthControllerLoginOtpVerifyMutationError = ErrorResponse;
+
+export const useCompanyAuthControllerLoginOtpVerify = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyAuthControllerLoginOtpVerify>>,
+      TError,
+      { data: CompanyLoginOtpVerifyDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyAuthControllerLoginOtpVerify>>,
+  TError,
+  { data: CompanyLoginOtpVerifyDto },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyAuthControllerLoginOtpVerifyMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };
@@ -423,86 +504,6 @@ export const useCompanyAuthControllerLogout = <
 > => {
   const mutationOptions =
     getCompanyAuthControllerLogoutMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
-export const companyAuthControllerForgot = (
-  companyForgotDto: CompanyForgotDto,
-  signal?: AbortSignal,
-) => {
-  return preconfiguredAxiosFunction<CompanyForgotResponse>({
-    url: `/api/auth/company/forgot`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: companyForgotDto,
-    signal,
-  });
-};
-
-export const getCompanyAuthControllerForgotMutationOptions = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof companyAuthControllerForgot>>,
-    TError,
-    { data: CompanyForgotDto },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof companyAuthControllerForgot>>,
-  TError,
-  { data: CompanyForgotDto },
-  TContext
-> => {
-  const mutationKey = ["companyAuthControllerForgot"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof companyAuthControllerForgot>>,
-    { data: CompanyForgotDto }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return companyAuthControllerForgot(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type CompanyAuthControllerForgotMutationResult = NonNullable<
-  Awaited<ReturnType<typeof companyAuthControllerForgot>>
->;
-export type CompanyAuthControllerForgotMutationBody = CompanyForgotDto;
-export type CompanyAuthControllerForgotMutationError = ErrorResponse;
-
-export const useCompanyAuthControllerForgot = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof companyAuthControllerForgot>>,
-      TError,
-      { data: CompanyForgotDto },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof companyAuthControllerForgot>>,
-  TError,
-  { data: CompanyForgotDto },
-  TContext
-> => {
-  const mutationOptions =
-    getCompanyAuthControllerForgotMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };
@@ -664,85 +665,6 @@ export const useCompanyAuthControllerLoginViaInvite = <
 > => {
   const mutationOptions =
     getCompanyAuthControllerLoginViaInviteMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
-export const companyAuthControllerReset = (
-  companyResetDto: CompanyResetDto,
-  signal?: AbortSignal,
-) => {
-  return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/auth/company/reset`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: companyResetDto,
-    signal,
-  });
-};
-
-export const getCompanyAuthControllerResetMutationOptions = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof companyAuthControllerReset>>,
-    TError,
-    { data: CompanyResetDto },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof companyAuthControllerReset>>,
-  TError,
-  { data: CompanyResetDto },
-  TContext
-> => {
-  const mutationKey = ["companyAuthControllerReset"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof companyAuthControllerReset>>,
-    { data: CompanyResetDto }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return companyAuthControllerReset(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type CompanyAuthControllerResetMutationResult = NonNullable<
-  Awaited<ReturnType<typeof companyAuthControllerReset>>
->;
-export type CompanyAuthControllerResetMutationBody = CompanyResetDto;
-export type CompanyAuthControllerResetMutationError = ErrorResponse;
-
-export const useCompanyAuthControllerReset = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof companyAuthControllerReset>>,
-      TError,
-      { data: CompanyResetDto },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof companyAuthControllerReset>>,
-  TError,
-  { data: CompanyResetDto },
-  TContext
-> => {
-  const mutationOptions = getCompanyAuthControllerResetMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

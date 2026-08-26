@@ -112,7 +112,6 @@ function RegisterPageContent() {
   const [form, setForm] = useState({
     repEmail: "",
     email: "",
-    password: "",
   });
 
   // One-time prefill from the career-site handoff — doesn't clobber
@@ -386,15 +385,14 @@ function RegisterPageContent() {
       );
     }
 
-    const inviteDetailsValid = !!form.email && form.password.length >= 8;
-    const inviteEmailMatchesInvite = form.email === invitePeek.email;
+    const inviteDetailsValid = !!form.email;
 
     return (
       <AuthShell
         variant="split"
         splitFlush
         portal="Company"
-        title="Set a secure password"
+        title="Create your account"
         description={
           <>
             Invited by{" "}
@@ -402,9 +400,7 @@ function RegisterPageContent() {
               {invitePeek.university.registered_name}
             </span>
             .{" "}
-            {inviteEmailMatchesInvite
-              ? ""
-              : "We'll send a one-time code to verify this email."}
+            We'll send a one-time code to verify this email.
             {isListingInvite &&
               " You'll be able to post a listing on BetterInternship right after this."}
           </>
@@ -429,7 +425,6 @@ function RegisterPageContent() {
               data: {
                 token: inviteToken,
                 email: form.email,
-                password: form.password,
               },
             });
           }}
@@ -448,18 +443,6 @@ function RegisterPageContent() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="At least 8 characters"
-              {...field("password")}
-              required
-            />
-          </div>
-
           <Button
             type="submit"
             size="lg"
@@ -474,7 +457,7 @@ function RegisterPageContent() {
     );
   }
 
-  // ── Standard registration flow (flow spec §3: email + password, then OTP) ──
+  // ── Standard registration flow (email, then OTP) ──────────────────────────
 
   if (step === "otp") {
     return (
@@ -560,7 +543,7 @@ function RegisterPageContent() {
     );
   }
 
-  const detailsValid = !!form.repEmail && form.password.length >= 8;
+  const detailsValid = !!form.repEmail;
 
   return (
     <AuthShell
@@ -584,7 +567,6 @@ function RegisterPageContent() {
           register.mutate({
             data: {
               repEmail: form.repEmail,
-              password: form.password,
               ...(prefillToken ? { prefillToken } : {}),
             },
           });
@@ -601,18 +583,6 @@ function RegisterPageContent() {
             autoComplete="email"
             placeholder="you@company.com"
             {...field("repEmail")}
-            required
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            placeholder="At least 8 characters"
-            {...field("password")}
             required
           />
         </div>

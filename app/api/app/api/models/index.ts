@@ -306,3 +306,5 @@ export * from "./updateStaffAccountDto";
 export * from "./updateStaffRoleDto";
 export * from "./updateStaffRoleDtoRole";
 export * from "./verifyTinDto";
+export * from "./companyLoginOtpRequestDto";
+export * from "./companyLoginOtpVerifyDto";

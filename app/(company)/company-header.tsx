@@ -13,12 +13,7 @@ import {
   useCompanyControllerListPendingInvites,
 } from "@/app/api";
 
-const AUTH_SUFFIXES = [
-  "/login",
-  "/register",
-  "/forgot-password",
-  "/reset-password",
-];
+const AUTH_SUFFIXES = ["/login", "/register"];
 
 export function CompanyHeader() {
   const pathname = usePathname() ?? "";

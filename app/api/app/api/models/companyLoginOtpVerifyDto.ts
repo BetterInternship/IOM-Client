@@ -6,8 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface CompanyRegisterDto {
-  repEmail: string;
-  cfToken?: string;
-  prefillToken?: string;
+export interface CompanyLoginOtpVerifyDto {
+  email: string;
+  code: string;
 }
