@@ -8,13 +8,11 @@ import {
   usePdfDocumentFromUrl,
   usePdfPageRenderer,
 } from "@betterinternship/core/pdf-viewer";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCompanyControllerGetMoa } from "@/app/api";
-import { useModal } from "@/app/providers/modal-provider";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoaStatusBadge } from "@/components/status-badge";
-import { AutoRequestCta } from "@/components/auto-request-cta";
 import { cn, formatDateWithoutTime, formatExpiryCountdown } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -125,23 +123,10 @@ function universityInitials(name: string) {
 export default function CompanyMoaDetailPage() {
   const { moaId } = useParams<{ moaId: string }>();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { closeModal } = useModal();
-  const justIssued = searchParams.get("issued") === "1";
 
   const { data, isLoading } = useCompanyControllerGetMoa(moaId, {
     query: { refetchInterval: 25 * 60 * 1000 },
   });
-
-  useEffect(() => {
-    if (!justIssued || isLoading || !data) return;
-
-    const timer = window.setTimeout(() => {
-      closeModal("request-moa", { skipOnClose: true });
-    }, 650);
-
-    return () => window.clearTimeout(timer);
-  }, [closeModal, data, isLoading, justIssued]);
 
   const goBack = () => {
     if (window.history.length > 1) {
@@ -289,14 +274,6 @@ export default function CompanyMoaDetailPage() {
                 Download MOA
               </a>
             </Button>
-          )}
-
-          {/* Only on the ?issued=1 arrival — a moment, not a permanent
-              banner (Docs/plans/AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.1). */}
-          {justIssued && (
-            <div className="mt-6">
-              <AutoRequestCta templateId={moa.template_id} />
-            </div>
           )}
         </div>
       </aside>

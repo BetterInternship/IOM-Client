@@ -363,9 +363,16 @@ export function RequestDialog({
       // ModalProvider), so it keeps floating over the new page until the
       // user dismisses it, giving the auto-request CTA below a chance to
       // be seen and used.
+      const hasCta = mode === "self" && !!selectedTemplateId;
       window.setTimeout(() => {
         router.push(`/company/moas/${res.request!.moa_id}?issued=1`);
       }, 550);
+      // No CTA to wait on (delegate mode, or no template) — nothing else
+      // will ever close this modal, so tidy it away shortly after arrival
+      // instead of leaving the checkmark stuck there.
+      if (!hasCta) {
+        window.setTimeout(() => onSuccessClose(), 550 + 650);
+      }
       return;
     }
 
