@@ -20,7 +20,7 @@ import {
   type CompanyAutoRequestOfferDto,
 } from "@/app/api";
 import { Checkbox } from "@/components/ui/checkbox";
-import { formatDateWithoutTime } from "@/lib/utils";
+import { cn, formatDateWithoutTime } from "@/lib/utils";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { FileDropTarget } from "@/components/ui/use-file-drop";
@@ -398,7 +398,7 @@ function ConsentRow({
           <p className="text-sm font-medium text-gray-900">
             {consent.templateName}
           </p>
-          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+          <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium text-white", consent.kind === "owner" ? "bg-primary" : "bg-destructive")}>
             {consent.kind === "owner" ? "You" : consent.email}
           </span>
         </div>
@@ -442,7 +442,7 @@ function ConsentRow({
             disabled={isPending}
             onClick={onTurnOffDelegate}
           >
-            Turn off
+            Turn off their auto-sign
           </Button>
         )}
       </div>

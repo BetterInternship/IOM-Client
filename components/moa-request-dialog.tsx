@@ -11,6 +11,7 @@ import {
 } from "@betterinternship/core/pdf-viewer";
 import {
   type CompanyControllerCreateMoaRequestBody,
+  getCompanyControllerGetPermissionsQueryKey,
   getCompanyControllerListMoaRequestsQueryKey,
   getCompanyControllerListMoasQueryKey,
   useCompanyControllerCreateMoaRequest,
@@ -101,7 +102,7 @@ function MoaIssuedSuccess({ cta }: { cta?: React.ReactNode }) {
         description={cta ? "Your MOA is ready to view." : "Opening your MOA…"}
       />
       {cta && (
-        <div className="mx-auto w-full px-4 pb-8 sm:w-[30rem] sm:px-0">
+        <div className="mx-auto w-full border-t border-gray-200 px-4 pt-6 pb-8 sm:w-[30rem] sm:px-0">
           {cta}
         </div>
       )}
@@ -124,7 +125,7 @@ function MoaSubmittedSuccess({
         description={description}
       />
       {cta && (
-        <div className="mx-auto w-full px-4 pb-8 sm:w-[30rem] sm:px-0">
+        <div className="mx-auto w-full border-t border-gray-200 px-4 pt-6 pb-8 sm:w-[30rem] sm:px-0">
           {cta}
         </div>
       )}
@@ -360,6 +361,13 @@ export function RequestDialog({
     queryClient.invalidateQueries({
       queryKey: getCompanyControllerListMoasQueryKey(),
     });
+    // The global QueryClient default is staleTime: Infinity (query-provider.tsx),
+    // so GetPermissions never auto-refetches — without this, the CTA below
+    // keeps using whatever offers snapshot was cached before this self-sign,
+    // and a template just signed for the first time won't show up in it.
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerGetPermissionsQueryKey(),
+    });
 
     const status = res.request?.status;
     if (status === "issued" && res.request?.moa_id) {
@@ -389,6 +397,17 @@ export function RequestDialog({
         : "Your MOA will be approved automatically once your company is verified.";
     setOutcomeMessage(message);
     setPhase("submitted");
+    // Same pattern as the issued case above: redirect automatically, but
+    // leave the modal open over the destination page so the CTA below gets
+    // a chance to be seen — it only closes when the user acts on it, or,
+    // with no CTA to wait on, on the same short auto-close timer.
+    const hasSubmittedCta = mode === "self" && !!selectedTemplateId;
+    window.setTimeout(() => {
+      router.push(successHref);
+    }, 550);
+    if (!hasSubmittedCta) {
+      window.setTimeout(() => onSuccessClose(), 550 + 650);
+    }
   };
 
   const handleError = (e: unknown) => {

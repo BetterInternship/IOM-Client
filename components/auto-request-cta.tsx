@@ -154,7 +154,7 @@ export function AutoRequestCta({
             onDismiss?.();
           }}
         >
-          Deny
+          Leave Off
         </Button>
         <Button
           size="sm"
@@ -167,7 +167,7 @@ export function AutoRequestCta({
             })
           }
         >
-          {enable.isPending ? "Enabling…" : "I'm In!"}
+          {enable.isPending ? "Enabling…" : "Turn On"}
         </Button>
       </div>
     </div>
