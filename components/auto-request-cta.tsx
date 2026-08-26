@@ -143,7 +143,7 @@ export function AutoRequestCta({
             })
           }
         >
-          {enable.isPending ? "Confirming…" : "Confirm"}
+          {enable.isPending ? "Enabling…" : "I'm In!"}
         </Button>
       </div>
     </div>

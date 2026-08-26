@@ -91,13 +91,20 @@ function OutcomeShell({
   );
 }
 
-function MoaIssuedSuccess() {
+function MoaIssuedSuccess({ cta }: { cta?: React.ReactNode }) {
   return (
-    <OutcomeShell
-      icon={<AnimatedCheck />}
-      title="MOA issued"
-      description="Opening your MOA…"
-    />
+    <>
+      <OutcomeShell
+        icon={<AnimatedCheck />}
+        title="MOA issued"
+        description={cta ? "Your MOA is ready to view." : "Opening your MOA…"}
+      />
+      {cta && (
+        <div className="mx-auto w-full px-4 pb-8 sm:w-[30rem] sm:px-0">
+          {cta}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -297,6 +304,7 @@ export function RequestDialog({
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<RequestPhase>("form");
   const [outcomeMessage, setOutcomeMessage] = useState("");
+  const [issuedMoaId, setIssuedMoaId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedEmail = window.localStorage.getItem(
@@ -348,7 +356,13 @@ export function RequestDialog({
 
     const status = res.request?.status;
     if (status === "issued" && res.request?.moa_id) {
+      setIssuedMoaId(res.request.moa_id);
       setPhase("issued");
+      // The underlying page navigates right away, but the modal itself
+      // isn't closed here — it lives above the route (app/layout.tsx's
+      // ModalProvider), so it keeps floating over the new page until the
+      // user dismisses it, giving the auto-request CTA below a chance to
+      // be seen and used.
       window.setTimeout(() => {
         router.push(`/company/moas/${res.request!.moa_id}?issued=1`);
       }, 550);
@@ -428,7 +442,24 @@ export function RequestDialog({
   const step2Ready = mode === "self" ? selfReady : delegateReady;
 
   if (phase === "submitting") return <MoaSubmittingState />;
-  if (phase === "issued") return <MoaIssuedSuccess />;
+  if (phase === "issued") {
+    return (
+      <MoaIssuedSuccess
+        cta={
+          mode === "self" && selectedTemplateId ? (
+            <AutoRequestCta
+              templateId={selectedTemplateId}
+              variant="plain"
+              onDismiss={() => {
+                onSuccessClose();
+                router.push(`/company/moas/${issuedMoaId}?issued=1`);
+              }}
+            />
+          ) : undefined
+        }
+      />
+    );
+  }
   if (phase === "submitted") {
     return (
       <MoaSubmittedSuccess

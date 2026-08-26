@@ -209,6 +209,7 @@ function CompanyDashboardContent() {
         panelClassName: "sm:!max-w-none",
         headerClassName: "request-moa-header",
         exitAnimation: "fade",
+        allowBackdropClick: false,
       },
     );
   };
