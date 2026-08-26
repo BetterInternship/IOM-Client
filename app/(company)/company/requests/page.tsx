@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { useModal } from "@/app/providers/modal-provider";
+import { AutoSignCta } from "@/components/auto-sign-cta";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { CheckCircle2, ChevronDown, Clock4, Mail, X } from "lucide-react";
 
@@ -230,6 +231,7 @@ export default function CompanyRequestsPage() {
   const { confirmAction } = useIomModalRegistry();
   const { openModal, closeModal } = useModal();
   const hasShownInviteResult = useRef(false);
+  const [showAutoSignBanner, setShowAutoSignBanner] = useState(false);
 
   useEffect(() => {
     if (hasShownInviteResult.current) return;
@@ -246,6 +248,12 @@ export default function CompanyRequestsPage() {
     }
 
     hasShownInviteResult.current = true;
+    // signing-request is the delegate-mode redirect — no CTA there, only
+    // for the self-signed outcomes (Docs/plans/
+    // AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.1).
+    if (result === "signed" || result === "submitted") {
+      setShowAutoSignBanner(true);
+    }
     openModal(
       "invite-request-result",
       <InviteResultContent
@@ -318,6 +326,8 @@ export default function CompanyRequestsPage() {
         title="Outgoing MOA Requests"
         description="Track the status of MOA requests sent to universities."
       />
+
+      {showAutoSignBanner && <AutoSignCta />}
 
       {requestsLoading ? (
         <div className="space-y-4">

@@ -27,6 +27,8 @@ import type {
   BaseResponse,
   CareerListingLinkDto,
   ClaimInviteDto,
+  CompanyAutoSignConsentResponse,
+  CompanyAutoSignInfoResponse,
   CompanyCareerLinkStatusResponse,
   CompanyCareerListingLinkResponse,
   CompanyClaimInviteResponse,
@@ -49,7 +51,9 @@ import type {
   CompanyUploadDocumentsResponse,
   CompanyUploadLogoResponse,
   CompanyVerificationResponse,
+  EnableAutoSignDto,
   ErrorResponse,
+  PatchAutoSignConsentDto,
   PatchCompanyProfileDto,
 } from "../../models";
 
@@ -2529,6 +2533,426 @@ export const useCompanyControllerCancelMoaRequest = <
 > => {
   const mutationOptions =
     getCompanyControllerCancelMoaRequestMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const companyControllerGetAutoSign = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<CompanyAutoSignInfoResponse>({
+    url: `/api/company/auto-sign`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getCompanyControllerGetAutoSignQueryKey = () => {
+  return [`/api/company/auto-sign`] as const;
+};
+
+export const getCompanyControllerGetAutoSignQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerGetAutoSignQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerGetAutoSign>>
+  > = ({ signal }) => companyControllerGetAutoSign(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerGetAutoSignQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerGetAutoSign>>
+>;
+export type CompanyControllerGetAutoSignQueryError = ErrorResponse;
+
+export function useCompanyControllerGetAutoSign<
+  TData = Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+  TError = ErrorResponse,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerGetAutoSign>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetAutoSign<
+  TData = Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerGetAutoSign>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetAutoSign<
+  TData = Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerGetAutoSign<
+  TData = Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getCompanyControllerGetAutoSignQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getCompanyControllerGetAutoSignSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerGetAutoSignQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerGetAutoSign>>
+  > = ({ signal }) => companyControllerGetAutoSign(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerGetAutoSignSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerGetAutoSign>>
+>;
+export type CompanyControllerGetAutoSignSuspenseQueryError = ErrorResponse;
+
+export function useCompanyControllerGetAutoSignSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+  TError = ErrorResponse,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetAutoSignSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetAutoSignSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerGetAutoSignSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetAutoSign>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getCompanyControllerGetAutoSignSuspenseQueryOptions(options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const companyControllerEnableAutoSign = (
+  templateId: string | undefined | null,
+  enableAutoSignDto: EnableAutoSignDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<CompanyAutoSignConsentResponse>({
+    url: `/api/company/auto-sign/templates/${templateId}/enable`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: enableAutoSignDto,
+    signal,
+  });
+};
+
+export const getCompanyControllerEnableAutoSignMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyControllerEnableAutoSign>>,
+    TError,
+    { templateId: string | undefined | null; data: EnableAutoSignDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyControllerEnableAutoSign>>,
+  TError,
+  { templateId: string | undefined | null; data: EnableAutoSignDto },
+  TContext
+> => {
+  const mutationKey = ["companyControllerEnableAutoSign"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyControllerEnableAutoSign>>,
+    { templateId: string | undefined | null; data: EnableAutoSignDto }
+  > = (props) => {
+    const { templateId, data } = props ?? {};
+
+    return companyControllerEnableAutoSign(templateId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyControllerEnableAutoSignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerEnableAutoSign>>
+>;
+export type CompanyControllerEnableAutoSignMutationBody = EnableAutoSignDto;
+export type CompanyControllerEnableAutoSignMutationError = ErrorResponse;
+
+export const useCompanyControllerEnableAutoSign = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyControllerEnableAutoSign>>,
+      TError,
+      { templateId: string | undefined | null; data: EnableAutoSignDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyControllerEnableAutoSign>>,
+  TError,
+  { templateId: string | undefined | null; data: EnableAutoSignDto },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyControllerEnableAutoSignMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const companyControllerPatchAutoSign = (
+  consentId: string | undefined | null,
+  patchAutoSignConsentDto: PatchAutoSignConsentDto,
+) => {
+  return preconfiguredAxiosFunction<CompanyAutoSignConsentResponse>({
+    url: `/api/company/auto-sign/${consentId}`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: patchAutoSignConsentDto,
+  });
+};
+
+export const getCompanyControllerPatchAutoSignMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyControllerPatchAutoSign>>,
+    TError,
+    { consentId: string | undefined | null; data: PatchAutoSignConsentDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyControllerPatchAutoSign>>,
+  TError,
+  { consentId: string | undefined | null; data: PatchAutoSignConsentDto },
+  TContext
+> => {
+  const mutationKey = ["companyControllerPatchAutoSign"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyControllerPatchAutoSign>>,
+    { consentId: string | undefined | null; data: PatchAutoSignConsentDto }
+  > = (props) => {
+    const { consentId, data } = props ?? {};
+
+    return companyControllerPatchAutoSign(consentId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyControllerPatchAutoSignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerPatchAutoSign>>
+>;
+export type CompanyControllerPatchAutoSignMutationBody =
+  PatchAutoSignConsentDto;
+export type CompanyControllerPatchAutoSignMutationError = ErrorResponse;
+
+export const useCompanyControllerPatchAutoSign = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyControllerPatchAutoSign>>,
+      TError,
+      { consentId: string | undefined | null; data: PatchAutoSignConsentDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyControllerPatchAutoSign>>,
+  TError,
+  { consentId: string | undefined | null; data: PatchAutoSignConsentDto },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyControllerPatchAutoSignMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

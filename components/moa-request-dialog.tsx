@@ -19,6 +19,7 @@ import {
   CompanySignerForm,
   type CompanySignerMode,
 } from "@/components/company-signer-form";
+import { AutoSignCta } from "@/components/auto-sign-cta";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormError } from "@/components/auth-shell";
@@ -106,17 +107,26 @@ function MoaIssuedSuccess() {
 function MoaSubmittedSuccess({
   description,
   onDismiss,
+  cta,
 }: {
   description: string;
   onDismiss: () => void;
+  cta?: React.ReactNode;
 }) {
   return (
-    <OutcomeShell
-      icon={<Clock4 className="text-supportive h-9 w-9" />}
-      title="Request submitted"
-      description={description}
-      action={<Button onClick={onDismiss}>Dismiss</Button>}
-    />
+    <>
+      <OutcomeShell
+        icon={<Clock4 className="text-supportive h-9 w-9" />}
+        title="Request submitted"
+        description={description}
+        action={<Button onClick={onDismiss}>Dismiss</Button>}
+      />
+      {cta && (
+        <div className="mx-auto w-full px-4 pb-8 sm:w-[30rem] sm:px-0">
+          {cta}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -433,6 +443,11 @@ export function RequestDialog({
           onSuccessClose();
           router.push(successHref);
         }}
+        cta={
+          mode === "self" && selectedTemplateId ? (
+            <AutoSignCta templateId={selectedTemplateId} />
+          ) : undefined
+        }
       />
     );
   }

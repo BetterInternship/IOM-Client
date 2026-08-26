@@ -9,14 +9,21 @@ import {
 import {
   getCompanyControllerGetDocumentsQueryKey,
   getCompanyControllerGetVerificationQueryKey,
+  getCompanyControllerGetAutoSignQueryKey,
   useCompanyControllerGetDocuments,
   useCompanyControllerUploadDocuments,
+  useCompanyControllerGetAutoSign,
+  useCompanyControllerPatchAutoSign,
   type CompanyDocumentDto,
+  type CompanyAutoSignConsentDto,
 } from "@/app/api";
+import { AutoSignCta } from "@/components/auto-sign-cta";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { FileDropTarget } from "@/components/ui/use-file-drop";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CollapsibleCardGroup,
   CollapsibleCardSection,
@@ -29,6 +36,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useModal } from "@/app/providers/modal-provider";
+import { useIomModalRegistry } from "@/components/modal-registry";
 import { toastPresets } from "@/components/sonner-toaster";
 import { REQUIRED_DOCUMENT_TYPES, documentLabel } from "@/lib/document-types";
 import {
@@ -39,6 +47,7 @@ import {
   FileText,
   Info,
   Loader2,
+  ShieldCheck,
   Upload,
 } from "lucide-react";
 import { DocumentPreview } from "@/components/company/document-preview";
@@ -352,8 +361,204 @@ export function CompanyProfileContent() {
               </DetailField>
             )}
           </CollapsibleCardSection>
+
+          {/* 3 — Permissions: standing auto-sign consents (Docs/plans/
+              AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.2) */}
+          <CollapsibleCardSection
+            value="permissions"
+            trigger={
+              <CollapsibleCardSectionTitle icon={ShieldCheck} title="Permissions" />
+            }
+            contentClassName="space-y-4 px-5 pb-5"
+          >
+            <PermissionsSection />
+          </CollapsibleCardSection>
         </CollapsibleCardGroup>
       </PageContainer>
+    </div>
+  );
+}
+
+function ConsentRow({
+  consent,
+  onToggle,
+  onTurnOffDelegate,
+  isPending,
+}: {
+  consent: CompanyAutoSignConsentDto;
+  onToggle: (field: "proactive" | "autoRenew", next: boolean) => void;
+  onTurnOffDelegate: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-medium text-gray-900">
+            {consent.templateName}
+          </p>
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+            {consent.kind === "owner" ? "You" : consent.email}
+          </span>
+        </div>
+        <p className="text-muted-foreground mt-0.5 text-xs">
+          {consent.signatoryName}
+          {consent.signatoryTitle ? `, ${consent.signatoryTitle}` : ""} ·
+          enabled {formatDateWithoutTime(consent.createdAt)}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-4">
+        {consent.kind === "owner" ? (
+          <>
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-700">
+              <Checkbox
+                checked={consent.proactive}
+                disabled={isPending}
+                onCheckedChange={(checked) =>
+                  onToggle("proactive", checked === true)
+                }
+              />
+              New universities
+            </label>
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-700">
+              <Checkbox
+                checked={consent.autoRenew}
+                disabled={isPending}
+                onCheckedChange={(checked) =>
+                  onToggle("autoRenew", checked === true)
+                }
+              />
+              Auto-renew
+            </label>
+          </>
+        ) : (
+          <Button
+            variant="outline"
+            scheme="destructive"
+            size="sm"
+            disabled={isPending}
+            onClick={onTurnOffDelegate}
+          >
+            Turn off
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Auto-sign consents + fallback offers (Docs/plans/
+ * AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.2). Owner rows get per-capability
+ * toggles; delegate rows are revoke-only here — only the delegate's own
+ * signing act re-arms one (§5.1).
+ */
+function PermissionsSection() {
+  const queryClient = useQueryClient();
+  const { confirmAction } = useIomModalRegistry();
+  const { data, isLoading } = useCompanyControllerGetAutoSign();
+  const consents = data?.consents ?? [];
+  const offers = data?.offers ?? [];
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerGetAutoSignQueryKey(),
+    });
+
+  const patch = useCompanyControllerPatchAutoSign({
+    mutation: {
+      onSuccess: () => {
+        invalidate();
+        toast("Permissions updated", toastPresets.success);
+      },
+      onError: (e: Error) => toast(e.message, toastPresets.destructive),
+    },
+  });
+
+  const toggleCapability = (
+    consent: CompanyAutoSignConsentDto,
+    field: "proactive" | "autoRenew",
+    next: boolean,
+  ) => {
+    const otherStaysOn =
+      field === "proactive" ? consent.autoRenew : consent.proactive;
+    if (!next && !otherStaysOn) {
+      // Turning off the last capability cancels still-parked auto-fired
+      // requests (plan §5.4) — worth a confirmation.
+      confirmAction.open({
+        title: "Turn off auto-sign?",
+        description: `This turns off auto-sign for ${consent.templateName}. Already-signed MOAs are unaffected, but any request still waiting on your verification under this permission will be cancelled.`,
+        confirmLabel: "Turn off",
+        tone: "warning",
+        isPending: patch.isPending,
+        onConfirm: async () => {
+          await patch.mutateAsync({
+            consentId: consent.id,
+            data: { [field]: false },
+          });
+          confirmAction.close();
+        },
+      });
+      return;
+    }
+    patch.mutate({ consentId: consent.id, data: { [field]: next } });
+  };
+
+  const turnOffDelegate = (consent: CompanyAutoSignConsentDto) => {
+    confirmAction.open({
+      title: "Turn off auto-sign?",
+      description: `Future MOA requests to ${consent.email} for ${consent.templateName} will go back to a normal signing email — nothing will sign automatically for them anymore.`,
+      confirmLabel: "Turn off",
+      isPending: patch.isPending,
+      onConfirm: async () => {
+        await patch.mutateAsync({ consentId: consent.id, data: {} });
+        confirmAction.close();
+      },
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-14 w-full" />
+      </div>
+    );
+  }
+
+  if (!consents.length && !offers.length) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        Auto-sign consents you or a delegate have set up will show up here.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      {consents.length > 0 && (
+        <div className="divide-y divide-gray-100 rounded-[0.33em] border border-gray-200 bg-white px-4">
+          {consents.map((consent) => (
+            <ConsentRow
+              key={consent.id}
+              consent={consent}
+              isPending={patch.isPending}
+              onToggle={(field, next) => toggleCapability(consent, field, next)}
+              onTurnOffDelegate={() => turnOffDelegate(consent)}
+            />
+          ))}
+        </div>
+      )}
+
+      {offers.map((offer) => (
+        <div key={offer.templateId}>
+          <p className="text-muted-foreground mb-2 text-xs">
+            Auto-sign for <span className="font-medium">{offer.templateName}</span> —
+            set up using the details from your{" "}
+            {formatDateWithoutTime(offer.signedAt)} signing.
+          </p>
+          <AutoSignCta templateId={offer.templateId} />
+        </div>
+      ))}
     </div>
   );
 }
