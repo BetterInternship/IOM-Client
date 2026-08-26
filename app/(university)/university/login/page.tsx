@@ -95,13 +95,12 @@ function UniversityLoginPageContent() {
           <span className="block text-center">
             We sent a 6-digit code to{" "}
             <span className="text-foreground font-medium">{email}</span>.{" "}
-            <button
-              type="button"
+            <Button
               onClick={backToEmail}
-              className="text-primary font-medium"
+              variant="link"  
             >
               Wrong email?
-            </button>
+            </Button>
           </span>
         }
       >
