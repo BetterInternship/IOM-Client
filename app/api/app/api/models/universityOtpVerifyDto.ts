@@ -6,8 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface UniversityLoginDto {
+export interface UniversityOtpVerifyDto {
   email: string;
-  password: string;
-  cfToken?: string;
+  code: string;
 }

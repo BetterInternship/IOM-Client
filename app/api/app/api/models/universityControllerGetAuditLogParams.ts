@@ -7,6 +7,7 @@
  */
 
 export type UniversityControllerGetAuditLogParams = {
+  includeSignIns?: boolean;
   limit?: number;
   page?: number;
 };
