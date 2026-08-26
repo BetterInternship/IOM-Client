@@ -5,15 +5,15 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
-import type { CompanyAutoSignOfferDtoSignatureType } from "./companyAutoSignOfferDtoSignatureType";
+import type { CompanyAutoRequestOfferDtoSignatureType } from "./companyAutoRequestOfferDtoSignatureType";
 
-export interface CompanyAutoSignOfferDto {
+export interface CompanyAutoRequestOfferDto {
   templateId: string;
   templateName: string;
   isPerpetual: boolean;
   signatoryName: string;
   signatoryTitle: string;
-  signatureType: CompanyAutoSignOfferDtoSignatureType;
+  signatureType: CompanyAutoRequestOfferDtoSignatureType;
   signatureData: string;
   signedAt: string;
 }

@@ -6,11 +6,11 @@
  * OpenAPI spec version: 1.0
  */
 
-export type CompanyAutoSignConsentDtoKind =
-  (typeof CompanyAutoSignConsentDtoKind)[keyof typeof CompanyAutoSignConsentDtoKind];
+export type CompanyAutoRequestOfferDtoSignatureType =
+  (typeof CompanyAutoRequestOfferDtoSignatureType)[keyof typeof CompanyAutoRequestOfferDtoSignatureType];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const CompanyAutoSignConsentDtoKind = {
-  delegate: "delegate",
-  owner: "owner",
+export const CompanyAutoRequestOfferDtoSignatureType = {
+  text: "text",
+  image: "image",
 } as const;

@@ -4,10 +4,10 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  getCompanyControllerGetAutoSignQueryKey,
-  useCompanyControllerGetAutoSign,
-  useCompanyControllerEnableAutoSign,
-  type CompanyAutoSignOfferDto,
+  getCompanyControllerGetPermissionsQueryKey,
+  useCompanyControllerGetPermissions,
+  useCompanyControllerEnableAutoRequest,
+  type CompanyAutoRequestOfferDto,
 } from "@/app/api";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,13 +32,13 @@ function SignaturePreview({ type, data }: { type: string; data: string }) {
 }
 
 /**
- * Post-sign auto-sign offer (Docs/plans/AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md
- * §6.1). Driven entirely by GET /company/auto-sign's `offers` — renders
+ * Post-sign auto-request offer (Docs/plans/AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md
+ * §6.1). Driven entirely by GET /company/permissions's `offers` — renders
  * nothing when no offer matches. Dismissal is local/session-only by design
  * (not persisted): the next self-signing re-offers, and the Permissions
  * card fallback is always available.
  */
-export function AutoSignCta({
+export function AutoRequestCta({
   templateId,
   variant = "card",
   className,
@@ -53,21 +53,21 @@ export function AutoSignCta({
   const [proactive, setProactive] = useState(true);
   const [autoRenew, setAutoRenew] = useState(true);
 
-  const { data } = useCompanyControllerGetAutoSign();
+  const { data } = useCompanyControllerGetPermissions();
   const offers = data?.offers ?? [];
-  const offer: CompanyAutoSignOfferDto | undefined = templateId
+  const offer: CompanyAutoRequestOfferDto | undefined = templateId
     ? offers.find((o) => o.templateId === templateId)
     : [...offers].sort(
         (a, b) => new Date(b.signedAt).getTime() - new Date(a.signedAt).getTime(),
       )[0];
 
-  const enable = useCompanyControllerEnableAutoSign({
+  const enable = useCompanyControllerEnableAutoRequest({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: getCompanyControllerGetAutoSignQueryKey(),
+          queryKey: getCompanyControllerGetPermissionsQueryKey(),
         });
-        toast("Auto-sign enabled", toastPresets.success);
+        toast("Auto-request enabled", toastPresets.success);
         setDismissed(true);
       },
       onError: (e: Error) => toast(e.message, toastPresets.destructive),
@@ -87,7 +87,7 @@ export function AutoSignCta({
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-gray-900">
-            Set up auto-sign for {offer.templateName}?
+            Set up auto-request for {offer.templateName}?
           </p>
           <p className="text-muted-foreground mt-0.5 text-xs">
             We can sign future agreements on this template for you, using the

@@ -6,7 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface PatchAutoSignConsentDto {
+export interface PatchConsentDto {
   proactive?: boolean;
   autoRenew?: boolean;
 }

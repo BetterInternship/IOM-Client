@@ -9,15 +9,15 @@ import {
 import {
   getCompanyControllerGetDocumentsQueryKey,
   getCompanyControllerGetVerificationQueryKey,
-  getCompanyControllerGetAutoSignQueryKey,
+  getCompanyControllerGetPermissionsQueryKey,
   useCompanyControllerGetDocuments,
   useCompanyControllerUploadDocuments,
-  useCompanyControllerGetAutoSign,
-  useCompanyControllerPatchAutoSign,
+  useCompanyControllerGetPermissions,
+  useCompanyControllerPatchConsent,
   type CompanyDocumentDto,
-  type CompanyAutoSignConsentDto,
+  type CompanyConsentDto,
 } from "@/app/api";
-import { AutoSignCta } from "@/components/auto-sign-cta";
+import { AutoRequestCta } from "@/components/auto-request-cta";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { PageContainer, PageHeader } from "@/components/page-header";
@@ -362,8 +362,8 @@ export function CompanyProfileContent() {
             )}
           </CollapsibleCardSection>
 
-          {/* 3 — Permissions: standing auto-sign consents (Docs/plans/
-              AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.2) */}
+          {/* 3 — Permissions: standing auto-sign and auto-request consents
+              (Docs/plans/AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.2) */}
           <CollapsibleCardSection
             value="permissions"
             trigger={
@@ -385,7 +385,7 @@ function ConsentRow({
   onTurnOffDelegate,
   isPending,
 }: {
-  consent: CompanyAutoSignConsentDto;
+  consent: CompanyConsentDto;
   onToggle: (field: "proactive" | "autoRenew", next: boolean) => void;
   onTurnOffDelegate: () => void;
   isPending: boolean;
@@ -448,7 +448,7 @@ function ConsentRow({
 }
 
 /**
- * Auto-sign consents + fallback offers (Docs/plans/
+ * Auto-sign and auto-request consents + fallback offers (Docs/plans/
  * AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.2). Owner rows get per-capability
  * toggles; delegate rows are revoke-only here — only the delegate's own
  * signing act re-arms one (§5.1).
@@ -456,16 +456,16 @@ function ConsentRow({
 function PermissionsSection() {
   const queryClient = useQueryClient();
   const { confirmAction } = useIomModalRegistry();
-  const { data, isLoading } = useCompanyControllerGetAutoSign();
+  const { data, isLoading } = useCompanyControllerGetPermissions();
   const consents = data?.consents ?? [];
   const offers = data?.offers ?? [];
 
   const invalidate = () =>
     queryClient.invalidateQueries({
-      queryKey: getCompanyControllerGetAutoSignQueryKey(),
+      queryKey: getCompanyControllerGetPermissionsQueryKey(),
     });
 
-  const patch = useCompanyControllerPatchAutoSign({
+  const patch = useCompanyControllerPatchConsent({
     mutation: {
       onSuccess: () => {
         invalidate();
@@ -476,7 +476,7 @@ function PermissionsSection() {
   });
 
   const toggleCapability = (
-    consent: CompanyAutoSignConsentDto,
+    consent: CompanyConsentDto,
     field: "proactive" | "autoRenew",
     next: boolean,
   ) => {
@@ -486,8 +486,8 @@ function PermissionsSection() {
       // Turning off the last capability cancels still-parked auto-fired
       // requests (plan §5.4) — worth a confirmation.
       confirmAction.open({
-        title: "Turn off auto-sign?",
-        description: `This turns off auto-sign for ${consent.templateName}. Already-signed MOAs are unaffected, but any request still waiting on your verification under this permission will be cancelled.`,
+        title: "Turn off auto-request?",
+        description: `This turns off auto-request for ${consent.templateName}. Already-signed MOAs are unaffected, but any request still waiting on your verification under this permission will be cancelled.`,
         confirmLabel: "Turn off",
         tone: "warning",
         isPending: patch.isPending,
@@ -504,7 +504,7 @@ function PermissionsSection() {
     patch.mutate({ consentId: consent.id, data: { [field]: next } });
   };
 
-  const turnOffDelegate = (consent: CompanyAutoSignConsentDto) => {
+  const turnOffDelegate = (consent: CompanyConsentDto) => {
     confirmAction.open({
       title: "Turn off auto-sign?",
       description: `Future MOA requests to ${consent.email} for ${consent.templateName} will go back to a normal signing email — nothing will sign automatically for them anymore.`,
@@ -528,7 +528,8 @@ function PermissionsSection() {
   if (!consents.length && !offers.length) {
     return (
       <p className="text-muted-foreground text-sm">
-        Auto-sign consents you or a delegate have set up will show up here.
+        Anything you or a delegate have set up to sign or request
+        automatically will show up here.
       </p>
     );
   }
@@ -552,11 +553,11 @@ function PermissionsSection() {
       {offers.map((offer) => (
         <div key={offer.templateId}>
           <p className="text-muted-foreground mb-2 text-xs">
-            Auto-sign for <span className="font-medium">{offer.templateName}</span> —
+            Auto-request for <span className="font-medium">{offer.templateName}</span> —
             set up using the details from your{" "}
             {formatDateWithoutTime(offer.signedAt)} signing.
           </p>
-          <AutoSignCta templateId={offer.templateId} />
+          <AutoRequestCta templateId={offer.templateId} />
         </div>
       ))}
     </div>

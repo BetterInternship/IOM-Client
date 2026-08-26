@@ -14,7 +14,7 @@ import { useModal } from "@/app/providers/modal-provider";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoaStatusBadge } from "@/components/status-badge";
-import { AutoSignCta } from "@/components/auto-sign-cta";
+import { AutoRequestCta } from "@/components/auto-request-cta";
 import { cn, formatDateWithoutTime, formatExpiryCountdown } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -295,7 +295,7 @@ export default function CompanyMoaDetailPage() {
               banner (Docs/plans/AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.1). */}
           {justIssued && (
             <div className="mt-6">
-              <AutoSignCta templateId={moa.template_id} />
+              <AutoRequestCta templateId={moa.template_id} />
             </div>
           )}
         </div>

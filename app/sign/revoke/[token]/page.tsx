@@ -115,7 +115,7 @@ export default function SignRevokeTokenPage() {
         <p className="text-muted-foreground mt-2 text-center text-sm leading-6">
           {kind === "delegate"
             ? "Future requests will be sent to your email for manual signing."
-            : "Your auto-sign preferences for " + templateName + " have been saved."}
+            : "Your auto-request preferences for " + templateName + " have been saved."}
         </p>
       </RevokePageShell>
     );
@@ -124,11 +124,11 @@ export default function SignRevokeTokenPage() {
   return (
     <RevokePageShell>
       <h1 className="text-lg font-semibold text-gray-900">
-        Auto-sign for {templateName}
+        {kind === "owner" ? "Auto-request" : "Auto-sign"} for {templateName}
       </h1>
       <p className="text-muted-foreground mt-2 text-sm leading-6">
         {kind === "owner"
-          ? "Manage the auto-sign permissions you enabled for this template."
+          ? "Manage the auto-request permissions you enabled for this template."
           : "You enabled auto-sign for future MOAs under your name on this template. Turning it off doesn't affect already-signed MOAs."}
       </p>
 

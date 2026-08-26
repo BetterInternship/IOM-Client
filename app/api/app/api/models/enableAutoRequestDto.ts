@@ -6,7 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface EnableAutoSignDto {
+export interface EnableAutoRequestDto {
   proactive: boolean;
   autoRenew: boolean;
 }

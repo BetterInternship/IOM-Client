@@ -19,7 +19,7 @@ import {
   CompanySignerForm,
   type CompanySignerMode,
 } from "@/components/company-signer-form";
-import { AutoSignCta } from "@/components/auto-sign-cta";
+import { AutoRequestCta } from "@/components/auto-request-cta";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormError } from "@/components/auth-shell";
@@ -445,7 +445,7 @@ export function RequestDialog({
         }}
         cta={
           mode === "self" && selectedTemplateId ? (
-            <AutoSignCta templateId={selectedTemplateId} />
+            <AutoRequestCta templateId={selectedTemplateId} />
           ) : undefined
         }
       />
