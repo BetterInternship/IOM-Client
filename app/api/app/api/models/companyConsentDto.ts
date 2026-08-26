@@ -15,6 +15,7 @@ export interface CompanyConsentDto {
   email: string;
   proactive: boolean;
   autoRenew: boolean;
+  isPerpetual: boolean;
   signatoryName: string;
   signatoryTitle: string;
   createdAt: string;
