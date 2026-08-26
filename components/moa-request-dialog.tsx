@@ -12,6 +12,7 @@ import {
 import {
   type CompanyControllerCreateMoaRequestBody,
   getCompanyControllerListMoaRequestsQueryKey,
+  getCompanyControllerListMoasQueryKey,
   useCompanyControllerCreateMoaRequest,
   useCompanyControllerGetRequestableTemplates,
 } from "@/app/api";
@@ -352,6 +353,12 @@ export function RequestDialog({
   }) => {
     queryClient.invalidateQueries({
       queryKey: getCompanyControllerListMoaRequestsQueryKey(),
+    });
+    // An immediate issuance needs the active-partners list refreshed too —
+    // otherwise the dashboard keeps showing the pre-issuance state until a
+    // manual reload.
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerListMoasQueryKey(),
     });
 
     const status = res.request?.status;
