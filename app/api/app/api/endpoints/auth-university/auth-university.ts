@@ -16,45 +16,43 @@ import type {
 import type {
   BaseResponse,
   ErrorResponse,
-  UniversityAcceptInviteDto,
-  UniversityForgotDto,
-  UniversityLoginDto,
-  UniversityResetDto,
-  UniversityValidateInviteDto,
+  UniversityOtpRequestDto,
+  UniversityOtpRequestResponse,
+  UniversityOtpVerifyDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
 
-export const universityAuthControllerLogin = (
-  universityLoginDto: UniversityLoginDto,
+export const universityAuthControllerOtpRequest = (
+  universityOtpRequestDto: UniversityOtpRequestDto,
   signal?: AbortSignal,
 ) => {
-  return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/auth/university/login`,
+  return preconfiguredAxiosFunction<UniversityOtpRequestResponse>({
+    url: `/api/auth/university/otp/request`,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    data: universityLoginDto,
+    data: universityOtpRequestDto,
     signal,
   });
 };
 
-export const getUniversityAuthControllerLoginMutationOptions = <
+export const getUniversityAuthControllerOtpRequestMutationOptions = <
   TError = ErrorResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof universityAuthControllerLogin>>,
+    Awaited<ReturnType<typeof universityAuthControllerOtpRequest>>,
     TError,
-    { data: UniversityLoginDto },
+    { data: UniversityOtpRequestDto },
     TContext
   >;
 }): UseMutationOptions<
-  Awaited<ReturnType<typeof universityAuthControllerLogin>>,
+  Awaited<ReturnType<typeof universityAuthControllerOtpRequest>>,
   TError,
-  { data: UniversityLoginDto },
+  { data: UniversityOtpRequestDto },
   TContext
 > => {
-  const mutationKey = ["universityAuthControllerLogin"];
+  const mutationKey = ["universityAuthControllerOtpRequest"];
   const { mutation: mutationOptions } = options
     ? options.mutation &&
       "mutationKey" in options.mutation &&
@@ -64,44 +62,126 @@ export const getUniversityAuthControllerLoginMutationOptions = <
     : { mutation: { mutationKey } };
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof universityAuthControllerLogin>>,
-    { data: UniversityLoginDto }
+    Awaited<ReturnType<typeof universityAuthControllerOtpRequest>>,
+    { data: UniversityOtpRequestDto }
   > = (props) => {
     const { data } = props ?? {};
 
-    return universityAuthControllerLogin(data);
+    return universityAuthControllerOtpRequest(data);
   };
 
   return { mutationFn, ...mutationOptions };
 };
 
-export type UniversityAuthControllerLoginMutationResult = NonNullable<
-  Awaited<ReturnType<typeof universityAuthControllerLogin>>
+export type UniversityAuthControllerOtpRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityAuthControllerOtpRequest>>
 >;
-export type UniversityAuthControllerLoginMutationBody = UniversityLoginDto;
-export type UniversityAuthControllerLoginMutationError = ErrorResponse;
+export type UniversityAuthControllerOtpRequestMutationBody =
+  UniversityOtpRequestDto;
+export type UniversityAuthControllerOtpRequestMutationError = ErrorResponse;
 
-export const useUniversityAuthControllerLogin = <
+export const useUniversityAuthControllerOtpRequest = <
   TError = ErrorResponse,
   TContext = unknown,
 >(
   options?: {
     mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof universityAuthControllerLogin>>,
+      Awaited<ReturnType<typeof universityAuthControllerOtpRequest>>,
       TError,
-      { data: UniversityLoginDto },
+      { data: UniversityOtpRequestDto },
       TContext
     >;
   },
   queryClient?: QueryClient,
 ): UseMutationResult<
-  Awaited<ReturnType<typeof universityAuthControllerLogin>>,
+  Awaited<ReturnType<typeof universityAuthControllerOtpRequest>>,
   TError,
-  { data: UniversityLoginDto },
+  { data: UniversityOtpRequestDto },
   TContext
 > => {
   const mutationOptions =
-    getUniversityAuthControllerLoginMutationOptions(options);
+    getUniversityAuthControllerOtpRequestMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const universityAuthControllerOtpVerify = (
+  universityOtpVerifyDto: UniversityOtpVerifyDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<BaseResponse>({
+    url: `/api/auth/university/otp/verify`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: universityOtpVerifyDto,
+    signal,
+  });
+};
+
+export const getUniversityAuthControllerOtpVerifyMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof universityAuthControllerOtpVerify>>,
+    TError,
+    { data: UniversityOtpVerifyDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof universityAuthControllerOtpVerify>>,
+  TError,
+  { data: UniversityOtpVerifyDto },
+  TContext
+> => {
+  const mutationKey = ["universityAuthControllerOtpVerify"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof universityAuthControllerOtpVerify>>,
+    { data: UniversityOtpVerifyDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return universityAuthControllerOtpVerify(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UniversityAuthControllerOtpVerifyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof universityAuthControllerOtpVerify>>
+>;
+export type UniversityAuthControllerOtpVerifyMutationBody =
+  UniversityOtpVerifyDto;
+export type UniversityAuthControllerOtpVerifyMutationError = ErrorResponse;
+
+export const useUniversityAuthControllerOtpVerify = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof universityAuthControllerOtpVerify>>,
+      TError,
+      { data: UniversityOtpVerifyDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof universityAuthControllerOtpVerify>>,
+  TError,
+  { data: UniversityOtpVerifyDto },
+  TContext
+> => {
+  const mutationOptions =
+    getUniversityAuthControllerOtpVerifyMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };
@@ -175,328 +255,6 @@ export const useUniversityAuthControllerLogout = <
 > => {
   const mutationOptions =
     getUniversityAuthControllerLogoutMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
-export const universityAuthControllerAcceptInvite = (
-  universityAcceptInviteDto: UniversityAcceptInviteDto,
-  signal?: AbortSignal,
-) => {
-  return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/auth/university/accept-invite`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: universityAcceptInviteDto,
-    signal,
-  });
-};
-
-export const getUniversityAuthControllerAcceptInviteMutationOptions = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof universityAuthControllerAcceptInvite>>,
-    TError,
-    { data: UniversityAcceptInviteDto },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof universityAuthControllerAcceptInvite>>,
-  TError,
-  { data: UniversityAcceptInviteDto },
-  TContext
-> => {
-  const mutationKey = ["universityAuthControllerAcceptInvite"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof universityAuthControllerAcceptInvite>>,
-    { data: UniversityAcceptInviteDto }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return universityAuthControllerAcceptInvite(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UniversityAuthControllerAcceptInviteMutationResult = NonNullable<
-  Awaited<ReturnType<typeof universityAuthControllerAcceptInvite>>
->;
-export type UniversityAuthControllerAcceptInviteMutationBody =
-  UniversityAcceptInviteDto;
-export type UniversityAuthControllerAcceptInviteMutationError = ErrorResponse;
-
-export const useUniversityAuthControllerAcceptInvite = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof universityAuthControllerAcceptInvite>>,
-      TError,
-      { data: UniversityAcceptInviteDto },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof universityAuthControllerAcceptInvite>>,
-  TError,
-  { data: UniversityAcceptInviteDto },
-  TContext
-> => {
-  const mutationOptions =
-    getUniversityAuthControllerAcceptInviteMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
-export const universityAuthControllerValidateInvite = (
-  universityValidateInviteDto: UniversityValidateInviteDto,
-  signal?: AbortSignal,
-) => {
-  return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/auth/university/accept-invite/validate`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: universityValidateInviteDto,
-    signal,
-  });
-};
-
-export const getUniversityAuthControllerValidateInviteMutationOptions = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>,
-    TError,
-    { data: UniversityValidateInviteDto },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>,
-  TError,
-  { data: UniversityValidateInviteDto },
-  TContext
-> => {
-  const mutationKey = ["universityAuthControllerValidateInvite"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>,
-    { data: UniversityValidateInviteDto }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return universityAuthControllerValidateInvite(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UniversityAuthControllerValidateInviteMutationResult = NonNullable<
-  Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>
->;
-export type UniversityAuthControllerValidateInviteMutationBody =
-  UniversityValidateInviteDto;
-export type UniversityAuthControllerValidateInviteMutationError = ErrorResponse;
-
-export const useUniversityAuthControllerValidateInvite = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>,
-      TError,
-      { data: UniversityValidateInviteDto },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof universityAuthControllerValidateInvite>>,
-  TError,
-  { data: UniversityValidateInviteDto },
-  TContext
-> => {
-  const mutationOptions =
-    getUniversityAuthControllerValidateInviteMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
-export const universityAuthControllerForgot = (
-  universityForgotDto: UniversityForgotDto,
-  signal?: AbortSignal,
-) => {
-  return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/auth/university/forgot`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: universityForgotDto,
-    signal,
-  });
-};
-
-export const getUniversityAuthControllerForgotMutationOptions = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof universityAuthControllerForgot>>,
-    TError,
-    { data: UniversityForgotDto },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof universityAuthControllerForgot>>,
-  TError,
-  { data: UniversityForgotDto },
-  TContext
-> => {
-  const mutationKey = ["universityAuthControllerForgot"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof universityAuthControllerForgot>>,
-    { data: UniversityForgotDto }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return universityAuthControllerForgot(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UniversityAuthControllerForgotMutationResult = NonNullable<
-  Awaited<ReturnType<typeof universityAuthControllerForgot>>
->;
-export type UniversityAuthControllerForgotMutationBody = UniversityForgotDto;
-export type UniversityAuthControllerForgotMutationError = ErrorResponse;
-
-export const useUniversityAuthControllerForgot = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof universityAuthControllerForgot>>,
-      TError,
-      { data: UniversityForgotDto },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof universityAuthControllerForgot>>,
-  TError,
-  { data: UniversityForgotDto },
-  TContext
-> => {
-  const mutationOptions =
-    getUniversityAuthControllerForgotMutationOptions(options);
-
-  return useMutation(mutationOptions, queryClient);
-};
-export const universityAuthControllerReset = (
-  universityResetDto: UniversityResetDto,
-  signal?: AbortSignal,
-) => {
-  return preconfiguredAxiosFunction<BaseResponse>({
-    url: `/api/auth/university/reset`,
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    data: universityResetDto,
-    signal,
-  });
-};
-
-export const getUniversityAuthControllerResetMutationOptions = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof universityAuthControllerReset>>,
-    TError,
-    { data: UniversityResetDto },
-    TContext
-  >;
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof universityAuthControllerReset>>,
-  TError,
-  { data: UniversityResetDto },
-  TContext
-> => {
-  const mutationKey = ["universityAuthControllerReset"];
-  const { mutation: mutationOptions } = options
-    ? options.mutation &&
-      "mutationKey" in options.mutation &&
-      options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey } };
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof universityAuthControllerReset>>,
-    { data: UniversityResetDto }
-  > = (props) => {
-    const { data } = props ?? {};
-
-    return universityAuthControllerReset(data);
-  };
-
-  return { mutationFn, ...mutationOptions };
-};
-
-export type UniversityAuthControllerResetMutationResult = NonNullable<
-  Awaited<ReturnType<typeof universityAuthControllerReset>>
->;
-export type UniversityAuthControllerResetMutationBody = UniversityResetDto;
-export type UniversityAuthControllerResetMutationError = ErrorResponse;
-
-export const useUniversityAuthControllerReset = <
-  TError = ErrorResponse,
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof universityAuthControllerReset>>,
-      TError,
-      { data: UniversityResetDto },
-      TContext
-    >;
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof universityAuthControllerReset>>,
-  TError,
-  { data: UniversityResetDto },
-  TContext
-> => {
-  const mutationOptions =
-    getUniversityAuthControllerResetMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };

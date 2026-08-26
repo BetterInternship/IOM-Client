@@ -28,6 +28,11 @@ const EVENT_LABELS: Record<string, string> = {
   legacy_moa_created: "Legacy MOA created",
   legacy_document_uploaded: "Legacy document uploaded",
   university_profile_updated: "University profile updated",
+  university_account_invited: "Staff invited",
+  university_account_role_changed: "Staff role changed",
+  university_account_deactivated: "Staff deactivated",
+  university_account_reactivated: "Staff reactivated",
+  university_account_signed_in: "Signed in",
 };
 
 const EVENT_TYPES: Record<string, BadgeProps["type"]> = {
@@ -45,6 +50,11 @@ const EVENT_TYPES: Record<string, BadgeProps["type"]> = {
   legacy_moa_created: "default",
   legacy_document_uploaded: "default",
   university_profile_updated: "default",
+  university_account_invited: "primary",
+  university_account_role_changed: "warning",
+  university_account_deactivated: "destructive",
+  university_account_reactivated: "supportive",
+  university_account_signed_in: "default",
 };
 
 function EventBadge({ eventType }: { eventType: string }) {

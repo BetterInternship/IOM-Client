@@ -6,6 +6,10 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface UniversityValidateInviteDto {
-  token: string;
+export interface UniversityOtpRequestResponse {
+  success: boolean;
+  message?: string;
+  ok: boolean;
+  resendIn: number;
+  ttl?: number;
 }

@@ -84,10 +84,7 @@ export function UniversityProfileProvider({
 
   // pathname is the browser URL path — on subdomain routing it won't carry the /university prefix.
   const onAuthPage =
-    pathname.startsWith("/university/login") ||
-    pathname.startsWith("/university/accept-invite") ||
-    pathname === "/login" ||
-    pathname === "/accept-invite";
+    pathname.startsWith("/university/login") || pathname === "/login";
   const onCompleteProfilePage =
     pathname.startsWith("/university/complete-profile") ||
     pathname === "/complete-profile";
