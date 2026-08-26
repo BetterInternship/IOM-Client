@@ -77,7 +77,29 @@ export function AutoRequestCta({
     },
   });
 
-  if (!offer || dismissed) return null;
+  if (dismissed) return null;
+
+  if (!offer) {
+    // No offer to show (e.g. already fully enabled for this template) but
+    // the caller still needs a way to close — a bare dismiss action instead
+    // of rendering nothing and stranding the modal with no way out.
+    if (!onDismiss) return null;
+    return (
+      <div className={cn("flex justify-center", className)}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="cursor-pointer"
+          onClick={() => {
+            setDismissed(true);
+            onDismiss();
+          }}
+        >
+          Dismiss
+        </Button>
+      </div>
+    );
+  }
 
   const renewChecked = autoRenew && !offer.isPerpetual;
   const canConfirm = proactive || renewChecked;
