@@ -56,12 +56,10 @@ function OutcomeShell({
   icon,
   title,
   description,
-  action,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
-  action?: React.ReactNode;
 }) {
   return (
     <div className="mx-auto flex min-h-[20rem] w-full flex-col items-center justify-center px-4 py-10 text-center sm:w-[30rem]">
@@ -89,7 +87,6 @@ function OutcomeShell({
       <p className="text-muted-foreground mt-2 max-w-sm text-sm">
         {description}
       </p>
-      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }
@@ -106,11 +103,9 @@ function MoaIssuedSuccess() {
 
 function MoaSubmittedSuccess({
   description,
-  onDismiss,
   cta,
 }: {
   description: string;
-  onDismiss: () => void;
   cta?: React.ReactNode;
 }) {
   return (
@@ -119,7 +114,6 @@ function MoaSubmittedSuccess({
         icon={<Clock4 className="text-supportive h-9 w-9" />}
         title="Request submitted"
         description={description}
-        action={<Button onClick={onDismiss}>Dismiss</Button>}
       />
       {cta && (
         <div className="mx-auto w-full px-4 pb-8 sm:w-[30rem] sm:px-0">
@@ -363,8 +357,8 @@ export function RequestDialog({
 
     const message =
       mode === "delegate"
-        ? `We emailed ${signatoryEmail} a link to sign — you'll see it here once it's signed.`
-        : "Signed and on file — it will issue automatically once your company is verified.";
+        ? `We emailed ${signatoryEmail} a link to sign the MOA — you'll see it here once it's signed.`
+        : "Your MOA will be approved automatically once your company is verified.";
     setOutcomeMessage(message);
     setPhase("submitted");
   };
@@ -439,13 +433,16 @@ export function RequestDialog({
     return (
       <MoaSubmittedSuccess
         description={outcomeMessage}
-        onDismiss={() => {
-          onSuccessClose();
-          router.push(successHref);
-        }}
         cta={
           mode === "self" && selectedTemplateId ? (
-            <AutoRequestCta templateId={selectedTemplateId} />
+            <AutoRequestCta
+              templateId={selectedTemplateId}
+              variant="plain"
+              onDismiss={() => {
+                onSuccessClose();
+                router.push(successHref);
+              }}
+            />
           ) : undefined
         }
       />

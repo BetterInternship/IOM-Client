@@ -14,7 +14,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { toastPresets } from "@/components/sonner-toaster";
 import { cn } from "@/lib/utils";
-import { ShieldCheck, X } from "lucide-react";
 
 function SignaturePreview({ type, data }: { type: string; data: string }) {
   if (type === "image") {
@@ -42,11 +41,14 @@ export function AutoRequestCta({
   templateId,
   variant = "card",
   className,
+  onDismiss,
 }: {
   /** Exact template to offer. Omit to show the most-recently-signed offer. */
   templateId?: string;
   variant?: "card" | "plain";
   className?: string;
+  /** Called when the user dismisses ("Not now") or successfully enables — lets a caller embedding this in a modal close it in step. */
+  onDismiss?: () => void;
 }) {
   const queryClient = useQueryClient();
   const [dismissed, setDismissed] = useState(false);
@@ -69,6 +71,7 @@ export function AutoRequestCta({
         });
         toast("Auto-request enabled", toastPresets.success);
         setDismissed(true);
+        onDismiss?.();
       },
       onError: (e: Error) => toast(e.message, toastPresets.destructive),
     },
@@ -81,37 +84,6 @@ export function AutoRequestCta({
 
   const content = (
     <div className="space-y-4">
-      <div className="flex items-start gap-3">
-        <span className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-full">
-          <ShieldCheck className="size-5" aria-hidden="true" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-gray-900">
-            Set up auto-request for {offer.templateName}?
-          </p>
-          <p className="text-muted-foreground mt-0.5 text-xs">
-            We can sign future agreements on this template for you, using the
-            details from your signing.
-          </p>
-        </div>
-        <button
-          type="button"
-          aria-label="Dismiss"
-          className="text-muted-foreground shrink-0 cursor-pointer hover:text-gray-700"
-          onClick={() => setDismissed(true)}
-        >
-          <X className="size-4" aria-hidden="true" />
-        </button>
-      </div>
-
-      <div className="rounded-[0.33em] border border-gray-200 bg-gray-50/60 px-4 py-3">
-        <SignaturePreview type={offer.signatureType} data={offer.signatureData} />
-        <p className="mt-1.5 text-sm font-medium text-gray-900">
-          {offer.signatoryName}
-        </p>
-        <p className="text-muted-foreground text-xs">{offer.signatoryTitle}</p>
-      </div>
-
       <div className="space-y-2.5">
         <label className="flex cursor-pointer items-start gap-2.5">
           <Checkbox
@@ -124,8 +96,8 @@ export function AutoRequestCta({
               Sign automatically with new universities
             </span>
             <span className="text-muted-foreground block text-xs">
-              Whenever a new university adopts this same agreement,
-              we&apos;ll sign it for you using these details.
+              Automatically sign MOAs from new universities that 
+              use this same template.
             </span>
           </span>
         </label>
@@ -141,25 +113,22 @@ export function AutoRequestCta({
                 Renew automatically when it expires
               </span>
               <span className="text-muted-foreground block text-xs">
-                When an agreement on this template expires, we&apos;ll
-                request and sign a fresh one with that university.
+                Automatically renew this MOA when it expires.
               </span>
             </span>
           </label>
         )}
       </div>
 
-      <p className="text-muted-foreground text-xs">
-        Your company information is always pulled fresh. Turn either off any
-        time under Profile → Permissions.
-      </p>
-
       <div className="flex justify-end gap-2">
         <Button
           variant="outline"
           size="sm"
           className="cursor-pointer"
-          onClick={() => setDismissed(true)}
+          onClick={() => {
+            setDismissed(true);
+            onDismiss?.();
+          }}
         >
           Not now
         </Button>
