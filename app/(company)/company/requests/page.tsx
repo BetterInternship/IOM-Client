@@ -43,9 +43,11 @@ type InviteResult = "signed" | "submitted" | "signing-request";
 
 function InviteResultContent({
   result,
+  templateId,
   onClose,
 }: {
   result: InviteResult;
+  templateId: string | null;
   onClose: () => void;
 }) {
   const details =
@@ -70,6 +72,10 @@ function InviteResultContent({
               "Your company verification is pending. The MOA will issue automatically once it is approved.",
           };
   const Icon = details.icon;
+  // Same eligibility as moa-request-dialog.tsx's outcome screens — the CTA
+  // is an owner self-sign thing only, never for the delegate signing-request
+  // outcome (Docs/plans/AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.1).
+  const hasCta = result !== "signing-request" && !!templateId;
 
   return (
     <div className="text-center">
@@ -82,9 +88,19 @@ function InviteResultContent({
       <p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-6">
         {details.description}
       </p>
-      <Button className="mt-6 w-full" onClick={onClose}>
-        Continue
-      </Button>
+      {hasCta ? (
+        <div className="mt-6 border-t border-gray-200 pt-6 text-left">
+          <AutoRequestCta
+            templateId={templateId ?? undefined}
+            variant="plain"
+            onDismiss={onClose}
+          />
+        </div>
+      ) : (
+        <Button className="mt-6 w-full" onClick={onClose}>
+          Continue
+        </Button>
+      )}
     </div>
   );
 }
@@ -231,14 +247,12 @@ export default function CompanyRequestsPage() {
   const { confirmAction } = useIomModalRegistry();
   const { openModal, closeModal } = useModal();
   const hasShownInviteResult = useRef(false);
-  const [showAutoRequestBanner, setShowAutoRequestBanner] = useState(false);
 
   useEffect(() => {
     if (hasShownInviteResult.current) return;
 
-    const result = new URLSearchParams(window.location.search).get(
-      "invite_result",
-    );
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("invite_result");
     if (
       result !== "signed" &&
       result !== "submitted" &&
@@ -248,16 +262,11 @@ export default function CompanyRequestsPage() {
     }
 
     hasShownInviteResult.current = true;
-    // signing-request is the delegate-mode redirect — no CTA there, only
-    // for the self-signed outcomes (Docs/plans/
-    // AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.1).
-    if (result === "signed" || result === "submitted") {
-      setShowAutoRequestBanner(true);
-    }
     openModal(
       "invite-request-result",
       <InviteResultContent
         result={result}
+        templateId={params.get("template_id")}
         onClose={() => closeModal("invite-request-result")}
       />,
       {
@@ -326,8 +335,6 @@ export default function CompanyRequestsPage() {
         title="Outgoing MOA Requests"
         description="Track the status of MOA requests sent to universities."
       />
-
-      {showAutoRequestBanner && <AutoRequestCta />}
 
       {requestsLoading ? (
         <div className="space-y-4">
