@@ -8,9 +8,8 @@ import {
   usePdfDocumentFromUrl,
   usePdfPageRenderer,
 } from "@betterinternship/core/pdf-viewer";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCompanyControllerGetMoa } from "@/app/api";
-import { useModal } from "@/app/providers/modal-provider";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MoaStatusBadge } from "@/components/status-badge";
@@ -124,23 +123,10 @@ function universityInitials(name: string) {
 export default function CompanyMoaDetailPage() {
   const { moaId } = useParams<{ moaId: string }>();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { closeModal } = useModal();
-  const justIssued = searchParams.get("issued") === "1";
 
   const { data, isLoading } = useCompanyControllerGetMoa(moaId, {
     query: { refetchInterval: 25 * 60 * 1000 },
   });
-
-  useEffect(() => {
-    if (!justIssued || isLoading || !data) return;
-
-    const timer = window.setTimeout(() => {
-      closeModal("request-moa", { skipOnClose: true });
-    }, 650);
-
-    return () => window.clearTimeout(timer);
-  }, [closeModal, data, isLoading, justIssued]);
 
   const goBack = () => {
     if (window.history.length > 1) {

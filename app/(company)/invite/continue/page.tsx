@@ -15,6 +15,7 @@ import {
 
 import {
   type CompanyControllerCreateMoaRequestBody,
+  getCompanyControllerGetPermissionsQueryKey,
   getCompanyControllerListMoaRequestsQueryKey,
   getCompanyControllerListPendingInvitesQueryKey,
   useCompanyControllerCreateMoaRequest,
@@ -249,6 +250,12 @@ function InviteContinueContent() {
     queryClient.invalidateQueries({
       queryKey: getCompanyControllerListMoaRequestsQueryKey(),
     });
+    // Same staleTime: Infinity issue as the dashboard's RequestDialog — the
+    // requests page's auto-request CTA reads GetPermissions, which won't
+    // pick up this self-sign on its own.
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerGetPermissionsQueryKey(),
+    });
     const status = res.request?.status;
     queryClient.invalidateQueries({
       queryKey: getCompanyControllerListPendingInvitesQueryKey(),
@@ -259,7 +266,9 @@ function InviteContinueContent() {
         : mode === "delegate"
           ? "signing-request"
           : "submitted";
-    router.replace(`/company/requests?invite_result=${result}`);
+    router.replace(
+      `/company/requests?invite_result=${result}&template_id=${templateId}`,
+    );
   };
 
   const handleError = (e: unknown) => {

@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { useModal } from "@/app/providers/modal-provider";
+import { AutoRequestCta } from "@/components/auto-request-cta";
 import { formatDateWithoutTime } from "@/lib/utils";
 import { CheckCircle2, ChevronDown, Clock4, Mail, X } from "lucide-react";
 
@@ -42,9 +43,11 @@ type InviteResult = "signed" | "submitted" | "signing-request";
 
 function InviteResultContent({
   result,
+  templateId,
   onClose,
 }: {
   result: InviteResult;
+  templateId: string | null;
   onClose: () => void;
 }) {
   const details =
@@ -69,6 +72,10 @@ function InviteResultContent({
               "Your company verification is pending. The MOA will issue automatically once it is approved.",
           };
   const Icon = details.icon;
+  // Same eligibility as moa-request-dialog.tsx's outcome screens — the CTA
+  // is an owner self-sign thing only, never for the delegate signing-request
+  // outcome (Docs/plans/AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.1).
+  const hasCta = result !== "signing-request" && !!templateId;
 
   return (
     <div className="text-center">
@@ -81,9 +88,19 @@ function InviteResultContent({
       <p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-6">
         {details.description}
       </p>
-      <Button className="mt-6 w-full" onClick={onClose}>
-        Continue
-      </Button>
+      {hasCta ? (
+        <div className="mt-6 border-t border-gray-200 pt-6 text-left">
+          <AutoRequestCta
+            templateId={templateId ?? undefined}
+            variant="plain"
+            onDismiss={onClose}
+          />
+        </div>
+      ) : (
+        <Button className="mt-6 w-full" onClick={onClose}>
+          Continue
+        </Button>
+      )}
     </div>
   );
 }
@@ -234,9 +251,8 @@ export default function CompanyRequestsPage() {
   useEffect(() => {
     if (hasShownInviteResult.current) return;
 
-    const result = new URLSearchParams(window.location.search).get(
-      "invite_result",
-    );
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("invite_result");
     if (
       result !== "signed" &&
       result !== "submitted" &&
@@ -250,6 +266,7 @@ export default function CompanyRequestsPage() {
       "invite-request-result",
       <InviteResultContent
         result={result}
+        templateId={params.get("template_id")}
         onClose={() => closeModal("invite-request-result")}
       />,
       {

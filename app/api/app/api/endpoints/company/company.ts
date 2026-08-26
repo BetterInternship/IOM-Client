@@ -30,6 +30,7 @@ import type {
   CompanyCareerLinkStatusResponse,
   CompanyCareerListingLinkResponse,
   CompanyClaimInviteResponse,
+  CompanyConsentResponse,
   CompanyControllerCreateMoaRequestBody,
   CompanyControllerListMoasParams,
   CompanyControllerUploadDocumentBody,
@@ -43,14 +44,17 @@ import type {
   CompanyMoasResponse,
   CompanyPatchProfileResponse,
   CompanyPendingInvitesResponse,
+  CompanyPermissionsResponse,
   CompanyRequestableTemplatesResponse,
   CompanyUniversitiesResponse,
   CompanyUploadDocumentResponse,
   CompanyUploadDocumentsResponse,
   CompanyUploadLogoResponse,
   CompanyVerificationResponse,
+  EnableAutoRequestDto,
   ErrorResponse,
   PatchCompanyProfileDto,
+  PatchConsentDto,
 } from "../../models";
 
 import { preconfiguredAxiosFunction } from "../../../../preconfig.axios";
@@ -2529,6 +2533,426 @@ export const useCompanyControllerCancelMoaRequest = <
 > => {
   const mutationOptions =
     getCompanyControllerCancelMoaRequestMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const companyControllerGetPermissions = (signal?: AbortSignal) => {
+  return preconfiguredAxiosFunction<CompanyPermissionsResponse>({
+    url: `/api/company/permissions`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getCompanyControllerGetPermissionsQueryKey = () => {
+  return [`/api/company/permissions`] as const;
+};
+
+export const getCompanyControllerGetPermissionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerGetPermissionsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerGetPermissions>>
+  > = ({ signal }) => companyControllerGetPermissions(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerGetPermissionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerGetPermissions>>
+>;
+export type CompanyControllerGetPermissionsQueryError = ErrorResponse;
+
+export function useCompanyControllerGetPermissions<
+  TData = Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+  TError = ErrorResponse,
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerGetPermissions>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetPermissions<
+  TData = Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+          TError,
+          Awaited<ReturnType<typeof companyControllerGetPermissions>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetPermissions<
+  TData = Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerGetPermissions<
+  TData = Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getCompanyControllerGetPermissionsQueryOptions(options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getCompanyControllerGetPermissionsSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+  TError = ErrorResponse,
+>(options?: {
+  query?: Partial<
+    UseSuspenseQueryOptions<
+      Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+      TError,
+      TData
+    >
+  >;
+}) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getCompanyControllerGetPermissionsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof companyControllerGetPermissions>>
+  > = ({ signal }) => companyControllerGetPermissions(signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CompanyControllerGetPermissionsSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerGetPermissions>>
+>;
+export type CompanyControllerGetPermissionsSuspenseQueryError = ErrorResponse;
+
+export function useCompanyControllerGetPermissionsSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+  TError = ErrorResponse,
+>(
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetPermissionsSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCompanyControllerGetPermissionsSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCompanyControllerGetPermissionsSuspense<
+  TData = Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+  TError = ErrorResponse,
+>(
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof companyControllerGetPermissions>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions =
+    getCompanyControllerGetPermissionsSuspenseQueryOptions(options);
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const companyControllerEnableAutoRequest = (
+  templateId: string | undefined | null,
+  enableAutoRequestDto: EnableAutoRequestDto,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<CompanyConsentResponse>({
+    url: `/api/company/auto-request/templates/${templateId}/enable`,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: enableAutoRequestDto,
+    signal,
+  });
+};
+
+export const getCompanyControllerEnableAutoRequestMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyControllerEnableAutoRequest>>,
+    TError,
+    { templateId: string | undefined | null; data: EnableAutoRequestDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyControllerEnableAutoRequest>>,
+  TError,
+  { templateId: string | undefined | null; data: EnableAutoRequestDto },
+  TContext
+> => {
+  const mutationKey = ["companyControllerEnableAutoRequest"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyControllerEnableAutoRequest>>,
+    { templateId: string | undefined | null; data: EnableAutoRequestDto }
+  > = (props) => {
+    const { templateId, data } = props ?? {};
+
+    return companyControllerEnableAutoRequest(templateId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyControllerEnableAutoRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerEnableAutoRequest>>
+>;
+export type CompanyControllerEnableAutoRequestMutationBody =
+  EnableAutoRequestDto;
+export type CompanyControllerEnableAutoRequestMutationError = ErrorResponse;
+
+export const useCompanyControllerEnableAutoRequest = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyControllerEnableAutoRequest>>,
+      TError,
+      { templateId: string | undefined | null; data: EnableAutoRequestDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyControllerEnableAutoRequest>>,
+  TError,
+  { templateId: string | undefined | null; data: EnableAutoRequestDto },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyControllerEnableAutoRequestMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+export const companyControllerPatchConsent = (
+  consentId: string | undefined | null,
+  patchConsentDto: PatchConsentDto,
+) => {
+  return preconfiguredAxiosFunction<CompanyConsentResponse>({
+    url: `/api/company/permissions/${consentId}`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: patchConsentDto,
+  });
+};
+
+export const getCompanyControllerPatchConsentMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyControllerPatchConsent>>,
+    TError,
+    { consentId: string | undefined | null; data: PatchConsentDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyControllerPatchConsent>>,
+  TError,
+  { consentId: string | undefined | null; data: PatchConsentDto },
+  TContext
+> => {
+  const mutationKey = ["companyControllerPatchConsent"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyControllerPatchConsent>>,
+    { consentId: string | undefined | null; data: PatchConsentDto }
+  > = (props) => {
+    const { consentId, data } = props ?? {};
+
+    return companyControllerPatchConsent(consentId, data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyControllerPatchConsentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerPatchConsent>>
+>;
+export type CompanyControllerPatchConsentMutationBody = PatchConsentDto;
+export type CompanyControllerPatchConsentMutationError = ErrorResponse;
+
+export const useCompanyControllerPatchConsent = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyControllerPatchConsent>>,
+      TError,
+      { consentId: string | undefined | null; data: PatchConsentDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyControllerPatchConsent>>,
+  TError,
+  { consentId: string | undefined | null; data: PatchConsentDto },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyControllerPatchConsentMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };
