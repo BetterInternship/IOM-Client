@@ -15,7 +15,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OtpInput } from "@/components/ui/otp-input";
+import { peekHireLinkIntent } from "@/lib/hire-link-intent";
+import { CompanyAuthSessionGate } from "@/components/company-auth-session-gate";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 type Step = "email" | "code";
 
@@ -25,10 +28,19 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("invite_token") ?? "";
   const nextParam = searchParams.get("next") ?? "";
+  const managedAccountEmail = searchParams.get("managed_account") ?? "";
+  const companyName = searchParams.get("company_name") ?? "";
+  const linkedAccount = searchParams.get("linked_account") === "1";
+  const linkIntent = searchParams.get("link_intent") ?? "";
+  const initialEmail = searchParams.get("email") ?? "";
+  const hireLink = peekHireLinkIntent(linkIntent);
   const next = nextParam.startsWith("/") ? nextParam : "";
 
   const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
+  const [emailEditable, setEmailEditable] = useState(
+    !linkedAccount || !initialEmail,
+  );
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [resendIn, setResendIn] = useState(0);
@@ -56,7 +68,12 @@ function LoginPageContent() {
 
   const verify = useCompanyAuthControllerLoginOtpVerify({
     mutation: {
-      onSuccess: async () => {
+      onSuccess: async (data) => {
+        if (data.careerLink) {
+          toast[data.careerLink.status === "linked" ? "success" : "error"](
+            data.careerLink.message,
+          );
+        }
         queryClient.clear();
 
         if (inviteToken) {
@@ -99,6 +116,7 @@ function LoginPageContent() {
     setStep("email");
     setCode("");
     setError("");
+    setEmailEditable(true);
     verifySubmittedRef.current = false;
   };
 
@@ -107,7 +125,13 @@ function LoginPageContent() {
       if (verifySubmittedRef.current) return;
       verifySubmittedRef.current = true;
       setError("");
-      verify.mutate({ data: { email, code: submittedCode } });
+      verify.mutate({
+        data: {
+          email,
+          code: submittedCode,
+          ...(linkIntent ? { linkIntent } : {}),
+        },
+      });
     };
 
     return (
@@ -133,6 +157,12 @@ function LoginPageContent() {
           }}
           className="space-y-5"
         >
+          {hireLink && (
+            <div className="rounded-[0.33em] bg-primary/10 px-4 py-3 text-sm leading-6 text-primary">
+              You are connecting your Partners account to{" "}
+              <strong>{hireLink.employerName}</strong> on BetterInternship.
+            </div>
+          )}
           <FormError>{error}</FormError>
           <OtpInput
             value={code}
@@ -183,7 +213,12 @@ function LoginPageContent() {
             href={
               inviteToken
                 ? `/company/register?invite_token=${encodeURIComponent(inviteToken)}`
-                : "/register"
+                : linkIntent
+                  ? `/company/register?${new URLSearchParams({
+                      email,
+                      link_intent: linkIntent,
+                    })}`
+                  : "/register"
             }
             className="text-primary font-medium"
           >
@@ -200,19 +235,51 @@ function LoginPageContent() {
         }}
         className="space-y-4"
       >
+        {hireLink && (
+          <div className="rounded-[0.33em] bg-primary/10 px-4 py-3 text-sm leading-6 text-primary">
+            You are connecting your Partners account to{" "}
+            <strong>{hireLink.employerName}</strong> on BetterInternship.
+          </div>
+        )}
         <FormError>{error}</FormError>
-        <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="you@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
+        {linkedAccount && !emailEditable && (
+          <div className="space-y-3 rounded-[0.33em] bg-primary/10 px-4 py-3 text-sm leading-6 text-primary">
+            <p>
+              {managedAccountEmail ? (
+                <>
+                  This email is currently in charge of managing{" "}
+                  {companyName ? <strong>{companyName}'s</strong> : "your company's"}{" "}
+                  MOAs with universities.
+                </>
+              ) : (
+                <>Use this email to access your company&apos;s MOAs with universities.</>
+              )}{" "}
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0 text-sm"
+                onClick={() => setEmailEditable(true)}
+              >
+                Not your email?
+              </Button>
+            </p>
+            <Input type="email" value={email} disabled />
+          </div>
+        )}
+        {emailEditable && (
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+        )}
         <Button
           type="submit"
           size="lg"
@@ -238,7 +305,9 @@ export default function CompanyLoginPage() {
         </AuthShell>
       }
     >
-      <LoginPageContent />
+      <CompanyAuthSessionGate>
+        <LoginPageContent />
+      </CompanyAuthSessionGate>
     </Suspense>
   );
 }

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { CompanyOtpVerifyResponseKind } from "./companyOtpVerifyResponseKind";
+import type { CareerLinkResponse } from "./careerLinkResponse";
 
 export interface CompanyOtpVerifyResponse {
   success: boolean;
@@ -18,4 +19,5 @@ export interface CompanyOtpVerifyResponse {
   magicLink?: string | null;
   conflictEmail?: string;
   autoLinkToken?: string;
+  careerLink?: CareerLinkResponse;
 }

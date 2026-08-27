@@ -5,9 +5,9 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
+import type { CareerLinkResponseStatus } from "./careerLinkResponseStatus";
 
-export interface CompanyLoginOtpVerifyDto {
-  email: string;
-  code: string;
-  linkIntent?: string;
+export interface CareerLinkResponse {
+  status: CareerLinkResponseStatus;
+  message: string;
 }

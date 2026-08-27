@@ -9,5 +9,5 @@
 export interface CompanyRegisterDto {
   repEmail: string;
   cfToken?: string;
-  prefillToken?: string;
+  linkIntent?: string;
 }

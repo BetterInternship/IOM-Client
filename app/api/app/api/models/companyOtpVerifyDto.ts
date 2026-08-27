@@ -9,4 +9,5 @@
 export interface CompanyOtpVerifyDto {
   repEmail: string;
   code: string;
+  linkIntent?: string;
 }
