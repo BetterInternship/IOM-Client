@@ -116,7 +116,7 @@ export function AutoRequestCta({
             />
             <span className="text-sm text-gray-800">
               <span className="font-medium">
-                Automatically partner with new universities that use this MOA.
+                Auto-request partnership with new universities that use this MOA.
               </span>
             </span>
           </label>
@@ -130,7 +130,7 @@ export function AutoRequestCta({
             />
             <span className="text-sm text-gray-800">
               <span className="font-medium">
-                Automatically renew for universities that use this MOA.
+                Auto-renew for universities that use this MOA.
               </span>
             </span>
           </label>
