@@ -38,7 +38,7 @@ function OutcomeScreen({
   description,
   children,
 }: {
-  tone: "neutral" | "supportive";
+  tone: "neutral" | "supportive" | "warning";
   icon: React.ReactNode;
   title: string;
   description: React.ReactNode;
@@ -56,7 +56,9 @@ function OutcomeScreen({
           "mb-5 flex size-16 items-center justify-center rounded-full",
           tone === "supportive"
             ? "bg-supportive/10 text-supportive"
-            : "bg-slate-100 text-slate-500",
+            : tone === "warning"
+              ? "bg-warning/10 text-warning"
+              : "bg-slate-100 text-slate-500",
         )}
       >
         {icon}
@@ -214,7 +216,7 @@ export default function SignTokenPage() {
     return (
       <SigningPageShell className="max-w-2xl">
         <OutcomeScreen
-          tone="supportive"
+          tone={outcome.kind === "issued" ? "supportive" : "warning"}
           icon={<CheckCircle2 className="h-8 w-8" aria-hidden="true" />}
           title={outcome.kind === "issued" ? "MOA signed!" : "MOA Requested!"}
           description={

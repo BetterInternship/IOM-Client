@@ -11,7 +11,9 @@ import {
 } from "@betterinternship/core/pdf-viewer";
 import {
   type CompanyControllerCreateMoaRequestBody,
+  getCompanyControllerGetPermissionsQueryKey,
   getCompanyControllerListMoaRequestsQueryKey,
+  getCompanyControllerListMoasQueryKey,
   useCompanyControllerCreateMoaRequest,
   useCompanyControllerGetRequestableTemplates,
 } from "@/app/api";
@@ -19,6 +21,7 @@ import {
   CompanySignerForm,
   type CompanySignerMode,
 } from "@/components/company-signer-form";
+import { AutoRequestCta } from "@/components/auto-request-cta";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FormError } from "@/components/auth-shell";
@@ -55,12 +58,12 @@ function OutcomeShell({
   icon,
   title,
   description,
-  action,
+  tone = "supportive",
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
-  action?: React.ReactNode;
+  tone?: "supportive" | "warning";
 }) {
   return (
     <div className="mx-auto flex min-h-[20rem] w-full flex-col items-center justify-center px-4 py-10 text-center sm:w-[30rem]">
@@ -81,42 +84,62 @@ function OutcomeShell({
           }
         }
       `}</style>
-      <div className="mb-5 rounded-full bg-supportive/10 p-6">{icon}</div>
+      <div
+        className={cn(
+          "mb-5 rounded-full p-6",
+          tone === "warning" ? "bg-warning/10" : "bg-supportive/10",
+        )}
+      >
+        {icon}
+      </div>
       <h2 className="text-3xl font-semibold tracking-tight text-foreground">
         {title}
       </h2>
       <p className="text-muted-foreground mt-2 max-w-sm text-sm">
         {description}
       </p>
-      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }
 
-function MoaIssuedSuccess() {
+function MoaIssuedSuccess({ cta }: { cta?: React.ReactNode }) {
   return (
-    <OutcomeShell
-      icon={<AnimatedCheck />}
-      title="MOA issued"
-      description="Opening your MOA…"
-    />
+    <>
+      <OutcomeShell
+        icon={<AnimatedCheck />}
+        title="MOA issued"
+        description={cta ? "Your MOA is ready to view." : "Opening your MOA…"}
+      />
+      {cta && (
+        <div className="mx-auto w-full border-t border-gray-200 px-4 pt-6 pb-8 sm:w-[30rem] sm:px-0">
+          {cta}
+        </div>
+      )}
+    </>
   );
 }
 
 function MoaSubmittedSuccess({
   description,
-  onDismiss,
+  cta,
 }: {
   description: string;
-  onDismiss: () => void;
+  cta?: React.ReactNode;
 }) {
   return (
-    <OutcomeShell
-      icon={<Clock4 className="text-supportive h-9 w-9" />}
-      title="Request submitted"
-      description={description}
-      action={<Button onClick={onDismiss}>Dismiss</Button>}
-    />
+    <>
+      <OutcomeShell
+        icon={<Clock4 className="text-warning h-9 w-9" />}
+        title="Request submitted"
+        description={description}
+        tone="warning"
+      />
+      {cta && (
+        <div className="mx-auto w-full border-t border-gray-200 px-4 pt-6 pb-8 sm:w-[30rem] sm:px-0">
+          {cta}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -293,6 +316,7 @@ export function RequestDialog({
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<RequestPhase>("form");
   const [outcomeMessage, setOutcomeMessage] = useState("");
+  const [issuedMoaId, setIssuedMoaId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedEmail = window.localStorage.getItem(
@@ -341,22 +365,59 @@ export function RequestDialog({
     queryClient.invalidateQueries({
       queryKey: getCompanyControllerListMoaRequestsQueryKey(),
     });
+    // An immediate issuance needs the active-partners list refreshed too —
+    // otherwise the dashboard keeps showing the pre-issuance state until a
+    // manual reload.
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerListMoasQueryKey(),
+    });
+    // The global QueryClient default is staleTime: Infinity (query-provider.tsx),
+    // so GetPermissions never auto-refetches — without this, the CTA below
+    // keeps using whatever offers snapshot was cached before this self-sign,
+    // and a template just signed for the first time won't show up in it.
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerGetPermissionsQueryKey(),
+    });
 
     const status = res.request?.status;
     if (status === "issued" && res.request?.moa_id) {
+      setIssuedMoaId(res.request.moa_id);
       setPhase("issued");
+      // The underlying page navigates right away, but the modal itself
+      // isn't closed here — it lives above the route (app/layout.tsx's
+      // ModalProvider), so it keeps floating over the new page until the
+      // user dismisses it, giving the auto-request CTA below a chance to
+      // be seen and used.
+      const hasCta = mode === "self" && !!selectedTemplateId;
       window.setTimeout(() => {
-        router.push(`/company/moas/${res.request!.moa_id}?issued=1`);
+        router.push(`/company/moas/${res.request!.moa_id}`);
       }, 550);
+      // No CTA to wait on (delegate mode, or no template) — nothing else
+      // will ever close this modal, so tidy it away shortly after arrival
+      // instead of leaving the checkmark stuck there.
+      if (!hasCta) {
+        window.setTimeout(() => onSuccessClose(), 550 + 650);
+      }
       return;
     }
 
     const message =
       mode === "delegate"
-        ? `We emailed ${signatoryEmail} a link to sign — you'll see it here once it's signed.`
-        : "Signed and on file — it will issue automatically once your company is verified.";
+        ? `We emailed ${signatoryEmail} a link to sign the MOA — you'll see it here once it's signed.`
+        : "Your MOA will be approved automatically once your company is verified.";
     setOutcomeMessage(message);
     setPhase("submitted");
+    // Same pattern as the issued case above: redirect automatically, but
+    // leave the modal open over the destination page so the CTA below gets
+    // a chance to be seen — it only closes when the user acts on it, or,
+    // with no CTA to wait on, on the same short auto-close timer.
+    const hasSubmittedCta = mode === "self" && !!selectedTemplateId;
+    window.setTimeout(() => {
+      router.push(successHref);
+    }, 550);
+    if (!hasSubmittedCta) {
+      window.setTimeout(() => onSuccessClose(), 550 + 650);
+    }
   };
 
   const handleError = (e: unknown) => {
@@ -424,15 +485,40 @@ export function RequestDialog({
   const step2Ready = mode === "self" ? selfReady : delegateReady;
 
   if (phase === "submitting") return <MoaSubmittingState />;
-  if (phase === "issued") return <MoaIssuedSuccess />;
+  if (phase === "issued") {
+    return (
+      <MoaIssuedSuccess
+        cta={
+          mode === "self" && selectedTemplateId ? (
+            <AutoRequestCta
+              templateId={selectedTemplateId}
+              variant="plain"
+              onDismiss={() => {
+                onSuccessClose();
+                router.push(`/company/moas/${issuedMoaId}`);
+              }}
+            />
+          ) : undefined
+        }
+      />
+    );
+  }
   if (phase === "submitted") {
     return (
       <MoaSubmittedSuccess
         description={outcomeMessage}
-        onDismiss={() => {
-          onSuccessClose();
-          router.push(successHref);
-        }}
+        cta={
+          mode === "self" && selectedTemplateId ? (
+            <AutoRequestCta
+              templateId={selectedTemplateId}
+              variant="plain"
+              onDismiss={() => {
+                onSuccessClose();
+                router.push(successHref);
+              }}
+            />
+          ) : undefined
+        }
       />
     );
   }

@@ -24,8 +24,10 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  ApplyRevokeTokenDto,
   BaseResponse,
   ErrorResponse,
+  RevokeTokenResolvedResponse,
   SignControllerSubmitBody,
   SignTokenResolvedResponse,
   SubmitSignatureResponse,
@@ -409,13 +411,304 @@ export const useSignControllerSubmit = <
 
   return useMutation(mutationOptions, queryClient);
 };
+export const signControllerResolveRevoke = (
+  token: string | undefined | null,
+  signal?: AbortSignal,
+) => {
+  return preconfiguredAxiosFunction<RevokeTokenResolvedResponse>({
+    url: `/api/sign/revoke/${token}/resolve`,
+    method: "GET",
+    signal,
+  });
+};
+
+export const getSignControllerResolveRevokeQueryKey = (
+  token?: string | undefined | null,
+) => {
+  return [`/api/sign/revoke/${token}/resolve`] as const;
+};
+
+export const getSignControllerResolveRevokeQueryOptions = <
+  TData = Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+  TError = ErrorResponse,
+>(
+  token: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getSignControllerResolveRevokeQueryKey(token);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof signControllerResolveRevoke>>
+  > = ({ signal }) => signControllerResolveRevoke(token, signal);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!token,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type SignControllerResolveRevokeQueryResult = NonNullable<
+  Awaited<ReturnType<typeof signControllerResolveRevoke>>
+>;
+export type SignControllerResolveRevokeQueryError = ErrorResponse;
+
+export function useSignControllerResolveRevoke<
+  TData = Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+  TError = ErrorResponse,
+>(
+  token: string | undefined | null,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+          TError,
+          Awaited<ReturnType<typeof signControllerResolveRevoke>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSignControllerResolveRevoke<
+  TData = Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+  TError = ErrorResponse,
+>(
+  token: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+          TError,
+          Awaited<ReturnType<typeof signControllerResolveRevoke>>
+        >,
+        "initialData"
+      >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSignControllerResolveRevoke<
+  TData = Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+  TError = ErrorResponse,
+>(
+  token: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useSignControllerResolveRevoke<
+  TData = Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+  TError = ErrorResponse,
+>(
+  token: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getSignControllerResolveRevokeQueryOptions(
+    token,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export const getSignControllerResolveRevokeSuspenseQueryOptions = <
+  TData = Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+  TError = ErrorResponse,
+>(
+  token: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+        TError,
+        TData
+      >
+    >;
+  },
+) => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getSignControllerResolveRevokeQueryKey(token);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof signControllerResolveRevoke>>
+  > = ({ signal }) => signControllerResolveRevoke(token, signal);
+
+  return { queryKey, queryFn, ...queryOptions } as UseSuspenseQueryOptions<
+    Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type SignControllerResolveRevokeSuspenseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof signControllerResolveRevoke>>
+>;
+export type SignControllerResolveRevokeSuspenseQueryError = ErrorResponse;
+
+export function useSignControllerResolveRevokeSuspense<
+  TData = Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+  TError = ErrorResponse,
+>(
+  token: string | undefined | null,
+  options: {
+    query: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSignControllerResolveRevokeSuspense<
+  TData = Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+  TError = ErrorResponse,
+>(
+  token: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useSignControllerResolveRevokeSuspense<
+  TData = Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+  TError = ErrorResponse,
+>(
+  token: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useSignControllerResolveRevokeSuspense<
+  TData = Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+  TError = ErrorResponse,
+>(
+  token: string | undefined | null,
+  options?: {
+    query?: Partial<
+      UseSuspenseQueryOptions<
+        Awaited<ReturnType<typeof signControllerResolveRevoke>>,
+        TError,
+        TData
+      >
+    >;
+  },
+  queryClient?: QueryClient,
+): UseSuspenseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getSignControllerResolveRevokeSuspenseQueryOptions(
+    token,
+    options,
+  );
+
+  const query = useSuspenseQuery(
+    queryOptions,
+    queryClient,
+  ) as UseSuspenseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>;
+  };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export const signControllerRevoke = (
   token: string | undefined | null,
+  applyRevokeTokenDto: ApplyRevokeTokenDto,
   signal?: AbortSignal,
 ) => {
   return preconfiguredAxiosFunction<BaseResponse>({
     url: `/api/sign/revoke/${token}`,
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    data: applyRevokeTokenDto,
     signal,
   });
 };
@@ -427,13 +720,13 @@ export const getSignControllerRevokeMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof signControllerRevoke>>,
     TError,
-    { token: string | undefined | null },
+    { token: string | undefined | null; data: ApplyRevokeTokenDto },
     TContext
   >;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof signControllerRevoke>>,
   TError,
-  { token: string | undefined | null },
+  { token: string | undefined | null; data: ApplyRevokeTokenDto },
   TContext
 > => {
   const mutationKey = ["signControllerRevoke"];
@@ -447,11 +740,11 @@ export const getSignControllerRevokeMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof signControllerRevoke>>,
-    { token: string | undefined | null }
+    { token: string | undefined | null; data: ApplyRevokeTokenDto }
   > = (props) => {
-    const { token } = props ?? {};
+    const { token, data } = props ?? {};
 
-    return signControllerRevoke(token);
+    return signControllerRevoke(token, data);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -460,7 +753,7 @@ export const getSignControllerRevokeMutationOptions = <
 export type SignControllerRevokeMutationResult = NonNullable<
   Awaited<ReturnType<typeof signControllerRevoke>>
 >;
-
+export type SignControllerRevokeMutationBody = ApplyRevokeTokenDto;
 export type SignControllerRevokeMutationError = ErrorResponse;
 
 export const useSignControllerRevoke = <
@@ -471,7 +764,7 @@ export const useSignControllerRevoke = <
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof signControllerRevoke>>,
       TError,
-      { token: string | undefined | null },
+      { token: string | undefined | null; data: ApplyRevokeTokenDto },
       TContext
     >;
   },
@@ -479,7 +772,7 @@ export const useSignControllerRevoke = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof signControllerRevoke>>,
   TError,
-  { token: string | undefined | null },
+  { token: string | undefined | null; data: ApplyRevokeTokenDto },
   TContext
 > => {
   const mutationOptions = getSignControllerRevokeMutationOptions(options);

@@ -6,7 +6,6 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface RegisterInvitedCompanyDto {
-  token: string;
+export interface CompanyLoginOtpRequestDto {
   email: string;
 }

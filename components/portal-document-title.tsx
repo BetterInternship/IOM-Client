@@ -17,8 +17,6 @@ const PAGE_NAMES: Record<string, string> = {
   reviews: "Company Reviews",
   login: "Sign In",
   register: "Register",
-  "forgot-password": "Forgot Password",
-  "reset-password": "Reset Password",
   "accept-invite": "Accept Invite",
 };
 

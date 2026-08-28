@@ -9,14 +9,22 @@ import {
 import {
   getCompanyControllerGetDocumentsQueryKey,
   getCompanyControllerGetVerificationQueryKey,
+  getCompanyControllerGetPermissionsQueryKey,
   useCompanyControllerGetDocuments,
   useCompanyControllerUploadDocuments,
+  useCompanyControllerGetPermissions,
+  useCompanyControllerPatchConsent,
+  useCompanyControllerEnableAutoRequest,
   type CompanyDocumentDto,
+  type CompanyConsentDto,
+  type CompanyAutoRequestOfferDto,
 } from "@/app/api";
-import { formatDateWithoutTime } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn, formatDateWithoutTime } from "@/lib/utils";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { FileDropTarget } from "@/components/ui/use-file-drop";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   CollapsibleCardGroup,
   CollapsibleCardSection,
@@ -29,6 +37,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useModal } from "@/app/providers/modal-provider";
+import { useIomModalRegistry } from "@/components/modal-registry";
 import { toastPresets } from "@/components/sonner-toaster";
 import { REQUIRED_DOCUMENT_TYPES, documentLabel } from "@/lib/document-types";
 import {
@@ -39,6 +48,7 @@ import {
   FileText,
   Info,
   Loader2,
+  ShieldCheck,
   Upload,
 } from "lucide-react";
 import { DocumentPreview } from "@/components/company/document-preview";
@@ -352,8 +362,290 @@ export function CompanyProfileContent() {
               </DetailField>
             )}
           </CollapsibleCardSection>
+
+          {/* 3 — Permissions: standing auto-sign and auto-request consents
+              (Docs/plans/AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.2) */}
+          <CollapsibleCardSection
+            value="permissions"
+            trigger={
+              <CollapsibleCardSectionTitle icon={ShieldCheck} title="Permissions" />
+            }
+            contentClassName="space-y-4 px-5 pb-5"
+          >
+            <PermissionsSection />
+          </CollapsibleCardSection>
         </CollapsibleCardGroup>
       </PageContainer>
+    </div>
+  );
+}
+
+function ConsentRow({
+  consent,
+  onToggle,
+  onTurnOffDelegate,
+  isPending,
+}: {
+  consent: CompanyConsentDto;
+  onToggle: (field: "proactive" | "autoRenew", next: boolean) => void;
+  onTurnOffDelegate: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-medium text-gray-900">
+            {consent.templateName}
+          </p>
+          <span className={cn("rounded-full px-2 py-0.5 text-[11px] font-medium text-white", consent.kind === "owner" ? "bg-primary" : "bg-destructive")}>
+            {consent.kind === "owner" ? "You" : consent.email}
+          </span>
+        </div>
+        <p className="text-muted-foreground mt-0.5 text-xs">
+          {consent.signatoryName}
+          {consent.signatoryTitle ? `, ${consent.signatoryTitle}` : ""} ·
+          enabled {formatDateWithoutTime(consent.createdAt)}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-4">
+        {consent.kind === "owner" ? (
+          <>
+            <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-700">
+              <Checkbox
+                checked={consent.proactive}
+                disabled={isPending}
+                onCheckedChange={(checked) =>
+                  onToggle("proactive", checked === true)
+                }
+              />
+              New universities
+            </label>
+            {!consent.isPerpetual && (
+              <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-700">
+                <Checkbox
+                  checked={consent.autoRenew}
+                  disabled={isPending}
+                  onCheckedChange={(checked) =>
+                    onToggle("autoRenew", checked === true)
+                  }
+                />
+                Auto-renew
+              </label>
+            )}
+          </>
+        ) : (
+          <Button
+            variant="outline"
+            scheme="destructive"
+            size="sm"
+            disabled={isPending}
+            onClick={onTurnOffDelegate}
+          >
+            Turn off their auto-sign
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A not-yet-enabled template — same row shape as ConsentRow, both checkboxes
+ * starting unchecked. Checking either immediately enables auto-request with
+ * whatever the pair's combined state is (the enable endpoint replaces both
+ * capabilities at once, so there's no partial-toggle equivalent to patch).
+ */
+function OfferRow({
+  offer,
+  onEnable,
+  isPending,
+}: {
+  offer: CompanyAutoRequestOfferDto;
+  onEnable: (opts: { proactive: boolean; autoRenew: boolean }) => Promise<unknown>;
+  isPending: boolean;
+}) {
+  const [proactive, setProactive] = useState(false);
+  const [autoRenew, setAutoRenew] = useState(false);
+
+  const toggle = (field: "proactive" | "autoRenew", next: boolean) => {
+    const nextProactive = field === "proactive" ? next : proactive;
+    const nextAutoRenew = field === "autoRenew" ? next : autoRenew;
+    (field === "proactive" ? setProactive : setAutoRenew)(next);
+    if (!nextProactive && !nextAutoRenew) return;
+    onEnable({ proactive: nextProactive, autoRenew: nextAutoRenew }).catch(
+      () => (field === "proactive" ? setProactive : setAutoRenew)(!next),
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm font-medium text-gray-900">
+            {offer.templateName}
+          </p>
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-600">
+            You
+          </span>
+        </div>
+        <p className="text-muted-foreground mt-0.5 text-xs">
+          {offer.signatoryName}
+          {offer.signatoryTitle ? `, ${offer.signatoryTitle}` : ""} ·
+          signed {formatDateWithoutTime(offer.signedAt)}
+        </p>
+      </div>
+      <div className="flex shrink-0 items-center gap-4">
+        <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-700">
+          <Checkbox
+            checked={proactive}
+            disabled={isPending}
+            onCheckedChange={(checked) => toggle("proactive", checked === true)}
+          />
+          New universities
+        </label>
+        {!offer.isPerpetual && (
+          <label className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-gray-700">
+            <Checkbox
+              checked={autoRenew}
+              disabled={isPending}
+              onCheckedChange={(checked) => toggle("autoRenew", checked === true)}
+            />
+            Auto-renew
+          </label>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Auto-sign and auto-request consents + fallback offers (Docs/plans/
+ * AUTO_SIGN_CTA_IMPLEMENTATION_PLAN.md §6.2). Owner rows get per-capability
+ * toggles; delegate rows are revoke-only here — only the delegate's own
+ * signing act re-arms one (§5.1).
+ */
+function PermissionsSection() {
+  const queryClient = useQueryClient();
+  const { confirmAction } = useIomModalRegistry();
+  const { data, isLoading } = useCompanyControllerGetPermissions();
+  const consents = data?.consents ?? [];
+  // A partially-enabled template appears in both arrays now (it still
+  // "offers" completing the missing capability) — its own ConsentRow
+  // already exposes that checkbox, so skip the redundant OfferRow here.
+  const consentTemplateIds = new Set(consents.map((c) => c.templateId));
+  const offers = (data?.offers ?? []).filter(
+    (o) => !consentTemplateIds.has(o.templateId),
+  );
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerGetPermissionsQueryKey(),
+    });
+
+  const patch = useCompanyControllerPatchConsent({
+    mutation: {
+      onSuccess: () => {
+        invalidate();
+        toast("Permissions updated", toastPresets.success);
+      },
+      onError: (e: Error) => toast(e.message, toastPresets.destructive),
+    },
+  });
+
+  const enable = useCompanyControllerEnableAutoRequest({
+    mutation: {
+      onSuccess: () => {
+        invalidate();
+        toast("Auto-request enabled", toastPresets.success);
+      },
+      onError: (e: Error) => toast(e.message, toastPresets.destructive),
+    },
+  });
+
+  const toggleCapability = (
+    consent: CompanyConsentDto,
+    field: "proactive" | "autoRenew",
+    next: boolean,
+  ) => {
+    if (next) {
+      patch.mutate({ consentId: consent.id, data: { [field]: next } });
+      return;
+    }
+
+    const fieldLabel = field === "proactive" ? "auto-request" : "auto-renew";
+
+    confirmAction.open({
+      title: `Turn off ${fieldLabel} for ${consent.templateName}?`,
+      // Worth a heads-up that revoking doesn't cancel requests already
+      // sent out under it (plan §5.4).
+      description: field === "proactive"
+        ? `You will need to manually sign MOAs from new universities that offer ${consent.templateName}. MOA requests already sent out may still be issued even after this.`
+        : `MOAs using the template ${consent.templateName} won't renew automatically after expiry.`,
+      confirmLabel: "Turn off",
+      tone: "warning",
+      isPending: patch.isPending,
+      onConfirm: async () => {
+        await patch.mutateAsync({
+          consentId: consent.id,
+          data: { [field]: false },
+        });
+        confirmAction.close();
+      },
+    });
+  };
+
+  const turnOffDelegate = (consent: CompanyConsentDto) => {
+    confirmAction.open({
+      title: "Turn off auto-sign?",
+      description: `Future MOA requests to ${consent.email} for ${consent.templateName} will go back to a normal signing email — nothing will sign automatically for them anymore.`,
+      confirmLabel: "Turn off",
+      isPending: patch.isPending,
+      onConfirm: async () => {
+        await patch.mutateAsync({ consentId: consent.id, data: {} });
+        confirmAction.close();
+      },
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-14 w-full" />
+      </div>
+    );
+  }
+
+  if (!consents.length && !offers.length) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        Anything you or a delegate have set up to sign or request
+        automatically will show up here.
+      </p>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-gray-100 rounded-[0.33em] border border-gray-200 bg-white">
+      {consents.map((consent) => (
+        <ConsentRow
+          key={consent.id}
+          consent={consent}
+          isPending={patch.isPending}
+          onToggle={(field, next) => toggleCapability(consent, field, next)}
+          onTurnOffDelegate={() => turnOffDelegate(consent)}
+        />
+      ))}
+      {offers.map((offer) => (
+        <OfferRow
+          key={offer.templateId}
+          offer={offer}
+          isPending={enable.isPending}
+          onEnable={(opts) =>
+            enable.mutateAsync({ templateId: offer.templateId, data: opts })
+          }
+        />
+      ))}
     </div>
   );
 }

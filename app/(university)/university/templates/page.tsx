@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useUniversityProfile } from "@/app/providers/university-profile.provider";
 import {
   getUniversityControllerGetAuditLogQueryKey,
+  getUniversityControllerListPartnersQueryKey,
   getUniversityControllerListTemplatesQueryKey,
   useUniversityControllerListTemplates,
   useUniversityControllerToggleTemplateOffer,
@@ -26,7 +27,8 @@ export default function UniversityTemplatesPage() {
   const { account, isLoading, canManageUniversity } = useUniversityProfile();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { confirmAction, universityProfileComplete } = useIomModalRegistry();
+  const { confirmAction, universityProfileComplete, templateFanOutResult } =
+    useIomModalRegistry();
   const [previewTemplate, setPreviewTemplate] = useState<TemplateOffer["template"] | null>(null);
   const [previewWidth, setPreviewWidth] = useState(50);
 
@@ -66,7 +68,7 @@ export default function UniversityTemplatesPage() {
 
   const toggle = useUniversityControllerToggleTemplateOffer({
     mutation: {
-      onSuccess: (_res, variables) => {
+      onSuccess: (res, variables) => {
         queryClient.invalidateQueries({
           queryKey: getUniversityControllerListTemplatesQueryKey(),
         });
@@ -77,12 +79,26 @@ export default function UniversityTemplatesPage() {
           queryKey: getUniversityControllerGetAuditLogQueryKey(),
         });
         confirmAction.close();
-        toast(
-          variables.data.is_available
-            ? "Template offered."
-            : "Template hidden.",
-          toastPresets.success,
-        );
+
+        const fired = variables.data.is_available
+          ? (res.requests_fired ?? 0)
+          : 0;
+        if (fired > 0) {
+          queryClient.invalidateQueries({
+            queryKey: getUniversityControllerListPartnersQueryKey(),
+          });
+          templateFanOutResult.open({
+            count: fired,
+            onViewPartners: () => router.push("/university/partners"),
+          });
+        } else {
+          toast(
+            variables.data.is_available
+              ? "Template offered."
+              : "Template hidden.",
+            toastPresets.success,
+          );
+        }
       },
       onError: (e: Error) => toast.error(e.message),
     },

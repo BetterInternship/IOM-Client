@@ -207,6 +207,27 @@ export function useIomModalRegistry() {
         ),
       close: () => closeModal("university-profile-complete"),
     },
+    templateFanOutResult: {
+      open: (opts: { count: number; onViewPartners: () => void }) =>
+        openModal(
+          "template-fanout-result",
+          <TemplateFanOutResultContent
+            count={opts.count}
+            onViewPartners={() => {
+              closeModal("template-fanout-result", { skipOnClose: true });
+              opts.onViewPartners();
+            }}
+            onDismiss={() => closeModal("template-fanout-result")}
+          />,
+          {
+            panelClassName: "!w-full sm:!max-w-xl",
+            headerClassName: "pb-0",
+            contentClassName: "px-6 pb-6 sm:px-8 sm:pb-7",
+            backdropClassName: "bg-black/35 backdrop-blur-[1px]",
+          },
+        ),
+      close: () => closeModal("template-fanout-result"),
+    },
     // First-time self-serve "Post a listing" naming prompt (plan §12) — a
     // display name is a hire-side concept, asked exactly when it starts to
     // mattering. Never shown once the company has a registered_name.
@@ -278,6 +299,47 @@ function UniversityProfileCompleteContent({
       <Button size="lg" className="mt-6 w-full" onClick={onContinue}>
         Choose templates
       </Button>
+    </div>
+  );
+}
+
+function TemplateFanOutResultContent({
+  count,
+  onViewPartners,
+  onDismiss,
+}: {
+  count: number;
+  onViewPartners: () => void;
+  onDismiss: () => void;
+}) {
+  return (
+    <div>
+      <div className="text-center">
+        <span className="bg-supportive/10 text-supportive mx-auto flex size-20 items-center justify-center rounded-full">
+          <CheckCircle2 className="size-10" aria-hidden="true" />
+        </span>
+        <h2 className="mt-5 text-xl font-semibold tracking-tight text-gray-950">
+          {count} {count === 1 ? "company" : "companies"} just requested a MOA
+          with you.
+        </h2>
+        <p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-6">
+          Expect to see new companies on your Partners page.
+        </p>
+      </div>
+
+      <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
+        <Button
+          size="lg"
+          variant="outline"
+          className="flex-1"
+          onClick={onDismiss}
+        >
+          Dismiss
+        </Button>
+        <Button size="lg" className="flex-1" onClick={onViewPartners}>
+          View Partners
+        </Button>
+      </div>
     </div>
   );
 }

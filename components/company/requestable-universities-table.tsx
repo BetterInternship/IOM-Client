@@ -195,7 +195,7 @@ export function RequestableUniversitiesTable({
   const hasActiveMoaFor = (universityId: string) =>
     hasActiveMoaByUniversityId?.[universityId];
   const canRequestRow = (universityId: string) =>
-    !locked && !inFlightFor(universityId);
+    !locked && !inFlightFor(universityId) && !hasActiveMoaFor(universityId);
 
   const columns: Array<ResourceTableColumn<CompanyUniversityDirectoryItemDto>> =
     [
@@ -235,21 +235,19 @@ export function RequestableUniversitiesTable({
         sortable: false,
         render: (university) => {
           const inFlight = inFlightFor(university.id);
-          const hasActiveMoa = hasActiveMoaFor(university.id);
           if (inFlight) return <InFlightBadge status={inFlight} />;
+          if (hasActiveMoaFor(university.id)) return null;
           if (locked) return <LockedRequestButton />;
           return (
             <Button
               size="md"
-              variant={hasActiveMoa ? "outline" : "default"}
-              scheme={hasActiveMoa ? "primary" : undefined}
               className="w-52 justify-center"
               onClick={(event) => {
                 event.stopPropagation();
                 onRequest(university);
               }}
             >
-              {hasActiveMoa ? "Request another MOA" : "Request MOA"}
+              Request MOA
               <ArrowRight />
             </Button>
           );
@@ -315,20 +313,18 @@ export function RequestableUniversitiesTable({
             <div className="flex w-full items-center lg:w-auto lg:py-3 lg:pl-6">
               {inFlight ? (
                 <InFlightBadge status={inFlight} />
-              ) : locked ? (
+              ) : hasActiveMoa ? null : locked ? (
                 <LockedRequestButton mobile />
               ) : (
                 <Button
                   size="md"
-                  variant={hasActiveMoa ? "outline" : "default"}
-                  scheme={hasActiveMoa ? "primary" : undefined}
                   className="w-full lg:w-auto"
                   onClick={(event) => {
                     event.stopPropagation();
                     onRequest(university);
                   }}
                 >
-                  {hasActiveMoa ? "Request another MOA" : "Request MOA"}
+                  Request MOA
                   <ArrowRight />
                 </Button>
               )}

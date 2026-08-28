@@ -6,7 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface RegisterInvitedCompanyDto {
-  token: string;
-  email: string;
+export interface ApplyRevokeTokenDto {
+  proactive?: boolean;
+  autoRenew?: boolean;
 }

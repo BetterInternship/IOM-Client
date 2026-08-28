@@ -11,4 +11,6 @@ export interface UniversityToggleOfferResponse {
   success: boolean;
   message?: string;
   offer: UniversityToggleOfferDto;
+  /** MOA requests created by this flip's fan-out. */
+  requests_fired: number;
 }

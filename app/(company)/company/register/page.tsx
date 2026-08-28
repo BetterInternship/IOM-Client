@@ -12,6 +12,7 @@ import {
   useInviteControllerResolveCompanyInvite,
 } from "@/app/api";
 import { AuthShell, FormError } from "@/components/auth-shell";
+import { useModal } from "@/app/providers/modal-provider";
 import { getCareerHireUrl } from "@/components/career-listing-cta";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OtpInput } from "@/components/ui/otp-input";
 import { ChevronLeft, Loader2 } from "lucide-react";
+import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
+import { peekHireLinkIntent } from "@/lib/hire-link-intent";
+import { CompanyAuthSessionGate } from "@/components/company-auth-session-gate";
 import { toast } from "sonner";
 
 type Step = "account" | "otp";
@@ -31,27 +35,33 @@ interface InvitePeek {
   kind: "moa" | "listing";
 }
 
+function RecruiterRequiredDocumentsModal({
+  onProceed,
+}: {
+  onProceed: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="border-warning/30 bg-warning/5 rounded-[0.33em] border p-4">
+        <p className="text-sm font-semibold text-gray-900">
+          In the next steps, you&apos;ll be asked to upload these documents to
+          verify your account.
+        </p>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-gray-700 marker:text-warning">
+          {REQUIRED_DOCUMENT_TYPES.map((type) => (
+            <li key={type}>{documentLabel(type)}</li>
+          ))}
+        </ul>
+      </div>
+      <Button className="w-full" onClick={onProceed}>
+        I have these documents ready
+      </Button>
+    </div>
+  );
+}
+
 const CAREER_UNREACHABLE_MESSAGE =
   'Your account is ready, but we couldn\'t reach BetterInternship just now — use the "Post a listing" button below to continue.';
-
-/**
- * Reads (never verifies) the career → new-IOM prefill JWT's payload for
- * form prefill purposes only (plan §6) — actual verification happens
- * server-side on registration completion. An unreadable/malformed token
- * just means no prefill, never an error.
- */
-function peekPrefillPayload(
-  token: string,
-): { name?: string; email?: string } | null {
-  try {
-    const payloadSegment = token.split(".")[1];
-    if (!payloadSegment) return null;
-    const base64 = payloadSegment.replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(base64)) as { name?: string; email?: string };
-  } catch {
-    return null;
-  }
-}
 
 interface InviteCompletionData {
   kind?: "moa" | "listing" | "standard";
@@ -104,26 +114,53 @@ function handleInviteCompletion(
 function RegisterPageContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { openModal, closeModal } = useModal();
   const searchParams = useSearchParams();
   const inviteToken = searchParams.get("invite_token") ?? "";
-  const prefillToken = searchParams.get("prefill") ?? "";
+  const linkIntent = searchParams.get("link_intent") ?? "";
+  const hireLink = peekHireLinkIntent(linkIntent);
+  const [prefillReady, setPrefillReady] = useState(!linkIntent);
+  const prefillModalOpenedRef = useRef(false);
 
   const [step, setStep] = useState<Step>("account");
   const [form, setForm] = useState({
-    repEmail: "",
+    repEmail: searchParams.get("email") ?? hireLink?.email ?? "",
     email: "",
-    password: "",
   });
 
-  // One-time prefill from the career-site handoff — doesn't clobber
-  // whatever the user has already typed.
   useEffect(() => {
-    if (!prefillToken) return;
-    const payload = peekPrefillPayload(prefillToken);
-    if (!payload?.email) return;
-    setForm((prev) => ({ ...prev, repEmail: prev.repEmail || payload.email! }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefillToken]);
+    if (
+      !linkIntent ||
+      prefillReady ||
+      prefillModalOpenedRef.current
+    )
+      return;
+    prefillModalOpenedRef.current = true;
+    openModal(
+      "recruiter-required-documents",
+      <RecruiterRequiredDocumentsModal
+        onProceed={() => {
+          closeModal("recruiter-required-documents");
+          setPrefillReady(true);
+        }}
+      />,
+      {
+        title: (
+          <h2 className="text-warning text-lg leading-snug font-semibold tracking-tight sm:text-2xl">
+            Please ensure you have these files on-hand.
+          </h2>
+        ),
+        allowBackdropClick: false,
+        closeOnEsc: false,
+        hasClose: false,
+      },
+    );
+  }, [
+    closeModal,
+    linkIntent,
+    openModal,
+    prefillReady,
+  ]);
 
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -226,7 +263,12 @@ function RegisterPageContent() {
 
   const verify = useCompanyAuthControllerOtpVerify({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        if (data.careerLink) {
+          toast[data.careerLink.status === "linked" ? "success" : "error"](
+            data.careerLink.message,
+          );
+        }
         // Full clear, not a scoped invalidate — these query keys aren't
         // scoped by company id, so a prior session's cache could otherwise
         // leak into the freshly-registered account.
@@ -257,6 +299,21 @@ function RegisterPageContent() {
     onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
       setForm({ ...form, [k]: e.target.value }),
   });
+
+  if (linkIntent && !prefillReady) {
+    return (
+      <AuthShell
+        portal="Company"
+        title="Prepare your documents"
+        variant="split"
+        splitFlush
+      >
+        <div className="flex justify-center py-4">
+          <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+        </div>
+      </AuthShell>
+    );
+  }
 
   // ── Invite flow ───────────────────────────────────────────────────────────
 
@@ -386,25 +443,21 @@ function RegisterPageContent() {
       );
     }
 
-    const inviteDetailsValid = !!form.email && form.password.length >= 8;
-    const inviteEmailMatchesInvite = form.email === invitePeek.email;
+    const inviteDetailsValid = !!form.email;
 
     return (
       <AuthShell
         variant="split"
         splitFlush
         portal="Company"
-        title="Set a secure password"
+        title="Create your account"
         description={
           <>
             Invited by{" "}
             <span className="text-foreground font-medium">
               {invitePeek.university.registered_name}
             </span>
-            .{" "}
-            {inviteEmailMatchesInvite
-              ? ""
-              : "We'll send a one-time code to verify this email."}
+            . We'll send a one-time code to verify this email.
             {isListingInvite &&
               " You'll be able to post a listing on BetterInternship right after this."}
           </>
@@ -429,7 +482,6 @@ function RegisterPageContent() {
               data: {
                 token: inviteToken,
                 email: form.email,
-                password: form.password,
               },
             });
           }}
@@ -448,18 +500,6 @@ function RegisterPageContent() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              placeholder="At least 8 characters"
-              {...field("password")}
-              required
-            />
-          </div>
-
           <Button
             type="submit"
             size="lg"
@@ -474,7 +514,7 @@ function RegisterPageContent() {
     );
   }
 
-  // ── Standard registration flow (flow spec §3: email + password, then OTP) ──
+  // ── Standard registration flow (email, then OTP) ──────────────────────────
 
   if (step === "otp") {
     return (
@@ -512,10 +552,22 @@ function RegisterPageContent() {
             if (verifySubmittedRef.current) return;
             verifySubmittedRef.current = true;
             setError("");
-            verify.mutate({ data: { repEmail: form.repEmail, code } });
+            verify.mutate({
+              data: {
+                repEmail: form.repEmail,
+                code,
+                ...(linkIntent ? { linkIntent } : {}),
+              },
+            });
           }}
           className="space-y-5"
         >
+          {hireLink && (
+            <div className="rounded-[0.33em] bg-primary/10 px-4 py-3 text-sm leading-6 text-primary">
+              You are connecting your Partners account to{" "}
+              <strong>{hireLink.employerName}</strong> on BetterInternship.
+            </div>
+          )}
           <FormError>{error}</FormError>
 
           <OtpInput
@@ -528,7 +580,11 @@ function RegisterPageContent() {
               verifySubmittedRef.current = true;
               setError("");
               verify.mutate({
-                data: { repEmail: form.repEmail, code: completedCode },
+                data: {
+                  repEmail: form.repEmail,
+                  code: completedCode,
+                  ...(linkIntent ? { linkIntent } : {}),
+                },
               });
             }}
           />
@@ -560,7 +616,19 @@ function RegisterPageContent() {
     );
   }
 
-  const detailsValid = !!form.repEmail && form.password.length >= 8;
+  const detailsValid = !!form.repEmail;
+  const loginHref = linkIntent
+    ? `/company/login?${new URLSearchParams({
+        email: form.repEmail,
+        link_intent: linkIntent,
+      })}`
+    : "/login";
+  const connectionNotice = hireLink && (
+    <div className="rounded-[0.33em] bg-primary/10 px-4 py-3 text-sm leading-6 text-primary">
+      You are connecting your Partners account to{" "}
+      <strong>{hireLink.employerName}</strong> on BetterInternship.
+    </div>
+  );
 
   return (
     <AuthShell
@@ -571,7 +639,7 @@ function RegisterPageContent() {
       footer={
         <>
           Already registered?{" "}
-          <Link href="/login" className="text-primary font-medium">
+          <Link href={loginHref} className="text-primary font-medium">
             Sign in
           </Link>
         </>
@@ -584,13 +652,13 @@ function RegisterPageContent() {
           register.mutate({
             data: {
               repEmail: form.repEmail,
-              password: form.password,
-              ...(prefillToken ? { prefillToken } : {}),
+              ...(linkIntent ? { linkIntent } : {}),
             },
           });
         }}
         className="space-y-4"
       >
+        {connectionNotice}
         <FormError>{error}</FormError>
 
         <div className="space-y-1.5">
@@ -601,18 +669,6 @@ function RegisterPageContent() {
             autoComplete="email"
             placeholder="you@company.com"
             {...field("repEmail")}
-            required
-          />
-        </div>
-
-        <div className="space-y-1.5">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            placeholder="At least 8 characters"
-            {...field("password")}
             required
           />
         </div>
@@ -642,7 +698,9 @@ export default function CompanyRegisterPage() {
         </AuthShell>
       }
     >
-      <RegisterPageContent />
+      <CompanyAuthSessionGate>
+        <RegisterPageContent />
+      </CompanyAuthSessionGate>
     </Suspense>
   );
 }

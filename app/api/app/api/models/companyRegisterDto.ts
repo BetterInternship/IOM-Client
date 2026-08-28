@@ -8,7 +8,6 @@
 
 export interface CompanyRegisterDto {
   repEmail: string;
-  password: string;
   cfToken?: string;
-  prefillToken?: string;
+  linkIntent?: string;
 }
