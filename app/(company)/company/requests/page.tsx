@@ -22,7 +22,7 @@ import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { useModal } from "@/app/providers/modal-provider";
 import { AutoRequestCta } from "@/components/auto-request-cta";
-import { formatDateWithoutTime } from "@/lib/utils";
+import { cn, formatDateWithoutTime } from "@/lib/utils";
 import { CheckCircle2, ChevronDown, Clock4, Mail, X } from "lucide-react";
 
 const IN_FLIGHT_STATUSES = ["awaiting_signature", "awaiting_verification"];
@@ -57,6 +57,7 @@ function InviteResultContent({
           title: "MOA signed",
           description:
             "The agreement is now active and available from Partners.",
+          tone: "supportive" as const,
         }
       : result === "signing-request"
         ? {
@@ -64,12 +65,14 @@ function InviteResultContent({
             title: "Signing request sent",
             description:
               "We emailed the signatory. This request will remain here until it is signed.",
+            tone: "warning" as const,
           }
         : {
             icon: Clock4,
             title: "Request submitted",
             description:
-              "Your company verification is pending. The MOA will issue automatically once it is approved.",
+              "Your MOA will be approved automatically once your company is verified.",
+            tone: "warning" as const,
           };
   const Icon = details.icon;
   // Same eligibility as moa-request-dialog.tsx's outcome screens — the CTA
@@ -79,7 +82,14 @@ function InviteResultContent({
 
   return (
     <div className="text-center">
-      <span className="bg-supportive/10 text-supportive mx-auto flex size-16 items-center justify-center rounded-full">
+      <span
+        className={cn(
+          "mx-auto flex size-16 items-center justify-center rounded-full",
+          details.tone === "warning"
+            ? "bg-warning/10 text-warning"
+            : "bg-supportive/10 text-supportive",
+        )}
+      >
         <Icon className="size-8" aria-hidden="true" />
       </span>
       <h2 className="mt-5 text-xl font-semibold tracking-tight text-gray-950">

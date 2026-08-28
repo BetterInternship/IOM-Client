@@ -137,7 +137,7 @@ export function AutoRequestCta({
                 Renew automatically when it expires
               </span>
               <span className="text-muted-foreground block text-xs">
-                Automatically renew this MOA when it expires.
+                Automatically renew agreement for universities that use this MOA.
               </span>
             </span>
           </label>

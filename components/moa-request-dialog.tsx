@@ -58,10 +58,12 @@ function OutcomeShell({
   icon,
   title,
   description,
+  tone = "supportive",
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
+  tone?: "supportive" | "warning";
 }) {
   return (
     <div className="mx-auto flex min-h-[20rem] w-full flex-col items-center justify-center px-4 py-10 text-center sm:w-[30rem]">
@@ -82,7 +84,14 @@ function OutcomeShell({
           }
         }
       `}</style>
-      <div className="mb-5 rounded-full bg-supportive/10 p-6">{icon}</div>
+      <div
+        className={cn(
+          "mb-5 rounded-full p-6",
+          tone === "warning" ? "bg-warning/10" : "bg-supportive/10",
+        )}
+      >
+        {icon}
+      </div>
       <h2 className="text-3xl font-semibold tracking-tight text-foreground">
         {title}
       </h2>
@@ -120,9 +129,10 @@ function MoaSubmittedSuccess({
   return (
     <>
       <OutcomeShell
-        icon={<Clock4 className="text-supportive h-9 w-9" />}
+        icon={<Clock4 className="text-warning h-9 w-9" />}
         title="Request submitted"
         description={description}
+        tone="warning"
       />
       {cta && (
         <div className="mx-auto w-full border-t border-gray-200 px-4 pt-6 pb-8 sm:w-[30rem] sm:px-0">
