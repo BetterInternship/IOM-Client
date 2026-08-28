@@ -141,8 +141,7 @@ export default function SignRevokeTokenPage() {
                   New universities
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  Sign automatically when a new university adopts this
-                  template.
+                  Automatically partner with new universities that use the same MOA.
                 </p>
               </div>
               <Switch

@@ -116,11 +116,7 @@ export function AutoRequestCta({
             />
             <span className="text-sm text-gray-800">
               <span className="font-medium">
-                Sign automatically with new universities
-              </span>
-              <span className="text-muted-foreground block text-xs">
-                Automatically sign MOAs from new universities that
-                use this same template.
+                Automatically partner with new universities that use this MOA.
               </span>
             </span>
           </label>
@@ -134,10 +130,7 @@ export function AutoRequestCta({
             />
             <span className="text-sm text-gray-800">
               <span className="font-medium">
-                Renew automatically when it expires
-              </span>
-              <span className="text-muted-foreground block text-xs">
-                Automatically renew agreement for universities that use this MOA.
+                Automatically renew for universities that use this MOA.
               </span>
             </span>
           </label>
