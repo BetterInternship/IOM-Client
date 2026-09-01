@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OtpInput } from "@/components/ui/otp-input";
-import { ChevronLeft, Loader2 } from "lucide-react";
+import { CircleAlert, Loader2 } from "lucide-react";
 import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
 import { peekHireLinkIntent } from "@/lib/hire-link-intent";
 import { CompanyAuthSessionGate } from "@/components/company-auth-session-gate";
@@ -56,6 +56,22 @@ function RecruiterRequiredDocumentsModal({
       <Button className="w-full" onClick={onProceed}>
         I have these documents ready
       </Button>
+    </div>
+  );
+}
+
+function RequiredDocumentsNotice() {
+  return (
+    <div className="border-warning/30 bg-warning/5 mt-6 rounded-[0.33em] border p-4">
+      <p className="text-sm font-semibold text-gray-900">
+        In the next steps, you&apos;ll be asked to upload these documents to
+        verify your account.
+      </p>
+      <ul className="mt-3 w-fit list-disc space-y-1 pl-5 text-sm text-gray-700 marker:text-warning">
+        {REQUIRED_DOCUMENT_TYPES.map((type) => (
+          <li key={type}>{documentLabel(type)}</li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -129,12 +145,7 @@ function RegisterPageContent() {
   });
 
   useEffect(() => {
-    if (
-      !linkIntent ||
-      prefillReady ||
-      prefillModalOpenedRef.current
-    )
-      return;
+    if (!linkIntent || prefillReady || prefillModalOpenedRef.current) return;
     prefillModalOpenedRef.current = true;
     openModal(
       "recruiter-required-documents",
@@ -155,12 +166,7 @@ function RegisterPageContent() {
         hasClose: false,
       },
     );
-  }, [
-    closeModal,
-    linkIntent,
-    openModal,
-    prefillReady,
-  ]);
+  }, [closeModal, linkIntent, openModal, prefillReady]);
 
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
@@ -366,28 +372,31 @@ function RegisterPageContent() {
           variant="split"
           splitFlush
           portal="Company"
-          headerBefore={
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setStep("account");
-                setError("");
-                setCode("");
-                verifyInviteSubmittedRef.current = false;
-              }}
-              className="mb-3"
-            >
-              <ChevronLeft className="gap-1" /> Back
-            </Button>
-          }
           description={
-            <span className="block text-center">
-              We sent a 6-digit code to{" "}
-              <span className="text-foreground font-medium">{form.email}</span>.
-            </span>
+            <>
+              <span className="block">
+                We sent a 6-digit code to{" "}
+                <span className="text-foreground font-medium">
+                  {form.email}
+                </span>
+                .{" "}
+                <Button
+                  type="button"
+                  variant="link"
+                  className="h-auto px-0"
+                  onClick={() => {
+                    setStep("account");
+                    setError("");
+                    setCode("");
+                    verifyInviteSubmittedRef.current = false;
+                  }}
+                >
+                  Change email
+                </Button>
+              </span>
+            </>
           }
+          footer={<RequiredDocumentsNotice />}
         >
           <form
             onSubmit={(e) => {
@@ -522,29 +531,31 @@ function RegisterPageContent() {
         variant="split"
         splitFlush
         portal="Company"
-        headerBefore={
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setStep("account");
-              setError("");
-              setCode("");
-              verifySubmittedRef.current = false;
-            }}
-            className="gap-1"
-          >
-            <ChevronLeft /> Back
-          </Button>
-        }
         description={
-          <span className="block text-center">
-            We sent a 6-digit code to{" "}
-            <span className="text-foreground font-medium">{form.repEmail}</span>
-            .
-          </span>
+          <>
+            <span className="block">
+              We sent a 6-digit code to{" "}
+              <span className="text-foreground font-medium">
+                {form.repEmail}
+              </span>
+              .{" "}
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto px-0"
+                onClick={() => {
+                  setStep("account");
+                  setError("");
+                  setCode("");
+                  verifySubmittedRef.current = false;
+                }}
+              >
+                Change email
+              </Button>
+            </span>
+          </>
         }
+        footer={<RequiredDocumentsNotice />}
       >
         <form
           onSubmit={(e) => {

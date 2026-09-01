@@ -46,8 +46,8 @@ export default function VerificationPage() {
         <div className="bg-primary/10 text-primary mx-auto flex size-24 items-center justify-center rounded-full sm:size-36">
           <ShieldCheck className="size-10 sm:size-14" />
         </div>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
-          Verify your company to start partnering with universities
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-gray-900 sm:text-4xl">
+          Upload once to partner with any university on BetterInternship{" "}
         </h1>
         <p className="text-muted-foreground mx-auto mt-2 text-sm">
           We use these documents to verify your company. We'll email you once
