@@ -297,8 +297,36 @@ export default function CompanyRequestsPage() {
 
   const { data, isLoading: requestsLoading } =
     useCompanyControllerListMoaRequests({
-      query: { enabled: !!company },
+      query: {
+        enabled: !!company,
+        // Poll while a row is actively issuing so the "Generating…" badge
+        // resolves to its real status on its own — stop once nothing is
+        // in flight rather than polling forever.
+        refetchInterval: (query) =>
+          query.state.data?.requests.some((r) => r.isIssuing) ? 3000 : false,
+      },
     });
+
+  // Toast on awaiting_verification -> issued, caught by the polling above.
+  // A row leaves this page entirely once issued (flow spec §10 — it becomes
+  // a real MOA elsewhere), so this is the only signal the company gets that
+  // it actually went through.
+  const previousStatuses = useRef<Map<string, string> | null>(null);
+  useEffect(() => {
+    const requests = data?.requests;
+    if (!requests) return;
+    const previous = previousStatuses.current;
+    if (previous) {
+      for (const r of requests) {
+        if (r.status === "issued" && previous.get(r.id) === "awaiting_verification") {
+          toast.success(
+            `MOA with ${r.university?.registered_name ?? "the university"} issued`,
+          );
+        }
+      }
+    }
+    previousStatuses.current = new Map(requests.map((r) => [r.id, r.status]));
+  }, [data]);
 
   const cancel = useCompanyControllerCancelMoaRequest({
     mutation: {

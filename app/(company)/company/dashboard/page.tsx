@@ -154,15 +154,32 @@ function CompanyDashboardContent() {
     );
   };
 
+  const { data: requestsData } = useCompanyControllerListMoaRequests({
+    query: {
+      enabled: !!company,
+      // Same live-update behavior as the requests page — stop polling once
+      // nothing is actively issuing.
+      refetchInterval: (query) =>
+        query.state.data?.requests.some((r) => r.isIssuing) ? 3000 : false,
+    },
+  });
+  // The MOA row itself is minted (as `active`) before the request's status
+  // finalizes to `issued` — so this list, not just the requests one, needs
+  // to poll while something's issuing, or the new partner row stays missing
+  // from this page until a manual reload.
+  const anyRequestIssuing =
+    requestsData?.requests.some((r) => r.isIssuing) ?? false;
+
   const { data: moasData, isLoading: moasLoading } =
     useCompanyControllerListMoas(
       { limit: 100 },
-      { query: { enabled: !!company } },
+      {
+        query: {
+          enabled: !!company,
+          refetchInterval: () => (anyRequestIssuing ? 3000 : false),
+        },
+      },
     );
-
-  const { data: requestsData } = useCompanyControllerListMoaRequests({
-    query: { enabled: !!company },
-  });
 
   const { data: universitiesData, isLoading: universitiesLoading } =
     useCompanyControllerListUniversities({
