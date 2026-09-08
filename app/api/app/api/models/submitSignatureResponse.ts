@@ -11,6 +11,4 @@ export interface SubmitSignatureResponse {
   success: boolean;
   message?: string;
   kind: SubmitSignatureResponseKind;
-  /** @nullable */
-  verificationCode: string | null;
 }

@@ -11,6 +11,6 @@ export interface UniversityToggleOfferResponse {
   success: boolean;
   message?: string;
   offer: UniversityToggleOfferDto;
-  /** MOA requests created by this flip's fan-out. */
-  requests_fired: number;
+  /** Whether this flip queued a fan-out — the actual count arrives asynchronously. */
+  will_fan_out: boolean;
 }

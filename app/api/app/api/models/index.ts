@@ -319,3 +319,7 @@ export * from "./updateStaffAccountDto";
 export * from "./updateStaffRoleDto";
 export * from "./updateStaffRoleDtoRole";
 export * from "./verifyTinDto";
+export * from "./companyCreateMoaRequestResponseKind";
+export * from "./companyLoginOtpRequestDto";
+export * from "./companyLoginOtpVerifyDto";
+export * from "./companyLoginOtpVerifyResponse";
