@@ -155,7 +155,13 @@ function RequestRow({
   isCancelling: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const badge = STATUS_BADGE[request.status];
+  // isIssuing (computed server-side) means the company is already verified
+  // and this row is queued for issuing, not actually parked on a reviewer —
+  // the raw awaiting_verification label would say "Pending verification"
+  // even though nothing here is waiting on anyone.
+  const badge = request.isIssuing
+    ? { status: "pending", label: "Generating your MOA…" }
+    : STATUS_BADGE[request.status];
   if (!badge) return null;
   const university = request.university;
   const inFlight = IN_FLIGHT_STATUSES.includes(request.status);

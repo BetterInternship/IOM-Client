@@ -28,7 +28,7 @@ import {
 } from "@/components/company/company-partners-table";
 import {
   RequestableUniversitiesTable,
-  type InFlightRequestStatus,
+  type InFlightRequestInfo,
 } from "@/components/company/requestable-universities-table";
 import { useModal } from "@/app/providers/modal-provider";
 import { FileSignature } from "lucide-react";
@@ -255,7 +255,7 @@ function CompanyDashboardContent() {
 
   // In-flight requests contribute to both a partner row's pending count and
   // the requestable table's per-university "already requested" state.
-  const inFlightByUniversityId: Record<string, InFlightRequestStatus> = {};
+  const inFlightByUniversityId: Record<string, InFlightRequestInfo> = {};
   for (const r of requests) {
     if (!r.university) continue;
     if (
@@ -263,7 +263,10 @@ function CompanyDashboardContent() {
       r.status !== "awaiting_verification"
     )
       continue;
-    inFlightByUniversityId[r.university.id] = r.status;
+    inFlightByUniversityId[r.university.id] = {
+      status: r.status,
+      isIssuing: r.isIssuing,
+    };
 
     const entry =
       byUni.get(r.university.id) ??

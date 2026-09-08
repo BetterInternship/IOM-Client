@@ -114,14 +114,27 @@ export type InFlightRequestStatus =
   | "awaiting_signature"
   | "awaiting_verification";
 
+/**
+ * isIssuing (derived server-side from status + live verification, Docs/plans/
+ * PARTNERS_MOA_RABBITMQ_MIGRATION_PLAN.md) overrides the status label below —
+ * an already-verified company's awaiting_verification row is queued for
+ * issuing, not actually waiting on a reviewer.
+ */
+export type InFlightRequestInfo = {
+  status: InFlightRequestStatus;
+  isIssuing: boolean;
+};
+
 const IN_FLIGHT_LABELS: Record<InFlightRequestStatus, { description: string }> =
   {
     awaiting_signature: { description: "Awaiting signature" },
     awaiting_verification: { description: "Pending verification" },
   };
 
-function InFlightBadge({ status }: { status: InFlightRequestStatus }) {
-  const { description } = IN_FLIGHT_LABELS[status];
+function InFlightBadge({ info }: { info: InFlightRequestInfo }) {
+  const description = info.isIssuing
+    ? "Generating your MOA…"
+    : IN_FLIGHT_LABELS[info.status].description;
 
   return (
     <div className="inline-flex w-52 items-center gap-2 rounded-[0.33em] border border-gray-200 bg-gray-50 px-3 py-2 text-left">
@@ -182,8 +195,8 @@ export function RequestableUniversitiesTable({
   universities: CompanyUniversityDirectoryItemDto[];
   isLoading: boolean;
   onRequest: (university: CompanyUniversityDirectoryItemDto) => void;
-  /** University id -> in-flight request status, if any (flow spec §7). */
-  inFlightByUniversityId?: Record<string, InFlightRequestStatus>;
+  /** University id -> in-flight request info, if any (flow spec §7). */
+  inFlightByUniversityId?: Record<string, InFlightRequestInfo>;
   /** University id -> whether the company already has an active MOA. */
   hasActiveMoaByUniversityId?: Record<string, boolean>;
   /** Documents incomplete — every button disabled with a tooltip (flow spec §7). */
@@ -235,7 +248,7 @@ export function RequestableUniversitiesTable({
         sortable: false,
         render: (university) => {
           const inFlight = inFlightFor(university.id);
-          if (inFlight) return <InFlightBadge status={inFlight} />;
+          if (inFlight) return <InFlightBadge info={inFlight} />;
           if (hasActiveMoaFor(university.id)) return null;
           if (locked) return <LockedRequestButton />;
           return (
@@ -312,7 +325,7 @@ export function RequestableUniversitiesTable({
 
             <div className="flex w-full items-center lg:w-auto lg:py-3 lg:pl-6">
               {inFlight ? (
-                <InFlightBadge status={inFlight} />
+                <InFlightBadge info={inFlight} />
               ) : hasActiveMoa ? null : locked ? (
                 <LockedRequestButton mobile />
               ) : (
