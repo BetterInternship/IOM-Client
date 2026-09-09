@@ -319,8 +319,8 @@ function TemplateFanOutResultContent({
           Companies are requesting a MOA with you.
         </h2>
         <p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-6">
-          Companies with auto-requests enabled will start requesting this
-          MOA. Expect to see new companies on your Partners page shortly.
+          Some companies may have already requested a MOA with you. You may see
+          new companies on your Partners page shortly.
         </p>
       </div>
 
