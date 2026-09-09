@@ -6,9 +6,11 @@
  * OpenAPI spec version: 1.0
  */
 import type { CompanyMoaRequestDto } from "./companyMoaRequestDto";
+import type { CompanyCreateMoaRequestResponseKind } from "./companyCreateMoaRequestResponseKind";
 
 export interface CompanyCreateMoaRequestResponse {
   success: boolean;
   message?: string;
   request: CompanyMoaRequestDto;
+  kind: CompanyCreateMoaRequestResponseKind;
 }

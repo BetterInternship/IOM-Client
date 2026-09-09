@@ -28,7 +28,7 @@ import {
 } from "@/components/company/company-partners-table";
 import {
   RequestableUniversitiesTable,
-  type InFlightRequestStatus,
+  type InFlightRequestInfo,
 } from "@/components/company/requestable-universities-table";
 import { useModal } from "@/app/providers/modal-provider";
 import { FileSignature } from "lucide-react";
@@ -154,15 +154,32 @@ function CompanyDashboardContent() {
     );
   };
 
+  const { data: requestsData } = useCompanyControllerListMoaRequests({
+    query: {
+      enabled: !!company,
+      // Same live-update behavior as the requests page — stop polling once
+      // nothing is actively issuing.
+      refetchInterval: (query) =>
+        query.state.data?.requests.some((r) => r.isIssuing) ? 3000 : false,
+    },
+  });
+  // The MOA row itself is minted (as `active`) before the request's status
+  // finalizes to `issued` — so this list, not just the requests one, needs
+  // to poll while something's issuing, or the new partner row stays missing
+  // from this page until a manual reload.
+  const anyRequestIssuing =
+    requestsData?.requests.some((r) => r.isIssuing) ?? false;
+
   const { data: moasData, isLoading: moasLoading } =
     useCompanyControllerListMoas(
       { limit: 100 },
-      { query: { enabled: !!company } },
+      {
+        query: {
+          enabled: !!company,
+          refetchInterval: () => (anyRequestIssuing ? 3000 : false),
+        },
+      },
     );
-
-  const { data: requestsData } = useCompanyControllerListMoaRequests({
-    query: { enabled: !!company },
-  });
 
   const { data: universitiesData, isLoading: universitiesLoading } =
     useCompanyControllerListUniversities({
@@ -255,7 +272,7 @@ function CompanyDashboardContent() {
 
   // In-flight requests contribute to both a partner row's pending count and
   // the requestable table's per-university "already requested" state.
-  const inFlightByUniversityId: Record<string, InFlightRequestStatus> = {};
+  const inFlightByUniversityId: Record<string, InFlightRequestInfo> = {};
   for (const r of requests) {
     if (!r.university) continue;
     if (
@@ -263,7 +280,10 @@ function CompanyDashboardContent() {
       r.status !== "awaiting_verification"
     )
       continue;
-    inFlightByUniversityId[r.university.id] = r.status;
+    inFlightByUniversityId[r.university.id] = {
+      status: r.status,
+      isIssuing: r.isIssuing,
+    };
 
     const entry =
       byUni.get(r.university.id) ??

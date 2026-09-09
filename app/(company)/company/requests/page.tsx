@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCompanyProfile } from "@/app/providers/company-profile.provider";
@@ -23,7 +25,14 @@ import { useIomModalRegistry } from "@/components/modal-registry";
 import { useModal } from "@/app/providers/modal-provider";
 import { AutoRequestCta } from "@/components/auto-request-cta";
 import { cn, formatDateWithoutTime } from "@/lib/utils";
-import { CheckCircle2, ChevronDown, Clock4, Mail, X } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronDown,
+  Clock4,
+  Mail,
+  SquareArrowOutUpRight,
+  X,
+} from "lucide-react";
 
 const IN_FLIGHT_STATUSES = ["awaiting_signature", "awaiting_verification"];
 // issued leaves the page for Partners → the university; a fire-time failure
@@ -155,7 +164,13 @@ function RequestRow({
   isCancelling: boolean;
 }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const badge = STATUS_BADGE[request.status];
+  // isIssuing (computed server-side) means the company is already verified
+  // and this row is queued for issuing, not actually parked on a reviewer —
+  // the raw awaiting_verification label would say "Pending verification"
+  // even though nothing here is waiting on anyone.
+  const badge = request.isIssuing
+    ? { status: "pending", label: "Generating your MOA…" }
+    : STATUS_BADGE[request.status];
   if (!badge) return null;
   const university = request.university;
   const inFlight = IN_FLIGHT_STATUSES.includes(request.status);
@@ -291,8 +306,49 @@ export default function CompanyRequestsPage() {
 
   const { data, isLoading: requestsLoading } =
     useCompanyControllerListMoaRequests({
-      query: { enabled: !!company },
+      query: {
+        enabled: !!company,
+        // Poll while a row is actively issuing so the "Generating…" badge
+        // resolves to its real status on its own — stop once nothing is
+        // in flight rather than polling forever.
+        refetchInterval: (query) =>
+          query.state.data?.requests.some((r) => r.isIssuing) ? 3000 : false,
+      },
     });
+
+  // Toast on awaiting_verification -> issued, caught by the polling above.
+  // A row leaves this page entirely once issued (flow spec §10 — it becomes
+  // a real MOA elsewhere), so this is the only signal the company gets that
+  // it actually went through. Also reveals the "View active partners" CTA —
+  // once shown it stays shown, there's no reason to hide it again.
+  const previousStatuses = useRef<Map<string, string> | null>(null);
+  const [showPartnersCta, setShowPartnersCta] = useState(false);
+  const [pastExpanded, setPastExpanded] = useState(false);
+  // Counts transitions currently mid-exit-animation. The in-flight list and
+  // the empty-state fallback below both key off *live* filtered data, which
+  // flips the instant a row issues — without this, the row's wrapper (or
+  // the whole section, if it was the only request) would unmount before its
+  // exit animation gets to play. Must outlast the row's own exit duration
+  // (500ms) below, with a buffer.
+  const [exitingCount, setExitingCount] = useState(0);
+  useEffect(() => {
+    const requests = data?.requests;
+    if (!requests) return;
+    const previous = previousStatuses.current;
+    if (previous) {
+      for (const r of requests) {
+        if (r.status === "issued" && previous.get(r.id) === "awaiting_verification") {
+          toast.success(
+            `MOA with ${r.university?.registered_name ?? "the university"} issued`,
+          );
+          setShowPartnersCta(true);
+          setExitingCount((n) => n + 1);
+          setTimeout(() => setExitingCount((n) => Math.max(0, n - 1)), 700);
+        }
+      }
+    }
+    previousStatuses.current = new Map(requests.map((r) => [r.id, r.status]));
+  }, [data]);
 
   const cancel = useCompanyControllerCancelMoaRequest({
     mutation: {
@@ -346,44 +402,100 @@ export default function CompanyRequestsPage() {
         description="Track the status of MOA requests sent to universities."
       />
 
+      <AnimatePresence>
+        {showPartnersCta && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            transition={{ duration: 0.25 }}
+          >
+            <Button
+              asChild
+              variant="link"
+              className="h-auto gap-1.5 p-0 text-base [&_svg]:size-5"
+            >
+              <Link href="/company/dashboard">
+                View active partners
+                <SquareArrowOutUpRight />
+              </Link>
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {requestsLoading ? (
         <div className="space-y-4">
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-24 w-full" />
         </div>
-      ) : requests.length === 0 ? (
+      ) : requests.length === 0 && exitingCount === 0 ? (
         <EmptyState
           title="No outgoing MOA requests yet"
           description="Requests you send from the Partners page will show up here."
         />
       ) : (
         <div className="space-y-8">
-          {inFlight.length > 0 && (
+          {inFlight.length > 0 || exitingCount > 0 ? (
             <div className="space-y-3">
-              {inFlight.map((request) => (
-                <RequestRow
-                  key={request.id}
-                  request={request}
-                  onCancel={() => requestCancel(request)}
-                  isCancelling={cancel.isPending}
-                />
-              ))}
+              <AnimatePresence initial={false}>
+                {inFlight.map((request) => (
+                  <motion.div
+                    key={request.id}
+                    layout
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <RequestRow
+                      request={request}
+                      onCancel={() => requestCancel(request)}
+                      isCancelling={cancel.isPending}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
+          ) : (
+            <Card className="border-gray-200 bg-white px-5 py-8 text-center text-sm text-muted-foreground">
+              No outgoing requests
+            </Card>
           )}
 
           {history.length > 0 && (
             <div className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-900">History</h2>
-              <div className="space-y-3">
-                {history.map((request) => (
-                  <RequestRow
-                    key={request.id}
-                    request={request}
-                    onCancel={() => requestCancel(request)}
-                    isCancelling={cancel.isPending}
-                  />
-                ))}
-              </div>
+              <button
+                type="button"
+                className="flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-gray-900"
+                onClick={() => setPastExpanded((open) => !open)}
+                aria-expanded={pastExpanded}
+              >
+                Past requests ({history.length})
+                <ChevronDown
+                  className={`size-4 transition-transform ${pastExpanded ? "rotate-180" : ""}`}
+                  aria-hidden="true"
+                />
+              </button>
+              <AnimatePresence initial={false}>
+                {pastExpanded && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="space-y-3 overflow-hidden"
+                  >
+                    {history.map((request) => (
+                      <RequestRow
+                        key={request.id}
+                        request={request}
+                        onCancel={() => requestCancel(request)}
+                        isCancelling={cancel.isPending}
+                      />
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
