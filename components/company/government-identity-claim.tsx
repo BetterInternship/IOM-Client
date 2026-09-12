@@ -38,18 +38,20 @@ type IdentityChoice = "company" | "government";
  */
 function useIdentityClaimForm(
   company: { identity_claims: Record<string, unknown> },
-  suggestGovernment?: boolean,
+  suggestGovernment?: boolean | "company" | "government",
   onChoiceChange?: (choice: IdentityChoice | null) => void,
 ) {
   const queryClient = useQueryClient();
   const claims = getIdentityClaims(company.identity_claims);
-  const [choice, setChoice] = useState<IdentityChoice | null>(() =>
-    isGovernmentClaim(claims)
-      ? "government"
-      : suggestGovernment
-        ? "government"
-        : null,
-  );
+  const [choice, setChoice] = useState<IdentityChoice | null>(() => {
+    if (isGovernmentClaim(claims)) return "government";
+    // An explicit choice (from the invite modal) always wins outright;
+    // a plain boolean is just the weaker email-domain suggestion.
+    if (suggestGovernment === "company" || suggestGovernment === "government") {
+      return suggestGovernment;
+    }
+    return suggestGovernment ? "government" : null;
+  });
   const [name, setName] = useState(claims.claimed_registered_name ?? "");
   const [address, setAddress] = useState(
     claims.claimed_registered_address ?? "",

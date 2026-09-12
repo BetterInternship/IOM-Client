@@ -33,7 +33,11 @@ import {
   useIdentityClaimForm,
   type IdentityChoice,
 } from "@/components/company/government-identity-claim";
-import { isGovEmailDomain, isGovernmentClaim } from "@/lib/identity-claim";
+import {
+  consumeIdentityChoiceIntent,
+  isGovEmailDomain,
+  isGovernmentClaim,
+} from "@/lib/identity-claim";
 import {
   CompanySignerForm,
   type CompanySignerMode,
@@ -138,9 +142,10 @@ function DocumentsStep({
   onContinue: () => void;
   documentsUploaded: boolean;
 }) {
+  const [identityChoiceIntent] = useState(() => consumeIdentityChoiceIntent());
   const identityClaim = useIdentityClaimForm(
     company,
-    isGovEmailDomain(company.email),
+    identityChoiceIntent ?? isGovEmailDomain(company.email),
     onChoiceChange,
   );
   const canContinue =
