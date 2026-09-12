@@ -29,12 +29,15 @@ function VerificationForm({
 }) {
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
   const identityClaim = useIdentityClaimForm(company);
-  const canContinue = identityClaim.ticked
-    ? identityClaim.valid
-    : documentsUploaded;
+  const canContinue =
+    identityClaim.choice === "government"
+      ? identityClaim.valid
+      : identityClaim.choice === "company"
+        ? documentsUploaded
+        : false;
 
   async function handleNext() {
-    if (identityClaim.ticked) {
+    if (identityClaim.choice === "government") {
       if (await identityClaim.submit()) onDone();
       return;
     }
@@ -43,12 +46,13 @@ function VerificationForm({
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <GovernmentIdentityClaim form={identityClaim} tall />
-        {!identityClaim.ticked && (
+      <GovernmentIdentityClaim
+        form={identityClaim}
+        tall
+        companyContent={
           <CompanyDocumentUploader onCompletionChange={setDocumentsUploaded} />
-        )}
-      </div>
+        }
+      />
       <div className="flex justify-end">
         <Button
           disabled={!canContinue || identityClaim.isPending}

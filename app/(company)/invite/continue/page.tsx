@@ -31,6 +31,7 @@ import { CompanyDocumentUploader } from "@/components/company/company-document-u
 import {
   GovernmentIdentityClaim,
   useIdentityClaimForm,
+  type IdentityChoice,
 } from "@/components/company/government-identity-claim";
 import { isGovernmentClaim } from "@/lib/identity-claim";
 import {
@@ -119,32 +120,34 @@ function InviteContinueShell({
  * Only ever mounted while currentStep === "documents" and after the parent's
  * own `if (!company) return null` guard, so useIdentityClaimForm's initial
  * state is guaranteed to seed from real data — matters for a returning,
- * previously-rejected claimant. `onTickedChange` exists solely so the
- * parent's step heading ("Submit your details" vs "Upload your documents")
- * can react to it.
+ * previously-rejected claimant. `onChoiceChange` exists solely so the
+ * parent's step heading can react to it.
  */
 function DocumentsStep({
   company,
-  onTickedChange,
+  onChoiceChange,
   onAllUploaded,
   onCompletionChange,
   onContinue,
   documentsUploaded,
 }: {
   company: { identity_claims: Record<string, unknown> };
-  onTickedChange: (ticked: boolean) => void;
+  onChoiceChange: (choice: IdentityChoice | null) => void;
   onAllUploaded: () => void;
   onCompletionChange: (isComplete: boolean) => void;
   onContinue: () => void;
   documentsUploaded: boolean;
 }) {
-  const identityClaim = useIdentityClaimForm(company, onTickedChange);
-  const canContinue = identityClaim.ticked
-    ? identityClaim.valid
-    : documentsUploaded;
+  const identityClaim = useIdentityClaimForm(company, onChoiceChange);
+  const canContinue =
+    identityClaim.choice === "government"
+      ? identityClaim.valid
+      : identityClaim.choice === "company"
+        ? documentsUploaded
+        : false;
 
   async function handleNext() {
-    if (identityClaim.ticked) {
+    if (identityClaim.choice === "government") {
       if (await identityClaim.submit()) onContinue();
       return;
     }
@@ -153,15 +156,16 @@ function DocumentsStep({
 
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <GovernmentIdentityClaim form={identityClaim} tall />
-        {!identityClaim.ticked && (
+      <GovernmentIdentityClaim
+        form={identityClaim}
+        tall
+        companyContent={
           <CompanyDocumentUploader
             onAllUploaded={onAllUploaded}
             onCompletionChange={onCompletionChange}
           />
-        )}
-      </div>
+        }
+      />
       <div className="flex justify-end">
         <Button
           disabled={!canContinue || identityClaim.isPending}
@@ -231,7 +235,9 @@ function InviteContinueContent() {
   const [phase, setPhase] = useState<Phase>("form");
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
   const [documentsStepCompleted, setDocumentsStepCompleted] = useState(false);
-  const [claimActive, setClaimActive] = useState(false);
+  const [identityChoice, setIdentityChoice] = useState<IdentityChoice | null>(
+    null,
+  );
   // Frozen the first time it's known (below) so finishing uploads — which
   // flips verification.status away from "incomplete" — can't retroactively
   // change the active flow from 2 phases to 1 while it is still on screen.
@@ -397,9 +403,11 @@ function InviteContinueContent() {
         <h1 className="mt-0 text-2xl font-semibold tracking-tight text-gray-900 sm:mt-4 sm:text-4xl">
           Step {currentStepNumber}/{steps.length}:{" "}
           {currentStep === "documents"
-            ? claimActive
+            ? identityChoice === "government"
               ? "Submit your details"
-              : "Upload your documents"
+              : identityChoice === "company"
+                ? "Upload your documents"
+                : "Verify your company"
             : `Sign MOA with ${university.registered_name}`}
           {" "}
           <span className="bg-primary/5 text-primary inline-flex h-8 items-center gap-1.5 rounded-full px-3 align-middle text-sm font-semibold sm:h-11 sm:px-4 sm:text-base">
@@ -427,7 +435,7 @@ function InviteContinueContent() {
           {currentStep === "documents" && (
             <DocumentsStep
               company={company}
-              onTickedChange={setClaimActive}
+              onChoiceChange={setIdentityChoice}
               onAllUploaded={() => setDocumentsUploaded(true)}
               onCompletionChange={setDocumentsUploaded}
               documentsUploaded={documentsUploaded}

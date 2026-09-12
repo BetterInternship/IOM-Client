@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   GovernmentIdentityClaim,
   useIdentityClaimForm,
+  type IdentityChoice,
 } from "@/components/company/government-identity-claim";
 import { getIdentityClaims, isGovernmentClaim } from "@/lib/identity-claim";
 import { cn, formatDateWithoutTime } from "@/lib/utils";
@@ -75,17 +76,17 @@ const COMPANY_TYPE_LABELS: Record<string, string> = {
  */
 function GovernmentClaimSection({
   company,
-  onTickedChange,
+  onChoiceChange,
 }: {
   company: { identity_claims: Record<string, unknown> };
-  onTickedChange: (ticked: boolean) => void;
+  onChoiceChange: (choice: IdentityChoice | null) => void;
 }) {
-  const identityClaim = useIdentityClaimForm(company, onTickedChange);
+  const identityClaim = useIdentityClaimForm(company, onChoiceChange);
 
   return (
     <div className="space-y-4">
       <GovernmentIdentityClaim form={identityClaim} />
-      {identityClaim.ticked && (
+      {identityClaim.choice === "government" && (
         <div className="flex justify-end">
           <Button
             disabled={!identityClaim.valid || identityClaim.isPending}
@@ -145,7 +146,9 @@ export function CompanyProfileContent() {
   });
 
   const [uploadingType, setUploadingType] = useState<string | null>(null);
-  const [claimActive, setClaimActive] = useState(false);
+  const [identityChoice, setIdentityChoice] = useState<IdentityChoice | null>(
+    null,
+  );
 
   if (isLoading || !company) return null;
 
@@ -230,10 +233,10 @@ export function CompanyProfileContent() {
             {status === "incomplete" && (
               <GovernmentClaimSection
                 company={company}
-                onTickedChange={setClaimActive}
+                onChoiceChange={setIdentityChoice}
               />
             )}
-            {!claimActive && (
+            {identityChoice === "company" && (
             <div className="overflow-hidden rounded-[0.33em] border border-blue-100 bg-white">
               {REQUIRED_DOCUMENT_TYPES.map((type) => {
                 const label = documentLabel(type);
