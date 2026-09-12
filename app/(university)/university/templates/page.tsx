@@ -80,15 +80,14 @@ export default function UniversityTemplatesPage() {
         });
         confirmAction.close();
 
-        const fired = variables.data.is_available
-          ? (res.requests_fired ?? 0)
-          : 0;
-        if (fired > 0) {
+        const willFanOut = variables.data.is_available
+          ? res.will_fan_out
+          : false;
+        if (willFanOut) {
           queryClient.invalidateQueries({
             queryKey: getUniversityControllerListPartnersQueryKey(),
           });
           templateFanOutResult.open({
-            count: fired,
             onViewPartners: () => router.push("/university/partners"),
           });
         } else {

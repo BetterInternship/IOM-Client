@@ -141,7 +141,7 @@ function LoginPageContent() {
         portal="Company"
         title="Check your email"
         description={
-          <span className="block text-center">
+          <span className="block">
             If an eligible account exists, we sent a 6-digit code to{" "}
             <span className="text-foreground font-medium">{email}</span>.{" "}
             <Button onClick={backToEmail} variant="link">
