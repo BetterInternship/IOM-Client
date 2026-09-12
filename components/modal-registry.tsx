@@ -208,11 +208,10 @@ export function useIomModalRegistry() {
       close: () => closeModal("university-profile-complete"),
     },
     templateFanOutResult: {
-      open: (opts: { count: number; onViewPartners: () => void }) =>
+      open: (opts: { onViewPartners: () => void }) =>
         openModal(
           "template-fanout-result",
           <TemplateFanOutResultContent
-            count={opts.count}
             onViewPartners={() => {
               closeModal("template-fanout-result", { skipOnClose: true });
               opts.onViewPartners();
@@ -304,11 +303,9 @@ function UniversityProfileCompleteContent({
 }
 
 function TemplateFanOutResultContent({
-  count,
   onViewPartners,
   onDismiss,
 }: {
-  count: number;
   onViewPartners: () => void;
   onDismiss: () => void;
 }) {
@@ -319,11 +316,11 @@ function TemplateFanOutResultContent({
           <CheckCircle2 className="size-10" aria-hidden="true" />
         </span>
         <h2 className="mt-5 text-xl font-semibold tracking-tight text-gray-950">
-          {count} {count === 1 ? "company" : "companies"} just requested a MOA
-          with you.
+          Companies are requesting a MOA with you.
         </h2>
         <p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-6">
-          Expect to see new companies on your Partners page.
+          Some companies may have already requested a MOA with you. You may see
+          new companies on your Partners page shortly.
         </p>
       </div>
 

@@ -21,6 +21,8 @@ import {
   CompanySignerForm,
   type CompanySignerMode,
 } from "@/components/company-signer-form";
+import { useCompanyProfile } from "@/app/providers/company-profile.provider";
+import { isGovernmentClaim } from "@/lib/identity-claim";
 import { AutoRequestCta } from "@/components/auto-request-cta";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,28 +33,6 @@ import { useIomModalRegistry } from "@/components/modal-registry";
 import { TemplatePreviewRow } from "@/components/template-preview-row";
 import { cn } from "@/lib/utils";
 import { Check, Clock4, FileText, Loader2 } from "lucide-react";
-
-function AnimatedCheck() {
-  return (
-    <svg
-      width="72"
-      height="72"
-      viewBox="0 0 52 52"
-      fill="none"
-      className="text-supportive"
-    >
-      <path
-        d="M14 27 L22 35 L38 18"
-        stroke="currentColor"
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        pathLength="1"
-        className="check-path"
-      />
-    </svg>
-  );
-}
 
 function OutcomeShell({
   icon,
@@ -71,18 +51,6 @@ function OutcomeShell({
         .request-moa-header {
           display: none;
         }
-
-        .check-path {
-          stroke-dasharray: 1;
-          stroke-dashoffset: 1;
-          animation: drawCheck 300ms ease-out forwards;
-        }
-
-        @keyframes drawCheck {
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
       `}</style>
       <div
         className={cn(
@@ -99,23 +67,6 @@ function OutcomeShell({
         {description}
       </p>
     </div>
-  );
-}
-
-function MoaIssuedSuccess({ cta }: { cta?: React.ReactNode }) {
-  return (
-    <>
-      <OutcomeShell
-        icon={<AnimatedCheck />}
-        title="MOA issued"
-        description={cta ? "Your MOA is ready to view." : "Opening your MOA…"}
-      />
-      {cta && (
-        <div className="mx-auto w-full border-t border-gray-200 px-4 pt-6 pb-8 sm:w-[30rem] sm:px-0">
-          {cta}
-        </div>
-      )}
-    </>
   );
 }
 
@@ -165,7 +116,7 @@ function MoaSubmittingState() {
 }
 
 type RequestMode = CompanySignerMode;
-type RequestPhase = "form" | "submitting" | "issued" | "submitted";
+type RequestPhase = "form" | "submitting" | "submitted";
 const DELEGATE_SIGNATORY_EMAIL_STORAGE_KEY =
   "iom-company-delegate-signatory-email";
 
@@ -299,6 +250,8 @@ export function RequestDialog({
   const router = useRouter();
   const queryClient = useQueryClient();
   const modal = useIomModalRegistry();
+  const { company } = useCompanyProfile();
+  const hasClaim = isGovernmentClaim(company?.identity_claims);
   const [mode, setMode] = useState<RequestMode | null>(null);
   const [isChangingMode, setIsChangingMode] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
@@ -316,7 +269,6 @@ export function RequestDialog({
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState<RequestPhase>("form");
   const [outcomeMessage, setOutcomeMessage] = useState("");
-  const [issuedMoaId, setIssuedMoaId] = useState<string | null>(null);
 
   useEffect(() => {
     const savedEmail = window.localStorage.getItem(
@@ -359,15 +311,13 @@ export function RequestDialog({
 
   const createRequest = useCompanyControllerCreateMoaRequest();
 
-  const handleSuccess = (res: {
-    request?: { status?: string; moa_id?: string | null };
-  }) => {
+  const handleSuccess = (res: { kind: "issuing" | "parked" }) => {
     queryClient.invalidateQueries({
       queryKey: getCompanyControllerListMoaRequestsQueryKey(),
     });
-    // An immediate issuance needs the active-partners list refreshed too —
+    // An issuing request needs the active-partners list refreshed too —
     // otherwise the dashboard keeps showing the pre-issuance state until a
-    // manual reload.
+    // manual reload once the queue actually lands it.
     queryClient.invalidateQueries({
       queryKey: getCompanyControllerListMoasQueryKey(),
     });
@@ -379,38 +329,22 @@ export function RequestDialog({
       queryKey: getCompanyControllerGetPermissionsQueryKey(),
     });
 
-    const status = res.request?.status;
-    if (status === "issued" && res.request?.moa_id) {
-      setIssuedMoaId(res.request.moa_id);
-      setPhase("issued");
-      // The underlying page navigates right away, but the modal itself
-      // isn't closed here — it lives above the route (app/layout.tsx's
-      // ModalProvider), so it keeps floating over the new page until the
-      // user dismisses it, giving the auto-request CTA below a chance to
-      // be seen and used.
-      const hasCta = mode === "self" && !!selectedTemplateId;
-      window.setTimeout(() => {
-        router.push(`/company/moas/${res.request!.moa_id}`);
-      }, 550);
-      // No CTA to wait on (delegate mode, or no template) — nothing else
-      // will ever close this modal, so tidy it away shortly after arrival
-      // instead of leaving the checkmark stuck there.
-      if (!hasCta) {
-        window.setTimeout(() => onSuccessClose(), 550 + 650);
-      }
-      return;
-    }
-
+    // Nothing issues synchronously any more (Docs/plans/
+    // PARTNERS_MOA_RABBITMQ_MIGRATION_PLAN.md M9/M10) — every outcome lands
+    // here, with the description chosen by `kind` for the self-signed case.
+    // Delegate mode's wording doesn't depend on kind: it's already fully
+    // determined by whether a signing link went out.
     const message =
       mode === "delegate"
         ? `We emailed ${signatoryEmail} a link to sign the MOA — you'll see it here once it's signed.`
-        : "Your MOA will be approved automatically once your company is verified.";
+        : res.kind === "issuing"
+          ? "Your MOA is being generated — you'll see it here in a moment."
+          : "Your MOA will be approved automatically once your company is verified.";
     setOutcomeMessage(message);
     setPhase("submitted");
-    // Same pattern as the issued case above: redirect automatically, but
-    // leave the modal open over the destination page so the CTA below gets
-    // a chance to be seen — it only closes when the user acts on it, or,
-    // with no CTA to wait on, on the same short auto-close timer.
+    // Redirect automatically, but leave the modal open over the destination
+    // page so the CTA below gets a chance to be seen — it only closes when
+    // the user acts on it, or, with no CTA to wait on, on this same timer.
     const hasSubmittedCta = mode === "self" && !!selectedTemplateId;
     window.setTimeout(() => {
       router.push(successHref);
@@ -431,7 +365,11 @@ export function RequestDialog({
         `You have reached the maximum of ${limit} active MOAs with this university.`,
       );
     } else if (code === "DOCUMENTS_INCOMPLETE") {
-      setError("Upload your documents before you can request MOAs.");
+      setError(
+        hasClaim
+          ? "Submit your details before you can request MOAs."
+          : "Upload your documents before you can request MOAs.",
+      );
     } else if (code === "REQUEST_ALREADY_IN_FLIGHT") {
       setError("You already have a request in flight with this university.");
     } else if (code === "UNIVERSITY_NOT_REQUESTABLE") {
@@ -485,24 +423,6 @@ export function RequestDialog({
   const step2Ready = mode === "self" ? selfReady : delegateReady;
 
   if (phase === "submitting") return <MoaSubmittingState />;
-  if (phase === "issued") {
-    return (
-      <MoaIssuedSuccess
-        cta={
-          mode === "self" && selectedTemplateId ? (
-            <AutoRequestCta
-              templateId={selectedTemplateId}
-              variant="plain"
-              onDismiss={() => {
-                onSuccessClose();
-                router.push(`/company/moas/${issuedMoaId}`);
-              }}
-            />
-          ) : undefined
-        }
-      />
-    );
-  }
   if (phase === "submitted") {
     return (
       <MoaSubmittedSuccess

@@ -10,10 +10,10 @@ import type { ApproveCompanyReviewDtoDocumentExpiries } from "./approveCompanyRe
 
 export interface ApproveCompanyReviewDto {
   registered_name: string;
-  tin: string;
   company_type: ApproveCompanyReviewDtoCompanyType;
   registered_address: string;
-  date_of_incorporation: string;
-  company_registry_number: string;
-  document_expiries: ApproveCompanyReviewDtoDocumentExpiries;
+  tin?: string;
+  date_of_incorporation?: string;
+  company_registry_number?: string;
+  document_expiries?: ApproveCompanyReviewDtoDocumentExpiries;
 }

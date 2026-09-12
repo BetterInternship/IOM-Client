@@ -20,6 +20,13 @@ import {
   type CompanyAutoRequestOfferDto,
 } from "@/app/api";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import {
+  GovernmentIdentityClaim,
+  useIdentityClaimForm,
+  type IdentityChoice,
+} from "@/components/company/government-identity-claim";
+import { getIdentityClaims, isGovEmailDomain, isGovernmentClaim } from "@/lib/identity-claim";
 import { cn, formatDateWithoutTime } from "@/lib/utils";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -59,6 +66,44 @@ const COMPANY_TYPE_LABELS: Record<string, string> = {
   sole_proprietorship: "Sole Proprietorship",
   government_agency: "Government Agency",
 };
+
+/**
+ * Only ever mounted while status === "incomplete" (see the call site below),
+ * so useIdentityClaimForm's initial state is guaranteed to seed from real
+ * data — matters for a returning, previously-rejected claimant. This page
+ * has no stepper "Next" to piggyback on, so — unlike the two stepper
+ * surfaces — it keeps its own dedicated submit button.
+ */
+function GovernmentClaimSection({
+  company,
+  onChoiceChange,
+}: {
+  company: { identity_claims: Record<string, unknown>; email: string };
+  onChoiceChange: (choice: IdentityChoice | null) => void;
+}) {
+  const identityClaim = useIdentityClaimForm(
+    company,
+    isGovEmailDomain(company.email),
+    onChoiceChange,
+  );
+
+  return (
+    <div className="space-y-4">
+      <GovernmentIdentityClaim form={identityClaim} />
+      {identityClaim.choice === "government" && (
+        <div className="flex justify-end">
+          <Button
+            disabled={!identityClaim.valid || identityClaim.isPending}
+            onClick={() => identityClaim.submit()}
+          >
+            {identityClaim.isPending && <Loader2 className="animate-spin" />}
+            {identityClaim.isPending ? "Submitting..." : "Submit for verification"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function CompanyProfileContent() {
   const { openModal } = useModal();
@@ -105,6 +150,9 @@ export function CompanyProfileContent() {
   });
 
   const [uploadingType, setUploadingType] = useState<string | null>(null);
+  const [identityChoice, setIdentityChoice] = useState<IdentityChoice | null>(
+    null,
+  );
 
   if (isLoading || !company) return null;
 
@@ -112,6 +160,10 @@ export function CompanyProfileContent() {
   const latestDoc = (type: string) => docs.find((d) => d.type === type);
   const docCount = REQUIRED_DOCUMENT_TYPES.filter((type) => latestDoc(type)).length;
   const documentsComplete = docCount === REQUIRED_DOCUMENT_TYPES.length;
+  const claims = getIdentityClaims(company.identity_claims);
+  const isClaimGov = isGovernmentClaim(claims);
+  const isConfirmedGov = company.company_type === "government_agency";
+  const isGovPath = isClaimGov || isConfirmedGov;
 
   function slotState(
     type: string,
@@ -166,7 +218,10 @@ export function CompanyProfileContent() {
         />
 
         <CollapsibleCardGroup type="multiple" defaultValue={["documents", "company"]} variant="grouped">
-          {/* 1 — Required documents: three named slots, per-slot state */}
+          {/* 1 — Required documents: three named slots, per-slot state. Gone
+              entirely for a claimant or confirmed government body — a gov
+              account has no documents to show here (plan §6.2). */}
+          {!isGovPath && (
           <CollapsibleCardSection
             value="documents"
             trigger={
@@ -179,6 +234,13 @@ export function CompanyProfileContent() {
             contentClassName="space-y-4 px-5 pb-5"
           >
             <div id="documents" className="scroll-mt-24" />
+            {status === "incomplete" && (
+              <GovernmentClaimSection
+                company={company}
+                onChoiceChange={setIdentityChoice}
+              />
+            )}
+            {(status !== "incomplete" || identityChoice === "company") && (
             <div className="overflow-hidden rounded-[0.33em] border border-blue-100 bg-white">
               {REQUIRED_DOCUMENT_TYPES.map((type) => {
                 const label = documentLabel(type);
@@ -280,13 +342,21 @@ export function CompanyProfileContent() {
                 );
               })}
             </div>
+            )}
           </CollapsibleCardSection>
+          )}
 
-          {/* 2 — Company identity, read-only (admin-owned per flow spec §3) */}
+          {/* 2 — Company identity, read-only (admin-owned per flow spec §3),
+              or the government-body variant when a claim is set or confirmed
+              (plan §6.2). */}
           <CollapsibleCardSection
             value="company"
             trigger={
-              <CollapsibleCardSectionTitle icon={Building2} title="Company Profile" />
+              <CollapsibleCardSectionTitle
+                icon={Building2}
+                title="Company Profile"
+                badge={isGovPath ? <Badge type="primary">Government body</Badge> : undefined}
+              />
             }
             contentClassName="space-y-4 px-5 pb-5"
           >
@@ -295,45 +365,76 @@ export function CompanyProfileContent() {
                 {company.email}
               </p>
             </DetailField>
-            <DetailField label="Registered name">
-              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
-                {company.registered_name ?? (
-                  <span className="text-muted-foreground font-normal">
-                    Set by an admin at verification
-                  </span>
-                )}
-              </p>
-            </DetailField>
-            <DetailField label="TIN">
-              <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
-                {company.tin ?? (
-                  <span className="text-muted-foreground font-normal">
-                    Set by an admin at verification
-                  </span>
-                )}
-              </p>
-            </DetailField>
-            <DetailField label="Company type">
-              <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
-                {company.company_type
-                  ? (COMPANY_TYPE_LABELS[company.company_type] ?? company.company_type)
-                  : (
+            {isGovPath ? (
+              <>
+                <DetailField label="Registered name">
+                  <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+                    {isConfirmedGov
+                      ? company.registered_name
+                      : claims.claimed_registered_name}
+                    {!isConfirmedGov && (
+                      <span className="text-muted-foreground ml-2 text-xs font-normal">
+                        (pending confirmation)
+                      </span>
+                    )}
+                  </p>
+                </DetailField>
+                <DetailField label="Registered address">
+                  <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+                    {isConfirmedGov
+                      ? company.registered_address
+                      : claims.claimed_registered_address}
+                    {!isConfirmedGov && (
+                      <span className="text-muted-foreground ml-2 text-xs font-normal">
+                        (pending confirmation)
+                      </span>
+                    )}
+                  </p>
+                </DetailField>
+              </>
+            ) : (
+              <>
+                <DetailField label="Registered name">
+                  <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+                    {company.registered_name ?? (
                       <span className="text-muted-foreground font-normal">
                         Set by an admin at verification
                       </span>
                     )}
-              </p>
-            </DetailField>
-            <DetailField label="Registered address">
-              <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
-                {company.registered_address ?? (
-                  <span className="text-muted-foreground font-normal">
-                    Set by an admin at verification
-                  </span>
-                )}
-              </p>
-            </DetailField>
-            {status === "verified" && verification?.approvalExpiresAt && (
+                  </p>
+                </DetailField>
+                <DetailField label="TIN">
+                  <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
+                    {company.tin ?? (
+                      <span className="text-muted-foreground font-normal">
+                        Set by an admin at verification
+                      </span>
+                    )}
+                  </p>
+                </DetailField>
+                <DetailField label="Company type">
+                  <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
+                    {company.company_type
+                      ? (COMPANY_TYPE_LABELS[company.company_type] ?? company.company_type)
+                      : (
+                          <span className="text-muted-foreground font-normal">
+                            Set by an admin at verification
+                          </span>
+                        )}
+                  </p>
+                </DetailField>
+                <DetailField label="Registered address">
+                  <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+                    {company.registered_address ?? (
+                      <span className="text-muted-foreground font-normal">
+                        Set by an admin at verification
+                      </span>
+                    )}
+                  </p>
+                </DetailField>
+              </>
+            )}
+            {!isGovPath && status === "verified" && verification?.approvalExpiresAt && (
               <DetailField label="Verified until">
                 <div className="flex min-h-8 items-center gap-2 text-sm font-medium text-gray-900">
                   <span>

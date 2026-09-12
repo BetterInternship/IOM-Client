@@ -6,11 +6,11 @@
  * OpenAPI spec version: 1.0
  */
 
-export type SubmitSignatureResponseKind =
-  (typeof SubmitSignatureResponseKind)[keyof typeof SubmitSignatureResponseKind];
+export type CompanyCreateMoaRequestResponseKind =
+  (typeof CompanyCreateMoaRequestResponseKind)[keyof typeof CompanyCreateMoaRequestResponseKind];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const SubmitSignatureResponseKind = {
+export const CompanyCreateMoaRequestResponseKind = {
   issuing: "issuing",
   parked: "parked",
 } as const;

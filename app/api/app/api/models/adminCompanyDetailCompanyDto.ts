@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { AdminCompanyDetailCompanyDtoCosmetic } from "./adminCompanyDetailCompanyDtoCosmetic";
+import type { AdminCompanyDetailCompanyDtoIdentityClaims } from "./adminCompanyDetailCompanyDtoIdentityClaims";
 
 export interface AdminCompanyDetailCompanyDto {
   id: string;
@@ -21,6 +22,7 @@ export interface AdminCompanyDetailCompanyDto {
   registered_address: string | null;
   /** @nullable */
   cosmetic: AdminCompanyDetailCompanyDtoCosmetic;
+  identity_claims: AdminCompanyDetailCompanyDtoIdentityClaims;
   /** @nullable */
   email_verified: boolean | null;
   /** @nullable */

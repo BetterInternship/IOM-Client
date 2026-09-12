@@ -27,7 +27,7 @@ import { useModal } from "@/app/providers/modal-provider";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
 import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
-import { formatDateWithoutTime } from "@/lib/utils";
+import { saveIdentityChoiceIntent } from "@/lib/identity-claim";
 
 function RequiredDocumentsNotice({ types }: { types: readonly string[] }) {
   const orderedTypes = REQUIRED_DOCUMENT_TYPES.filter((type) =>
@@ -36,9 +36,11 @@ function RequiredDocumentsNotice({ types }: { types: readonly string[] }) {
 
   return (
     <div className="border-warning/30 bg-warning/5 rounded-[0.33em] border p-4">
-      <p className="text-sm font-semibold text-gray-900">
-        In the next steps, you&apos;ll be asked to upload these documents to
-        verify your account.
+      <p className="text-sm text-gray-900">
+        Unless you are a government agency/body, <br />
+        <span className="font-semibold">
+          you&apos;ll be asked to upload these documents to verify your account:
+        </span>
       </p>
       <ul className="mt-3 w-fit list-disc space-y-1 pl-5 text-sm text-gray-700 marker:text-warning">
         {orderedTypes.map((type) => (
@@ -59,8 +61,8 @@ function InviteProcessNotice() {
         <p className="text-muted-foreground mt-2 text-sm leading-5">
           This process takes about{" "}
           <span className="text-primary font-semibold">5 minutes</span>.
-          You&apos;ll upload your documents and sign the MOA. Your MOA will be
-          approved once we verify your documents.
+          You&apos;ll upload your company/agency info and sign the MOA. Your MOA
+          will be approved once we verify your account.
         </p>
       </div>
     </div>
@@ -72,14 +74,27 @@ function RequiredDocumentsModal({
   onProceed,
 }: {
   types: readonly string[];
-  onProceed: () => void;
+  onProceed: (choice: "company" | "government") => void;
 }) {
   return (
     <div className="space-y-4">
       <RequiredDocumentsNotice types={types} />
-      <Button className="w-full" onClick={onProceed}>
-        I have these documents ready
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button
+          className="w-full"
+          variant="outline"
+          onClick={() => onProceed("company")}
+        >
+          I&apos;m a registered company and have these ready
+        </Button>
+        <Button
+          className="w-full"
+          variant="outline"
+          onClick={() => onProceed("government")}
+        >
+          I&apos;m a government agency/body
+        </Button>
+      </div>
     </div>
   );
 }
@@ -317,7 +332,8 @@ function InvitePageContent() {
       "invite-required-documents",
       <RequiredDocumentsModal
         types={missingDocumentTypes}
-        onProceed={() => {
+        onProceed={(choice) => {
+          saveIdentityChoiceIntent(choice);
           closeModal("invite-required-documents");
           onProceed();
         }}

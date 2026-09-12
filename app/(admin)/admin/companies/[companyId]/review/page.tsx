@@ -36,7 +36,9 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { MorphHeight } from "@/components/ui/morph-height";
+import { getIdentityClaims, isGovEmailDomain, isGovernmentClaim } from "@/lib/identity-claim";
 import {
   Select,
   SelectTrigger,
@@ -69,6 +71,14 @@ const COMPANY_TYPES: Array<{
 
 const COMPANY_TYPE_LABELS: Record<string, string> = Object.fromEntries(
   COMPANY_TYPES.map((t) => [t.value, t.label]),
+);
+
+// government_agency is reachable only via the claim path now, never picked
+// from this dropdown on a document-backed review — a company with three PDFs
+// on file must be one of the other three (plan §5.4). COMPANY_TYPE_LABELS
+// above stays complete since past snapshots can still record it.
+const SELECTABLE_COMPANY_TYPES = COMPANY_TYPES.filter(
+  (t) => t.value !== "government_agency",
 );
 
 // Short labels for the tabs and left-panel rows on this page only — admins
@@ -464,6 +474,59 @@ function ApproveSummaryModal({
   );
 }
 
+function ApproveGovSummaryModal({
+  identity,
+  isPending,
+  onConfirm,
+  onCancel,
+}: {
+  identity: IdentityForm;
+  isPending: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const rows: Array<[string, string]> = [
+    ["Agency name", identity.registered_name],
+    ["Address", identity.registered_address],
+  ];
+
+  return (
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-[0.33em] border border-gray-200">
+        <dl>
+          {rows.map(([label, value]) => (
+            <div
+              key={label}
+              className="grid gap-1 border-b border-gray-100 px-4 py-2.5 last:border-b-0 sm:grid-cols-[minmax(9rem,40%)_1fr] sm:items-center sm:gap-4"
+            >
+              <dt className="text-muted-foreground text-xs">{label}</dt>
+              <dd className="break-words text-sm font-medium text-gray-900">
+                {value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
+      <p className="text-muted-foreground text-sm">
+        The agency will be verified with no expiry and no documents on file.
+        It will be able to request MOAs from any university and is emailed a
+        confirmation.
+      </p>
+
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" disabled={isPending} onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button scheme="supportive" disabled={isPending} onClick={onConfirm}>
+          {isPending && <Loader2 className="animate-spin" />}
+          {isPending ? "Approving…" : "Confirm approval"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function RejectCompanyForm({
   companyName,
   documentTypes,
@@ -593,6 +656,7 @@ export default function AdminCompanyReviewPage() {
     {},
   );
   const [acceptedDocs, setAcceptedDocs] = useState<Record<string, boolean>>({});
+  const [domainConfirmed, setDomainConfirmed] = useState(false);
   const prefetchedReviewId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -610,6 +674,9 @@ export default function AdminCompanyReviewPage() {
       },
     },
   );
+
+  const claims = getIdentityClaims(data?.company?.identity_claims);
+  const isGovClaim = isGovernmentClaim(claims);
 
   const { data: tinCheck, isFetching: tinChecking } =
     useAdminControllerTinAvailable(
@@ -728,23 +795,39 @@ export default function AdminCompanyReviewPage() {
       | null
       | undefined;
     const company = data?.company;
-    setIdentity({
-      registered_name: company?.registered_name ?? "",
-      tin: company?.tin ?? "",
-      company_type:
-        (company?.company_type as ApproveCompanyReviewDtoCompanyType) ?? "",
-      registered_address: company?.registered_address ?? "",
-      date_of_incorporation: asDisplayString(
-        priorDetails?.["Date of Incorporation"]?.value,
-      ),
-      company_registry_number: asDisplayString(
-        priorDetails?.["Company Registry Number"]?.value,
-      ),
-    });
+    setIdentity(
+      isGovClaim
+        ? {
+            registered_name: claims.claimed_registered_name ?? "",
+            tin: "",
+            company_type: "government_agency",
+            registered_address: claims.claimed_registered_address ?? "",
+            date_of_incorporation: "",
+            company_registry_number: "",
+          }
+        : {
+            registered_name: company?.registered_name ?? "",
+            tin: company?.tin ?? "",
+            company_type:
+              (company?.company_type as ApproveCompanyReviewDtoCompanyType) ??
+              "",
+            registered_address: company?.registered_address ?? "",
+            date_of_incorporation: asDisplayString(
+              priorDetails?.["Date of Incorporation"]?.value,
+            ),
+            company_registry_number: asDisplayString(
+              priorDetails?.["Company Registry Number"]?.value,
+            ),
+          },
+    );
     setDateValid(!!priorDetails?.["Date of Incorporation"]?.value);
     setExpiryValues({});
     setExpiryValidity({});
     setAcceptedDocs({});
+    setDomainConfirmed(false);
+    // isGovClaim/claims derive from data itself — including them would just
+    // re-run this in lockstep with the data dependency already listed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, openEntry]);
 
   const documentByType = useMemo(() => {
@@ -753,9 +836,9 @@ export default function AdminCompanyReviewPage() {
     return map;
   }, [openEntry]);
 
-  const notAcceptedCount = REQUIRED_DOCUMENT_TYPES.filter(
-    (type) => !acceptedDocs[type],
-  ).length;
+  const notAcceptedCount = isGovClaim
+    ? 0
+    : REQUIRED_DOCUMENT_TYPES.filter((type) => !acceptedDocs[type]).length;
   const allDocsAccepted = REQUIRED_DOCUMENT_TYPES.every(
     (type) => acceptedDocs[type] && documentByType.has(type),
   );
@@ -772,43 +855,69 @@ export default function AdminCompanyReviewPage() {
     dateValid &&
     !!identity.company_registry_number.trim();
 
-  const canApprove =
-    !!openEntry &&
-    identityComplete &&
-    !tinConflict &&
-    !tinChecking &&
-    allDocsAccepted &&
-    REQUIRED_DOCUMENT_TYPES.every(expiryOk);
+  // The structural counterpart of the per-document accept boxes — without
+  // it, this platform's weakest verification would also be its lowest-
+  // friction approval (plan §5.2).
+  const govIdentityComplete =
+    !!identity.registered_name.trim() && !!identity.registered_address.trim();
+
+  const canApprove = isGovClaim
+    ? !!openEntry && govIdentityComplete && domainConfirmed
+    : !!openEntry &&
+      identityComplete &&
+      !tinConflict &&
+      !tinChecking &&
+      allDocsAccepted &&
+      REQUIRED_DOCUMENT_TYPES.every(expiryOk);
 
   const openApproveSummary = () => {
     openModal(
       "approve-company",
-      <ApproveSummaryModal
-        identity={identity}
-        expiries={expiryValues}
-        isPending={approve.isPending}
-        onCancel={() => closeModal("approve-company")}
-        onConfirm={() =>
-          approve.mutate({
-            companyId,
-            data: {
-              registered_name: identity.registered_name.trim(),
-              tin: identity.tin.trim(),
-              company_type:
-                identity.company_type as ApproveCompanyReviewDtoCompanyType,
-              registered_address: identity.registered_address.trim(),
-              date_of_incorporation: identity.date_of_incorporation.trim(),
-              company_registry_number: identity.company_registry_number.trim(),
-              document_expiries: Object.fromEntries(
-                REQUIRED_DOCUMENT_TYPES.map((type) => [
-                  type,
-                  expiryValues[type]?.trim() || null,
-                ]),
-              ),
-            },
-          })
-        }
-      />,
+      isGovClaim ? (
+        <ApproveGovSummaryModal
+          identity={identity}
+          isPending={approve.isPending}
+          onCancel={() => closeModal("approve-company")}
+          onConfirm={() =>
+            approve.mutate({
+              companyId,
+              data: {
+                registered_name: identity.registered_name.trim(),
+                company_type: "government_agency",
+                registered_address: identity.registered_address.trim(),
+              },
+            })
+          }
+        />
+      ) : (
+        <ApproveSummaryModal
+          identity={identity}
+          expiries={expiryValues}
+          isPending={approve.isPending}
+          onCancel={() => closeModal("approve-company")}
+          onConfirm={() =>
+            approve.mutate({
+              companyId,
+              data: {
+                registered_name: identity.registered_name.trim(),
+                tin: identity.tin.trim(),
+                company_type:
+                  identity.company_type as ApproveCompanyReviewDtoCompanyType,
+                registered_address: identity.registered_address.trim(),
+                date_of_incorporation: identity.date_of_incorporation.trim(),
+                company_registry_number:
+                  identity.company_registry_number.trim(),
+                document_expiries: Object.fromEntries(
+                  REQUIRED_DOCUMENT_TYPES.map((type) => [
+                    type,
+                    expiryValues[type]?.trim() || null,
+                  ]),
+                ),
+              },
+            })
+          }
+        />
+      ),
       {
         title: "Confirm approval",
         panelClassName: "!w-full sm:!max-w-lg",
@@ -817,9 +926,9 @@ export default function AdminCompanyReviewPage() {
   };
 
   const openRejectSummary = () => {
-    const documentTypes = REQUIRED_DOCUMENT_TYPES.filter(
-      (type) => !acceptedDocs[type],
-    );
+    const documentTypes = isGovClaim
+      ? []
+      : REQUIRED_DOCUMENT_TYPES.filter((type) => !acceptedDocs[type]);
     openModal(
       "reject-company",
       <RejectCompanyForm
@@ -905,6 +1014,106 @@ export default function AdminCompanyReviewPage() {
             defaultValue={["identity", "documents", "review-details"]}
             variant="grouped"
           >
+            {isGovClaim && (
+            <CollapsibleCardSection
+              value="gov-identity"
+              trigger="Government agency identity"
+              triggerClassName="hover:bg-gray-50"
+              contentClassName="space-y-4 px-5 pb-5"
+            >
+              <DetailField label="Account email — the headline evidence">
+                <p className="flex min-h-8 items-center break-all text-sm font-medium text-gray-900">
+                  {company.email ?? "No account email"}
+                </p>
+              </DetailField>
+
+              {!isGovEmailDomain(company.email) && (
+                <div className="border-warning/40 bg-warning/5 rounded-[0.33em] border px-3 py-2 text-xs text-gray-700">
+                  This email domain isn&apos;t .gov or .gov.ph — LGUs, SUCs and
+                  some GOCCs legitimately use others, but verify independently
+                  that it belongs to this agency before approving.
+                </div>
+              )}
+
+              {data.documentCount > 0 && (
+                <div className="border-warning/40 bg-warning/5 rounded-[0.33em] border px-3 py-2 text-xs text-gray-700">
+                  {data.documentCount} document
+                  {data.documentCount === 1 ? "" : "s"} already on file for
+                  this company.
+                </div>
+              )}
+
+              {data.nameMatches.length > 0 && (
+                <div className="border-warning/40 bg-warning/5 space-y-1.5 rounded-[0.33em] border px-3 py-2 text-xs text-gray-700">
+                  <p className="font-semibold">
+                    Possible duplicate — similar name(s) on file:
+                  </p>
+                  {data.nameMatches.map((m) => (
+                    <p key={m.id}>
+                      {m.registered_name} — {m.email ?? "no email"}
+                      {m.verifiedAt
+                        ? ` · verified ${formatDateWithoutTime(m.verifiedAt)}`
+                        : ""}
+                    </p>
+                  ))}
+                </div>
+              )}
+
+              <DetailField
+                label={<Label htmlFor="gov-name">Agency name</Label>}
+                labelClassName="sm:min-h-9"
+              >
+                <Input
+                  id="gov-name"
+                  className="h-9 text-sm"
+                  value={identity.registered_name}
+                  onChange={(e) =>
+                    setIdentity((v) => ({
+                      ...v,
+                      registered_name: e.target.value,
+                    }))
+                  }
+                />
+              </DetailField>
+
+              <DetailField
+                label={<Label htmlFor="gov-address">Address</Label>}
+                labelClassName="sm:min-h-9"
+              >
+                <Input
+                  id="gov-address"
+                  className="h-9 text-sm"
+                  value={identity.registered_address}
+                  onChange={(e) =>
+                    setIdentity((v) => ({
+                      ...v,
+                      registered_address: e.target.value,
+                    }))
+                  }
+                />
+              </DetailField>
+
+              <DetailField label="Company type">
+                <p className="flex min-h-8 items-center text-sm font-medium text-gray-900">
+                  Government Agency
+                </p>
+              </DetailField>
+
+              <label className="flex cursor-pointer items-start gap-2 text-sm text-gray-800">
+                <Checkbox
+                  className="mt-0.5"
+                  checked={domainConfirmed}
+                  onCheckedChange={(checked) =>
+                    setDomainConfirmed(checked === true)
+                  }
+                />
+                I have confirmed this email domain belongs to this agency.
+              </label>
+            </CollapsibleCardSection>
+            )}
+
+            {!isGovClaim && (
+            <>
             <CollapsibleCardSection
               value="identity"
               trigger="Company identity"
@@ -969,7 +1178,7 @@ export default function AdminCompanyReviewPage() {
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {COMPANY_TYPES.map((t) => (
+                    {SELECTABLE_COMPANY_TYPES.map((t) => (
                       <SelectItem key={t.value} value={t.value}>
                         {t.label}
                       </SelectItem>
@@ -1065,6 +1274,8 @@ export default function AdminCompanyReviewPage() {
                 ))}
               </div>
             </CollapsibleCardSection>
+            </>
+            )}
 
             {pastEntries.length > 0 && (
               <CollapsibleCardSection
@@ -1132,6 +1343,12 @@ export default function AdminCompanyReviewPage() {
           </div>
         </div>
 
+        {isGovClaim ? (
+        <div className="text-muted-foreground flex min-h-[300px] items-center justify-center border-t border-gray-200 bg-slate-100 p-6 text-center text-sm lg:h-full lg:border-t-0 lg:border-l">
+          No documents to review — a government agency/body is verified by
+          its email domain, not documents.
+        </div>
+        ) : (
         <Tabs
           defaultValue={REQUIRED_DOCUMENT_TYPES[0]}
           className="min-w-0 gap-0 border-t border-gray-200 lg:h-full lg:min-h-0 lg:overflow-hidden lg:border-t-0"
@@ -1177,6 +1394,7 @@ export default function AdminCompanyReviewPage() {
             );
           })}
         </Tabs>
+        )}
       </div>
     </PageContainer>
   );

@@ -33,6 +33,7 @@ import { DetailField } from "@/components/ui/detail-field";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIomModalRegistry } from "@/components/modal-registry";
 import { REQUIRED_DOCUMENT_TYPES, documentLabel } from "@/lib/document-types";
+import { getIdentityClaims, isGovernmentClaim } from "@/lib/identity-claim";
 import { cn, formatDateWithoutTime } from "@/lib/utils";
 import {
   ArrowLeft,
@@ -198,6 +199,10 @@ export default function AdminCompanyProfilePage() {
   const documentRejectionEntries = Object.entries(
     verification.documentRejections ?? {},
   );
+  const claims = getIdentityClaims(company.identity_claims);
+  const isClaimGov = isGovernmentClaim(claims);
+  const isConfirmedGov = company.company_type === "government_agency";
+  const isGovPath = isClaimGov || isConfirmedGov;
 
   return (
     <PageContainer
@@ -283,28 +288,47 @@ export default function AdminCompanyProfilePage() {
           >
             <CollapsibleCardSection
               value="company-details"
-              trigger="Company details"
+              trigger={
+                <span className="flex items-center gap-2">
+                  Company details
+                  {isGovPath && <Badge type="primary">Government body</Badge>}
+                </span>
+              }
               contentClassName="space-y-4 px-5 pb-5"
             >
               <Field
                 label="Date joined"
                 value={formatDateWithoutTime(company.created_at)}
               />
-              <Field label="Registered name" value={company.registered_name} />
-              <Field label="Email" value={company.email} />
-              <Field label="TIN" value={company.tin} />
               <Field
-                label="Company type"
+                label="Registered name"
                 value={
-                  company.company_type
-                    ? (COMPANY_TYPE_LABELS[company.company_type] ??
-                      company.company_type)
-                    : null
+                  isConfirmedGov
+                    ? company.registered_name
+                    : (claims.claimed_registered_name ?? company.registered_name)
                 }
               />
+              <Field label="Email" value={company.email} />
+              {!isGovPath && <Field label="TIN" value={company.tin} />}
+              {!isGovPath && (
+                <Field
+                  label="Company type"
+                  value={
+                    company.company_type
+                      ? (COMPANY_TYPE_LABELS[company.company_type] ??
+                        company.company_type)
+                      : null
+                  }
+                />
+              )}
               <Field
                 label="Registered address"
-                value={company.registered_address}
+                value={
+                  isConfirmedGov
+                    ? company.registered_address
+                    : (claims.claimed_registered_address ??
+                      company.registered_address)
+                }
               />
               {cosmetic.description && (
                 <Field label="Description" value={cosmetic.description} />
@@ -318,6 +342,7 @@ export default function AdminCompanyProfilePage() {
               )}
             </CollapsibleCardSection>
 
+            {!isGovPath && (
             <CollapsibleCardSection
               value="documents"
               trigger="Documents"
@@ -364,6 +389,7 @@ export default function AdminCompanyProfilePage() {
                 })}
               </div>
             </CollapsibleCardSection>
+            )}
 
             <CollapsibleCardSection
               value="review-history"

@@ -5,10 +5,7 @@
  * IOM Platform API — MOA management between companies (HTEs) and universities (HEIs).
  * OpenAPI spec version: 1.0
  */
-import type { SubmitSignatureResponseKind } from "./submitSignatureResponseKind";
 
-export interface SubmitSignatureResponse {
-  success: boolean;
-  message?: string;
-  kind: SubmitSignatureResponseKind;
-}
+export type AdminCompanyDetailCompanyDtoIdentityClaims = {
+  [key: string]: unknown;
+};

@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PartnershipStatusBadge } from "@/components/partnership-status-badge";
+import { Badge } from "@/components/ui/badge";
 import { TruncatedTooltip } from "@/components/ui/truncated-tooltip";
 import { formatDateWithoutTime } from "@/lib/utils";
 
@@ -51,6 +52,10 @@ export interface UniversityPartnerTableRow {
     id: string;
     registered_name: string;
     company_type: string | null;
+    // Only present once §4.10's list-selection fix has loaded — the drawer
+    // falls back to the full fetch (partnerMoasData.company) once it's in.
+    registered_address?: string | null;
+    cosmetic?: Record<string, unknown> | null;
   } | null;
   latestMoaId: string | null;
   latestMoaStatus: string | null;
@@ -267,6 +272,16 @@ export function NoAccountIndicator() {
   );
 }
 
+
+/** Government agency/body indicator (Docs/plans/GOVERNMENT_BODY_REGISTRATION_PLAN.md §6.3). */
+export function GovernmentBodyTag() {
+  return (
+    <Badge type="primary" className="shrink-0">
+      Government body
+    </Badge>
+  );
+}
+
 function PartnersTableSkeleton({ toolbarStart }: { toolbarStart?: ReactNode }) {
   return (
     <div className="space-y-4">
@@ -381,6 +396,9 @@ export function UniversityPartnersTable({
             <TruncatedTooltip className="text-sm font-medium text-gray-900">
               <span className="uppercase">{row.displayName}</span>
             </TruncatedTooltip>
+            {row.partnerCompany?.company_type === "government_agency" && (
+              <GovernmentBodyTag />
+            )}
             {tab !== "blacklisted" &&
               row.isImported &&
               !row.legacyEntry?.registered_company_id && <NoAccountIndicator />}
@@ -637,6 +655,9 @@ export function UniversityPartnersTable({
                     <TruncatedTooltip className="text-sm font-semibold text-gray-900">
                       <span className="uppercase">{row.displayName}</span>
                     </TruncatedTooltip>
+                    {row.partnerCompany?.company_type === "government_agency" && (
+                      <GovernmentBodyTag />
+                    )}
                     {tab !== "blacklisted" &&
                       row.isImported &&
                       !row.legacyEntry?.registered_company_id && (

@@ -88,15 +88,6 @@ function HelpLine() {
   );
 }
 
-function getVerificationUrl(verificationCode: string) {
-  const docsUrl =
-    process.env.LOCAL_DEVELOPMENT === "true"
-      ? "https://dev.docs.betterinternship.com"
-      : "https://docs.betterinternship.com";
-
-  return `${docsUrl}/?verification-code=${encodeURIComponent(verificationCode)}`;
-}
-
 function SigningPageShell({
   children,
   className,
@@ -140,8 +131,7 @@ export default function SignTokenPage() {
   const [sigText, setSigText] = useState("");
   const [sigFile, setSigFile] = useState<File | null>(null);
   const [outcome, setOutcome] = useState<{
-    kind: "issued" | "requested";
-    verificationCode: string | null;
+    kind: "issuing" | "parked";
   } | null>(null);
 
   const { data, isLoading, error } = useSignControllerResolve(token, {
@@ -152,12 +142,7 @@ export default function SignTokenPage() {
   const submit = useSignControllerSubmit({
     mutation: {
       onSuccess: (res) => {
-        if (res.kind === "issued" && res.verificationCode) {
-          window.location.assign(getVerificationUrl(res.verificationCode));
-          return;
-        }
-
-        setOutcome({ kind: res.kind, verificationCode: res.verificationCode });
+        setOutcome({ kind: res.kind });
       },
       onError: (e: Error) => toast.error(e.message),
     },
@@ -216,23 +201,15 @@ export default function SignTokenPage() {
     return (
       <SigningPageShell className="max-w-2xl">
         <OutcomeScreen
-          tone={outcome.kind === "issued" ? "supportive" : "warning"}
+          tone={outcome.kind === "issuing" ? "supportive" : "warning"}
           icon={<CheckCircle2 className="h-8 w-8" aria-hidden="true" />}
-          title={outcome.kind === "issued" ? "MOA signed!" : "MOA Requested!"}
+          title={outcome.kind === "issuing" ? "MOA signed!" : "MOA Requested!"}
           description={
-            outcome.kind === "issued"
-              ? "The agreement has been issued. A copy has been emailed to you."
+            outcome.kind === "issuing"
+              ? "A copy will be emailed to you shortly."
               : "Thanks for signing — the company isn't verified yet, so this will issue automatically once they are. We'll email you when it does."
           }
         >
-          {outcome.kind === "issued" && outcome.verificationCode && (
-            <p className="text-muted-foreground mt-4 text-xs">
-              Verification code:{" "}
-              <span className="font-mono font-medium text-gray-900">
-                {outcome.verificationCode}
-              </span>
-            </p>
-          )}
           <HelpLine />
         </OutcomeScreen>
       </SigningPageShell>

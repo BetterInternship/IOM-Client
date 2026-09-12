@@ -19,6 +19,7 @@ export interface CompanyMoaRequestDto {
   /** @nullable */
   signatory_title: string | null;
   auto_signed: boolean;
+  isIssuing: boolean;
   /** @nullable */
   failure_reason: string | null;
   /** @nullable */

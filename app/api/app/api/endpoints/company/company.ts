@@ -38,6 +38,7 @@ import type {
   CompanyControllerUploadLogoBody,
   CompanyCreateMoaRequestResponse,
   CompanyDocumentsResponse,
+  CompanyIdentityClaimDto,
   CompanyMeResponse,
   CompanyMoaDetailResponse,
   CompanyMoaRequestsResponse,
@@ -652,6 +653,85 @@ export function useCompanyControllerGetVerificationSuspense<
   return query;
 }
 
+export const companyControllerPatchIdentityClaim = (
+  companyIdentityClaimDto: CompanyIdentityClaimDto,
+) => {
+  return preconfiguredAxiosFunction<CompanyPatchProfileResponse>({
+    url: `/api/company/identity-claim`,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    data: companyIdentityClaimDto,
+  });
+};
+
+export const getCompanyControllerPatchIdentityClaimMutationOptions = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof companyControllerPatchIdentityClaim>>,
+    TError,
+    { data: CompanyIdentityClaimDto },
+    TContext
+  >;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof companyControllerPatchIdentityClaim>>,
+  TError,
+  { data: CompanyIdentityClaimDto },
+  TContext
+> => {
+  const mutationKey = ["companyControllerPatchIdentityClaim"];
+  const { mutation: mutationOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey } };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof companyControllerPatchIdentityClaim>>,
+    { data: CompanyIdentityClaimDto }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return companyControllerPatchIdentityClaim(data);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CompanyControllerPatchIdentityClaimMutationResult = NonNullable<
+  Awaited<ReturnType<typeof companyControllerPatchIdentityClaim>>
+>;
+export type CompanyControllerPatchIdentityClaimMutationBody =
+  CompanyIdentityClaimDto;
+export type CompanyControllerPatchIdentityClaimMutationError = ErrorResponse;
+
+export const useCompanyControllerPatchIdentityClaim = <
+  TError = ErrorResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof companyControllerPatchIdentityClaim>>,
+      TError,
+      { data: CompanyIdentityClaimDto },
+      TContext
+    >;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof companyControllerPatchIdentityClaim>>,
+  TError,
+  { data: CompanyIdentityClaimDto },
+  TContext
+> => {
+  const mutationOptions =
+    getCompanyControllerPatchIdentityClaimMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export const companyControllerCareerLinkStatus = (signal?: AbortSignal) => {
   return preconfiguredAxiosFunction<CompanyCareerLinkStatusResponse>({
     url: `/api/company/career-link-status`,
