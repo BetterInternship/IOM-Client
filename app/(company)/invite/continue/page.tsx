@@ -33,7 +33,7 @@ import {
   useIdentityClaimForm,
   type IdentityChoice,
 } from "@/components/company/government-identity-claim";
-import { isGovernmentClaim } from "@/lib/identity-claim";
+import { isGovEmailDomain, isGovernmentClaim } from "@/lib/identity-claim";
 import {
   CompanySignerForm,
   type CompanySignerMode,
@@ -131,14 +131,18 @@ function DocumentsStep({
   onContinue,
   documentsUploaded,
 }: {
-  company: { identity_claims: Record<string, unknown> };
+  company: { identity_claims: Record<string, unknown>; email: string };
   onChoiceChange: (choice: IdentityChoice | null) => void;
   onAllUploaded: () => void;
   onCompletionChange: (isComplete: boolean) => void;
   onContinue: () => void;
   documentsUploaded: boolean;
 }) {
-  const identityClaim = useIdentityClaimForm(company, onChoiceChange);
+  const identityClaim = useIdentityClaimForm(
+    company,
+    isGovEmailDomain(company.email),
+    onChoiceChange,
+  );
   const canContinue =
     identityClaim.choice === "government"
       ? identityClaim.valid

@@ -38,12 +38,17 @@ type IdentityChoice = "company" | "government";
  */
 function useIdentityClaimForm(
   company: { identity_claims: Record<string, unknown> },
+  suggestGovernment?: boolean,
   onChoiceChange?: (choice: IdentityChoice | null) => void,
 ) {
   const queryClient = useQueryClient();
   const claims = getIdentityClaims(company.identity_claims);
   const [choice, setChoice] = useState<IdentityChoice | null>(() =>
-    isGovernmentClaim(claims) ? "government" : null,
+    isGovernmentClaim(claims)
+      ? "government"
+      : suggestGovernment
+        ? "government"
+        : null,
   );
   const [name, setName] = useState(claims.claimed_registered_name ?? "");
   const [address, setAddress] = useState(

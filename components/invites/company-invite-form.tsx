@@ -57,6 +57,7 @@ import {
   saveInviteDraft,
   type ComposeProvider,
 } from "@/lib/compose-url";
+import { isGovEmailDomain } from "@/lib/identity-claim";
 
 export type CompanyInviteKind = "moa" | "listing";
 
@@ -378,6 +379,7 @@ export function CompanyInviteForm({
           personalMessage: message.trim() || null,
           inviteLink: res.inviteLink,
           missingDocumentTypes: res.missingDocumentTypes,
+          isGovEmail: isGovEmailDomain(invitedEmail),
         }),
       });
       // Passing "noopener"/"noreferrer" as window features makes

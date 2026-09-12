@@ -38,7 +38,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { MorphHeight } from "@/components/ui/morph-height";
-import { getIdentityClaims, isGovernmentClaim } from "@/lib/identity-claim";
+import { getIdentityClaims, isGovEmailDomain, isGovernmentClaim } from "@/lib/identity-claim";
 import {
   Select,
   SelectTrigger,
@@ -80,9 +80,6 @@ const COMPANY_TYPE_LABELS: Record<string, string> = Object.fromEntries(
 const SELECTABLE_COMPANY_TYPES = COMPANY_TYPES.filter(
   (t) => t.value !== "government_agency",
 );
-
-const isGovDomain = (email: string | null | undefined): boolean =>
-  /\.gov(\.[a-z]{2,3})?$/i.test(email?.split("@")[1]?.trim() ?? "");
 
 // Short labels for the tabs and left-panel rows on this page only — admins
 // are the only audience here, so the full legal document names (used
@@ -1030,7 +1027,7 @@ export default function AdminCompanyReviewPage() {
                 </p>
               </DetailField>
 
-              {!isGovDomain(company.email) && (
+              {!isGovEmailDomain(company.email) && (
                 <div className="border-warning/40 bg-warning/5 rounded-[0.33em] border px-3 py-2 text-xs text-gray-700">
                   This email domain isn&apos;t .gov or .gov.ph — LGUs, SUCs and
                   some GOCCs legitimately use others, but verify independently

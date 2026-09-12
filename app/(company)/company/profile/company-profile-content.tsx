@@ -26,7 +26,7 @@ import {
   useIdentityClaimForm,
   type IdentityChoice,
 } from "@/components/company/government-identity-claim";
-import { getIdentityClaims, isGovernmentClaim } from "@/lib/identity-claim";
+import { getIdentityClaims, isGovEmailDomain, isGovernmentClaim } from "@/lib/identity-claim";
 import { cn, formatDateWithoutTime } from "@/lib/utils";
 import { PageContainer, PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -78,10 +78,14 @@ function GovernmentClaimSection({
   company,
   onChoiceChange,
 }: {
-  company: { identity_claims: Record<string, unknown> };
+  company: { identity_claims: Record<string, unknown>; email: string };
   onChoiceChange: (choice: IdentityChoice | null) => void;
 }) {
-  const identityClaim = useIdentityClaimForm(company, onChoiceChange);
+  const identityClaim = useIdentityClaimForm(
+    company,
+    isGovEmailDomain(company.email),
+    onChoiceChange,
+  );
 
   return (
     <div className="space-y-4">

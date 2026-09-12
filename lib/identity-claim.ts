@@ -14,3 +14,8 @@ export function getIdentityClaims(claims: unknown): IdentityClaims {
 export function isGovernmentClaim(claims: unknown): boolean {
   return getIdentityClaims(claims).claimed_company_type === "government_agency";
 }
+
+
+export function isGovEmailDomain(email: string | null | undefined): boolean {
+  return /\.gov(\.[a-z]{2,3})?$/i.test(email?.split("@")[1]?.trim() ?? "");
+}

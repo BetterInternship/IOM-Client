@@ -27,9 +27,26 @@ import { useModal } from "@/app/providers/modal-provider";
 import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
 import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
+import { isGovEmailDomain } from "@/lib/identity-claim";
 import { formatDateWithoutTime } from "@/lib/utils";
 
-function RequiredDocumentsNotice({ types }: { types: readonly string[] }) {
+function RequiredDocumentsNotice({
+  types,
+  isGov,
+}: {
+  types: readonly string[];
+  isGov?: boolean;
+}) {
+  if (isGov) {
+    return (
+      <div className="border-warning/30 bg-warning/5 rounded-[0.33em] border p-4">
+        <p className="text-sm font-semibold text-gray-900">
+        	We will verify your government agency/body via your email address.
+        </p>
+      </div>
+    );
+  }
+
   const orderedTypes = REQUIRED_DOCUMENT_TYPES.filter((type) =>
     types.includes(type),
   );
@@ -73,14 +90,16 @@ function InviteProcessNotice() {
 
 function RequiredDocumentsModal({
   types,
+  isGov,
   onProceed,
 }: {
   types: readonly string[];
+  isGov?: boolean;
   onProceed: () => void;
 }) {
   return (
     <div className="space-y-4">
-      <RequiredDocumentsNotice types={types} />
+      <RequiredDocumentsNotice types={types} isGov={isGov} />
       <Button className="w-full" onClick={onProceed}>
         I have these documents ready
       </Button>
@@ -298,6 +317,7 @@ function InvitePageContent() {
   }
 
   const {
+    email,
     company_name,
     email_status,
     university,
@@ -313,6 +333,7 @@ function InvitePageContent() {
   const isMoa = kind === "moa";
   const missingDocumentTypes =
     missing_document_types ?? REQUIRED_DOCUMENT_TYPES;
+  const isGovInvite = isGovEmailDomain(email);
 
   // Flow spec §11 — a heads-up shown right when they try to accept,
   // not on page load, so it doesn't compete with the rest of the page.
@@ -321,6 +342,7 @@ function InvitePageContent() {
       "invite-required-documents",
       <RequiredDocumentsModal
         types={missingDocumentTypes}
+        isGov={isGovInvite}
         onProceed={() => {
           closeModal("invite-required-documents");
           onProceed();

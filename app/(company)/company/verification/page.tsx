@@ -12,6 +12,7 @@ import {
   GovernmentIdentityClaim,
   useIdentityClaimForm,
 } from "@/components/company/government-identity-claim";
+import { isGovEmailDomain } from "@/lib/identity-claim";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -24,11 +25,14 @@ function VerificationForm({
   company,
   onDone,
 }: {
-  company: { identity_claims: Record<string, unknown> };
+  company: { identity_claims: Record<string, unknown>; email: string };
   onDone: () => void;
 }) {
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
-  const identityClaim = useIdentityClaimForm(company);
+  const identityClaim = useIdentityClaimForm(
+    company,
+    isGovEmailDomain(company.email),
+  );
   const canContinue =
     identityClaim.choice === "government"
       ? identityClaim.valid
