@@ -203,8 +203,8 @@ function GovernmentIdentityClaim({
       )}
     >
       <p className="text-muted-foreground text-sm">
-        We will still need to verify your entity... Your email domain will be
-        checked to verify your identity.
+        These details and your email domain will also be checked to verify your
+        identity.
       </p>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">

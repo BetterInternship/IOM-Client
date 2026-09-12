@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronRight, Loader2, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
@@ -78,20 +78,30 @@ function VerificationForm({
 
 export default function VerificationPage() {
   const router = useRouter();
-  const initialVerificationStatus = useRef<string | null>(null);
+  const [snapshotStatus, setSnapshotStatus] = useState<string | null>(null);
   const { company, isLoading } = useCompanyProfile();
   const { data: verification, isLoading: verificationLoading } =
     useCompanyVerification(!!company);
   const status = verification?.status;
 
   useEffect(() => {
-    if (!status || initialVerificationStatus.current) return;
+    if (!status || snapshotStatus) return;
 
-    initialVerificationStatus.current = status;
+    setSnapshotStatus(status);
     if (status !== "incomplete") router.replace("/company/dashboard");
-  }, [status, router]);
+  }, [status, snapshotStatus, router]);
 
-  if (isLoading || verificationLoading || !company) {
+  // Not just a loading gate — snapshotStatus starts null and only ever
+  // becomes "incomplete" or something else (never back to null), so this
+  // also covers the render(s) between "we know we're redirecting" and the
+  // replace() above actually unmounting the page. Without it, the real
+  // form would render for one commit before the effect above fires.
+  if (
+    isLoading ||
+    verificationLoading ||
+    !company ||
+    snapshotStatus !== "incomplete"
+  ) {
     return (
       <PageContainer className="space-y-8">
         <Skeleton className="h-8 w-96" />
@@ -114,8 +124,8 @@ export default function VerificationPage() {
           Verify your company to start partnering with universities
         </h1>
         <p className="text-muted-foreground mx-auto mt-2 text-sm">
-          We use these documents to verify your company. We'll email you once
-          the review is complete.
+          We'll email you once we've approved your company or government
+          agency/body.
         </p>
       </section>
 

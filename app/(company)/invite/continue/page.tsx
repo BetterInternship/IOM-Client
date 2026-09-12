@@ -425,8 +425,8 @@ function InviteContinueContent() {
         </h1>
         {currentStep === "documents" && (
           <p className="text-muted-foreground mt-2 text-sm">
-            We use these documents to verify your company. We&apos;ll email you
-            once the review is complete.
+            We'll email you once we've approved your company or government
+            agency/body.
           </p>
         )}
       </section>
