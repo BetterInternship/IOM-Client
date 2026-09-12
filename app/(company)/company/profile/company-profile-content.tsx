@@ -240,7 +240,7 @@ export function CompanyProfileContent() {
                 onChoiceChange={setIdentityChoice}
               />
             )}
-            {identityChoice === "company" && (
+            {(status !== "incomplete" || identityChoice === "company") && (
             <div className="overflow-hidden rounded-[0.33em] border border-blue-100 bg-white">
               {REQUIRED_DOCUMENT_TYPES.map((type) => {
                 const label = documentLabel(type);

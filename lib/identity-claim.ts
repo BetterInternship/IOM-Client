@@ -17,5 +17,5 @@ export function isGovernmentClaim(claims: unknown): boolean {
 
 
 export function isGovEmailDomain(email: string | null | undefined): boolean {
-  return /\.gov(\.[a-z]{2,3})?$/i.test(email?.split("@")[1]?.trim() ?? "");
+  return /(?:^|\.)gov(\.[a-z]{2,3})?$/i.test(email?.split("@")[1]?.trim() ?? "");
 }

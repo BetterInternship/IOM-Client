@@ -128,14 +128,13 @@ const CHOICES: Array<{
     value: "company",
     icon: Briefcase,
     title: "I'm a legally registered company",
-    description: "Upload your BIR, SEC/DTI, and Mayor's Permit.",
+    description: "We verify your company documents.",
   },
   {
     value: "government",
     icon: Landmark,
     title: "I'm a government agency/body",
-    description:
-      "Skip the documents — verify with your agency name and address instead.",
+    description: "We verify your email, agency, and address.",
   },
 ];
 

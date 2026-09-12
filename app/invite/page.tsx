@@ -28,7 +28,6 @@ import { toastPresets } from "@/components/sonner-toaster";
 import { Button } from "@/components/ui/button";
 import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
 import { isGovEmailDomain } from "@/lib/identity-claim";
-import { formatDateWithoutTime } from "@/lib/utils";
 
 function RequiredDocumentsNotice({
   types,
@@ -53,19 +52,17 @@ function RequiredDocumentsNotice({
 
   return (
     <div className="border-warning/30 bg-warning/5 rounded-[0.33em] border p-4">
-      <p className="text-sm font-semibold text-gray-900">
-        In the next steps, you&apos;ll be asked to upload these documents to
-        verify your account.
+      <p className="text-sm text-gray-900">
+        Unless you are a government agency/body, <br />
+        <span className="font-semibold">
+          you&apos;ll be asked to upload these documents to verify your account:
+        </span>
       </p>
       <ul className="mt-3 w-fit list-disc space-y-1 pl-5 text-sm text-gray-700 marker:text-warning">
         {orderedTypes.map((type) => (
           <li key={type}>{documentLabel(type)}</li>
         ))}
       </ul>
-      <p className="text-muted-foreground mt-3 text-xs">
-        Government agencies and bodies don&apos;t need these — you can verify
-        with your official email address instead once you have an account.
-      </p>
     </div>
   );
 }
@@ -80,8 +77,8 @@ function InviteProcessNotice() {
         <p className="text-muted-foreground mt-2 text-sm leading-5">
           This process takes about{" "}
           <span className="text-primary font-semibold">5 minutes</span>.
-          You&apos;ll upload your documents and sign the MOA. Your MOA will be
-          approved once we verify your documents.
+          You&apos;ll upload your company/agency info and sign the MOA. Your MOA
+          will be approved once we verify your account.
         </p>
       </div>
     </div>
