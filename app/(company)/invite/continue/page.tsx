@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -28,7 +28,10 @@ import {
 } from "@/app/providers/company-profile.provider";
 import { FormError } from "@/components/auth-shell";
 import { CompanyDocumentUploader } from "@/components/company/company-document-uploader";
-import { GovernmentIdentityClaim } from "@/components/company/government-identity-claim";
+import {
+  GovernmentIdentityClaim,
+  useIdentityClaimForm,
+} from "@/components/company/government-identity-claim";
 import { isGovernmentClaim } from "@/lib/identity-claim";
 import {
   CompanySignerForm,
@@ -112,43 +115,68 @@ function InviteContinueShell({
   );
 }
 
+/**
+ * Only ever mounted while currentStep === "documents" and after the parent's
+ * own `if (!company) return null` guard, so useIdentityClaimForm's initial
+ * state is guaranteed to seed from real data — matters for a returning,
+ * previously-rejected claimant. `onTickedChange` exists solely so the
+ * parent's step heading ("Submit your details" vs "Upload your documents")
+ * can react to it.
+ */
 function DocumentsStep({
   company,
-  claimActive,
-  onClaimActiveChange,
+  onTickedChange,
   onAllUploaded,
   onCompletionChange,
   onContinue,
-  canContinue,
+  documentsUploaded,
 }: {
   company: { identity_claims: Record<string, unknown> };
-  claimActive: boolean;
-  onClaimActiveChange: (active: boolean) => void;
+  onTickedChange: (ticked: boolean) => void;
   onAllUploaded: () => void;
   onCompletionChange: (isComplete: boolean) => void;
   onContinue: () => void;
-  canContinue: boolean;
+  documentsUploaded: boolean;
 }) {
+  const identityClaim = useIdentityClaimForm(company, onTickedChange);
+  const canContinue = identityClaim.ticked
+    ? identityClaim.valid
+    : documentsUploaded;
+
+  async function handleNext() {
+    if (identityClaim.ticked) {
+      if (await identityClaim.submit()) onContinue();
+      return;
+    }
+    onContinue();
+  }
+
   return (
-    <div className="space-y-6">
-      <GovernmentIdentityClaim
-        company={company}
-        onActiveChange={onClaimActiveChange}
-        onSubmitted={onContinue}
-      />
-      {!claimActive && (
-        <>
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <GovernmentIdentityClaim form={identityClaim} tall />
+        {!identityClaim.ticked && (
           <CompanyDocumentUploader
             onAllUploaded={onAllUploaded}
             onCompletionChange={onCompletionChange}
           />
-          <div className="flex justify-end">
-            <Button disabled={!canContinue} onClick={onContinue}>
+        )}
+      </div>
+      <div className="flex justify-end">
+        <Button
+          disabled={!canContinue || identityClaim.isPending}
+          onClick={handleNext}
+        >
+          {identityClaim.isPending && <Loader2 className="animate-spin h-4 w-4" />}
+          {identityClaim.isPending ? (
+            "Submitting..."
+          ) : (
+            <>
               Next <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </>
-      )}
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -399,11 +427,10 @@ function InviteContinueContent() {
           {currentStep === "documents" && (
             <DocumentsStep
               company={company}
-              claimActive={claimActive}
-              onClaimActiveChange={setClaimActive}
+              onTickedChange={setClaimActive}
               onAllUploaded={() => setDocumentsUploaded(true)}
               onCompletionChange={setDocumentsUploaded}
-              canContinue={documentsUploaded}
+              documentsUploaded={documentsUploaded}
               onContinue={() => {
                 setDocumentsStepCompleted(true);
                 setStepDirection(1);

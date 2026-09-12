@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Check, Landmark } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -12,32 +12,27 @@ import {
 } from "@/app/api";
 import { getIdentityClaims, isGovernmentClaim } from "@/lib/identity-claim";
 import { toastPresets } from "@/components/sonner-toaster";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 /**
- * Government agency/body registration checkbox (Docs/plans/
- * GOVERNMENT_BODY_REGISTRATION_PLAN.md §6.1) — rendered identically on all
- * three document-collection surfaces. Owns the claim mutation itself:
- * ticking reveals two required fields and this component's own submit
- * button stands in for whatever "proceed" action the host page would
- * otherwise render, since submitting a claim is a distinct action the
- * document path doesn't have. Unticking clears the claim immediately, no
- * confirmation needed — the untick is always available (plan §4.7).
+ * State + mutation behind the government agency/body claim (Docs/plans/
+ * GOVERNMENT_BODY_REGISTRATION_PLAN.md §6.1). Unticking clears the claim
+ * immediately (plan §4.7, no confirmation needed). Ticking only ever writes
+ * when the host calls `submit()` from its own "Next"/"Submit" action —
+ * every write reopens a review and re-notifies admins
+ * (company-review.service.ts's onMaterialChange), so this must never fire
+ * on a per-keystroke/blur basis.
+ *
+ * `onTickedChange` is a thin escape hatch for hosts whose *sibling* layout
+ * depends on ticked state (a stepper heading, a neighbouring card's
+ * visibility) — most callers don't need it.
  */
-function GovernmentIdentityClaim({
-  company,
-  onActiveChange,
-  onSubmitted,
-  submitLabel = "Submit for verification",
-}: {
-  company: { identity_claims: Record<string, unknown> };
-  onActiveChange?: (active: boolean) => void;
-  onSubmitted?: () => void;
-  submitLabel?: string;
-}) {
+function useIdentityClaimForm(
+  company: { identity_claims: Record<string, unknown> },
+  onTickedChange?: (ticked: boolean) => void,
+) {
   const queryClient = useQueryClient();
   const claims = getIdentityClaims(company.identity_claims);
   const [ticked, setTicked] = useState(() => isGovernmentClaim(claims));
@@ -47,9 +42,9 @@ function GovernmentIdentityClaim({
   );
 
   useEffect(() => {
-    onActiveChange?.(ticked);
-    // Only the mount-time value of onActiveChange matters per toggle — it's
-    // a plain callback prop, not a dependency that should retrigger this.
+    onTickedChange?.(ticked);
+    // Only the current value of `ticked` should retrigger this — the
+    // callback is a plain prop, not meant to be a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticked]);
 
@@ -57,58 +52,129 @@ function GovernmentIdentityClaim({
     queryClient.invalidateQueries({
       queryKey: getCompanyControllerGetVerificationQueryKey(),
     });
-    queryClient.invalidateQueries({ queryKey: getCompanyControllerMeQueryKey() });
+    queryClient.invalidateQueries({
+      queryKey: getCompanyControllerMeQueryKey(),
+    });
   };
 
   const patchClaim = useCompanyControllerPatchIdentityClaim({
     mutation: {
+      onSuccess: invalidate,
       onError: (error: Error) => toast(error.message, toastPresets.destructive),
     },
   });
 
-  function handleToggle(checked: boolean) {
+  function toggle(checked: boolean) {
     setTicked(checked);
     if (checked) return;
-    patchClaim.mutate(
-      { data: { claimed_company_type: null } },
-      { onSuccess: invalidate },
-    );
+    patchClaim.mutate({ data: { claimed_company_type: null } });
   }
 
-  function handleSubmit() {
+  async function submit(): Promise<boolean> {
     const claimedName = name.trim();
     const claimedAddress = address.trim();
-    if (!claimedName || !claimedAddress) return;
-    patchClaim.mutate(
-      {
+    if (!claimedName || !claimedAddress) return false;
+    try {
+      await patchClaim.mutateAsync({
         data: {
           claimed_company_type: "government_agency",
           claimed_registered_name: claimedName,
           claimed_registered_address: claimedAddress,
         },
-      },
-      {
-        onSuccess: () => {
-          invalidate();
-          onSubmitted?.();
-        },
-      },
-    );
+      });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
+  return {
+    ticked,
+    toggle,
+    name,
+    setName,
+    address,
+    setAddress,
+    submit,
+    isPending: patchClaim.isPending,
+    valid: !!name.trim() && !!address.trim(),
+  };
+}
+
+type IdentityClaimForm = ReturnType<typeof useIdentityClaimForm>;
+
+/**
+ * The checkbox + (when ticked) name/address fields — rendered identically on
+ * all three document-collection surfaces. Purely presentational: the host
+ * owns `useIdentityClaimForm` and whatever button actually calls `submit()`
+ * (its own "Next" in a stepper, or a dedicated button where the page is
+ * standalone), since submitting is a distinct, deliberate action this
+ * component has no "proceed" affordance of its own to hang it on.
+ *
+ * `tall` matches this box's height to CompanyDocumentUploader's card grid so
+ * toggling the checkbox doesn't shove a page's "Next" button up or down.
+ */
+function GovernmentIdentityClaim({
+  form,
+  tall = false,
+}: {
+  form: IdentityClaimForm;
+  tall?: boolean;
+}) {
   return (
     <div className="space-y-4">
-      <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-800">
-        <Checkbox
-          checked={ticked}
-          disabled={patchClaim.isPending}
-          onCheckedChange={(checked) => handleToggle(checked === true)}
-        />
-        I&apos;m a government agency/body
-      </label>
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={form.ticked}
+        disabled={form.isPending}
+        onClick={() => form.toggle(!form.ticked)}
+        className={cn(
+          "flex w-full cursor-pointer items-center gap-3 rounded-[0.33em] border px-4 py-3.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+          form.ticked
+            ? "border-primary bg-primary/5"
+            : "border-gray-200 bg-white hover:border-gray-300",
+        )}
+      >
+        <span
+          className={cn(
+            "flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors",
+            form.ticked
+              ? "bg-primary text-white"
+              : "bg-gray-100 text-muted-foreground",
+          )}
+        >
+          <Landmark className="h-5 w-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-base font-semibold text-gray-900">
+            I&apos;m a government agency/body
+          </span>
+          <span className="text-muted-foreground block text-xs">
+            Skip the documents — verify with your agency name and address
+            instead.
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          className={cn(
+            "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors",
+            form.ticked
+              ? "border-primary bg-primary text-white"
+              : "border-gray-300 bg-white",
+          )}
+        >
+          {form.ticked && <Check className="h-4 w-4" strokeWidth={3} />}
+        </span>
+      </button>
 
-      {ticked && (
-        <div className="space-y-4 rounded-[0.5em] border-2 border-dashed border-gray-300 bg-white px-4 py-6 sm:px-6 sm:py-8">
+      {form.ticked && (
+        <div
+          className={cn(
+            "space-y-4 rounded-[0.5em] border-2 border-dashed border-gray-300 bg-white px-4 py-6 sm:px-6 sm:py-8",
+            tall && "flex min-h-44 flex-col justify-center sm:min-h-[19rem]",
+          )}
+        >
           <p className="text-muted-foreground text-sm">
             We will still need to verify your entity... Your email domain
             will be checked to verify your identity.
@@ -118,28 +184,21 @@ function GovernmentIdentityClaim({
               <Label htmlFor="claimed-registered-name">Agency name</Label>
               <Input
                 id="claimed-registered-name"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
+                value={form.name}
+                onChange={(event) => form.setName(event.target.value)}
                 placeholder="e.g. Department of Trade and Industry"
+                disabled={form.isPending}
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="claimed-registered-address">Address</Label>
               <Input
                 id="claimed-registered-address"
-                value={address}
-                onChange={(event) => setAddress(event.target.value)}
+                value={form.address}
+                onChange={(event) => form.setAddress(event.target.value)}
+                disabled={form.isPending}
               />
             </div>
-          </div>
-          <div className="flex justify-end">
-            <Button
-              disabled={!name.trim() || !address.trim() || patchClaim.isPending}
-              onClick={handleSubmit}
-            >
-              {patchClaim.isPending && <Loader2 className="animate-spin" />}
-              {patchClaim.isPending ? "Submitting..." : submitLabel}
-            </Button>
           </div>
         </div>
       )}
@@ -147,4 +206,4 @@ function GovernmentIdentityClaim({
   );
 }
 
-export { GovernmentIdentityClaim };
+export { GovernmentIdentityClaim, useIdentityClaimForm, type IdentityClaimForm };

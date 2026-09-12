@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ChevronRight, ShieldCheck } from "lucide-react";
+import { ChevronRight, Loader2, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   useCompanyProfile,
@@ -8,14 +8,68 @@ import {
 } from "@/app/providers/company-profile.provider";
 import { PageContainer } from "@/components/page-header";
 import { CompanyDocumentUploader } from "@/components/company/company-document-uploader";
-import { GovernmentIdentityClaim } from "@/components/company/government-identity-claim";
+import {
+  GovernmentIdentityClaim,
+  useIdentityClaimForm,
+} from "@/components/company/government-identity-claim";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Only ever mounted once `company` is loaded (see the guard below), so
+ * useIdentityClaimForm's initial state is guaranteed to seed from real data
+ * — matters for a returning, previously-rejected claimant.
+ */
+function VerificationForm({
+  company,
+  onDone,
+}: {
+  company: { identity_claims: Record<string, unknown> };
+  onDone: () => void;
+}) {
+  const [documentsUploaded, setDocumentsUploaded] = useState(false);
+  const identityClaim = useIdentityClaimForm(company);
+  const canContinue = identityClaim.ticked
+    ? identityClaim.valid
+    : documentsUploaded;
+
+  async function handleNext() {
+    if (identityClaim.ticked) {
+      if (await identityClaim.submit()) onDone();
+      return;
+    }
+    onDone();
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <GovernmentIdentityClaim form={identityClaim} tall />
+        {!identityClaim.ticked && (
+          <CompanyDocumentUploader onCompletionChange={setDocumentsUploaded} />
+        )}
+      </div>
+      <div className="flex justify-end">
+        <Button
+          disabled={!canContinue || identityClaim.isPending}
+          onClick={handleNext}
+        >
+          {identityClaim.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <>
+              Next <ChevronRight />
+            </>
+          )}
+          {identityClaim.isPending && "Submitting..."}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default function VerificationPage() {
   const router = useRouter();
-  const [documentsUploaded, setDocumentsUploaded] = useState(false);
-  const [claimActive, setClaimActive] = useState(false);
   const initialVerificationStatus = useRef<string | null>(null);
   const { company, isLoading } = useCompanyProfile();
   const { data: verification, isLoading: verificationLoading } =
@@ -57,24 +111,10 @@ export default function VerificationPage() {
         </p>
       </section>
 
-      <GovernmentIdentityClaim
+      <VerificationForm
         company={company}
-        onActiveChange={setClaimActive}
-        onSubmitted={() => router.replace("/company/dashboard")}
+        onDone={() => router.replace("/company/dashboard")}
       />
-      {!claimActive && (
-        <>
-          <CompanyDocumentUploader onCompletionChange={setDocumentsUploaded} />
-          <div className="flex justify-end">
-            <Button
-              disabled={!documentsUploaded}
-              onClick={() => router.replace("/company/dashboard")}
-            >
-              Next <ChevronRight />
-            </Button>
-          </div>
-        </>
-      )}
     </PageContainer>
   );
 }

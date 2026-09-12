@@ -21,7 +21,10 @@ import {
 } from "@/app/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { GovernmentIdentityClaim } from "@/components/company/government-identity-claim";
+import {
+  GovernmentIdentityClaim,
+  useIdentityClaimForm,
+} from "@/components/company/government-identity-claim";
 import { getIdentityClaims, isGovernmentClaim } from "@/lib/identity-claim";
 import { cn, formatDateWithoutTime } from "@/lib/utils";
 import { PageContainer, PageHeader } from "@/components/page-header";
@@ -62,6 +65,40 @@ const COMPANY_TYPE_LABELS: Record<string, string> = {
   sole_proprietorship: "Sole Proprietorship",
   government_agency: "Government Agency",
 };
+
+/**
+ * Only ever mounted while status === "incomplete" (see the call site below),
+ * so useIdentityClaimForm's initial state is guaranteed to seed from real
+ * data — matters for a returning, previously-rejected claimant. This page
+ * has no stepper "Next" to piggyback on, so — unlike the two stepper
+ * surfaces — it keeps its own dedicated submit button.
+ */
+function GovernmentClaimSection({
+  company,
+  onTickedChange,
+}: {
+  company: { identity_claims: Record<string, unknown> };
+  onTickedChange: (ticked: boolean) => void;
+}) {
+  const identityClaim = useIdentityClaimForm(company, onTickedChange);
+
+  return (
+    <div className="space-y-4">
+      <GovernmentIdentityClaim form={identityClaim} />
+      {identityClaim.ticked && (
+        <div className="flex justify-end">
+          <Button
+            disabled={!identityClaim.valid || identityClaim.isPending}
+            onClick={() => identityClaim.submit()}
+          >
+            {identityClaim.isPending && <Loader2 className="animate-spin" />}
+            {identityClaim.isPending ? "Submitting..." : "Submit for verification"}
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function CompanyProfileContent() {
   const { openModal } = useModal();
@@ -191,9 +228,9 @@ export function CompanyProfileContent() {
           >
             <div id="documents" className="scroll-mt-24" />
             {status === "incomplete" && (
-              <GovernmentIdentityClaim
+              <GovernmentClaimSection
                 company={company}
-                onActiveChange={setClaimActive}
+                onTickedChange={setClaimActive}
               />
             )}
             {!claimActive && (
