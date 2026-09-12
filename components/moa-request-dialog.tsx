@@ -21,6 +21,8 @@ import {
   CompanySignerForm,
   type CompanySignerMode,
 } from "@/components/company-signer-form";
+import { useCompanyProfile } from "@/app/providers/company-profile.provider";
+import { isGovernmentClaim } from "@/lib/identity-claim";
 import { AutoRequestCta } from "@/components/auto-request-cta";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -248,6 +250,8 @@ export function RequestDialog({
   const router = useRouter();
   const queryClient = useQueryClient();
   const modal = useIomModalRegistry();
+  const { company } = useCompanyProfile();
+  const hasClaim = isGovernmentClaim(company?.identity_claims);
   const [mode, setMode] = useState<RequestMode | null>(null);
   const [isChangingMode, setIsChangingMode] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
@@ -361,7 +365,11 @@ export function RequestDialog({
         `You have reached the maximum of ${limit} active MOAs with this university.`,
       );
     } else if (code === "DOCUMENTS_INCOMPLETE") {
-      setError("Upload your documents before you can request MOAs.");
+      setError(
+        hasClaim
+          ? "Submit your details before you can request MOAs."
+          : "Upload your documents before you can request MOAs.",
+      );
     } else if (code === "REQUEST_ALREADY_IN_FLIGHT") {
       setError("You already have a request in flight with this university.");
     } else if (code === "UNIVERSITY_NOT_REQUESTABLE") {

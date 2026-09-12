@@ -15,6 +15,8 @@ interface CompanyProfile {
   company_type: string | null;
   registered_address: string | null;
   cosmetic: Record<string, unknown>;
+  // Company-writable, never read as identity (plan §3.1) — see lib/identity-claim.ts.
+  identity_claims: Record<string, unknown>;
   is_deactivated: boolean | null;
 }
 

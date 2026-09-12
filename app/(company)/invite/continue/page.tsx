@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -28,6 +28,16 @@ import {
 } from "@/app/providers/company-profile.provider";
 import { FormError } from "@/components/auth-shell";
 import { CompanyDocumentUploader } from "@/components/company/company-document-uploader";
+import {
+  GovernmentIdentityClaim,
+  useIdentityClaimForm,
+  type IdentityChoice,
+} from "@/components/company/government-identity-claim";
+import {
+  consumeIdentityChoiceIntent,
+  isGovEmailDomain,
+  isGovernmentClaim,
+} from "@/lib/identity-claim";
 import {
   CompanySignerForm,
   type CompanySignerMode,
@@ -110,26 +120,74 @@ function InviteContinueShell({
   );
 }
 
+/**
+ * Only ever mounted while currentStep === "documents" and after the parent's
+ * own `if (!company) return null` guard, so useIdentityClaimForm's initial
+ * state is guaranteed to seed from real data — matters for a returning,
+ * previously-rejected claimant. `onChoiceChange` exists solely so the
+ * parent's step heading can react to it.
+ */
 function DocumentsStep({
+  company,
+  onChoiceChange,
   onAllUploaded,
   onCompletionChange,
   onContinue,
-  canContinue,
+  documentsUploaded,
 }: {
+  company: { identity_claims: Record<string, unknown>; email: string };
+  onChoiceChange: (choice: IdentityChoice | null) => void;
   onAllUploaded: () => void;
   onCompletionChange: (isComplete: boolean) => void;
   onContinue: () => void;
-  canContinue: boolean;
+  documentsUploaded: boolean;
 }) {
+  const [identityChoiceIntent] = useState(() => consumeIdentityChoiceIntent());
+  const identityClaim = useIdentityClaimForm(
+    company,
+    identityChoiceIntent ?? isGovEmailDomain(company.email),
+    onChoiceChange,
+  );
+  const canContinue =
+    identityClaim.choice === "government"
+      ? identityClaim.valid
+      : identityClaim.choice === "company"
+        ? documentsUploaded
+        : false;
+
+  async function handleNext() {
+    if (identityClaim.choice === "government") {
+      if (await identityClaim.submit()) onContinue();
+      return;
+    }
+    onContinue();
+  }
+
   return (
-    <div className="space-y-6">
-      <CompanyDocumentUploader
-        onAllUploaded={onAllUploaded}
-        onCompletionChange={onCompletionChange}
+    <div className="space-y-8">
+      <GovernmentIdentityClaim
+        form={identityClaim}
+        tall
+        companyContent={
+          <CompanyDocumentUploader
+            onAllUploaded={onAllUploaded}
+            onCompletionChange={onCompletionChange}
+          />
+        }
       />
       <div className="flex justify-end">
-        <Button disabled={!canContinue} onClick={onContinue}>
-          Next <ChevronRight className="h-4 w-4" />
+        <Button
+          disabled={!canContinue || identityClaim.isPending}
+          onClick={handleNext}
+        >
+          {identityClaim.isPending && <Loader2 className="animate-spin h-4 w-4" />}
+          {identityClaim.isPending ? (
+            "Submitting..."
+          ) : (
+            <>
+              Next <ChevronRight className="h-4 w-4" />
+            </>
+          )}
         </Button>
       </div>
     </div>
@@ -186,6 +244,9 @@ function InviteContinueContent() {
   const [phase, setPhase] = useState<Phase>("form");
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
   const [documentsStepCompleted, setDocumentsStepCompleted] = useState(false);
+  const [identityChoice, setIdentityChoice] = useState<IdentityChoice | null>(
+    null,
+  );
   // Frozen the first time it's known (below) so finishing uploads — which
   // flips verification.status away from "incomplete" — can't retroactively
   // change the active flow from 2 phases to 1 while it is still on screen.
@@ -282,7 +343,11 @@ function InviteContinueContent() {
         `You have reached the maximum of ${limit} active MOAs with this university.`,
       );
     } else if (code === "DOCUMENTS_INCOMPLETE") {
-      setError("Upload your documents before you can request MOAs.");
+      setError(
+        isGovernmentClaim(company?.identity_claims)
+          ? "Submit your details before you can request MOAs."
+          : "Upload your documents before you can request MOAs.",
+      );
       hasDocumentsStepRef.current = true;
       setDocumentsUploaded(false);
       setDocumentsStepCompleted(false);
@@ -347,7 +412,11 @@ function InviteContinueContent() {
         <h1 className="mt-0 text-2xl font-semibold tracking-tight text-gray-900 sm:mt-4 sm:text-4xl">
           Step {currentStepNumber}/{steps.length}:{" "}
           {currentStep === "documents"
-            ? "Upload your documents"
+            ? identityChoice === "government"
+              ? "Submit your details"
+              : identityChoice === "company"
+                ? "Upload your documents"
+                : "Verify your company"
             : `Sign MOA with ${university.registered_name}`}
           {" "}
           <span className="bg-primary/5 text-primary inline-flex h-8 items-center gap-1.5 rounded-full px-3 align-middle text-sm font-semibold sm:h-11 sm:px-4 sm:text-base">
@@ -356,8 +425,8 @@ function InviteContinueContent() {
         </h1>
         {currentStep === "documents" && (
           <p className="text-muted-foreground mt-2 text-sm">
-            We use these documents to verify your company. We&apos;ll email you
-            once the review is complete.
+            We'll email you once we've approved your company or government
+            agency/body.
           </p>
         )}
       </section>
@@ -374,9 +443,11 @@ function InviteContinueContent() {
         >
           {currentStep === "documents" && (
             <DocumentsStep
+              company={company}
+              onChoiceChange={setIdentityChoice}
               onAllUploaded={() => setDocumentsUploaded(true)}
               onCompletionChange={setDocumentsUploaded}
-              canContinue={documentsUploaded}
+              documentsUploaded={documentsUploaded}
               onContinue={() => {
                 setDocumentsStepCompleted(true);
                 setStepDirection(1);

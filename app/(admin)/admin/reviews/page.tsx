@@ -7,8 +7,10 @@ import {
   type ResourceTableColumn,
 } from "@/components/ui/resource-table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { useResourceTable } from "@/components/ui/use-resource-table";
 import { formatTimeElapsed } from "@/lib/utils";
+import { isGovernmentClaim } from "@/lib/identity-claim";
 
 interface ReviewRow {
   id: string;
@@ -19,6 +21,7 @@ interface ReviewRow {
     registered_name: string;
     email: string;
     company_type: string | null;
+    identity_claims?: Record<string, unknown>;
   } | null;
 }
 
@@ -29,9 +32,16 @@ const columns: Array<ResourceTableColumn<ReviewRow>> = [
     width: "w-[70%]",
     getSortValue: (review) => review.company?.email ?? "",
     render: (review) => (
-      <p className="truncate font-medium text-gray-900">
-        {review.company?.email ?? "No account email"}
-      </p>
+      <div className="flex min-w-0 items-center gap-2">
+        <p className="truncate font-medium text-gray-900">
+          {review.company?.email ?? "No account email"}
+        </p>
+        {isGovernmentClaim(review.company?.identity_claims) && (
+          <Badge type="primary" className="shrink-0">
+            Gov
+          </Badge>
+        )}
+      </div>
     ),
   },
   {
@@ -93,9 +103,16 @@ export default function AdminReviewsPage() {
                 router.push(`/companies/${review.company_id}/review`)
               }
             >
-              <p className="font-semibold text-gray-900">
-                {review.company?.email ?? "No account email"}
-              </p>
+              <div className="flex min-w-0 items-center gap-2">
+                <p className="font-semibold text-gray-900">
+                  {review.company?.email ?? "No account email"}
+                </p>
+                {isGovernmentClaim(review.company?.identity_claims) && (
+                  <Badge type="primary" className="shrink-0">
+                    Gov
+                  </Badge>
+                )}
+              </div>
               <p className="text-muted-foreground mt-3 text-xs">
                 Submitted {formatTimeElapsed(review.created_at)}
               </p>

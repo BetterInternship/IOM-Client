@@ -22,6 +22,7 @@ import { OtpInput } from "@/components/ui/otp-input";
 import { CircleAlert, Loader2 } from "lucide-react";
 import { documentLabel, REQUIRED_DOCUMENT_TYPES } from "@/lib/document-types";
 import { peekHireLinkIntent } from "@/lib/hire-link-intent";
+import { isGovEmailDomain } from "@/lib/identity-claim";
 import { CompanyAuthSessionGate } from "@/components/company-auth-session-gate";
 import { toast } from "sonner";
 
@@ -135,7 +136,9 @@ function RegisterPageContent() {
   const inviteToken = searchParams.get("invite_token") ?? "";
   const linkIntent = searchParams.get("link_intent") ?? "";
   const hireLink = peekHireLinkIntent(linkIntent);
-  const [prefillReady, setPrefillReady] = useState(!linkIntent);
+  const [prefillReady, setPrefillReady] = useState(
+    !linkIntent || isGovEmailDomain(hireLink?.email ?? ""),
+  );
   const prefillModalOpenedRef = useRef(false);
 
   const [step, setStep] = useState<Step>("account");

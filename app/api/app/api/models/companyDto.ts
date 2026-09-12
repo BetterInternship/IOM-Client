@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { CompanyDtoCosmetic } from "./companyDtoCosmetic";
+import type { CompanyDtoIdentityClaims } from "./companyDtoIdentityClaims";
 
 export interface CompanyDto {
   id: string;
@@ -20,6 +21,7 @@ export interface CompanyDto {
   /** @nullable */
   registered_address: string | null;
   cosmetic: CompanyDtoCosmetic;
+  identity_claims: CompanyDtoIdentityClaims;
   /** @nullable */
   is_deactivated: boolean | null;
 }

@@ -104,6 +104,10 @@ export interface InviteMessageInput {
   // below is skipped. Undefined (kind="listing", or an unexpectedly stale
   // response) falls back to the full list, same as a brand-new company.
   missingDocumentTypes?: string[];
+  // kind="moa" only — true when the invited email looks governmental
+  // (isGovEmailDomain); skips the documents note regardless of
+  // missingDocumentTypes, same as the invite landing page and picker default.
+  isGovEmail?: boolean;
 }
 
 // §8 — subject line by kind. Falls back if the profile's registered_name
@@ -191,7 +195,7 @@ export function buildInviteBody(input: InviteMessageInput): string {
   );
 
   const missingDocumentTypes =
-    input.kind === "moa"
+    input.kind === "moa" && !input.isGovEmail
       ? (input.missingDocumentTypes ?? REQUIRED_DOCUMENT_TYPES)
       : [];
   if (missingDocumentTypes.length > 0) {
