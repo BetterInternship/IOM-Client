@@ -28,6 +28,8 @@ import {
 } from "@/app/providers/company-profile.provider";
 import { FormError } from "@/components/auth-shell";
 import { CompanyDocumentUploader } from "@/components/company/company-document-uploader";
+import { GovernmentIdentityClaim } from "@/components/company/government-identity-claim";
+import { isGovernmentClaim } from "@/lib/identity-claim";
 import {
   CompanySignerForm,
   type CompanySignerMode,
@@ -111,11 +113,17 @@ function InviteContinueShell({
 }
 
 function DocumentsStep({
+  company,
+  claimActive,
+  onClaimActiveChange,
   onAllUploaded,
   onCompletionChange,
   onContinue,
   canContinue,
 }: {
+  company: { identity_claims: Record<string, unknown> };
+  claimActive: boolean;
+  onClaimActiveChange: (active: boolean) => void;
   onAllUploaded: () => void;
   onCompletionChange: (isComplete: boolean) => void;
   onContinue: () => void;
@@ -123,15 +131,24 @@ function DocumentsStep({
 }) {
   return (
     <div className="space-y-6">
-      <CompanyDocumentUploader
-        onAllUploaded={onAllUploaded}
-        onCompletionChange={onCompletionChange}
+      <GovernmentIdentityClaim
+        company={company}
+        onActiveChange={onClaimActiveChange}
+        onSubmitted={onContinue}
       />
-      <div className="flex justify-end">
-        <Button disabled={!canContinue} onClick={onContinue}>
-          Next <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      {!claimActive && (
+        <>
+          <CompanyDocumentUploader
+            onAllUploaded={onAllUploaded}
+            onCompletionChange={onCompletionChange}
+          />
+          <div className="flex justify-end">
+            <Button disabled={!canContinue} onClick={onContinue}>
+              Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -186,6 +203,7 @@ function InviteContinueContent() {
   const [phase, setPhase] = useState<Phase>("form");
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
   const [documentsStepCompleted, setDocumentsStepCompleted] = useState(false);
+  const [claimActive, setClaimActive] = useState(false);
   // Frozen the first time it's known (below) so finishing uploads — which
   // flips verification.status away from "incomplete" — can't retroactively
   // change the active flow from 2 phases to 1 while it is still on screen.
@@ -282,7 +300,11 @@ function InviteContinueContent() {
         `You have reached the maximum of ${limit} active MOAs with this university.`,
       );
     } else if (code === "DOCUMENTS_INCOMPLETE") {
-      setError("Upload your documents before you can request MOAs.");
+      setError(
+        isGovernmentClaim(company?.identity_claims)
+          ? "Submit your details before you can request MOAs."
+          : "Upload your documents before you can request MOAs.",
+      );
       hasDocumentsStepRef.current = true;
       setDocumentsUploaded(false);
       setDocumentsStepCompleted(false);
@@ -347,7 +369,9 @@ function InviteContinueContent() {
         <h1 className="mt-0 text-2xl font-semibold tracking-tight text-gray-900 sm:mt-4 sm:text-4xl">
           Step {currentStepNumber}/{steps.length}:{" "}
           {currentStep === "documents"
-            ? "Upload your documents"
+            ? claimActive
+              ? "Submit your details"
+              : "Upload your documents"
             : `Sign MOA with ${university.registered_name}`}
           {" "}
           <span className="bg-primary/5 text-primary inline-flex h-8 items-center gap-1.5 rounded-full px-3 align-middle text-sm font-semibold sm:h-11 sm:px-4 sm:text-base">
@@ -374,6 +398,9 @@ function InviteContinueContent() {
         >
           {currentStep === "documents" && (
             <DocumentsStep
+              company={company}
+              claimActive={claimActive}
+              onClaimActiveChange={setClaimActive}
               onAllUploaded={() => setDocumentsUploaded(true)}
               onCompletionChange={setDocumentsUploaded}
               canContinue={documentsUploaded}

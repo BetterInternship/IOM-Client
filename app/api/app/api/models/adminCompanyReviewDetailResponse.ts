@@ -7,6 +7,7 @@
  */
 import type { AdminCompanyDetailCompanyDto } from "./adminCompanyDetailCompanyDto";
 import type { AdminReviewHistoryItemDto } from "./adminReviewHistoryItemDto";
+import type { AdminNameMatchCandidateDto } from "./adminNameMatchCandidateDto";
 
 export interface AdminCompanyReviewDetailResponse {
   success: boolean;
@@ -15,4 +16,6 @@ export interface AdminCompanyReviewDetailResponse {
   history: AdminReviewHistoryItemDto[];
   /** @nullable */
   openReviewId: string | null;
+  documentCount: number;
+  nameMatches: AdminNameMatchCandidateDto[];
 }

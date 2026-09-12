@@ -8,12 +8,14 @@ import {
 } from "@/app/providers/company-profile.provider";
 import { PageContainer } from "@/components/page-header";
 import { CompanyDocumentUploader } from "@/components/company/company-document-uploader";
+import { GovernmentIdentityClaim } from "@/components/company/government-identity-claim";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function VerificationPage() {
   const router = useRouter();
   const [documentsUploaded, setDocumentsUploaded] = useState(false);
+  const [claimActive, setClaimActive] = useState(false);
   const initialVerificationStatus = useRef<string | null>(null);
   const { company, isLoading } = useCompanyProfile();
   const { data: verification, isLoading: verificationLoading } =
@@ -55,15 +57,24 @@ export default function VerificationPage() {
         </p>
       </section>
 
-      <CompanyDocumentUploader onCompletionChange={setDocumentsUploaded} />
-      <div className="flex justify-end">
-        <Button
-          disabled={!documentsUploaded}
-          onClick={() => router.replace("/company/dashboard")}
-        >
-          Next <ChevronRight />
-        </Button>
-      </div>
+      <GovernmentIdentityClaim
+        company={company}
+        onActiveChange={setClaimActive}
+        onSubmitted={() => router.replace("/company/dashboard")}
+      />
+      {!claimActive && (
+        <>
+          <CompanyDocumentUploader onCompletionChange={setDocumentsUploaded} />
+          <div className="flex justify-end">
+            <Button
+              disabled={!documentsUploaded}
+              onClick={() => router.replace("/company/dashboard")}
+            >
+              Next <ChevronRight />
+            </Button>
+          </div>
+        </>
+      )}
     </PageContainer>
   );
 }

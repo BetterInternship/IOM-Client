@@ -45,6 +45,10 @@ function RequiredDocumentsNotice({ types }: { types: readonly string[] }) {
           <li key={type}>{documentLabel(type)}</li>
         ))}
       </ul>
+      <p className="text-muted-foreground mt-3 text-xs">
+        Government agencies and bodies don&apos;t need these — you can verify
+        with your official email address instead once you have an account.
+      </p>
     </div>
   );
 }

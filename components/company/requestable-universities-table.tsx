@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { ArrowRight, Clock3, MessageCircleQuestion } from "lucide-react";
 
 import type { CompanyUniversityDirectoryItemDto } from "@/app/api";
+import { useCompanyProfile } from "@/app/providers/company-profile.provider";
+import { isGovernmentClaim } from "@/lib/identity-claim";
 import { cn } from "@/lib/utils";
 import {
   ResourceTable,
@@ -142,6 +144,8 @@ function InFlightBadge({ status }: { status: InFlightRequestStatus }) {
 
 /** Documents incomplete — buttons disabled with a tooltip (flow spec §7). */
 function LockedRequestButton({ mobile = false }: { mobile?: boolean }) {
+  const { company } = useCompanyProfile();
+  const hasClaim = isGovernmentClaim(company?.identity_claims);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -164,7 +168,9 @@ function LockedRequestButton({ mobile = false }: { mobile?: boolean }) {
         className="max-w-64 bg-gray-900 px-3 py-2 leading-5 text-white shadow-sm"
         arrowClassName="fill-gray-900"
       >
-        Upload your documents to request MOAs.
+        {hasClaim
+          ? "Submit your details to request MOAs."
+          : "Upload your documents to request MOAs."}
       </TooltipContent>
     </Tooltip>
   );

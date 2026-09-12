@@ -303,6 +303,47 @@ function VerifiedDocumentDetails({
   );
 }
 
+/** Government agency/body partner (plan §6.3) — replaces the document-review
+ * card and the documents list, which would otherwise read like a partner
+ * out of compliance for an account that was never asked for documents. */
+function GovernmentAgencyCard({
+  registeredName,
+  registeredAddress,
+  cosmetic,
+}: {
+  registeredName?: string | null;
+  registeredAddress?: string | null;
+  cosmetic?: Record<string, unknown> | null;
+}) {
+  const cosmeticEntries = Object.entries(cosmetic ?? {}).filter(
+    (entry): entry is [string, string] =>
+      typeof entry[1] === "string" && !!entry[1],
+  );
+  return (
+    <CollapsibleCard id="government-agency" title="Government Agency/Body">
+      <div className="space-y-4 px-5 pb-5">
+        <DetailField label="Agency name">
+          <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+            {registeredName ?? "—"}
+          </p>
+        </DetailField>
+        <DetailField label="Address">
+          <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+            {registeredAddress ?? "—"}
+          </p>
+        </DetailField>
+        {cosmeticEntries.map(([key, value]) => (
+          <DetailField key={key} label={key.replace(/_/g, " ")}>
+            <p className="flex min-h-8 items-center break-words text-sm font-medium text-gray-900">
+              {value}
+            </p>
+          </DetailField>
+        ))}
+      </div>
+    </CollapsibleCard>
+  );
+}
+
 function DocumentsSection({
   documents,
   onOpenDocument,
@@ -1426,21 +1467,31 @@ function PartnersContent({
                     />
                   </CollapsibleCard>
 
-                  {(partnerMoasData?.company?.document_review_details ||
-                    company?.company_type) && (
-                    <VerifiedDocumentDetails
-                      details={
-                        (partnerMoasData?.company?.document_review_details ??
-                          {}) as DocReviewDetails
-                      }
-                      companyType={company?.company_type}
+                  {company?.company_type === "government_agency" ? (
+                    <GovernmentAgencyCard
+                      registeredName={company?.registered_name}
+                      registeredAddress={company?.registered_address}
+                      cosmetic={company?.cosmetic as Record<string, unknown>}
                     />
-                  )}
-                  {partnerMoasData?.companyDocuments && (
-                    <DocumentsSection
-                      documents={partnerMoasData.companyDocuments}
-                      onOpenDocument={openDocumentPreview}
-                    />
+                  ) : (
+                    <>
+                      {(partnerMoasData?.company?.document_review_details ||
+                        company?.company_type) && (
+                        <VerifiedDocumentDetails
+                          details={
+                            (partnerMoasData?.company?.document_review_details ??
+                              {}) as DocReviewDetails
+                          }
+                          companyType={company?.company_type}
+                        />
+                      )}
+                      {partnerMoasData?.companyDocuments && (
+                        <DocumentsSection
+                          documents={partnerMoasData.companyDocuments}
+                          onOpenDocument={openDocumentPreview}
+                        />
+                      )}
+                    </>
                   )}
                 </>
               )}
