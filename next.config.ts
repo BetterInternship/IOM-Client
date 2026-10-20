@@ -32,7 +32,7 @@ const cspHeader = `
 
 const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: true },
-  typescript: { ignoreBuildErrors: true },
+  typescript: { ignoreBuildErrors: false },
   images: { unoptimized: true },
 
   async rewrites() {

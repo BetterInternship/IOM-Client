@@ -24,4 +24,5 @@ export interface CompanyDto {
   identity_claims: CompanyDtoIdentityClaims;
   /** @nullable */
   is_deactivated: boolean | null;
+  is_demo: boolean;
 }
