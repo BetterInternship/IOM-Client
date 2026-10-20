@@ -19,6 +19,7 @@ interface UniversityAccount {
     signatories: UniversitySignatoryFields[] | null;
     account_holder_name: string | null;
     account_holder_title: string | null;
+    is_demo?: boolean;
   };
 }
 interface UniversitySignatoryFields {

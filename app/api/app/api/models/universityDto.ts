@@ -26,4 +26,5 @@ export interface UniversityDto {
   account_holder_name: string | null;
   /** @nullable */
   account_holder_title: string | null;
+  is_demo: boolean;
 }
